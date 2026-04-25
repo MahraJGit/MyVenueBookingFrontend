@@ -1,0 +1,41 @@
+.login,
+.signup,
+.forgot-password,
+.verify-otp,
+.set-password {
+    padding: 100px 0;
+    background: url("/images/pattern.png") no-repeat top center;
+}
+
+.auth-layout {
+    background: url("/images/light.png") no-repeat top center;
+
+}
+
+.social-login-divider {
+    position: relative;
+
+    span {
+
+        &::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 30%;
+            height: 1px;
+            background-color: #ccc;
+        }
+
+        &::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: 0;
+            width: 30%;
+            height: 1px;
+            background-color: #ccc;
+        }
+
+    }
+}

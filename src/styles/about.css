@@ -1,0 +1,28 @@
+.about-hero {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/blog-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.why-choose .lgcard {
+    background-image: linear-gradient(#161616A6 0%, #161616A6 65%, transparent 100%), url('/images/featureCard-bg-1.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+}
+
+.why-choose .smcards {
+    background-image: linear-gradient(#161616A6 0%, #161616A6 65%, transparent 100%), url('/images/featureCard-bg-2.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+}
+.contact-us .contact-us-cards .card .card-icon{
+    background-image: url('/images/contactus-icon-bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}

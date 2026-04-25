@@ -1,0 +1,9 @@
+.header-cta .lang-menu {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+
+    &:focus-visible {
+      --tw-ring-color: none;
+    }
+}

@@ -1,0 +1,119 @@
+.hero {
+      padding: 100px 0;
+      background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url('/images/hero-bg.jpg') no-repeat center center/cover;
+
+      .inner .description {
+            max-width: 48.5%;
+
+            @media (max-width: 1024px) {
+                  max-width: 70%;
+            }
+
+            @media (max-width: 768px) {
+                  max-width: 100%;
+            }
+      }
+}
+
+.hero .inner .filters .top {
+      border-bottom: 1px solid #242424;
+}
+
+.top-venues {
+      .marquee-container {
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+      }
+
+      .wrapper {
+            width: max-content;
+            display: flex;
+      }
+
+      .animate-marquee-left {
+            animation: marquee-left 25s linear infinite;
+      }
+
+      .animate-marquee-right {
+            animation: marquee-right 25s linear infinite;
+      }
+
+      .marquee-container:hover .animate-marquee-left,
+      .marquee-container:hover .animate-marquee-right {
+            animation-play-state: paused;
+      }
+
+}
+
+.why-us {
+      .card {
+            background: linear-gradient(180deg, #1B1B1B 0%, rgba(14, 4, 17, 0.2) 50.4%, #1B1B1B 100%),
+                  linear-gradient(90deg, rgba(27, 27, 27, 0.8) 0%, rgba(14, 4, 17, 0.2) 48.08%, rgba(27, 27, 27, 0.8) 100%);
+
+      }
+}
+
+.testimonials {
+
+      &::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 30%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                        #0D0D0D 0%,
+                        rgba(13, 13, 13, 0.85) 50%,
+                        rgba(13, 13, 13, 0) 100%);
+            z-index: 1;
+      }
+
+      &::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 30%;
+            height: 100%;
+            background: linear-gradient(270deg,
+                        #0D0D0D 0%,
+                        rgba(13, 13, 13, 0.85) 50%,
+                        rgba(13, 13, 13, 0) 100%);
+            z-index: 1;
+      }
+
+      .marquee-track {
+            display: flex;
+            animation: marquee-left 25s linear infinite;
+      }
+
+      .marquee-track.reverse {
+            animation: marquee-right 25s linear infinite;
+      }
+
+      .marquee-track:hover {
+            animation-play-state: paused;
+      }
+}
+
+@keyframes marquee-left {
+      0% {
+            transform: translateX(0);
+      }
+
+      100% {
+            transform: translateX(-50%);
+      }
+}
+
+@keyframes marquee-right {
+      0% {
+            transform: translateX(-50%);
+      }
+
+      100% {
+            transform: translateX(0);
+      }
+}

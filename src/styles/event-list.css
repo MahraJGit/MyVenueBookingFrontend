@@ -1,0 +1,17 @@
+.eventslist {
+    padding: 100px 0;
+}
+
+.explore {
+    .wrapper {
+        max-width: 97%;
+        width: 100%;
+        margin: 0 auto;
+        background: linear-gradient(89.97deg, #0F0F0F 2.42%, rgba(19, 15, 20, 0.974681) 25.46%, rgba(29, 14, 34, 0.909574) 46.72%, rgba(215, 73, 142, 0) 168.98%), url('/images/hero-bg.jpg') no-repeat center center/cover;
+
+    }
+
+    h2 {
+        font-size: 40px;
+    }
+}

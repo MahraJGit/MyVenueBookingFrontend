@@ -1,0 +1,6 @@
+.notFound-hero{
+    background-image: url('/images/noFound.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}

@@ -1,0 +1,35 @@
+.gradient-border-left {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.gradient-border-left::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) -14.08%,
+    #d7498e 56.15%,
+    rgba(0, 0, 0, 0) 126.41%
+  );
+}
+.thanku-overlay {
+  background-image: url('/images/thanku-bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+/* checkout.css */
+.thanku-overlay {
+  animation: fadeIn 0.8s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
