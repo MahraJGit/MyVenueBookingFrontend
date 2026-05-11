@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import "@/styles/affiliate.css";
 import Image from 'next/image';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import Link from 'next/link';
 
 
 
@@ -16,7 +17,9 @@ const affiliate = () => {
                         <div className="description text-center">
                             <h1 className='mb-8'>Join the MyVenueBooking affiliate program</h1>
                             <p>Take your business to the next level with one of the best Venue Booking in the world!</p>
-                            <Button className='mt-8' size='lg'>Join Now</Button>
+                            <Button asChild className='mt-8' size='lg'>
+                                <Link href="/affiliate/join">Join Now</Link>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -380,7 +383,9 @@ const affiliate = () => {
                             <p className="mb-6">Join our network of trusted partners and grow your business with us.
                                 Whether you're a venue owner or looking to earn through referrals, we have opportunities for everyone.
                             </p>
-                            <Button size='lg'>Register Now</Button>
+                            <Button asChild size='lg'>
+                                <Link href="/affiliate/join">Register Now</Link>
+                            </Button>
                         </div>
                     </div>
                 </div>

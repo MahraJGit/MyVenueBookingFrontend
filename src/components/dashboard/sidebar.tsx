@@ -51,6 +51,7 @@ export default function Sidebar({
         </Button>
       </Link>
 
+      {/*
       <Accordion type="multiple" defaultValue={['main']} className="space-y-2">
         <SidebarSection title="Main Navigation" value="main">
           <SidebarLink icon="/svg/dashboard.svg" label="Dashboard" href="/adminDashbaord/dashboard" onClose={onClose} />
@@ -74,6 +75,21 @@ export default function Sidebar({
         <SidebarSection title="Account Management" value="account">
           <SidebarLink icon="/svg/AddUserMale.svg" label="Manage Users" href="/adminDashbaord/users" onClose={onClose} />
           <SidebarLink icon="/svg/logout.svg" label="Logout" href="#" onClose={onClose} />
+        </SidebarSection>
+      </Accordion>
+      */}
+
+      <Accordion type="multiple" defaultValue={['users', 'events']} className="space-y-2">
+        <SidebarSection title="Users" value="users">
+          <SidebarLink icon="/svg/AddUserMale.svg" label="Manage Users" href="/adminDashbaord/users" onClose={onClose} />
+          <SidebarLink icon="/svg/Collaborating.svg" label="Vendor Requests" href="/adminDashbaord/vendorRequests" onClose={onClose} />
+        </SidebarSection>
+
+        <SidebarSection title="Events" value="events">
+          <SidebarLink icon="/svg/EventAccepted.svg" label="Manage Events" href="/adminDashbaord/manageEvents" onClose={onClose} />
+          <SidebarLink icon="/svg/NewTicket.svg" label="Booking & Tickets" href="/adminDashbaord/manageTickets" onClose={onClose} />
+          <SidebarLink icon="/svg/OpenedFolder.svg" label="Event Categories" href="/adminDashbaord/events" onClose={onClose} />
+          <SidebarLink icon="/svg/Statistics.svg" label="Analytics & Reports" href="/adminDashbaord/analytics" onClose={onClose} />
         </SidebarSection>
       </Accordion>
     </aside>
