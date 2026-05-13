@@ -2,13 +2,7 @@ import { ApiError } from "@/lib/api/errors";
 import { authFetch } from "@/lib/api/auth-fetch";
 import { assertApiConfigured } from "@/lib/env";
 import { refreshAuthTokens } from "@/features/auth/api";
-import {
-  clearAuthSession,
-  getAccessToken,
-  getRefreshToken,
-  updateAccessToken,
-  updateRefreshToken,
-} from "@/features/auth/session-storage";
+import { clearAuthSession, getAccessToken, updateAccessToken } from "@/features/auth/session-storage";
 
 const VENDOR_DOCS_FOLDER = "vendor-documents";
 
@@ -117,6 +111,7 @@ function uploadVendorDocumentViaBackendWithProgress(
     formData.append("file", file);
 
     xhr.open("POST", url);
+    xhr.withCredentials = true;
     xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.setRequestHeader("Accept", "application/json");
 
@@ -135,16 +130,9 @@ function uploadVendorDocumentViaBackendWithProgress(
 
     xhr.onload = () => {
       if (xhr.status === 401 && authAttempt === 0) {
-        const refreshToken = getRefreshToken();
-        if (!refreshToken) {
-          clearAuthSession();
-          reject(new ApiError(401, "Please login to continue."));
-          return;
-        }
-        refreshAuthTokens({ refreshToken })
+        refreshAuthTokens()
           .then((data) => {
             updateAccessToken(data.accessToken);
-            updateRefreshToken(data.refreshToken);
             return uploadVendorDocumentViaBackendWithProgress(
               file,
               onProgress,

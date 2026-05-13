@@ -1,11 +1,5 @@
 import { refreshAuthTokens } from "@/features/auth/api";
-import {
-  clearAuthSession,
-  getAccessToken,
-  getRefreshToken,
-  updateAccessToken,
-  updateRefreshToken,
-} from "@/features/auth/session-storage";
+import { clearAuthSession, getAccessToken, updateAccessToken } from "@/features/auth/session-storage";
 import { ApiError } from "./errors";
 import { assertApiConfigured } from "@/lib/env";
 
@@ -17,16 +11,9 @@ type AuthFetchOptions = Omit<RequestInit, "headers"> & {
 let refreshInFlight: Promise<boolean> | null = null;
 
 async function refreshAccessToken(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    clearAuthSession();
-    return false;
-  }
-
   try {
-    const data = await refreshAuthTokens({ refreshToken });
+    const data = await refreshAuthTokens();
     updateAccessToken(data.accessToken);
-    updateRefreshToken(data.refreshToken);
     return true;
   } catch {
     clearAuthSession();
@@ -57,13 +44,12 @@ function buildHeaders(extra?: HeadersInit): Headers {
 async function doFetch(path: string, options: AuthFetchOptions): Promise<Response> {
   const baseUrl = assertApiConfigured();
   const url = `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
-  // Build headers outside the fetch try/catch so auth errors (e.g. missing token)
-  // are not misreported as network failures.
   const headers = buildHeaders(options.headers);
   try {
     return await fetch(url, {
       ...options,
       headers,
+      credentials: "include",
     });
   } catch {
     throw new ApiError(0, options.networkErrorMessage);

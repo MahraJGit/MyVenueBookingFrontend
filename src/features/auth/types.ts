@@ -1,11 +1,12 @@
+/** Snapshot returned by auth endpoints (backend may only send id, email, role). */
 export type AuthUser = {
   id: string;
-  firstName: string;
-  lastName: string;
   email: string;
-  phone: string;
-  phoneCountryCode?: string | null;
   role: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  phoneCountryCode?: string | null;
 };
 
 export type RegisterRequestBody = {
@@ -20,8 +21,8 @@ export type RegisterRequestBody = {
 export type RegisterSuccessResponse = {
   success: true;
   requireOtp: boolean;
-  message: string;
   userId: string;
+  message?: string;
 };
 
 export type VerifyOtpRequestBody = {
@@ -31,10 +32,9 @@ export type VerifyOtpRequestBody = {
 
 export type VerifyOtpSuccessResponse = {
   success: true;
-  message: string;
   accessToken: string;
-  refreshToken: string;
   user: AuthUser;
+  message?: string;
 };
 
 export type ResendOtpRequestBody = {
@@ -55,26 +55,26 @@ export type LoginRequestBody =
 export type LoginOtpRequiredResponse = {
   success: false;
   requireOtp: true;
-  message: string;
   userId: string;
+  message?: string;
 };
 
 export type LoginTokensResponse = {
   success: true;
-  message: string;
   accessToken: string;
-  refreshToken: string;
   user: AuthUser;
+  message?: string;
 };
 
 export type LoginApiResponse = LoginOtpRequiredResponse | LoginTokensResponse;
 
-export type RefreshTokensRequestBody = {
-  refreshToken: string;
+/** POST /api/auth/refresh — refresh token is HttpOnly cookie; response is JSON only. */
+export type RefreshTokensResponse = {
+  status: "success";
+  accessToken: string;
 };
 
-export type RefreshTokensResponse = {
+export type LogoutSuccessResponse = {
   success: true;
-  accessToken: string;
-  refreshToken: string;
+  message?: string;
 };

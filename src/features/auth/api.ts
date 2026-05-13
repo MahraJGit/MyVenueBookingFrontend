@@ -2,7 +2,7 @@ import { apiPost } from "@/lib/api/client";
 import type {
   LoginApiResponse,
   LoginRequestBody,
-  RefreshTokensRequestBody,
+  LogoutSuccessResponse,
   RefreshTokensResponse,
   RegisterRequestBody,
   RegisterSuccessResponse,
@@ -14,10 +14,13 @@ import type {
 
 const AUTH_BASE = "/api/auth";
 
+const withCookies: RequestInit = { credentials: "include" };
+
 export function registerAccount(body: RegisterRequestBody) {
   return apiPost<RegisterSuccessResponse, RegisterRequestBody>(
     `${AUTH_BASE}/register`,
     body,
+    withCookies,
   );
 }
 
@@ -25,6 +28,7 @@ export function verifyOtp(body: VerifyOtpRequestBody) {
   return apiPost<VerifyOtpSuccessResponse, VerifyOtpRequestBody>(
     `${AUTH_BASE}/verify-otp`,
     body,
+    withCookies,
   );
 }
 
@@ -32,6 +36,7 @@ export function resendOtp(body: ResendOtpRequestBody) {
   return apiPost<ResendOtpSuccessResponse, ResendOtpRequestBody>(
     `${AUTH_BASE}/resend-otp`,
     body,
+    withCookies,
   );
 }
 
@@ -39,12 +44,23 @@ export function loginAccount(body: LoginRequestBody) {
   return apiPost<LoginApiResponse, LoginRequestBody>(
     `${AUTH_BASE}/login`,
     body,
+    withCookies,
   );
 }
 
-export function refreshAuthTokens(body: RefreshTokensRequestBody) {
-  return apiPost<RefreshTokensResponse, RefreshTokensRequestBody>(
+/** Uses HttpOnly `refreshToken` cookie set at login / verify-otp. */
+export function refreshAuthTokens() {
+  return apiPost<RefreshTokensResponse, Record<string, never>>(
     `${AUTH_BASE}/refresh`,
-    body,
+    {},
+    withCookies,
+  );
+}
+
+export function logoutAccount() {
+  return apiPost<LogoutSuccessResponse, Record<string, never>>(
+    `${AUTH_BASE}/logout`,
+    {},
+    withCookies,
   );
 }

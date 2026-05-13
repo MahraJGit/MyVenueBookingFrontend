@@ -55,11 +55,14 @@ export default function LoginPage() {
             if (isLoginWithTokens(data)) {
                 persistAuthSession({
                     accessToken: data.accessToken,
-                    refreshToken: data.refreshToken,
                     user: data.user,
                 });
+                const greet =
+                    data.user.firstName?.trim() ||
+                    data.user.email?.trim() ||
+                    "there";
                 toast.success(data.message || "Signed in successfully.", {
-                    description: `Welcome back, ${data.user.firstName}`,
+                    description: `Welcome back, ${greet}`,
                 });
                 router.replace(redirect);
                 return;

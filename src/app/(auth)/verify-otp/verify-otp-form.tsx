@@ -53,7 +53,6 @@ export function VerifyOtpForm() {
     onSuccess: (data) => {
       persistAuthSession({
         accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
         user: data.user,
       });
       toast.success(data.message || "You're verified!", {
