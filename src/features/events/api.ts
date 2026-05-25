@@ -1,4 +1,5 @@
 import { ApiError } from "@/lib/api/errors";
+import { apiGet } from "@/lib/api/client";
 import { authFetch } from "@/lib/api/auth-fetch";
 
 async function parseJson<T>(res: Response): Promise<T> {
@@ -43,6 +44,7 @@ export type ManagedEvent = {
   category: string | null;
   tags: string[];
   coverImage: string | null;
+  thumbnail: string | null;
   gallery: string[];
   venueId: string | null;
   venueName: string | null;
@@ -69,6 +71,53 @@ export type ListManagedResult = {
     limit: number;
     totalPages: number;
   };
+};
+
+export type PublicEvent = {
+  id: string;
+  eventName: string;
+  slug: string;
+  eventDescription: string | null;
+  startDateTime: string;
+  endDateTime: string;
+  timezone: string;
+  category: string | null;
+  tags: string[];
+  coverImage: string | null;
+  thumbnail: string | null;
+  gallery: string[];
+  venueId: string | null;
+  venueName: string | null;
+  venuePhone: string | null;
+  venueWebsite: string | null;
+  countryCode: string;
+  city: string;
+  state: string | null;
+  address: string | null;
+  zipCode: string | null;
+  latitude: string | number;
+  longitude: string | number;
+  ticketTypes: TicketTypeRow[];
+};
+
+export type ListPublicEventsResult = {
+  data: PublicEvent[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};
+
+export type ListPublicEventsParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+  city?: string;
+  sortBy?: "createdAt" | "startDateTime" | "eventName";
+  sortOrder?: "asc" | "desc";
 };
 
 export type CreateEventPayload = {
@@ -103,6 +152,31 @@ export type CreateEventPayload = {
     salesEnd?: string;
   }[];
 };
+
+export async function listPublicEvents(
+  params?: ListPublicEventsParams,
+): Promise<ListPublicEventsResult> {
+  const sp = new URLSearchParams();
+  sp.set("page", String(params?.page ?? 1));
+  sp.set("limit", String(params?.limit ?? 10));
+  if (params?.search) sp.set("search", params.search);
+  if (params?.category) sp.set("category", params.category);
+  if (params?.city) sp.set("city", params.city);
+  if (params?.sortBy) sp.set("sortBy", params.sortBy);
+  if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
+
+  const json = await apiGet<SuccessEnvelope<ListPublicEventsResult>>(
+    `/api/events?${sp.toString()}`,
+  );
+  return unwrapEnvelope(json);
+}
+
+export async function getPublicEventBySlug(slug: string): Promise<PublicEvent> {
+  const json = await apiGet<SuccessEnvelope<PublicEvent>>(
+    `/api/events/${encodeURIComponent(slug)}`,
+  );
+  return unwrapEnvelope(json);
+}
 
 export async function listManagedEvents(params?: {
   page?: number;

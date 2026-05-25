@@ -41,7 +41,6 @@ import {
   listManagedEvents,
   type ManagedEvent,
 } from "@/features/events/api";
-import { getPresignedViewUrl } from "@/features/uploads/api";
 import { toastApiError } from "@/lib/toasts";
 import { format } from "date-fns";
 
@@ -71,13 +70,11 @@ export default function ManageEvents() {
     onError: (e) => toastApiError(e, "Could not delete event."),
   });
 
-  const openMediaMutation = useMutation({
-    mutationFn: (fileUrl: string) => getPresignedViewUrl(fileUrl),
-    onSuccess: (viewUrl) => {
-      window.open(viewUrl, "_blank", "noopener,noreferrer");
+  const openMediaMutation = {
+    mutate: (fileUrl: string) => {
+      window.open(fileUrl, "_blank", "noopener,noreferrer");
     },
-    onError: (e) => toastApiError(e, "Could not open image."),
-  });
+  };
 
   const rows = data?.data ?? [];
 
@@ -317,45 +314,12 @@ export default function ManageEvents() {
                 </p>
               </section>
 
-              <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Media
-                </p>
-                <p>
-                  <span className="text-zinc-500">Cover:</span>{" "}
-                  {viewEvent.coverImage ? (
-                    <button
-                      type="button"
-                      onClick={() => openMediaMutation.mutate(viewEvent.coverImage!)}
-                      className="text-primary underline underline-offset-2"
-                    >
-                      Open cover image
-                    </button>
-                  ) : (
-                    "—"
-                  )}
-                </p>
-                {viewEvent.gallery?.length ? (
-                  <div>
-                    <p className="mb-2 text-zinc-500">Gallery links:</p>
-                    <ul className="list-inside list-disc space-y-1 text-zinc-300">
-                      {viewEvent.gallery.map((g, idx) => (
-                        <li key={`${g}-${idx}`}>
-                          <button
-                            type="button"
-                            onClick={() => openMediaMutation.mutate(g)}
-                            className="text-primary underline underline-offset-2"
-                          >
-                            Image {idx + 1}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <p className="text-zinc-400">No gallery images.</p>
-                )}
-              </section>
+              <EventMediaPreview
+                coverImage={viewEvent.coverImage}
+                thumbnail={viewEvent.thumbnail}
+                gallery={viewEvent.gallery}
+                onOpenFull={(url) => openMediaMutation.mutate(url)}
+              />
 
               <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -402,6 +366,89 @@ export default function ManageEvents() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function EventMediaPreview({
+  coverImage,
+  thumbnail,
+  gallery,
+  onOpenFull,
+}: {
+  coverImage?: string | null;
+  thumbnail?: string | null;
+  gallery?: string[] | null;
+  onOpenFull: (fileUrl: string) => void;
+}) {
+  return (
+    <section className="space-y-4 rounded-lg border border-zinc-800 p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        Media
+      </p>
+
+      {coverImage ? (
+        <div className="space-y-1.5">
+          <p className="text-xs text-zinc-500">Cover</p>
+          <button
+            type="button"
+            onClick={() => onOpenFull(coverImage)}
+            className="group block overflow-hidden rounded-md border border-zinc-700 transition hover:border-primary"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={coverImage}
+              alt="Cover"
+              className="max-h-48 w-full object-cover transition group-hover:opacity-80"
+            />
+          </button>
+        </div>
+      ) : (
+        <p className="text-zinc-400 text-sm">No cover image.</p>
+      )}
+
+      {thumbnail ? (
+        <div className="space-y-1.5">
+          <p className="text-xs text-zinc-500">Thumbnail</p>
+          <button
+            type="button"
+            onClick={() => onOpenFull(thumbnail)}
+            className="group block overflow-hidden rounded-md border border-zinc-700 transition hover:border-primary"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={thumbnail}
+              alt="Thumbnail"
+              className="h-24 w-32 object-cover transition group-hover:opacity-80"
+            />
+          </button>
+        </div>
+      ) : null}
+
+      {gallery?.length ? (
+        <div className="space-y-2">
+          <p className="text-xs text-zinc-500">Gallery ({gallery.length})</p>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {gallery.map((g, idx) => (
+              <button
+                key={`${g}-${idx}`}
+                type="button"
+                onClick={() => onOpenFull(g)}
+                className="group relative aspect-square overflow-hidden rounded-md border border-zinc-700 transition hover:border-primary"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={g}
+                  alt={`Gallery ${idx + 1}`}
+                  className="h-full w-full object-cover transition group-hover:opacity-80"
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="text-zinc-400 text-sm">No gallery images.</p>
+      )}
+    </section>
   );
 }
 

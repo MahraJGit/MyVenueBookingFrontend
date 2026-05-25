@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { CalendarIcon, Loader2, Plus, Trash2, Upload } from "lucide-react"
 
@@ -28,7 +28,6 @@ import {
     type CreateEventPayload,
 } from "@/features/events/api"
 import { listEventCategories } from "@/features/event-categories/api"
-import { getPresignedViewUrl } from "@/features/uploads/api"
 import { toastApiError } from "@/lib/toasts"
 import Link from "next/link"
 import dynamic from "next/dynamic"
@@ -116,9 +115,11 @@ export default function AddEventsContentPage() {
     const [tags, setTags] = React.useState<string[]>([])
     const [tagInput, setTagInput] = React.useState("")
     const [coverImage, setCoverImage] = React.useState("")
+    const [thumbnail, setThumbnail] = React.useState("")
     /** Populated only via S3 uploads (stored URLs sent to API). */
     const [galleryUrls, setGalleryUrls] = React.useState<string[]>([])
     const [coverUploading, setCoverUploading] = React.useState(false)
+    const [thumbnailUploading, setThumbnailUploading] = React.useState(false)
     const [galleryUploading, setGalleryUploading] = React.useState(false)
     const [venueName, setVenueName] = React.useState("")
     const [venuePhone, setVenuePhone] = React.useState("")
@@ -152,20 +153,16 @@ export default function AddEventsContentPage() {
         queryFn: () => listEventCategories({ isActive: true }),
     })
 
-    const { data: coverPreviewUrl, isLoading: loadingCoverPreview } = useQuery({
-        queryKey: ["event-media-preview", coverImage],
-        queryFn: () => getPresignedViewUrl(coverImage),
-        enabled: Boolean(coverImage),
-        staleTime: 5 * 60 * 1000,
-    })
+    const coverPreviewUrl = coverImage?.trim() || null;
+    const loadingCoverPreview = false;
 
-    const galleryPreviewQueries = useQueries({
-        queries: galleryUrls.map((fileUrl) => ({
-            queryKey: ["event-media-preview", fileUrl],
-            queryFn: () => getPresignedViewUrl(fileUrl),
-            staleTime: 5 * 60 * 1000,
-        })),
-    })
+    const thumbnailPreviewUrl = thumbnail?.trim() || null;
+    const loadingThumbnailPreview = false;
+
+    const galleryPreviewQueries = galleryUrls.map((url) => ({
+        data: url,
+        isLoading: false,
+    }));
 
     /*
     React.useEffect(() => {
@@ -189,6 +186,7 @@ export default function AddEventsContentPage() {
         setCategory(existing.category ?? "")
         setTags(existing.tags ?? [])
         setCoverImage(existing.coverImage ?? "")
+        setThumbnail(existing.thumbnail ?? "")
         setGalleryUrls(existing.gallery ?? [])
         // setVenueId(existing.venueId ?? "") // Venue ID field commented out for now
         setVenueName(existing.venueName ?? "")
@@ -274,6 +272,7 @@ export default function AddEventsContentPage() {
             category: category.trim(),
             tags,
             coverImage: coverImage.trim(),
+            thumbnail: thumbnail.trim() || undefined,
             gallery,
             venueName: venueName.trim(),
             venuePhone: venuePhone.trim(),
@@ -333,6 +332,20 @@ export default function AddEventsContentPage() {
             toastApiError(err, "Upload failed")
         } finally {
             setCoverUploading(false)
+        }
+    }
+
+    async function onThumbnailFile(f: File | null) {
+        if (!f) return
+        try {
+            setThumbnailUploading(true)
+            const url = await uploadEventMedia(f)
+            setThumbnail(url)
+            toast.success("Thumbnail uploaded to storage")
+        } catch (err) {
+            toastApiError(err, "Thumbnail upload failed")
+        } finally {
+            setThumbnailUploading(false)
         }
     }
 
@@ -609,6 +622,88 @@ export default function AddEventsContentPage() {
                             ) : (
                                 <p className="text-sm text-amber-200/90">
                                     No cover yet — upload an image to continue.
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-3 border-t border-zinc-800 pt-6">
+                            <Label>Thumbnail</Label>
+                            <p className="text-xs text-zinc-500">
+                                Optional. A smaller preview image shown in event cards and listings.
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-zinc-600"
+                                    disabled={thumbnailUploading}
+                                    onClick={() =>
+                                        document.getElementById("thumbnail-upload")?.click()
+                                    }
+                                >
+                                    {thumbnailUploading ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Uploading…
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="mr-2 h-4 w-4" />
+                                            Upload thumbnail
+                                        </>
+                                    )}
+                                </Button>
+                                <input
+                                    id="thumbnail-upload"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        void onThumbnailFile(e.target.files?.[0] ?? null)
+                                        e.target.value = ""
+                                    }}
+                                />
+                            </div>
+                            {thumbnail ? (
+                                <div className="space-y-2 rounded-lg border border-zinc-800 bg-black/40 p-3">
+                                    {thumbnailPreviewUrl ? (
+                                        <>
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={thumbnailPreviewUrl}
+                                                alt="Thumbnail preview"
+                                                className="max-h-32 w-full max-w-xs rounded-md object-cover"
+                                            />
+                                        </>
+                                    ) : (
+                                        <div className="flex h-20 items-center gap-2 rounded-md border border-zinc-700 px-3 text-sm text-zinc-400">
+                                            {loadingThumbnailPreview ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    Loading thumbnail preview...
+                                                </>
+                                            ) : (
+                                                "Could not load thumbnail preview. File is saved and will still submit."
+                                            )}
+                                        </div>
+                                    )}
+                                    <p className="break-all font-mono text-xs text-zinc-500">
+                                        {thumbnail}
+                                    </p>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-zinc-400 hover:text-white"
+                                        onClick={() => setThumbnail("")}
+                                    >
+                                        Remove thumbnail
+                                    </Button>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-zinc-500">
+                                    No thumbnail yet — optional, but recommended for event listings.
                                 </p>
                             )}
                         </div>

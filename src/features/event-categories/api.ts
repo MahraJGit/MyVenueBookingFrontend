@@ -1,4 +1,5 @@
 import { ApiError } from "@/lib/api/errors";
+import { apiGet } from "@/lib/api/client";
 import { authFetch } from "@/lib/api/auth-fetch";
 
 async function parseJson<T>(res: Response): Promise<T> {
@@ -55,17 +56,13 @@ export async function listEventCategories(params?: {
   const qs = sp.toString();
   const path = qs ? `/api/event-categories?${qs}` : "/api/event-categories";
 
-  const res = await authFetch(path, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-    networkErrorMessage: "Network error while loading event categories.",
-  });
-
-  const json = await parseJson<SuccessEnvelope<EventCategory[]>>(res);
-  if (!res.ok) {
-    throw ApiError.fromUnknown(res.status, json as unknown);
-  }
+  const json = await apiGet<SuccessEnvelope<EventCategory[]>>(path);
   return unwrapEnvelope(json);
+}
+
+/** Active categories for public discovery (homepage + events listing). */
+export async function listPublicEventCategories(): Promise<EventCategory[]> {
+  return listEventCategories({ isActive: true });
 }
 
 export async function getEventCategory(id: string): Promise<EventCategory> {

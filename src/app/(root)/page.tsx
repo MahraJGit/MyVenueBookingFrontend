@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 // import { Calendar } from "@/components/ui/calendar"
 import { CalendarPicker } from "@/components/pages/home/CalendarPicker";
+import { HotEventsSection } from "@/components/events/HotEventsSection";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 // import { BadgeQuestionMark } from "lucide-react";
 
@@ -526,6 +527,8 @@ const Home = () => {
         </div>
       </section>
       {/* shows section end */}
+
+      <HotEventsSection />
 
       {/* top venues section start */}
       <section className="top-venues py-10 relative overflow-hidden">

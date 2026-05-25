@@ -22,7 +22,7 @@ const Header = () => {
 
   const navItems = [
     { href: "/", label: "Home" },
-    { href: "/shows", label: "Event Ticket" },
+    { href: "/events", label: "Events" },
     { href: "/shows", label: "Venue Booking" },
     { href: "/affiliate", label: "List Your Venue" },
     { href: "/blog", label: "Blog" },
