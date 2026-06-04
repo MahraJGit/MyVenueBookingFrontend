@@ -169,7 +169,10 @@ export function TicketPurchaseDialog({
         await completeTicketPurchase(result.orderGroupId, result.paymentIntentId);
       }
 
-      toast.success("Tickets purchased successfully!");
+      toast.success("Tickets purchased successfully!", {
+        description:
+          "A confirmation email has been sent to you. The event organizer was notified as well.",
+      });
       onOpenChange(false);
       onPurchaseSuccess?.();
     } catch (err) {
