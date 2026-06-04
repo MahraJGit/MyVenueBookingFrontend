@@ -3,9 +3,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 // import { Card, CardAction, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { AlarmClock, ChevronDown, CircleArrowRight, CircleDollarSign, Clock1, CreditCard, Search } from 'lucide-react'
+import { ChevronDown, CircleArrowRight, Clock1, Search } from 'lucide-react'
 import Image from 'next/image'
 import React from 'react'
+import NotificationBell from '@/components/notifications/NotificationBell'
+import { useQuery } from '@tanstack/react-query'
+import { listNotifications } from '@/features/notifications/api'
+import Link from 'next/link'
 import { TrendingUp } from "lucide-react"
 import {
   LineChart,
@@ -104,29 +108,13 @@ const upcomingEvents = [
   },
 ]
 
-const notifications = [
-  {
-    icon: CreditCard,
-    text: "Paycheck released for artists @Wayo Event",
-  },
-  {
-    icon: CircleDollarSign,
-    text: "Total revenue has been transferred to bank",
-  },
-  {
-    icon: AlarmClock,
-    text: "@Alan Walker Event in 3 days",
-  },
-  {
-    icon: CreditCard,
-    text: "Paycheck released for artists @Cynderex Event",
-  },
-  {
-    icon: CreditCard,
-    text: "Paycheck released for artists @Get Together Event",
-  },
-]
 const Dashboard = () => {
+  const { data: recentNotifications = [] } = useQuery({
+    queryKey: ['notifications', 'dashboard-preview'],
+    queryFn: () => listNotifications('all'),
+    select: (items) => items.slice(0, 5),
+  })
+
   return (
     <>
       <div className="topbar flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center p-4 bg-[#0D0D0D] rounded-2xl">
@@ -173,14 +161,10 @@ const Dashboard = () => {
 
           {/* Icons */}
           <div className="flex gap-3 justify-end">
-            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-[#EAE9E9] cursor-pointer hover:scale-105 transition">
-              <Image
-                src="/svg/bell.svg"
-                alt="Notifications"
-                width={22}
-                height={22}
-              />
-            </div>
+            <NotificationBell
+              href="/adminDashbaord/notifications"
+              variant="admin"
+            />
 
             <div className="h-10 w-10 flex items-center justify-center rounded-full bg-[#EAE9E9] cursor-pointer hover:scale-105 transition">
               <Image
@@ -406,14 +390,30 @@ const Dashboard = () => {
 
           {/* NOTIFICATIONS */}
           <div className="bg-primary rounded-2xl p-4 text-black">
-            <h3 className="text-sm font-semibold mb-4">Notifications</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold">Notifications</h3>
+              <Link
+                href="/adminDashbaord/notifications"
+                className="text-xs font-medium underline"
+              >
+                View all
+              </Link>
+            </div>
             <div className="space-y-3">
-              {notifications.map((n, i) => (
-                <div key={i} className="flex gap-3">
-                  <n.icon className="w-5 h-5" />
-                  <p className="text-sm">{n.text}</p>
-                </div>
-              ))}
+              {recentNotifications.length === 0 ? (
+                <p className="text-sm">No notifications yet.</p>
+              ) : (
+                recentNotifications.map((n) => (
+                  <Link
+                    key={n.id}
+                    href="/adminDashbaord/notifications"
+                    className="block hover:opacity-80"
+                  >
+                    <p className="text-sm font-medium">{n.title}</p>
+                    <p className="text-xs line-clamp-2 opacity-80">{n.description}</p>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
 

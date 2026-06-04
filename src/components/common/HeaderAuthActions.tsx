@@ -133,7 +133,7 @@ export function HeaderAuthActions({
         <DropdownMenuItem
           onSelect={() => {
             onNavigate?.();
-            router.push("/userDashboard/settings");
+            router.push("/userDashboard/profile");
           }}
         >
           <Settings className="size-4" />
@@ -183,7 +183,7 @@ export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void 
         className="flex w-full items-center rounded-md px-3 py-2.5 text-left text-base font-medium hover:text-primary transition-colors"
         onClick={() => {
           onNavigate?.();
-          router.push("/userDashboard/settings");
+          router.push("/userDashboard/profile");
         }}
       >
         Profile Settings
