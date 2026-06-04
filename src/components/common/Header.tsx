@@ -9,11 +9,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { HeaderAuthActions, HeaderAuthMobileLinks } from '@/components/common/HeaderAuthActions';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -111,9 +111,7 @@ const Header = () => {
                 </SelectContent>
               </Select>
 
-              <Button asChild size="sm">
-                <Link href="/login">Login</Link>
-              </Button>
+              <HeaderAuthActions />
             </div>
 
             {/* Mobile Menu Toggle */}
@@ -190,9 +188,7 @@ const Header = () => {
               </SelectContent>
             </Select>
 
-            <Button asChild className="w-full">
-              <Link href="/login">Login</Link>
-            </Button>
+            <HeaderAuthMobileLinks onNavigate={() => setMobileMenuOpen(false)} />
           </div>
         </div>
       </div>

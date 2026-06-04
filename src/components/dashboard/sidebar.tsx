@@ -86,7 +86,8 @@ export default function Sidebar({
         </SidebarSection>
 
         <SidebarSection title="Events" value="events">
-          <SidebarLink icon="/svg/EventAccepted.svg" label="Manage Events" href="/adminDashbaord/manageEvents" onClose={onClose} />
+          <SidebarLink icon="/svg/EventAccepted.svg" label="Event Reviews" href="/adminDashbaord/eventReviews" onClose={onClose} />
+          <SidebarLink icon="/svg/EventAccepted.svg" label="My Events" href="/adminDashbaord/manageEvents" onClose={onClose} />
           <SidebarLink icon="/svg/NewTicket.svg" label="Booking & Tickets" href="/adminDashbaord/manageTickets" onClose={onClose} />
           <SidebarLink icon="/svg/OpenedFolder.svg" label="Event Categories" href="/adminDashbaord/events" onClose={onClose} />
           <SidebarLink icon="/svg/Statistics.svg" label="Analytics & Reports" href="/adminDashbaord/analytics" onClose={onClose} />

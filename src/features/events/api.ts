@@ -33,6 +33,16 @@ export type TicketTypeRow = {
   salesEnd?: string | null;
 };
 
+export type EventApprovalStatus =
+  | "DRAFT"
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "ACTIVE"
+  | "INACTIVE"
+  | "CANCELLED"
+  | "COMPLETED";
+
 export type ManagedEvent = {
   id: string;
   eventName: string;
@@ -58,8 +68,14 @@ export type ManagedEvent = {
   latitude: string | number;
   longitude: string | number;
   locationSource: "VENUE" | "CUSTOM";
-  status?: string;
+  status?: EventApprovalStatus;
+  createdAt?: string;
   vendorProfileId?: string | null;
+  vendorProfile?: {
+    id: string;
+    vendorName: string;
+    email: string;
+  } | null;
   ticketTypes: TicketTypeRow[];
 };
 
@@ -182,6 +198,8 @@ export async function listManagedEvents(params?: {
   page?: number;
   limit?: number;
   search?: string;
+  status?: EventApprovalStatus;
+  vendorOnly?: boolean;
   sortBy?: "createdAt" | "startDateTime" | "eventName";
   sortOrder?: "asc" | "desc";
 }): Promise<ListManagedResult> {
@@ -189,6 +207,8 @@ export async function listManagedEvents(params?: {
   sp.set("page", String(params?.page ?? 1));
   sp.set("limit", String(params?.limit ?? 50));
   if (params?.search) sp.set("search", params.search);
+  if (params?.status) sp.set("status", params.status);
+  if (params?.vendorOnly) sp.set("vendorOnly", "true");
   if (params?.sortBy) sp.set("sortBy", params.sortBy);
   if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
 
@@ -249,6 +269,27 @@ export async function updateEvent(
     },
     body: JSON.stringify(body),
     networkErrorMessage: "Network error while updating event.",
+  });
+
+  const json = await parseJson<SuccessEnvelope<ManagedEvent>>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, json as unknown);
+  }
+  return unwrapEnvelope(json);
+}
+
+export async function updateEventStatus(
+  id: string,
+  body: { status: "APPROVED" | "REJECTED"; reason?: string },
+): Promise<ManagedEvent> {
+  const res = await authFetch(`/api/events/${encodeURIComponent(id)}/status`, {
+    method: "PATCH",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+    networkErrorMessage: "Network error while updating event status.",
   });
 
   const json = await parseJson<SuccessEnvelope<ManagedEvent>>(res);

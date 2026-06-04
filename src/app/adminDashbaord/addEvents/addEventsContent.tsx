@@ -1080,17 +1080,28 @@ export default function AddEventsContentPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Currency</Label>
-                                    <Input
-                                        value={t.currency}
-                                        onChange={(e) =>
+                                    <Select
+                                        value={t.currency || "PKR"}
+                                        onValueChange={(value) =>
                                             setTickets((rows) =>
                                                 rows.map((r, j) =>
-                                                    j === i ? { ...r, currency: e.target.value } : r,
+                                                    j === i ? { ...r, currency: value } : r,
                                                 ),
                                             )
                                         }
-                                        className="border-zinc-700"
-                                    />
+                                    >
+                                        <SelectTrigger className="border-zinc-700">
+                                            <SelectValue placeholder="Currency" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="PKR">PKR — Pakistani Rupee</SelectItem>
+                                            <SelectItem value="USD">USD — US Dollar</SelectItem>
+                                            <SelectItem value="EUR">EUR — Euro</SelectItem>
+                                            <SelectItem value="GBP">GBP — British Pound</SelectItem>
+                                            <SelectItem value="AED">AED — UAE Dirham</SelectItem>
+                                            <SelectItem value="SAR">SAR — Saudi Riyal</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Quantity total</Label>

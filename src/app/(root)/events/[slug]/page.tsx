@@ -1,7 +1,8 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { CalendarDays, Clock, MapPin, Phone, Globe, Share2, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,11 @@ import {
 } from "@/components/ui/carousel";
 import { getPublicEventBySlug, type PublicEvent } from "@/features/events/api";
 import { formatEventDate } from "@/features/events/utils";
+import {
+  TicketPurchaseDialog,
+  openTicketPurchaseFlow,
+} from "@/components/events/ticket-purchase-dialog";
+import { getAccessToken } from "@/features/auth/session-storage";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -68,6 +74,10 @@ function EventDetailSkeleton() {
 
 export default function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
+  const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
 
   const { data: event, isLoading, isError, error } = useQuery({
     queryKey: ["public-event", slug],
@@ -342,9 +352,26 @@ export default function EventDetailPage() {
               variant="outline"
               size="lg"
               className="mt-2 border-primary text-primary hover:bg-primary hover:text-white rounded-full px-10"
+              onClick={() =>
+                openTicketPurchaseFlow({
+                  isAuthenticated: Boolean(getAccessToken()),
+                  pathname: pathname ?? `/events/${slug}`,
+                  slug: slug ?? "",
+                  onOpen: () => setTicketDialogOpen(true),
+                  router,
+                })
+              }
             >
               Get Tickets
             </Button>
+            <TicketPurchaseDialog
+              open={ticketDialogOpen}
+              onOpenChange={setTicketDialogOpen}
+              event={event}
+              onPurchaseSuccess={() => {
+                void queryClient.invalidateQueries({ queryKey: ["public-event", slug] });
+              }}
+            />
           </div>
         </section>
       )}

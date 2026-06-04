@@ -19,6 +19,7 @@ import {
   MapPin,
 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -39,6 +40,7 @@ import {
 import {
   deleteEvent,
   listManagedEvents,
+  type EventApprovalStatus,
   type ManagedEvent,
 } from "@/features/events/api";
 import { toastApiError } from "@/lib/toasts";
@@ -83,7 +85,7 @@ export default function ManageEvents() {
       <div className="w-full space-y-6 rounded-2xl bg-[#0e0e0e] p-6 text-white">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <h2 className="w-full text-xl font-bold text-primary lg:w-auto">
-            Event Management
+            My Events
           </h2>
 
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
@@ -149,7 +151,7 @@ export default function ManageEvents() {
                     colSpan={5}
                     className="py-12 text-center text-zinc-400"
                   >
-                    No events yet. Create one with &quot;New event&quot;.
+                    No events yet. Create one with &quot;New event&quot; to see it here.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -166,9 +168,9 @@ export default function ManageEvents() {
                     </TableCell>
                     <TableCell>{ev.city}</TableCell>
                     <TableCell>
-                      <span className="rounded-full border border-zinc-600 px-2 py-0.5 text-xs">
-                        {ev.status ?? "—"}
-                      </span>
+                      <Badge variant={eventStatusBadgeVariant(ev.status)}>
+                        {eventStatusLabel(ev.status)}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -450,6 +452,20 @@ function EventMediaPreview({
       )}
     </section>
   );
+}
+
+function eventStatusBadgeVariant(status: EventApprovalStatus | undefined) {
+  if (status === "APPROVED" || status === "ACTIVE") return "default";
+  if (status === "REJECTED") return "destructive";
+  return "secondary";
+}
+
+function eventStatusLabel(status: EventApprovalStatus | undefined) {
+  if (!status) return "—";
+  if (status === "PENDING") return "Pending";
+  if (status === "APPROVED") return "Approved";
+  if (status === "REJECTED") return "Rejected";
+  return status;
 }
 
 function formatDateSafe(iso: string) {
