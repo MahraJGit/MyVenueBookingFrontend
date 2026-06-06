@@ -297,7 +297,7 @@ export default function EventDetailPage() {
       {/* Tags */}
       {event.tags?.length > 0 && (
         <section className="container mx-auto px-4 py-8">
-          <h2 className="text-2xl font-bold text-primary mb-6">Tags</h2>
+          <h2 className="text-xl font-bold text-primary mb-6">Tags</h2>
           <div className="flex flex-wrap gap-3">
             {event.tags.map((tag) => (
               <span
@@ -314,7 +314,7 @@ export default function EventDetailPage() {
       {/* Tickets */}
       {event.ticketTypes?.length > 0 && (
         <section className="container mx-auto px-4 py-12">
-          <h2 className="text-2xl font-bold text-primary mb-8">Tickets</h2>
+          <h2 className="text-xl font-bold text-primary mb-8">Tickets</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {event.ticketTypes.map((t) => {
               const sold = t.quantitySold ?? 0;
