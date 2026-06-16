@@ -79,10 +79,17 @@ export default function Sidebar({
       </Accordion>
       */}
 
-      <Accordion type="multiple" defaultValue={['users', 'events']} className="space-y-2">
+      <Accordion type="multiple" defaultValue={['users', 'events', 'venues']} className="space-y-2">
         <SidebarSection title="Users" value="users">
           <SidebarLink icon="/svg/AddUserMale.svg" label="Manage Users" href="/adminDashbaord/users" onClose={onClose} />
           <SidebarLink icon="/svg/Collaborating.svg" label="Vendor Requests" href="/adminDashbaord/vendorRequests" onClose={onClose} />
+        </SidebarSection>
+
+        <SidebarSection title="Venues" value="venues">
+          <SidebarLink icon="/svg/EventAccepted.svg" label="Venue Reviews" href="/adminDashbaord/venueReviews" onClose={onClose} />
+          <SidebarLink icon="/svg/EventAccepted.svg" label="Manage Venues" href="/adminDashbaord/manageVenues" onClose={onClose} />
+          <SidebarLink icon="/svg/NewTicket.svg" label="Venue Bookings" href="/adminDashbaord/venueBookings" onClose={onClose} />
+          <SidebarLink icon="/svg/OpenedFolder.svg" label="Venue Taxonomy" href="/adminDashbaord/venueTaxonomy" onClose={onClose} />
         </SidebarSection>
 
         <SidebarSection title="Events" value="events">

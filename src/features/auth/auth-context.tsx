@@ -54,7 +54,7 @@ export function getDashboardLinksForRole(role: string): DashboardLink[] {
   };
   const vendorDashboard: DashboardLink = {
     label: "Vendor Dashboard",
-    href: "/adminDashbaord/manageEvents",
+    href: "/vendorDashboard/venues",
   };
   const adminDashboard: DashboardLink = {
     label: "Admin Dashboard",

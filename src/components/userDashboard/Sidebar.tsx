@@ -10,6 +10,7 @@ import {
   Bell,
   Settings,
   LogOut,
+  CalendarDays,
 } from 'lucide-react'
 
 export default function UserSidebar() {
@@ -20,6 +21,11 @@ export default function UserSidebar() {
       label: 'Tickets',
       href: '/userDashboard/tickets',
       icon: Ticket,
+    },
+    {
+      label: 'Venue bookings',
+      href: '/userDashboard/bookings',
+      icon: CalendarDays,
     },
     {
       label: 'Personal info',
