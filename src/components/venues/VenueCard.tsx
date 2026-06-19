@@ -22,7 +22,7 @@ export function VenueCard({ venue }: VenueCardProps) {
       className="card group relative flex h-full cursor-pointer flex-col items-center"
     >
       <VenueCoverImage
-        coverImage={venue.coverImage}
+        coverImage={venue.coverImage || null}
         venueName={venue.name}
         seed={venue.id}
       />
