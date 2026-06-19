@@ -22,6 +22,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
+import { TableShell } from "@/components/ui/table-shell";
 import {
   Table,
   TableBody,
@@ -45,8 +48,10 @@ import {
 } from "@/features/events/api";
 import { toastApiError } from "@/lib/toasts";
 import { format } from "date-fns";
+import { useDashboardPaths } from "@/features/dashboard/paths";
 
 export default function ManageEvents() {
+  const paths = useDashboardPaths();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [viewEvent, setViewEvent] = useState<ManagedEvent | null>(null);
@@ -104,7 +109,7 @@ export default function ManageEvents() {
               asChild
               className="bg-primary text-black hover:bg-primary/90"
             >
-              <Link href="/adminDashbaord/addEvents">
+              <Link href={paths.addEvent}>
                 <Plus className="mr-2 h-4 w-4" />
                 New event
               </Link>
@@ -113,52 +118,39 @@ export default function ManageEvents() {
         </div>
 
         {isError ? (
-          <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100">
-            <p>{error instanceof Error ? error.message : "Failed to load events."}</p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-2 border-red-400 text-red-100"
-              onClick={() => void refetch()}
-            >
-              Retry
-            </Button>
-          </div>
+          <Alert variant="destructive">
+            <AlertDescription className="flex flex-wrap items-center gap-3">
+              <span>{error instanceof Error ? error.message : "Failed to load events."}</span>
+              <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
         ) : null}
 
-        <div className="overflow-x-auto rounded-xl border border-zinc-800">
+        <TableShell>
           <Table>
             <TableHeader>
-              <TableRow className="border-zinc-800 hover:bg-transparent">
-                <TableHead>Event</TableHead>
-                <TableHead>Starts</TableHead>
-                <TableHead>City</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-muted-foreground">Event</TableHead>
+                <TableHead className="text-muted-foreground">Starts</TableHead>
+                <TableHead className="text-muted-foreground">City</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-right text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="py-12 text-center">
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                  </TableCell>
-                </TableRow>
+                <TableSkeleton cols={5} />
               ) : rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="py-12 text-center text-zinc-400"
-                  >
-                    No events yet. Create one with &quot;New event&quot; to see it here.
-                  </TableCell>
-                </TableRow>
+                <TableEmptyRow colSpan={5}>
+                  No events yet. Create one with &quot;New event&quot; to see it here.
+                </TableEmptyRow>
               ) : (
                 rows.map((ev) => (
                   <TableRow
                     key={ev.id}
-                    className="border-zinc-800 hover:bg-zinc-900/40"
+                    className="border-border hover:bg-muted/50"
                   >
                     <TableCell className="max-w-[220px] font-medium">
                       {ev.eventName}
@@ -193,7 +185,7 @@ export default function ManageEvents() {
                           asChild
                         >
                           <Link
-                            href={`/adminDashbaord/addEvents?id=${encodeURIComponent(ev.id)}`}
+                            href={paths.editEvent(ev.id)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Link>
@@ -224,7 +216,7 @@ export default function ManageEvents() {
               )}
             </TableBody>
           </Table>
-        </div>
+        </TableShell>
       </div>
 
       <Dialog open={Boolean(viewEvent)} onOpenChange={(o) => !o && setViewEvent(null)}>

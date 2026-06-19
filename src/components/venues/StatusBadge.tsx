@@ -18,6 +18,9 @@ function variantForStatus(status: string) {
   if (status === "HOLD" || status === "PENDING") {
     return "secondary" as const;
   }
+  if (status === "DRAFT") {
+    return "outline" as const;
+  }
   return "outline" as const;
 }
 

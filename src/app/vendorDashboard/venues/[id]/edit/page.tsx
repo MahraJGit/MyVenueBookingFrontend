@@ -13,7 +13,7 @@ export default function EditVenuePage({
 
   return (
     <RoleGuard allowedRoles={["VENDOR", "ADMIN"]}>
-      <VenueSetupWizard venueId={id} />
+      <VenueSetupWizard venueId={id} dashboardScope="vendor" />
     </RoleGuard>
   );
 }

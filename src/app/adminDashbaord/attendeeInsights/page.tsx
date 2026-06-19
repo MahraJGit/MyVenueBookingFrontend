@@ -178,16 +178,16 @@ export default function AttendeeInsights() {
                         <CardTitle>Attendee Locations</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Table className="w-full border-3 border-white border-collapse">
+                        <Table className="w-full">
                             <TableHeader>
-                                <TableRow className="border-3 border-white">
-                                    <TableHead>Location</TableHead>
-                                    <TableHead className="text-right">Count</TableHead>
+                                <TableRow className="border-border hover:bg-transparent">
+                                    <TableHead className="text-muted-foreground">Location</TableHead>
+                                    <TableHead className="text-right text-muted-foreground">Count</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {locations.map((loc) => (
-                                    <TableRow key={loc.location} className="border-3 border-white">
+                                    <TableRow key={loc.location} className="border-border">
                                         <TableCell className="font-medium">{loc.location}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-3">

@@ -1,7 +1,7 @@
 "use client";
 
 import type { VenueAmenity, AmenityCatalogItem } from "@/features/venues/types";
-import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -73,12 +73,15 @@ export function AmenityPicker({ amenities, selections, onChange }: AmenityPicker
             {sel?.selected && !isIncluded && amenity.pricingType === "PER_UNIT" && (
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground">Qty</Label>
-                <Input
-                  type="number"
+                <NumberInput
+                  integer
                   min={1}
                   max={amenity.maxPerBooking ?? undefined}
                   value={sel.quantity}
-                  onChange={(e) => setQuantity(amenity.id, Number(e.target.value))}
+                  defaultOnBlur={1}
+                  onValueChange={(quantity) =>
+                    setQuantity(amenity.id, quantity ?? 1)
+                  }
                   className="h-8 w-16 border-[#303030] bg-black"
                 />
               </div>

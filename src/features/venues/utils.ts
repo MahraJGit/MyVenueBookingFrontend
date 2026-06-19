@@ -1,4 +1,4 @@
-import type { EntityStatus, PricingModel, PublicVenue } from "./types";
+import type { EntityStatus, PricingModel, PublicVenue, UnavailabilityReason } from "./types";
 
 const FALLBACK_IMAGES = [
   "/images/card-img-2.jpg",
@@ -70,9 +70,89 @@ export function pricingModelLabel(model: PricingModel): string {
   return labels[model] ?? model;
 }
 
+export function unavailabilityMessage(reason?: UnavailabilityReason): string {
+  switch (reason) {
+    case "BLOCKED":
+      return "This date is blocked by the venue.";
+    case "CLOSED":
+      return "The venue is closed on this day.";
+    case "FULLY_BOOKED":
+      return "Fully booked — please try another date.";
+    case "OUT_OF_WINDOW":
+      return "This date is outside the booking window.";
+    default:
+      return "Not available on this date.";
+  }
+}
+
 export function entityStatusLabel(status: EntityStatus | undefined): string {
   if (!status) return "Unknown";
-  return status.charAt(0) + status.slice(1).toLowerCase();
+  const labels: Partial<Record<EntityStatus, string>> = {
+    DRAFT: "Draft",
+    PENDING: "Pending review",
+    APPROVED: "Approved",
+    REJECTED: "Rejected",
+    ACTIVE: "Active",
+    INACTIVE: "Inactive",
+    CANCELLED: "Cancelled",
+    COMPLETED: "Completed",
+  };
+  return labels[status] ?? status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+type VenueReadinessSource = {
+  name?: string | null;
+  address?: string | null;
+  coverImage?: string | null;
+  pricing?: unknown | null;
+  schedules?: Array<{ isOpen: boolean }> | null;
+};
+
+export function evaluateVenueReadiness(venue: VenueReadinessSource) {
+  const schedules = venue.schedules ?? [];
+  const checks = [
+    {
+      id: "details",
+      label: "Venue details",
+      required: true,
+      met: Boolean(venue.name?.trim() && venue.address?.trim()),
+      message: "Name and address are required",
+    },
+    {
+      id: "pricing",
+      label: "Pricing configured",
+      required: true,
+      met: Boolean(venue.pricing),
+      message: "Save pricing before submitting for review",
+    },
+    {
+      id: "schedule",
+      label: "Weekly schedule",
+      required: true,
+      met: schedules.some((schedule) => schedule.isOpen),
+      message: "At least one open day is required",
+    },
+    {
+      id: "cover",
+      label: "Cover image",
+      required: false,
+      met: Boolean(venue.coverImage),
+      message: "Recommended for better visibility",
+    },
+  ];
+
+  const requiredChecks = checks.filter((check) => check.required);
+  const requiredComplete = requiredChecks.filter((check) => check.met).length;
+  const requiredTotal = requiredChecks.length;
+  const metCount = checks.filter((check) => check.met).length;
+
+  return {
+    ready: requiredComplete === requiredTotal,
+    requiredComplete,
+    requiredTotal,
+    percentComplete: checks.length ? Math.round((metCount / checks.length) * 100) : 0,
+    checks,
+  };
 }
 
 export const DAY_NAMES = [
@@ -92,4 +172,51 @@ export function defaultWeeklySchedules() {
     closeTime: "22:00",
     isOpen: dayOfWeek !== 0,
   }));
+}
+
+const PROPERTY_VENUE_PATTERN =
+  /villa|apartment|house|chalet|cottage|studio|penthouse|loft|accommodation|rental|property|suite|flat|bungalow/i;
+
+export function isPropertyStyleVenueType(name?: string | null, slug?: string | null): boolean {
+  if (!name && !slug) return false;
+  return PROPERTY_VENUE_PATTERN.test(name ?? "") || PROPERTY_VENUE_PATTERN.test(slug ?? "");
+}
+
+export type VenuePropertyAttributes = {
+  floorArea?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+};
+
+export function parseVenuePropertyAttributes(
+  customAttributes?: Record<string, unknown> | null,
+): VenuePropertyAttributes {
+  if (!customAttributes) return {};
+  const num = (key: string) => {
+    const v = customAttributes[key];
+    if (v === undefined || v === null || v === "") return undefined;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : undefined;
+  };
+  return {
+    floorArea: num("floorArea"),
+    bedrooms: num("bedrooms"),
+    bathrooms: num("bathrooms"),
+  };
+}
+
+export function buildVenueCustomAttributes(
+  attrs: VenuePropertyAttributes,
+  existing?: Record<string, unknown> | null,
+): Record<string, unknown> {
+  const next = { ...(existing ?? {}) };
+  for (const key of ["floorArea", "bedrooms", "bathrooms"] as const) {
+    const value = attrs[key];
+    if (value !== undefined && value !== null && !Number.isNaN(value)) {
+      next[key] = value;
+    } else {
+      delete next[key];
+    }
+  }
+  return next;
 }

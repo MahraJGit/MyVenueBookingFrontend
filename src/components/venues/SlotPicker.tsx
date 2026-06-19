@@ -51,7 +51,7 @@ export function SlotPicker({
             )}
           >
             <span className="text-xs font-medium">{label}</span>
-            <span className="text-xs text-primary">
+            <span className={cn("text-xs", isSelected ? "text-white" : "text-primary")}>
               {formatVenuePrice(slot.price, currency)}
             </span>
           </Button>

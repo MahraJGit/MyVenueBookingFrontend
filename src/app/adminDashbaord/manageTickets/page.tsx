@@ -30,6 +30,8 @@ import {
   type TicketSaleStatusFilter,
 } from "@/features/ticket-purchases/api"
 import { formatTicketPrice } from "@/features/events/utils"
+import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton"
+import { TableShell } from "@/components/ui/table-shell"
 import { toastApiError } from "@/lib/toasts"
 
 function formatDateTime(iso: string) {
@@ -44,18 +46,6 @@ function statusBadgeVariant(status: string) {
   if (status === "CONFIRMED" || status === "COMPLETED") return "default"
   if (status === "PENDING") return "secondary"
   return "destructive"
-}
-
-function TableSkeletonRows({ cols }: { cols: number }) {
-  return Array.from({ length: 5 }).map((_, i) => (
-    <TableRow key={`sk-${i}`} className="border-zinc-800">
-      {Array.from({ length: cols }).map((__, j) => (
-        <TableCell key={j} className="py-3">
-          <div className="h-4 animate-pulse rounded bg-zinc-800" />
-        </TableCell>
-      ))}
-    </TableRow>
-  ))
 }
 
 export default function ManageTicketsPage() {
@@ -240,47 +230,42 @@ export default function ManageTicketsPage() {
           </TabsList>
 
           <TabsContent value="by-event" className="mt-4">
-            <div className="overflow-x-auto rounded-xl border border-zinc-800">
+            <TableShell>
               <Table>
                 <TableHeader>
-                  <TableRow className="border-zinc-800 hover:bg-transparent">
-                    <TableHead className="text-zinc-400">Event</TableHead>
+                  <TableRow className="border-border hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">Event</TableHead>
                     {isAdmin ? (
-                      <TableHead className="text-zinc-400">Vendor</TableHead>
+                      <TableHead className="text-muted-foreground">Vendor</TableHead>
                     ) : null}
-                    <TableHead className="text-zinc-400">Date</TableHead>
-                    <TableHead className="text-zinc-400">Ticket type</TableHead>
-                    <TableHead className="text-right text-zinc-400">
+                    <TableHead className="text-muted-foreground">Date</TableHead>
+                    <TableHead className="text-muted-foreground">Ticket type</TableHead>
+                    <TableHead className="text-right text-muted-foreground">
                       Sold
                     </TableHead>
-                    <TableHead className="text-right text-zinc-400">
+                    <TableHead className="text-right text-muted-foreground">
                       Inventory
                     </TableHead>
-                    <TableHead className="text-right text-zinc-400">
+                    <TableHead className="text-right text-muted-foreground">
                       Revenue
                     </TableHead>
-                    <TableHead className="text-zinc-400" />
+                    <TableHead className="text-muted-foreground" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableSkeletonRows cols={isAdmin ? 8 : 7} />
+                    <TableSkeleton cols={isAdmin ? 8 : 7} />
                   ) : filteredSummary.length === 0 ? (
-                    <TableRow className="border-zinc-800">
-                      <TableCell
-                        colSpan={isAdmin ? 8 : 7}
-                        className="py-10 text-center text-zinc-500"
-                      >
-                        No ticket sales found for the selected filters.
-                      </TableCell>
-                    </TableRow>
+                    <TableEmptyRow colSpan={isAdmin ? 8 : 7}>
+                      No ticket sales found for the selected filters.
+                    </TableEmptyRow>
                   ) : (
                     filteredSummary.flatMap((event) =>
                       event.ticketTypes.length > 0
                         ? event.ticketTypes.map((tt, idx) => (
                             <TableRow
                               key={`${event.eventId}-${tt.ticketTypeId}`}
-                              className="border-zinc-800"
+                              className="border-border"
                             >
                               <TableCell className="font-medium">
                                 {idx === 0 ? event.eventName : ""}
@@ -330,7 +315,7 @@ export default function ManageTicketsPage() {
                         : [
                             <TableRow
                               key={event.eventId}
-                              className="border-zinc-800"
+                              className="border-border"
                             >
                               <TableCell className="font-medium">
                                 {event.eventName}
@@ -370,44 +355,39 @@ export default function ManageTicketsPage() {
                   )}
                 </TableBody>
               </Table>
-            </div>
+            </TableShell>
           </TabsContent>
 
           <TabsContent value="sales-log" className="mt-4 space-y-4">
-            <div className="overflow-x-auto rounded-xl border border-zinc-800">
+            <TableShell>
               <Table>
                 <TableHeader>
-                  <TableRow className="border-zinc-800 hover:bg-transparent">
-                    <TableHead className="text-zinc-400">Order</TableHead>
-                    <TableHead className="text-zinc-400">Event</TableHead>
-                    <TableHead className="text-zinc-400">Ticket</TableHead>
-                    <TableHead className="text-zinc-400">Buyer</TableHead>
+                  <TableRow className="border-border hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">Order</TableHead>
+                    <TableHead className="text-muted-foreground">Event</TableHead>
+                    <TableHead className="text-muted-foreground">Ticket</TableHead>
+                    <TableHead className="text-muted-foreground">Buyer</TableHead>
                     {isAdmin ? (
-                      <TableHead className="text-zinc-400">Vendor</TableHead>
+                      <TableHead className="text-muted-foreground">Vendor</TableHead>
                     ) : null}
-                    <TableHead className="text-right text-zinc-400">Qty</TableHead>
-                    <TableHead className="text-right text-zinc-400">
+                    <TableHead className="text-right text-muted-foreground">Qty</TableHead>
+                    <TableHead className="text-right text-muted-foreground">
                       Amount
                     </TableHead>
-                    <TableHead className="text-zinc-400">Status</TableHead>
-                    <TableHead className="text-zinc-400">Purchased</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground">Purchased</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableSkeletonRows cols={isAdmin ? 9 : 8} />
+                    <TableSkeleton cols={isAdmin ? 9 : 8} />
                   ) : filteredRecords.length === 0 ? (
-                    <TableRow className="border-zinc-800">
-                      <TableCell
-                        colSpan={isAdmin ? 9 : 8}
-                        className="py-10 text-center text-zinc-500"
-                      >
-                        No sales records on this page.
-                      </TableCell>
-                    </TableRow>
+                    <TableEmptyRow colSpan={isAdmin ? 9 : 8}>
+                      No sales records on this page.
+                    </TableEmptyRow>
                   ) : (
                     filteredRecords.map((row) => (
-                      <TableRow key={row.id} className="border-zinc-800">
+                      <TableRow key={row.id} className="border-border">
                         <TableCell className="font-mono text-sm text-zinc-300">
                           {row.orderCode ?? "—"}
                         </TableCell>
@@ -443,7 +423,7 @@ export default function ManageTicketsPage() {
                   )}
                 </TableBody>
               </Table>
-            </div>
+            </TableShell>
 
             {pagination && pagination.totalPages > 1 ? (
               <div className="flex items-center justify-between gap-4">

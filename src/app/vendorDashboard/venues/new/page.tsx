@@ -6,7 +6,7 @@ import { VenueSetupWizard } from "@/components/venues/VenueSetupWizard";
 export default function NewVenuePage() {
   return (
     <RoleGuard allowedRoles={["VENDOR", "ADMIN"]}>
-      <VenueSetupWizard />
+      <VenueSetupWizard dashboardScope="vendor" />
     </RoleGuard>
   );
 }

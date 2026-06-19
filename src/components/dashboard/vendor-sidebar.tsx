@@ -3,7 +3,17 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { X, Plus, Building2, CalendarDays, Ticket } from 'lucide-react'
+import {
+  X,
+  Plus,
+  Building2,
+  CalendarDays,
+  Ticket,
+  Calendar,
+  Clapperboard,
+  LayoutDashboard,
+  TrendingUp,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Accordion,
@@ -11,6 +21,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { getDashboardPaths } from '@/features/dashboard/paths'
+
+const paths = getDashboardPaths('vendor')
 
 export default function VendorSidebar({
   isOpen,
@@ -41,21 +54,39 @@ export default function VendorSidebar({
         <Image src="/svg/logo.svg" alt="logo" width={170} height={70} />
       </div>
 
-      <Link href="/vendorDashboard/venues/new" className="mb-6" onClick={onClose}>
-        <Button className="bg-primary hover:bg-primary/80 text-white flex gap-2 w-full">
-          <Plus size={18} />
-          Add Venue
-        </Button>
-      </Link>
+      <div className="mb-6 grid gap-2">
+        <Link href={paths.addEvent} onClick={onClose}>
+          <Button className="bg-primary hover:bg-primary/80 text-white flex gap-2 w-full">
+            <Plus size={18} />
+            Create Event
+          </Button>
+        </Link>
+        <Link href={paths.addVenue} onClick={onClose}>
+          <Button variant="outline" className="border-[#303030] text-white hover:bg-primary/20 flex gap-2 w-full">
+            <Plus size={18} />
+            Add Venue
+          </Button>
+        </Link>
+      </div>
 
-      <Accordion type="multiple" defaultValue={['venues', 'account']} className="space-y-2">
+      <Accordion type="multiple" defaultValue={['overview', 'events', 'venues', 'account']} className="space-y-2">
+        <SidebarSection title="Overview" value="overview">
+          <SidebarLink icon={LayoutDashboard} label="Dashboard" href={paths.root} onClose={onClose} />
+          <SidebarLink icon={TrendingUp} label="Analytics" href={paths.analytics} onClose={onClose} />
+        </SidebarSection>
+
+        <SidebarSection title="Events" value="events">
+          <SidebarLink icon={Clapperboard} label="My Events" href={paths.events} onClose={onClose} />
+          <SidebarLink icon={Ticket} label="Ticket Sales" href={paths.tickets} onClose={onClose} />
+        </SidebarSection>
+
         <SidebarSection title="Venues" value="venues">
-          <SidebarLink icon={Building2} label="My Venues" href="/vendorDashboard/venues" onClose={onClose} />
-          <SidebarLink icon={CalendarDays} label="Bookings" href="/vendorDashboard/bookings" onClose={onClose} />
+          <SidebarLink icon={Building2} label="My Venues" href={paths.venues} onClose={onClose} />
+          <SidebarLink icon={CalendarDays} label="Venue Bookings" href={paths.venueBookings} onClose={onClose} />
         </SidebarSection>
 
         <SidebarSection title="Account" value="account">
-          <SidebarLink icon={Ticket} label="Customer Dashboard" href="/userDashboard/tickets" onClose={onClose} />
+          <SidebarLink icon={Calendar} label="Customer Dashboard" href="/userDashboard/tickets" onClose={onClose} />
         </SidebarSection>
       </Accordion>
     </aside>
@@ -93,7 +124,9 @@ function SidebarLink({
   onClose: () => void
 }) {
   const pathname = usePathname()
-  const isActive = pathname === href || pathname.startsWith(`${href}/`)
+  const isActive =
+    pathname === href ||
+    (href !== paths.root && pathname.startsWith(`${href}/`))
 
   return (
     <Link

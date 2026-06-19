@@ -38,6 +38,8 @@ import {
   type EventApprovalStatus,
   type ManagedEvent,
 } from "@/features/events/api"
+import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton"
+import { TableShell } from "@/components/ui/table-shell"
 import { toastApiError } from "@/lib/toasts"
 
 type StatusFilter = "ALL" | EventApprovalStatus
@@ -78,18 +80,6 @@ function formatDateTime(dateString: string) {
   } catch {
     return dateString
   }
-}
-
-function TableSkeletonRows() {
-  return Array.from({ length: 6 }).map((_, i) => (
-    <TableRow key={`sk-${i}`} className="border-zinc-800">
-      {Array.from({ length: 7 }).map((__, j) => (
-        <TableCell key={j} className="py-3">
-          <div className="h-4 animate-pulse rounded bg-zinc-800" />
-        </TableCell>
-      ))}
-    </TableRow>
-  ))
 }
 
 function reviewableStatus(
@@ -233,22 +223,22 @@ export default function EventReviewsPage() {
         </div>
       ) : null}
 
-      <div className="w-full max-w-full overflow-x-auto rounded-xl border border-zinc-800">
+      <TableShell className="max-w-full">
         <Table className="min-w-[960px]">
           <TableHeader>
-            <TableRow className="border-zinc-800 hover:bg-transparent">
-              <TableHead>Event</TableHead>
-              <TableHead>Vendor</TableHead>
-              <TableHead>City</TableHead>
-              <TableHead>Starts</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Submitted</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="text-muted-foreground">Event</TableHead>
+              <TableHead className="text-muted-foreground">Vendor</TableHead>
+              <TableHead className="text-muted-foreground">City</TableHead>
+              <TableHead className="text-muted-foreground">Starts</TableHead>
+              <TableHead className="text-muted-foreground">Status</TableHead>
+              <TableHead className="text-muted-foreground">Submitted</TableHead>
+              <TableHead className="text-right text-muted-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableSkeletonRows />
+              <TableSkeleton cols={7} />
             ) : (
               <>
                 {events.map((ev) => {
@@ -256,7 +246,7 @@ export default function EventReviewsPage() {
                   return (
                     <TableRow
                       key={ev.id}
-                      className="border-zinc-800 transition-colors hover:bg-zinc-900/50"
+                      className="border-border transition-colors hover:bg-muted/50"
                     >
                       <TableCell className="max-w-[200px] font-medium whitespace-normal wrap-break-word">
                         {ev.eventName}
@@ -341,7 +331,7 @@ export default function EventReviewsPage() {
             )}
           </TableBody>
         </Table>
-      </div>
+      </TableShell>
 
       <Dialog
         open={Boolean(activeDetails)}

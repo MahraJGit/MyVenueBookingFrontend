@@ -154,6 +154,8 @@ export async function listManagedVenues(params?: {
   capacityMax?: number;
   status?: EntityStatus;
   vendorOnly?: boolean;
+  allPlatform?: boolean;
+  readyForReview?: boolean;
   sortBy?: "createdAt" | "name";
   sortOrder?: "asc" | "desc";
 }): Promise<ListManagedVenuesResult> {
@@ -167,6 +169,8 @@ export async function listManagedVenues(params?: {
   if (params?.capacityMax !== undefined) sp.set("capacityMax", String(params.capacityMax));
   if (params?.status) sp.set("status", params.status);
   if (params?.vendorOnly) sp.set("vendorOnly", "true");
+  if (params?.allPlatform) sp.set("allPlatform", "true");
+  if (params?.readyForReview) sp.set("readyForReview", "true");
   if (params?.sortBy) sp.set("sortBy", params.sortBy);
   if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
 
@@ -208,6 +212,14 @@ export async function deleteVenue(id: string): Promise<void> {
     method: "DELETE",
     headers: { Accept: "application/json" },
     networkErrorMessage: "Network error while deactivating venue.",
+  });
+}
+
+export async function submitVenueForReview(id: string): Promise<ManagedVenue> {
+  return authJson<ManagedVenue>(`/api/venues/${encodeURIComponent(id)}/submit`, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    networkErrorMessage: "Network error while submitting venue for review.",
   });
 }
 

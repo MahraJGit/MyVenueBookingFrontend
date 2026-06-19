@@ -1,7 +1,8 @@
 'use client'
 
-import { ReactNode, useState } from 'react'
+import { ReactNode, Suspense, useState } from 'react'
 import Sidebar from '@/components/dashboard/sidebar'
+import { VendorAdminRedirect } from '@/components/dashboard/VendorAdminRedirect'
 import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -13,6 +14,8 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
+    <Suspense fallback={null}>
+      <VendorAdminRedirect>
     <div className="flex min-h-screen bg-black bg-[radial-gradient(circle_at_left_center,rgba(80,0,40,0.6)_0%,rgba(40,0,20,0.4)_30%,rgba(10,0,10,0.2)_50%,#000_80%)]">
 
       {/* Mobile Overlay */}
@@ -45,5 +48,7 @@ export default function DashboardLayout({
         </main>
       </div>
     </div>
+      </VendorAdminRedirect>
+    </Suspense>
   )
 }

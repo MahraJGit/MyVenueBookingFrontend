@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import {
   BookingDetailPanel,
-  BookingListRow,
+  BookingsTable,
 } from "@/components/bookings/BookingDetailPanel";
 import {
   Select,
@@ -32,12 +31,14 @@ export default function VendorBookingsPage() {
       }),
   });
 
+  const bookings = data?.data ?? [];
+
   return (
     <RoleGuard allowedRoles={["VENDOR", "ADMIN"]}>
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">Venue bookings</h1>
+            <h1 className="text-2xl font-bold text-foreground">Venue bookings</h1>
             <p className="text-sm text-muted-foreground">
               Bookings at your venues — cancel or reschedule as needed.
             </p>
@@ -46,7 +47,7 @@ export default function VendorBookingsPage() {
             value={status}
             onValueChange={(v) => setStatus(v as BookingStatus | "ALL")}
           >
-            <SelectTrigger className="w-[180px] border-[#303030] bg-[#1B1B1B] text-white">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter status" />
             </SelectTrigger>
             <SelectContent>
@@ -60,19 +61,13 @@ export default function VendorBookingsPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-3">
-            {isLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : (data?.data ?? []).length === 0 ? (
-              <p className="text-center text-muted-foreground py-12">No bookings found.</p>
-            ) : (
-              (data?.data ?? []).map((b) => (
-                <BookingListRow key={b.id} booking={b} onSelect={setSelectedId} />
-              ))
-            )}
-          </div>
+          <BookingsTable
+            bookings={bookings}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            isLoading={isLoading}
+            showBuyer
+          />
 
           {selectedId && (
             <BookingDetailPanel

@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import VendorDashboardHome from "@/components/dashboard/VendorDashboardHome";
 
 export default function VendorDashboardIndex() {
-  redirect("/vendorDashboard/venues");
+  return <VendorDashboardHome />;
 }

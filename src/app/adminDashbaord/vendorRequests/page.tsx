@@ -37,6 +37,8 @@ import {
   type VendorVerificationStatus,
 } from "@/features/vendor/api"
 import { getPresignedViewUrl } from "@/features/uploads/api"
+import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton"
+import { TableShell } from "@/components/ui/table-shell"
 import { toastApiError } from "@/lib/toasts"
 
 type StatusFilter = "ALL" | VendorVerificationStatus
@@ -57,18 +59,6 @@ function statusLabel(status: VendorVerificationStatus) {
   if (status === "APPROVED") return "Approved"
   if (status === "REJECTED") return "Rejected"
   return "Pending"
-}
-
-function TableSkeletonRows() {
-  return Array.from({ length: 6 }).map((_, i) => (
-    <TableRow key={`sk-${i}`} className="border-zinc-800">
-      {Array.from({ length: 8 }).map((__, j) => (
-        <TableCell key={j} className="py-3">
-          <div className="h-4 animate-pulse rounded bg-zinc-800" />
-        </TableCell>
-      ))}
-    </TableRow>
-  ))
 }
 
 export default function VendorRequests() {
@@ -204,29 +194,29 @@ export default function VendorRequests() {
         </div>
       ) : null}
 
-      <div className="w-full max-w-full overflow-x-auto rounded-xl border border-zinc-800">
+      <TableShell className="max-w-full">
         <Table className="min-w-[900px]">
           <TableHeader>
-            <TableRow className="border-zinc-800 hover:bg-transparent">
-              <TableHead>Vendor</TableHead>
-              <TableHead>Business Type</TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Submitted</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="text-muted-foreground">Vendor</TableHead>
+              <TableHead className="text-muted-foreground">Business Type</TableHead>
+              <TableHead className="text-muted-foreground">Owner</TableHead>
+              <TableHead className="text-muted-foreground">Email</TableHead>
+              <TableHead className="text-muted-foreground">Phone</TableHead>
+              <TableHead className="text-muted-foreground">Status</TableHead>
+              <TableHead className="text-muted-foreground">Submitted</TableHead>
+              <TableHead className="text-right text-muted-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableSkeletonRows />
+              <TableSkeleton cols={8} />
             ) : (
               <>
                 {requests.map((request) => (
                   <TableRow
                     key={request.id}
-                    className="border-zinc-800 transition-colors hover:bg-zinc-900/50"
+                    className="border-border transition-colors hover:bg-muted/50"
                   >
                     <TableCell className="max-w-[190px] whitespace-normal wrap-break-word font-medium">
                       {request.vendorName}
@@ -306,7 +296,7 @@ export default function VendorRequests() {
             )}
           </TableBody>
         </Table>
-      </div>
+      </TableShell>
 
       <Dialog
         open={Boolean(activeDetails)}

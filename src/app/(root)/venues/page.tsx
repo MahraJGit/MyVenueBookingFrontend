@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { listPublicVenues, listVenueTypes } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
+import "@/styles/event-list.css";
 
 function VenuesListingContent() {
   const router = useRouter();
@@ -54,7 +55,7 @@ function VenuesListingContent() {
   return (
     <section className="eventslist py-10 pt-28">
       <div className="container mx-auto px-4">
-        <h1 className="mb-2 text-white">Venue Booking</h1>
+        <h1 className="mb-2 text-white text-xl">Venue Booking</h1>
         <p className="mb-8 text-muted-foreground">
           Discover and book event spaces for your next occasion.
         </p>
@@ -89,12 +90,17 @@ function VenuesListingContent() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="venue-cards mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-[420px] animate-pulse rounded-[20px] bg-[#242424]"
+              />
+            ))}
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="venue-cards mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {(data?.data ?? []).map((venue) => (
                 <VenueCard key={venue.id} venue={venue} />
               ))}

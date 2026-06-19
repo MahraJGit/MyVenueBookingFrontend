@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import type { PublicVenue } from "@/features/venues/types";
+import { VenueCoverImage } from "@/components/venues/VenueCoverImage";
 import {
   formatVenuePrice,
-  getFallbackVenueImage,
   getVenueDisplayPrice,
 } from "@/features/venues/utils";
 
@@ -14,41 +13,27 @@ type VenueCardProps = {
 };
 
 export function VenueCard({ venue }: VenueCardProps) {
-  const imageSrc = venue.coverImage || getFallbackVenueImage(venue.id);
   const priceInfo = getVenueDisplayPrice(venue);
-  const location = [venue.city, venue.address].filter(Boolean).join(" · ");
-  const capacity =
-    venue.capacityMin && venue.capacityMax
-      ? `${venue.capacityMin}–${venue.capacityMax} guests`
-      : venue.capacityMax
-        ? `Up to ${venue.capacityMax} guests`
-        : null;
+  const location = venue.city || venue.address || "—";
 
   return (
     <Link
       href={`/venues/${venue.id}`}
-      className="card group relative flex cursor-pointer flex-col items-center"
+      className="card group relative flex h-full cursor-pointer flex-col items-center"
     >
-      <div className="relative h-48 w-full overflow-hidden rounded-2xl">
-        <Image
-          src={imageSrc}
-          alt={venue.name}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, 33vw"
-        />
-      </div>
-      <div className="card-body relative z-0 -mt-10 w-full max-w-[92%] rounded-2xl border border-[#303030] bg-[#1B1B1B] transition-all duration-300 ease-in-out group-hover:rounded-t-none">
-        <div className="flex flex-col gap-3 p-4">
+      <VenueCoverImage
+        coverImage={venue.coverImage}
+        venueName={venue.name}
+        seed={venue.id}
+      />
+      <div className="card-body relative z-0 -mt-10 flex w-full max-w-[92%] flex-1 flex-col rounded-2xl border border-[#303030] bg-[#1B1B1B] transition-all duration-300 ease-in-out group-hover:rounded-t-none">
+        <div className="flex h-full flex-col gap-4 p-4">
           <h4 className="line-clamp-1">{venue.name}</h4>
-          {venue.venueType?.name && (
-            <span className="text-xs text-muted-foreground">{venue.venueType.name}</span>
-          )}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="line-clamp-1">{location || "—"}</span>
-            {capacity && <span>{capacity}</span>}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs">{venue.venueType?.name || "—"}</span>
+            <span className="line-clamp-1 text-right text-xs">{location}</span>
           </div>
-          <div className="price text-md font-bold text-primary">
+          <div className="price text-md mt-auto font-bold text-primary">
             {priceInfo ? (
               <>
                 {priceInfo.label}{" "}

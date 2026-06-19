@@ -33,24 +33,14 @@ import {
   updateEventCategory,
   type EventCategory,
 } from "@/features/event-categories/api";
+import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
+import { TableShell } from "@/components/ui/table-shell";
 import { toastApiError } from "@/lib/toasts";
 
 function formatDate(dateString: string) {
   const d = new Date(dateString);
   if (Number.isNaN(d.getTime())) return dateString;
   return d.toLocaleString();
-}
-
-function TableSkeletonRows() {
-  return Array.from({ length: 6 }).map((_, i) => (
-    <TableRow key={`sk-${i}`} className="border-zinc-800">
-      {Array.from({ length: 5 }).map((__, j) => (
-        <TableCell key={j} className="py-3">
-          <div className="h-4 animate-pulse rounded bg-zinc-800" />
-        </TableCell>
-      ))}
-    </TableRow>
-  ));
 }
 
 type FormState = {
@@ -236,26 +226,26 @@ export default function EventCategoriesPage() {
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-zinc-800">
+      <TableShell>
         <Table className="min-w-[720px]">
           <TableHeader>
-            <TableRow className="border-zinc-800 hover:bg-transparent">
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="text-muted-foreground">Name</TableHead>
+              <TableHead className="text-muted-foreground">Description</TableHead>
+              <TableHead className="text-muted-foreground">Status</TableHead>
+              <TableHead className="text-muted-foreground">Created</TableHead>
+              <TableHead className="text-right text-muted-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableSkeletonRows />
+              <TableSkeleton cols={5} />
             ) : (
               <>
                 {categories.map((row) => (
                   <TableRow
                     key={row.id}
-                    className="border-zinc-800 transition-colors hover:bg-zinc-900/50"
+                    className="border-border transition-colors hover:bg-muted/50"
                   >
                     <TableCell className="max-w-[220px] whitespace-normal font-medium wrap-break-word">
                       {row.name}
@@ -320,7 +310,7 @@ export default function EventCategoriesPage() {
             )}
           </TableBody>
         </Table>
-      </div>
+      </TableShell>
 
       <Dialog
         open={createOpen}

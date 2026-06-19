@@ -32,6 +32,7 @@ import { toastApiError } from "@/lib/toasts"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import type { AddressHint } from "@/components/maps/location-picker-map"
+import { useDashboardPaths } from "@/features/dashboard/paths"
 
 const LocationPickerMap = dynamic(
     () =>
@@ -103,6 +104,7 @@ function prettyDateTime(value: string) {
 export default function AddEventsContentPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
+    const paths = useDashboardPaths()
     const editId = searchParams.get("id")
     const queryClient = useQueryClient()
 
@@ -239,7 +241,7 @@ export default function AddEventsContentPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["managed-events"] })
             toast.success(editId ? "Event updated" : "Event created")
-            router.push("/adminDashbaord/manageEvents")
+            router.push(paths.events)
         },
         onError: (e) => toastApiError(e, "Could not save event."),
     })
@@ -305,7 +307,9 @@ export default function AddEventsContentPage() {
         if (hint.city) setCity(hint.city)
         if (hint.state) setState(hint.state)
         if (hint.zipCode) setZipCode(hint.zipCode)
-        if (hint.addressLine) setAddress(hint.addressLine)
+        if (hint.fullAddress ?? hint.addressLine) {
+            setAddress(hint.fullAddress ?? hint.addressLine ?? "")
+        }
     }
 
     function handleSubmit(e: React.FormEvent) {
@@ -405,7 +409,7 @@ export default function AddEventsContentPage() {
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => router.push("/adminDashbaord/manageEvents")}
+                            onClick={() => router.push(paths.events)}
                         >
                             Cancel
                         </Button>
@@ -495,14 +499,20 @@ export default function AddEventsContentPage() {
                                 eventCategories.length === 0 &&
                                 !legacyCategoryName ? (
                                 <p className="text-xs text-zinc-400">
-                                    Add an active category under{" "}
-                                    <Link
-                                        href="/adminDashbaord/events"
-                                        className="text-primary underline underline-offset-2"
-                                    >
-                                        Event categories
-                                    </Link>{" "}
-                                    first.
+                                    {paths.scope === "vendor"
+                                        ? "No active categories yet. Contact an admin to add event categories."
+                                        : (
+                                            <>
+                                                Add an active category under{" "}
+                                                <Link
+                                                    href={paths.eventCategories}
+                                                    className="text-primary underline underline-offset-2"
+                                                >
+                                                    Event categories
+                                                </Link>{" "}
+                                                first.
+                                            </>
+                                        )}
                                 </p>
 
                             ) : null}

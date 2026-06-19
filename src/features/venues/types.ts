@@ -8,6 +8,22 @@ export type EntityStatus =
   | "CANCELLED"
   | "COMPLETED";
 
+export type VenueReadinessCheck = {
+  id: string;
+  label: string;
+  required: boolean;
+  met: boolean;
+  message?: string;
+};
+
+export type VenueReadiness = {
+  ready: boolean;
+  requiredComplete: number;
+  requiredTotal: number;
+  percentComplete: number;
+  checks: VenueReadinessCheck[];
+};
+
 export type PricingModel = "HOURLY" | "NAMED_SLOTS" | "DAILY_BLOCK" | "FLAT_RATE";
 
 export type AmenityPricingType =
@@ -19,7 +35,11 @@ export type AmenityPricingType =
 
 export type Currency = "AED" | "PKR" | "USD" | "EUR" | "GBP" | "SAR" | "QAR";
 
-export type UnavailabilityReason = "BLOCKED" | "CLOSED" | "FULLY_BOOKED";
+export type UnavailabilityReason =
+  | "BLOCKED"
+  | "CLOSED"
+  | "FULLY_BOOKED"
+  | "OUT_OF_WINDOW";
 
 export type VenueType = {
   id: string;
@@ -111,6 +131,7 @@ export type ManagedVenue = PublicVenue & {
   vendorId?: string;
   createdAt?: string;
   updatedAt?: string;
+  readiness?: VenueReadiness;
 };
 
 export type PaginatedMeta = {

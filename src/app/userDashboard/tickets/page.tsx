@@ -6,8 +6,19 @@ import Image from 'next/image'
 import { useQuery } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import { TableEmptyRow } from '@/components/ui/table-skeleton'
+import { TableShell } from '@/components/ui/table-shell'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -121,7 +132,8 @@ const Tickets = () => {
           : 'Lowest amount'
 
   return (
-    <div className="mt-5 rounded-lg bg-[#121212] p-10">
+    <Card className="mt-5 border-border bg-card">
+      <CardContent className="p-10">
       <div className="flex items-center justify-between border-b border-muted mb-6">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
           <TabsList className="bg-transparent p-0 gap-6">
@@ -150,10 +162,10 @@ const Tickets = () => {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-white transition">
+            <Button variant="ghost" size="sm" className="text-muted-foreground">
               {sortLabel}
               <ArrowUpDown className="h-4 w-4" />
-            </button>
+            </Button>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
@@ -212,51 +224,73 @@ const Tickets = () => {
           </Button>
         </div>
       ) : (
-        <div className="w-full space-y-3">
-          {filteredTickets.map((ticket) => (
-            <div
-              key={ticket.orderGroupId}
-              className="w-full flex items-center justify-between rounded-xl bg-[#151515] px-5 py-4 hover:bg-[#1a1a1a] transition"
-            >
-              <div className="w-full space-y-2">
-                <div className="flex items-center justify-between gap-3 w-full">
-                  <div>
-                    <h4 className="text-sm">{ticket.eventName}</h4>
-                    <span className="text-xs text-muted-foreground">
+        <TableShell>
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-muted-foreground">Event</TableHead>
+                <TableHead className="text-muted-foreground">Order</TableHead>
+                <TableHead className="text-muted-foreground">Order date</TableHead>
+                <TableHead className="text-muted-foreground">Event date</TableHead>
+                <TableHead className="text-muted-foreground">Total</TableHead>
+                <TableHead className="text-muted-foreground">Tickets</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-right text-muted-foreground">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTickets.length === 0 ? (
+                <TableEmptyRow colSpan={8}>
+                  No {activeTab} tickets in this view.
+                </TableEmptyRow>
+              ) : (
+                filteredTickets.map((ticket) => (
+                  <TableRow key={ticket.orderGroupId} className="border-border">
+                    <TableCell className="font-medium text-foreground">
+                      {ticket.eventName}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
                       {ticket.orderCode}
-                    </span>
-                  </div>
-
-                  <Badge variant="outline" className={statusBadgeClass(ticket.status)}>
-                    {ticket.status}
-                  </Badge>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-6 text-xs text-muted-foreground border-t border-[#242424] my-4 py-2">
-                  <span>Order Date · {formatOrderDateTime(ticket.orderDate)}</span>
-                  <span>Event · {formatEventDateTime(ticket.eventStartDateTime)}</span>
-                  <span>
-                    Total paid{' '}
-                    {formatTicketPrice(ticket.totalAmount, ticket.currency)}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Ticket className="h-3 w-3" />
-                    {ticket.ticketCount}{' '}
-                    {ticket.ticketCount === 1 ? 'ticket' : 'tickets'}
-                  </span>
-                  <Link
-                    href={`/userDashboard/view-ticket?orderGroupId=${encodeURIComponent(ticket.orderGroupId)}`}
-                    className="text-sm text-primary hover:underline flex items-center gap-1"
-                  >
-                    Ticket Details <ChevronRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatOrderDateTime(ticket.orderDate)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatEventDateTime(ticket.eventStartDateTime)}
+                    </TableCell>
+                    <TableCell className="text-foreground">
+                      {formatTicketPrice(ticket.totalAmount, ticket.currency)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Ticket className="h-3 w-3" />
+                        {ticket.ticketCount}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={statusBadgeClass(ticket.status)}>
+                        {ticket.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button asChild variant="link" size="sm" className="h-auto p-0">
+                        <Link
+                          href={`/userDashboard/view-ticket?orderGroupId=${encodeURIComponent(ticket.orderGroupId)}`}
+                        >
+                          Details
+                          <ChevronRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableShell>
       )}
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 
