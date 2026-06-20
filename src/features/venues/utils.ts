@@ -1,5 +1,6 @@
 import type { EntityStatus, PricingModel, PublicVenue, UnavailabilityReason } from "./types";
 import { formatMoney } from "@/features/currency/format";
+import { getPackagesFromConfig } from "@/features/venues/packages";
 
 const FALLBACK_IMAGES = [
   "/images/card-img-2.jpg",
