@@ -27,6 +27,8 @@ import {
 import { AvailabilityCalendar } from "@/components/venues/AvailabilityCalendar";
 import { SlotPicker } from "@/components/venues/SlotPicker";
 import { VenueBookingDialog } from "@/components/bookings/VenueBookingDialog";
+import { DisplayPrice, DisplayPriceWithSuffix } from "@/components/currency/DisplayPrice";
+import { CurrencyBrowseNotice } from "@/components/currency/CheckoutPrice";
 import { Button } from "@/components/ui/button";
 import {
   getDayAvailability,
@@ -37,8 +39,8 @@ import { venueKeys } from "@/features/venues/query-keys";
 import { formatDateKey } from "@/features/venues/timezone";
 import {
   decimalToNumber,
-  formatVenuePrice,
   getFallbackVenueImage,
+  getVenueAmenityPriceInfo,
   getVenueDisplayPrice,
   isPropertyStyleVenueType,
   parseVenuePropertyAttributes,
@@ -211,8 +213,12 @@ export default function VenueDetailPage({
             )}
             {priceInfo && (
               <span className="flex items-center gap-2 font-semibold text-primary">
-                {formatVenuePrice(priceInfo.price, priceInfo.currency)}
-                <span className="font-normal text-zinc-400">{priceInfo.label}</span>
+                <DisplayPriceWithSuffix
+                  amount={priceInfo.price}
+                  currency={priceInfo.currency}
+                  suffix={priceInfo.label}
+                  suffixClassName="font-normal text-zinc-400"
+                />
               </span>
             )}
           </div>
@@ -283,8 +289,12 @@ export default function VenueDetailPage({
                       {pricingModelLabel(venue.pricing.modelType)}
                     </p>
                     <p className="text-sm text-primary">
-                      {formatVenuePrice(priceInfo.price, priceInfo.currency)}{" "}
-                      <span className="text-zinc-400">{priceInfo.label}</span>
+                      <DisplayPriceWithSuffix
+                        amount={priceInfo.price}
+                        currency={priceInfo.currency}
+                        suffix={priceInfo.label}
+                        suffixClassName="text-zinc-400"
+                      />
                     </p>
                     {venue.pricing.taxRate && (
                       <p className="text-xs text-zinc-500">
@@ -366,14 +376,25 @@ export default function VenueDetailPage({
                   Amenities
                 </h2>
                 <ul className="flex flex-wrap gap-3">
-                  {venue.amenities!.map((a) => (
-                    <li
-                      key={a.id}
-                      className="rounded-full border border-[#303030] bg-[#1B1B1B] px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-primary/50 hover:text-white"
-                    >
-                      {a.catalog?.name ?? "Amenity"}
-                    </li>
-                  ))}
+                  {venue.amenities!.map((a) => {
+                    const priceInfo = getVenueAmenityPriceInfo(a);
+                    return (
+                      <li
+                        key={a.id}
+                        className="rounded-full border border-[#303030] bg-[#1B1B1B] px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-primary/50 hover:text-white"
+                      >
+                        {a.catalog?.name ?? "Amenity"}
+                        {priceInfo ? (
+                          <span className="ml-2 text-primary">
+                            <DisplayPrice amount={priceInfo.amount} currency={currency} />
+                            <span className="text-zinc-500"> {priceInfo.suffix}</span>
+                          </span>
+                        ) : (
+                          <span className="ml-2 text-xs text-primary">Included</span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
@@ -416,11 +437,12 @@ export default function VenueDetailPage({
                   <div className="mb-5 rounded-xl bg-primary/10 px-4 py-3 text-center">
                     <p className="text-xs uppercase tracking-wider text-zinc-400">From</p>
                     <p className="text-xl font-bold text-primary">
-                      {formatVenuePrice(priceInfo.price, priceInfo.currency)}
+                      <DisplayPrice amount={priceInfo.price} currency={priceInfo.currency} />
                       <span className="ml-1 text-sm font-normal text-zinc-400">
                         {priceInfo.label}
                       </span>
                     </p>
+                    <CurrencyBrowseNotice className="mt-2 text-center" />
                   </div>
                 )}
 
@@ -464,7 +486,7 @@ export default function VenueDetailPage({
                             }}
                           >
                             Book {slotLabel} —{" "}
-                            {formatVenuePrice(daySlot.price, currency)}
+                            <DisplayPrice amount={daySlot.price} currency={currency} />
                           </Button>
                         );
                       })()

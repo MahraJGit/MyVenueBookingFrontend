@@ -4,6 +4,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/features/auth/auth-context";
+import { CurrencyProvider } from "@/features/currency/currency-context";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -21,10 +22,12 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        {children}
-        <Toaster richColors theme="dark" position="top-center" closeButton />
-      </AuthProvider>
+      <CurrencyProvider>
+        <AuthProvider>
+          {children}
+          <Toaster richColors theme="dark" position="top-center" closeButton />
+        </AuthProvider>
+      </CurrencyProvider>
     </QueryClientProvider>
   );
 }

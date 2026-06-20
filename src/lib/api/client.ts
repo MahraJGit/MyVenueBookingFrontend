@@ -1,6 +1,13 @@
 import { assertApiConfigured } from "@/lib/env";
 import { ApiError } from "./errors";
 
+function unreachableApiError(): ApiError {
+  return new ApiError(
+    0,
+    "Unable to reach the API. Check your connection, or wait a few minutes and try again.",
+  );
+}
+
 async function parseJson<T>(res: Response): Promise<T> {
   const text = await res.text();
   if (!text) return {} as T;
@@ -31,10 +38,7 @@ export async function apiGet<TResponse>(
       ...rest,
     });
   } catch {
-    throw new ApiError(
-      0,
-      "Network error. Check that the API is running and NEXT_PUBLIC_API_BASE_URL is correct.",
-    );
+    throw unreachableApiError();
   }
 
   const data = await parseJson<unknown>(res);
@@ -67,10 +71,7 @@ export async function apiPost<TResponse, TBody extends object>(
       ...rest,
     });
   } catch {
-    throw new ApiError(
-      0,
-      "Network error. Check that the API is running and NEXT_PUBLIC_API_BASE_URL is correct.",
-    );
+    throw unreachableApiError();
   }
 
   const data = await parseJson<unknown>(res);

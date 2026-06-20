@@ -60,16 +60,10 @@ export function getMinTicketPrice(event: PublicEvent): {
   };
 }
 
+import { formatMoney } from "@/features/currency/format";
+
 export function formatTicketPrice(price: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency.length === 3 ? currency : "USD",
-      maximumFractionDigits: 2,
-    }).format(price);
-  } catch {
-    return `${currency} ${price.toFixed(2)}`;
-  }
+  return formatMoney(price, currency);
 }
 
 export function categoryQueryValue(label: string): string | undefined {

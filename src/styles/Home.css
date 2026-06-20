@@ -2,7 +2,7 @@
       padding: 100px 0;
       background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url('/images/hero-bg.jpg') no-repeat center center/cover;
 
-      .inner .description {
+      /* .inner .description {
             max-width: 48.5%;
 
             @media (max-width: 1024px) {
@@ -12,7 +12,7 @@
             @media (max-width: 768px) {
                   max-width: 100%;
             }
-      }
+      } */
 }
 
 .hero .inner .filters .top {

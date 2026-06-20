@@ -17,7 +17,8 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { getMyTicketOrder } from '@/features/ticket-purchases/api'
-import { formatTicketPrice, getFallbackEventImage } from '@/features/events/utils'
+import { getFallbackEventImage } from '@/features/events/utils'
+import { DisplayPrice } from '@/components/currency/DisplayPrice'
 import { toastApiError } from '@/lib/toasts'
 import React from 'react'
 
@@ -213,7 +214,7 @@ export default function ViewTicketContent() {
           <div>
             <p className="text-muted-foreground">Total paid</p>
             <p className="font-medium">
-              {formatTicketPrice(order.totalAmount, order.currency)}
+              <DisplayPrice amount={order.totalAmount} currency={order.currency} />
             </p>
           </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import type { AvailabilitySlot } from "@/features/venues/types";
-import { formatVenuePrice } from "@/features/venues/utils";
+import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -52,7 +52,11 @@ export function SlotPicker({
           >
             <span className="text-xs font-medium">{label}</span>
             <span className={cn("text-xs", isSelected ? "text-white" : "text-primary")}>
-              {formatVenuePrice(slot.price, currency)}
+              <DisplayPrice
+                amount={slot.price}
+                currency={currency}
+                className={cn("text-xs", isSelected ? "text-white" : "text-primary")}
+              />
             </span>
           </Button>
         );

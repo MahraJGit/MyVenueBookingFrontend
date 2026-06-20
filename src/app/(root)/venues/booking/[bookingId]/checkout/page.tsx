@@ -33,7 +33,9 @@ import {
 import { listPaymentMethods, type SavedPaymentMethod } from "@/features/payments/api";
 import { bookingKeys } from "@/features/venues/query-keys";
 import { formatInVenueTimezone } from "@/features/venues/timezone";
-import { decimalToNumber, formatVenuePrice } from "@/features/venues/utils";
+import { decimalToNumber } from "@/features/venues/utils";
+import { CheckoutPrice } from "@/components/currency/CheckoutPrice";
+import { useDisplayPrice } from "@/features/currency/currency-context";
 import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
 
@@ -118,6 +120,11 @@ export default function VenueBookingCheckoutPage({
     });
   };
 
+  const currency =
+    (booking?.pricingSnapshot as { currency?: string } | null)?.currency ?? "AED";
+  const totalAmount = decimalToNumber(booking?.totalAmount ?? 0);
+  const { chargeFormatted } = useDisplayPrice(totalAmount, currency);
+
   if (isLoading || !booking) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center pt-24">
@@ -134,10 +141,7 @@ export default function VenueBookingCheckoutPage({
     );
   }
 
-  const currency =
-    (booking.pricingSnapshot as { currency?: string } | null)?.currency ?? "AED";
   const tz = booking.venue.timezone;
-  const total = formatVenuePrice(decimalToNumber(booking.totalAmount), currency);
   const canPay = Boolean(selectedMethod) && booking.status === "HOLD";
 
   return (
@@ -284,9 +288,14 @@ export default function VenueBookingCheckoutPage({
             </section>
 
             <section className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-4">
                 <span className="text-base font-medium text-white">Total due</span>
-                <span className="text-xl font-bold text-primary">{total}</span>
+                <CheckoutPrice
+                  amount={totalAmount}
+                  currency={currency}
+                  className="text-right"
+                  amountClassName="text-xl"
+                />
               </div>
               <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <ShieldCheck className="h-3.5 w-3.5 text-green-500" />
@@ -306,7 +315,7 @@ export default function VenueBookingCheckoutPage({
                     Processing payment…
                   </>
                 ) : (
-                  `Pay ${total}`
+                  `Pay ${chargeFormatted}`
                 )}
               </Button>
 

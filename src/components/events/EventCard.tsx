@@ -7,9 +7,9 @@ import { EventCoverImage } from "@/components/events/EventCoverImage";
 import {
   formatCountdownToEnd,
   formatEventDate,
-  formatTicketPrice,
   getMinTicketPrice,
 } from "@/features/events/utils";
+import { DisplayPrice } from "@/components/currency/DisplayPrice";
 
 type EventCardProps = {
   event: PublicEvent;
@@ -56,7 +56,7 @@ export function EventCard({ event }: EventCardProps) {
               <>
                 from{" "}
                 <span>
-                  {formatTicketPrice(minTicket.price, minTicket.currency)}
+                  <DisplayPrice amount={minTicket.price} currency={minTicket.currency} />
                 </span>
               </>
             ) : (

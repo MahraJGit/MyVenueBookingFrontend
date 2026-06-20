@@ -1,4 +1,5 @@
 import type { EntityStatus, PricingModel, PublicVenue, UnavailabilityReason } from "./types";
+import { formatMoney } from "@/features/currency/format";
 
 const FALLBACK_IMAGES = [
   "/images/card-img-2.jpg",
@@ -16,15 +17,38 @@ export function getFallbackVenueImage(seed: string): string {
 }
 
 export function formatVenuePrice(price: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency.length === 3 ? currency : "AED",
-      maximumFractionDigits: 2,
-    }).format(price);
-  } catch {
-    return `${currency} ${price.toFixed(2)}`;
+  return formatMoney(price, currency);
+}
+
+export function getVenueAmenityPriceInfo(amenity: {
+  pricingType: string;
+  isIncluded?: boolean;
+  pricingConfig?: Record<string, unknown> | null;
+}): { amount: number; suffix: string } | null {
+  if (amenity.pricingType === "INCLUDED" || amenity.isIncluded) {
+    return null;
   }
+  const config = amenity.pricingConfig ?? {};
+  if (amenity.pricingType === "PER_UNIT" && config.unitPrice != null) {
+    return { amount: Number(config.unitPrice), suffix: "per unit" };
+  }
+  if (amenity.pricingType === "PER_HOUR" && config.hourlyPrice != null) {
+    return { amount: Number(config.hourlyPrice), suffix: "per hour" };
+  }
+  if (amenity.pricingType === "FLAT_PER_EVENT" && config.flatPrice != null) {
+    return { amount: Number(config.flatPrice), suffix: "per booking" };
+  }
+  if (amenity.pricingType === "PACKAGE_BASED") {
+    const packages = getPackagesFromConfig(config);
+    if (packages.length === 1) {
+      return { amount: Number(packages[0].pricePerHead), suffix: `per guest (${packages[0].name})` };
+    }
+    if (packages.length > 1) {
+      const min = Math.min(...packages.map((p) => Number(p.pricePerHead)));
+      return { amount: min, suffix: "per guest (from packages)" };
+    }
+  }
+  return null;
 }
 
 export function decimalToNumber(value: number | string | undefined | null): number {
@@ -106,10 +130,12 @@ type VenueReadinessSource = {
   coverImage?: string | null;
   pricing?: unknown | null;
   schedules?: Array<{ isOpen: boolean }> | null;
+  amenities?: unknown[] | null;
 };
 
 export function evaluateVenueReadiness(venue: VenueReadinessSource) {
   const schedules = venue.schedules ?? [];
+  const amenities = venue.amenities ?? [];
   const checks = [
     {
       id: "details",
@@ -131,6 +157,13 @@ export function evaluateVenueReadiness(venue: VenueReadinessSource) {
       required: true,
       met: schedules.some((schedule) => schedule.isOpen),
       message: "At least one open day is required",
+    },
+    {
+      id: "amenities",
+      label: "Amenities & services",
+      required: true,
+      met: amenities.length > 0,
+      message: "Add at least one amenity before submitting for review",
     },
     {
       id: "cover",

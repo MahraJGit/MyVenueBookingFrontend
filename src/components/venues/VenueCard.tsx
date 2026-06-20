@@ -3,10 +3,8 @@
 import Link from "next/link";
 import type { PublicVenue } from "@/features/venues/types";
 import { VenueCoverImage } from "@/components/venues/VenueCoverImage";
-import {
-  formatVenuePrice,
-  getVenueDisplayPrice,
-} from "@/features/venues/utils";
+import { DisplayPrice } from "@/components/currency/DisplayPrice";
+import { getVenueDisplayPrice } from "@/features/venues/utils";
 
 type VenueCardProps = {
   venue: PublicVenue;
@@ -37,7 +35,9 @@ export function VenueCard({ venue }: VenueCardProps) {
             {priceInfo ? (
               <>
                 {priceInfo.label}{" "}
-                <span>{formatVenuePrice(priceInfo.price, priceInfo.currency)}</span>
+                <span>
+                  <DisplayPrice amount={priceInfo.price} currency={priceInfo.currency} />
+                </span>
               </>
             ) : (
               <span>Pricing on request</span>

@@ -31,7 +31,7 @@ export type AmenityPricingType =
   | "PER_UNIT"
   | "PER_HOUR"
   | "FLAT_PER_EVENT"
-  | "MENU_BASED";
+  | "PACKAGE_BASED";
 
 export type Currency = "AED" | "PKR" | "USD" | "EUR" | "GBP" | "SAR" | "QAR";
 

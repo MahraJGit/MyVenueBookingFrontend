@@ -32,7 +32,7 @@ import {
   type MyTicketOrder,
   type TicketOrderTabStatus,
 } from '@/features/ticket-purchases/api'
-import { formatTicketPrice } from '@/features/events/utils'
+import { DisplayPrice } from '@/components/currency/DisplayPrice'
 import { toastApiError } from '@/lib/toasts'
 
 type SortOption = 'newest' | 'oldest' | 'amount-high' | 'amount-low'
@@ -259,7 +259,7 @@ const Tickets = () => {
                       {formatEventDateTime(ticket.eventStartDateTime)}
                     </TableCell>
                     <TableCell className="text-foreground">
-                      {formatTicketPrice(ticket.totalAmount, ticket.currency)}
+                      <DisplayPrice amount={ticket.totalAmount} currency={ticket.currency} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       <span className="inline-flex items-center gap-1">

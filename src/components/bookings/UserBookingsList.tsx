@@ -20,8 +20,8 @@ import { formatInVenueTimezone } from "@/features/venues/timezone";
 import {
   bookingStatusBadgeClass,
   bookingStatusLabel,
-  formatBookingTotal,
 } from "@/components/bookings/user-booking-utils";
+import { BookingTotalPrice } from "@/components/currency/BookingTotalPrice";
 
 type UserBookingsListProps = {
   bookings: Booking[];
@@ -113,7 +113,7 @@ function UserBookingCard({
               <CalendarDays className="h-3.5 w-3.5 text-primary" />
               {formatInVenueTimezone(booking.startTime, tz)}
             </span>
-            <span className="font-medium text-foreground">{formatBookingTotal(booking)}</span>
+            <BookingTotalPrice booking={booking} className="font-medium text-foreground" />
           </div>
 
           <div className="mt-3 flex items-center justify-between gap-2">

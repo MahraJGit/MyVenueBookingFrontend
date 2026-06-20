@@ -35,16 +35,16 @@ const Home = () => {
       "/images/card-img-10.jpg",
     ];
 
-    const pick = () => pool[Math.floor(Math.random() * pool.length)];
-    const list = (count: number) => Array.from({ length: count }, pick);
+    const list = (count: number, offset: number) =>
+      Array.from({ length: count }, (_, i) => pool[(offset + i) % pool.length]);
 
     return {
-      concerts: list(4),
-      shows: list(4),
-      sport: list(4),
-      festivals: list(4),
-      topVenuesRow1: list(12),
-      topVenuesRow2: list(12),
+      concerts: list(4, 0),
+      shows: list(4, 4),
+      sport: list(4, 8),
+      festivals: list(4, 12),
+      topVenuesRow1: list(12, 16),
+      topVenuesRow2: list(12, 28),
     };
   });
 

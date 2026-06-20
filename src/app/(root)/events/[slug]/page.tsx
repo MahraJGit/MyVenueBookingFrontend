@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/carousel";
 import { getPublicEventBySlug, type PublicEvent } from "@/features/events/api";
 import { formatEventDate } from "@/features/events/utils";
+import { DisplayPrice } from "@/components/currency/DisplayPrice";
+import { CurrencyBrowseNotice } from "@/components/currency/CheckoutPrice";
 import {
   TicketPurchaseDialog,
   openTicketPurchaseFlow,
@@ -112,9 +114,9 @@ export default function EventDetailPage() {
   const mapEmbedUrl = hasCoords
     ? `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`
     : null;
-  const ticketPrice = (price: number | string) => {
+  const ticketAmount = (price: number | string) => {
     const n = typeof price === "number" ? price : Number(price);
-    return n.toFixed(2);
+    return Number.isFinite(n) ? n : 0;
   };
 
   return (
@@ -315,6 +317,7 @@ export default function EventDetailPage() {
       {event.ticketTypes?.length > 0 && (
         <section className="container mx-auto px-4 py-12">
           <h2 className="text-xl font-bold text-primary mb-8">Tickets</h2>
+          <CurrencyBrowseNotice className="mb-6" chargeLabel="event" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {event.ticketTypes.map((t) => {
               const sold = t.quantitySold ?? 0;
@@ -330,7 +333,10 @@ export default function EventDetailPage() {
                       <h4 className="font-semibold text-white">{t.name}</h4>
                     </div>
                     <span className="text-sm font-bold text-primary border border-primary rounded-full px-3 py-0.5">
-                      ${ticketPrice(t.price)}
+                      <DisplayPrice
+                        amount={ticketAmount(t.price)}
+                        currency={t.currency || "PKR"}
+                      />
                     </span>
                   </div>
                   <TicketProgress sold={sold} total={total} />

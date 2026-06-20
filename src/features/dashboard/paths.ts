@@ -37,7 +37,7 @@ export function getDashboardPaths(scope: DashboardScope): DashboardPaths {
     venues: `${VENDOR_DASHBOARD_PREFIX}/venues`,
     addVenue: `${VENDOR_DASHBOARD_PREFIX}/venues/new`,
     editVenue: (id: string) =>
-      `${VENDOR_DASHBOARD_PREFIX}/venues/${encodeURIComponent(id)}/edit`,
+      `${VENDOR_DASHBOARD_PREFIX}/venues/new?id=${encodeURIComponent(id)}`,
     venueBookings: `${VENDOR_DASHBOARD_PREFIX}/bookings`,
       eventCategories: `${ADMIN_DASHBOARD_PREFIX}/events`,
     };
@@ -55,7 +55,7 @@ export function getDashboardPaths(scope: DashboardScope): DashboardPaths {
     venues: `${ADMIN_DASHBOARD_PREFIX}/manageVenues`,
     addVenue: `${ADMIN_DASHBOARD_PREFIX}/venues/new`,
     editVenue: (id: string) =>
-      `${ADMIN_DASHBOARD_PREFIX}/venues/${encodeURIComponent(id)}/edit`,
+      `${ADMIN_DASHBOARD_PREFIX}/venues/new?id=${encodeURIComponent(id)}`,
     venueBookings: `${ADMIN_DASHBOARD_PREFIX}/venueBookings`,
     eventCategories: `${ADMIN_DASHBOARD_PREFIX}/events`,
   };

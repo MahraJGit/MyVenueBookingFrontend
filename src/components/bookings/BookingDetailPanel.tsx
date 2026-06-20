@@ -52,6 +52,7 @@ import {
   bookingStatusLabel,
   formatBookingTotal,
 } from "@/components/bookings/user-booking-utils";
+import { BookingTotalPrice } from "@/components/currency/BookingTotalPrice";
 import {
   cancelBooking,
   getBooking,
@@ -297,7 +298,7 @@ function UserBookingDetail({
           <DetailStat
             icon={CreditCard}
             label="Total"
-            value={formatBookingTotal(booking)}
+            value={<BookingTotalPrice booking={booking} />}
             highlight
           />
           {booking.numGuests ? (
@@ -512,7 +513,7 @@ function DetailStat({
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
-  value: string;
+  value: ReactNode;
   highlight?: boolean;
 }) {
   return (

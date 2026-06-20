@@ -10,17 +10,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import {
-  parseNominatimHit,
+  suggestionToAddressHint,
   type AddressHint,
-  type NominatimHit,
-} from "@/lib/nominatim"
+  type GeocodeSuggestion,
+} from "@/lib/geocode"
 
 import "leaflet/dist/leaflet.css"
 
 export type { AddressHint }
 
 const LEAFLET_ICON_VERSION = "1.9.4"
-const AUTOCOMPLETE_DEBOUNCE_MS = 350
+const AUTOCOMPLETE_DEBOUNCE_MS = 280
+const SUGGESTION_LIMIT = 8
 
 if (typeof window !== "undefined") {
   const proto = L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown }
@@ -32,11 +33,22 @@ if (typeof window !== "undefined") {
   })
 }
 
-async function fetchGeocodeSearch(q: string, limit = 6, signal?: AbortSignal) {
-  const res = await fetch(
-    `/api/geocode?q=${encodeURIComponent(q)}&limit=${limit}`,
-    { headers: { Accept: "application/json" }, signal },
-  )
+async function fetchGeocodeSearch(
+  q: string,
+  bias: { lat: number; lon: number } | undefined,
+  limit = SUGGESTION_LIMIT,
+  signal?: AbortSignal,
+) {
+  const params = new URLSearchParams({ q, limit: String(limit) })
+  if (bias) {
+    params.set("biasLat", String(bias.lat))
+    params.set("biasLon", String(bias.lon))
+  }
+
+  const res = await fetch(`/api/geocode?${params.toString()}`, {
+    headers: { Accept: "application/json" },
+    signal,
+  })
   const data: unknown = await res.json()
   if (!res.ok) {
     const msg =
@@ -48,14 +60,14 @@ async function fetchGeocodeSearch(q: string, limit = 6, signal?: AbortSignal) {
         : "Search failed"
     throw new Error(msg)
   }
-  return Array.isArray(data) ? (data as NominatimHit[]) : []
+  return Array.isArray(data) ? (data as GeocodeSuggestion[]) : []
 }
 
-async function fetchReverseGeocode(lat: number, lon: number, signal?: AbortSignal) {
-  const res = await fetch(
-    `/api/geocode?lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lon))}`,
-    { headers: { Accept: "application/json" }, signal },
-  )
+async function fetchPlaceDetails(placeId: string, signal?: AbortSignal) {
+  const res = await fetch(`/api/geocode?placeId=${encodeURIComponent(placeId)}`, {
+    headers: { Accept: "application/json" },
+    signal,
+  })
   const data: unknown = await res.json()
   if (!res.ok) {
     const msg =
@@ -64,10 +76,10 @@ async function fetchReverseGeocode(lat: number, lon: number, signal?: AbortSigna
       "error" in data &&
       typeof (data as { error: unknown }).error === "string"
         ? (data as { error: string }).error
-        : "Reverse geocoding failed"
+        : "Could not load place details"
     throw new Error(msg)
   }
-  return data as NominatimHit
+  return data as GeocodeSuggestion
 }
 
 export function LocationPickerMap({
@@ -83,10 +95,8 @@ export function LocationPickerMap({
 }) {
   const [query, setQuery] = React.useState("")
   const [searching, setSearching] = React.useState(false)
-  const [reverseGeocoding, setReverseGeocoding] = React.useState(false)
-  const [suggestions, setSuggestions] = React.useState<
-    Array<AddressHint & { label: string; lat: number; lon: number; hit: NominatimHit }>
-  >([])
+  const [resolvingPlace, setResolvingPlace] = React.useState(false)
+  const [suggestions, setSuggestions] = React.useState<GeocodeSuggestion[]>([])
   const [suggestionsOpen, setSuggestionsOpen] = React.useState(false)
   const [activeSuggestion, setActiveSuggestion] = React.useState(-1)
   const [loadingSuggestions, setLoadingSuggestions] = React.useState(false)
@@ -110,44 +120,34 @@ export function LocationPickerMap({
   const lng = Number.parseFloat(longitude)
   const centerLat = Number.isFinite(lat) ? lat : 25.2048
   const centerLng = Number.isFinite(lng) ? lng : 55.2708
+  const searchBias = React.useMemo(
+    () => ({ lat: centerLat, lon: centerLng }),
+    [centerLat, centerLng],
+  )
 
-  const applyHit = React.useCallback((hit: NominatimHit, updateQuery = true) => {
-    const nLat = Number.parseFloat(hit.lat)
-    const nLng = Number.parseFloat(hit.lon)
-    if (!Number.isFinite(nLat) || !Number.isFinite(nLng)) return false
+  const applySuggestion = React.useCallback(
+    (item: GeocodeSuggestion, updateQuery = true, fillAddressFields = false) => {
+      if (item.lat == null || item.lon == null) return false
 
-    onPositionChangeRef.current(nLat, nLng)
+      onPositionChangeRef.current(item.lat, item.lon)
 
-    const parsed = parseNominatimHit(hit)
-    if (onAddressHintRef.current) {
-      onAddressHintRef.current({
-        addressLine: parsed.addressLine,
-        fullAddress: parsed.fullAddress,
-        city: parsed.city,
-        state: parsed.state,
-        zipCode: parsed.zipCode,
-        countryCode: parsed.countryCode,
-      })
-    }
-    if (updateQuery) {
-      setQuery(parsed.label)
-    }
-    return true
-  }, [])
-
-  const reverseGeocodeAt = React.useCallback(
-    async (nLat: number, nLng: number) => {
-      setReverseGeocoding(true)
-      try {
-        const hit = await fetchReverseGeocode(nLat, nLng)
-        applyHit(hit, true)
-      } catch {
-        toast.error("Could not resolve address for this location")
-      } finally {
-        setReverseGeocoding(false)
+      const parsed = suggestionToAddressHint(item)
+      if (fillAddressFields && onAddressHintRef.current) {
+        onAddressHintRef.current({
+          addressLine: parsed.addressLine,
+          fullAddress: parsed.fullAddress,
+          city: parsed.city,
+          state: parsed.state,
+          zipCode: parsed.zipCode,
+          countryCode: parsed.countryCode,
+        })
       }
+      if (updateQuery) {
+        setQuery(parsed.label)
+      }
+      return true
     },
-    [applyHit],
+    [],
   )
 
   React.useEffect(() => {
@@ -169,13 +169,11 @@ export function LocationPickerMap({
     marker.on("dragend", () => {
       const p = marker.getLatLng()
       onPositionChangeRef.current(p.lat, p.lng)
-      void reverseGeocodeAt(p.lat, p.lng)
     })
 
     map.on("click", (e) => {
       marker.setLatLng(e.latlng)
       onPositionChangeRef.current(e.latlng.lat, e.latlng.lng)
-      void reverseGeocodeAt(e.latlng.lat, e.latlng.lng)
     })
 
     mapRef.current = map
@@ -214,20 +212,9 @@ export function LocationPickerMap({
 
     const timer = window.setTimeout(async () => {
       try {
-        const hits = await fetchGeocodeSearch(q, 6, controller.signal)
-        const mapped = hits
-          .map((hit) => {
-            const nLat = Number.parseFloat(hit.lat)
-            const nLng = Number.parseFloat(hit.lon)
-            if (!Number.isFinite(nLat) || !Number.isFinite(nLng)) return null
-            const parsed = parseNominatimHit(hit)
-            return { ...parsed, lat: nLat, lon: nLng, hit }
-          })
-          .filter(Boolean) as Array<
-          AddressHint & { label: string; lat: number; lon: number; hit: NominatimHit }
-        >
-        setSuggestions(mapped)
-        setSuggestionsOpen(mapped.length > 0)
+        const hits = await fetchGeocodeSearch(q, searchBias, SUGGESTION_LIMIT, controller.signal)
+        setSuggestions(hits)
+        setSuggestionsOpen(hits.length > 0)
         setActiveSuggestion(-1)
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
@@ -242,7 +229,7 @@ export function LocationPickerMap({
       controller.abort()
       window.clearTimeout(timer)
     }
-  }, [query])
+  }, [query, searchBias])
 
   React.useEffect(() => {
     function onPointerDown(e: MouseEvent) {
@@ -257,11 +244,33 @@ export function LocationPickerMap({
     return () => document.removeEventListener("mousedown", onPointerDown)
   }, [])
 
-  function selectSuggestion(item: (typeof suggestions)[number]) {
-    applyHit(item.hit, true)
+  async function resolveAndApply(item: GeocodeSuggestion) {
+    let resolved = item
+
+    if ((item.lat == null || item.lon == null) && item.placeId) {
+      setResolvingPlace(true)
+      try {
+        resolved = await fetchPlaceDetails(item.placeId)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not load place")
+        return
+      } finally {
+        setResolvingPlace(false)
+      }
+    }
+
+    if (!applySuggestion(resolved, true, !!onAddressHintRef.current)) {
+      toast.error("Invalid search result")
+      return
+    }
+
     setSuggestionsOpen(false)
     setSuggestions([])
     toast.success("Location updated")
+  }
+
+  async function selectSuggestion(item: GeocodeSuggestion) {
+    await resolveAndApply(item)
   }
 
   async function runSearch() {
@@ -273,16 +282,12 @@ export function LocationPickerMap({
     setSearching(true)
     setSuggestionsOpen(false)
     try {
-      const hits = await fetchGeocodeSearch(q, 1)
+      const hits = await fetchGeocodeSearch(q, searchBias, 1)
       if (hits.length === 0) {
         toast.message("No results found")
         return
       }
-      if (!applyHit(hits[0], true)) {
-        toast.error("Invalid search result")
-        return
-      }
-      toast.success("Location updated from search")
+      await resolveAndApply(hits[0])
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Search failed")
     } finally {
@@ -308,19 +313,21 @@ export function LocationPickerMap({
     } else if (e.key === "Enter") {
       e.preventDefault()
       const pick = suggestions[activeSuggestion >= 0 ? activeSuggestion : 0]
-      if (pick) selectSuggestion(pick)
+      if (pick) void selectSuggestion(pick)
     } else if (e.key === "Escape") {
       setSuggestionsOpen(false)
     }
   }
+
+  const searchBusy = searching || resolvingPlace
 
   return (
     <div className="space-y-3">
       <div>
         <Label>Map</Label>
         <p className="mt-1 text-xs text-muted-foreground">
-          Search for a place, pick a suggestion, click the map, or drag the pin.
-          Address fields fill automatically in English.
+          Start typing for address suggestions near the map pin, or click / drag on the map to set
+          coordinates only.
         </p>
       </div>
 
@@ -336,35 +343,44 @@ export function LocationPickerMap({
               if (suggestions.length > 0) setSuggestionsOpen(true)
             }}
             onKeyDown={onSearchKeyDown}
-            placeholder="Search address or city…"
+            placeholder="Search places, addresses, landmarks…"
             className="border-border bg-input/50 pr-9"
             autoComplete="off"
             role="combobox"
             aria-expanded={suggestionsOpen}
             aria-autocomplete="list"
           />
-          {(loadingSuggestions || reverseGeocoding) && (
+          {(loadingSuggestions || resolvingPlace) && (
             <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
           )}
 
           {suggestionsOpen && suggestions.length > 0 && (
             <ul
-              className="absolute z-[1000] mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-popover py-1 shadow-md"
+              className="absolute z-[1000] mt-1 max-h-72 w-full overflow-auto rounded-md border border-border bg-popover py-1 shadow-md"
               role="listbox"
             >
               {suggestions.map((item, index) => (
-                <li key={`${item.lat}-${item.lon}-${index}`} role="option">
+                <li key={item.id} role="option" aria-selected={index === activeSuggestion}>
                   <button
                     type="button"
                     className={cn(
-                      "flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-accent",
+                      "flex w-full items-start gap-2 px-3 py-2.5 text-left hover:bg-accent",
                       index === activeSuggestion && "bg-accent",
                     )}
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => selectSuggestion(item)}
+                    onClick={() => void selectSuggestion(item)}
                   >
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="line-clamp-2 text-foreground">{item.label}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-foreground">
+                        {item.primary}
+                      </span>
+                      {item.secondary ? (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {item.secondary}
+                        </span>
+                      ) : null}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -377,9 +393,9 @@ export function LocationPickerMap({
           variant="secondary"
           className="shrink-0"
           onClick={() => void runSearch()}
-          disabled={searching || reverseGeocoding}
+          disabled={searchBusy}
         >
-          {searching ? (
+          {searchBusy ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <>

@@ -23,6 +23,9 @@ import type { PublicEvent, TicketTypeRow } from "@/features/events/api";
 import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
 import { toast } from "sonner";
+import { DisplayPrice } from "@/components/currency/DisplayPrice";
+import { CheckoutPrice } from "@/components/currency/CheckoutPrice";
+import { useDisplayPrice } from "@/features/currency/currency-context";
 
 type TicketPurchaseDialogProps = {
   open: boolean;
@@ -128,6 +131,7 @@ export function TicketPurchaseDialog({
 
   const orderTotal = lineItems.reduce((sum, l) => sum + l.subtotal, 0);
   const currency = lineItems[0]?.currency ?? ticketTypes[0]?.currency ?? "USD";
+  const { chargeFormatted } = useDisplayPrice(orderTotal, currency);
 
   const setQty = (ticketTypeId: string, delta: number, max: number) => {
     setQuantities((prev) => {
@@ -223,11 +227,11 @@ export function TicketPurchaseDialog({
                             {t.name}
                           </div>
                           <p className="mt-1 text-sm text-zinc-400">
-                            {t.currency} {price.toFixed(2)} each · {max} left
+                            <DisplayPrice amount={price} currency={t.currency || currency} /> each · {max} left
                           </p>
                         </div>
                         <span className="text-sm font-semibold text-primary">
-                          {t.currency} {(price * qty).toFixed(2)}
+                          <DisplayPrice amount={price * qty} currency={t.currency || currency} />
                         </span>
                       </div>
 
@@ -265,11 +269,14 @@ export function TicketPurchaseDialog({
               </ul>
 
               <div className="border-t border-zinc-700 pt-4">
-                <div className="flex justify-between text-lg font-semibold">
-                  <span>Total</span>
-                  <span className="text-primary">
-                    {currency} {orderTotal.toFixed(2)}
-                  </span>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-lg font-semibold">Total</span>
+                  <CheckoutPrice
+                    amount={orderTotal}
+                    currency={currency}
+                    chargeLabel="event"
+                    amountClassName="text-lg"
+                  />
                 </div>
               </div>
 
@@ -310,7 +317,7 @@ export function TicketPurchaseDialog({
                     Processing…
                   </>
                 ) : (
-                  `Pay ${currency} ${orderTotal.toFixed(2)}`
+                  `Pay ${chargeFormatted}`
                 )}
               </Button>
             </div>

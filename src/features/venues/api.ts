@@ -317,9 +317,16 @@ export async function createVenueType(body: {
   });
 }
 
+export async function deleteVenueType(id: string): Promise<void> {
+  return authVoid(`/api/venues/types/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: { Accept: "application/json" },
+    networkErrorMessage: "Network error while deleting venue type.",
+  });
+}
+
 export async function createAmenityCatalogItem(body: {
   name: string;
-  category?: string;
   description?: string;
 }): Promise<AmenityCatalogItem> {
   return authJson<AmenityCatalogItem>("/api/venues/amenity-catalog", {
@@ -327,6 +334,14 @@ export async function createAmenityCatalogItem(body: {
     headers: { Accept: "application/json", "Content-Type": "application/json" },
     body: JSON.stringify(body),
     networkErrorMessage: "Network error while creating amenity catalog item.",
+  });
+}
+
+export async function deleteAmenityCatalogItem(id: string): Promise<void> {
+  return authVoid(`/api/venues/amenity-catalog/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: { Accept: "application/json" },
+    networkErrorMessage: "Network error while deleting amenity catalog item.",
   });
 }
 

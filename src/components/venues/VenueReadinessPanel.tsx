@@ -36,6 +36,7 @@ const CHECK_TAB_MAP: Record<string, string> = {
   details: "details",
   pricing: "pricing",
   schedule: "schedules",
+  amenities: "amenities",
   cover: "details",
 };
 
@@ -65,7 +66,7 @@ export function VenueReadinessPanel({
             <CardDescription>
               {isAdminMode
                 ? "Admin venues are active immediately. Complete details below for a better listing."
-                : "Complete required steps, then submit for admin review."}
+                : "Complete pricing, schedule, and amenities — blocks are optional — then submit for review."}
             </CardDescription>
           </div>
           <Badge variant={readiness.ready ? "default" : "secondary"}>

@@ -2,18 +2,12 @@
 'use client';
 
 import Image from 'next/image';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { HeaderAuthActions, HeaderAuthMobileLinks } from '@/components/common/HeaderAuthActions';
+import { CurrencySelect } from '@/components/currency/CurrencySelect';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -45,7 +39,7 @@ const Header = () => {
     <>
       {/* Header*/}
       <header
-        className={`fixed top-0 left-0 w-full z-50 h-[75px] transition-all duration-300 ${scrolled
+        className={`fixed top-0 left-0 w-full rounded-lg z-50 h-[75px] transition-all duration-300 ${scrolled
           ? 'bg-background/80 backdrop-blur-md shadow-sm border-b border-border/50'
           : 'bg-transparent'
           }`}
@@ -91,25 +85,7 @@ const Header = () => {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-4">
-              <Select defaultValue="Eng">
-                <SelectTrigger className="w-[110px] text-sm border-muted">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Eng">
-                    <div className="flex items-center gap-2">
-                      <Image src="/svg/usa.svg" alt="USA" width={20} height={14} />
-                      <span>Eng</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="Rus">
-                    <div className="flex items-center gap-2">
-                      <Image src="/svg/usa.svg" alt="Russia" width={20} height={14} />
-                      <span>Rus</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <CurrencySelect />
 
               <HeaderAuthActions />
             </div>
@@ -168,25 +144,7 @@ const Header = () => {
           </nav>
 
           <div className="p-6 border-t space-y-4">
-            <Select defaultValue="Eng">
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Eng">
-                  <div className="flex items-center gap-2">
-                    <Image src="/svg/usa.svg" alt="USA" width={24} height={16} />
-                    <span>English</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="Rus">
-                  <div className="flex items-center gap-2">
-                    <Image src="/svg/rus.svg" alt="Russia" width={24} height={16} />
-                    <span>Русский</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <CurrencySelect fullWidth />
 
             <HeaderAuthMobileLinks onNavigate={() => setMobileMenuOpen(false)} />
           </div>

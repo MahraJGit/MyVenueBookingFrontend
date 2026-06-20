@@ -7,13 +7,10 @@ import { toast } from "sonner";
 import {
   Building2,
   CalendarOff,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   DollarSign,
   ImagePlus,
   Loader2,
-  MapPin,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -99,11 +96,6 @@ const TIMEZONES = [
   "UTC",
 ];
 
-const CREATE_STEPS = [
-  { id: "basics", label: "Basics", icon: Building2 },
-  { id: "location", label: "Location", icon: MapPin },
-] as const;
-
 const inputClass = "bg-input/50 border-border";
 
 type VenueSetupWizardProps = {
@@ -119,16 +111,18 @@ export function VenueSetupWizard({
   const queryClient = useQueryClient();
   const paths = useDashboardPaths();
   const isAdminScope = dashboardScope === "admin";
-  const isEdit = !!venueId;
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  const [createStep, setCreateStep] = useState(0);
+  const [createdVenueId, setCreatedVenueId] = useState<string | null>(null);
+  const effectiveVenueId = venueId ?? createdVenueId ?? undefined;
+  const hasPersistedVenue = !!effectiveVenueId;
+
   const [activeTab, setActiveTab] = useState("details");
 
   const { data: existing, isLoading } = useQuery({
-    queryKey: venueKeys.managedDetail(venueId ?? ""),
-    queryFn: () => getManagedVenue(venueId!),
-    enabled: isEdit,
+    queryKey: venueKeys.managedDetail(effectiveVenueId ?? ""),
+    queryFn: () => getManagedVenue(effectiveVenueId!),
+    enabled: hasPersistedVenue,
   });
 
   const [selectedVendorId, setSelectedVendorId] = useState("");
@@ -137,7 +131,7 @@ export function VenueSetupWizard({
   const { data: approvedVendors = [] } = useQuery({
     queryKey: ["admin-vendors-approved"],
     queryFn: () => listAdminVendorProfiles("APPROVED"),
-    enabled: isAdminScope && !isEdit,
+    enabled: isAdminScope && !hasPersistedVenue,
   });
 
   const { data: venueTypes = [] } = useQuery({
@@ -189,9 +183,29 @@ export function VenueSetupWizard({
   });
 
   useEffect(() => {
-    const tab = new URLSearchParams(window.location.search).get("tab");
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
     if (tab) setActiveTab(tab);
   }, []);
+
+  function handleTabChange(tab: string) {
+    if (!hasPersistedVenue && tab !== "details") return;
+    setActiveTab(tab);
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", tab);
+    if (effectiveVenueId) {
+      params.set("id", effectiveVenueId);
+    } else {
+      params.delete("id");
+    }
+    router.replace(`${paths.addVenue}?${params.toString()}`, { scroll: false });
+  }
+
+  useEffect(() => {
+    if (!hasPersistedVenue && activeTab !== "details") {
+      setActiveTab("details");
+    }
+  }, [hasPersistedVenue, activeTab]);
 
   useEffect(() => {
     if (!existing || initialized) return;
@@ -278,39 +292,48 @@ export function VenueSetupWizard({
           propertyPayload,
           existing?.customAttributes,
         ),
-        ...(isAdminScope && !isEdit && selectedVendorId
+        ...(isAdminScope && !hasPersistedVenue && selectedVendorId
           ? { vendorId: selectedVendorId }
           : {}),
       };
-      if (isEdit && venueId) {
-        return updateVenue(venueId, payload);
+      if (hasPersistedVenue && effectiveVenueId) {
+        return updateVenue(effectiveVenueId, payload);
       }
       return createVenue(payload);
     },
     onSuccess: (venue) => {
-      toast.success(
-        isEdit
-          ? "Venue updated"
-          : isAdminScope
-            ? "Venue created and is active — complete pricing and schedule when ready"
-            : "Venue created — complete pricing and schedule, then submit for review",
-      );
-      queryClient.invalidateQueries({ queryKey: venueKeys.all });
-      if (!isEdit) {
-        router.replace(`${paths.editVenue(venue.id)}?tab=pricing`);
+      const wasCreate = !hasPersistedVenue;
+      if (wasCreate) {
+        setCreatedVenueId(venue.id);
+        queryClient.invalidateQueries({ queryKey: venueKeys.all });
+        const nextTab = "pricing";
+        setActiveTab(nextTab);
+        const params = new URLSearchParams({ id: venue.id, tab: nextTab });
+        router.replace(`${paths.addVenue}?${params.toString()}`);
+        toast.success(
+          isAdminScope
+            ? "Details saved — set up pricing next"
+            : "Details saved as draft — set up pricing, then submit for review",
+        );
+        return;
       }
+      toast.success("Venue updated");
+      queryClient.invalidateQueries({ queryKey: venueKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: venueKeys.managedDetail(effectiveVenueId!),
+      });
     },
     onError: (e) => toastApiError(e),
   });
 
   const savePricing = useMutation({
     mutationFn: () => {
-      if (!venueId) throw new Error("Save venue details first");
-      return upsertVenuePricing(venueId, normalizePricingForSave(pricing));
+      if (!effectiveVenueId) throw new Error("Save venue details first");
+      return upsertVenuePricing(effectiveVenueId, normalizePricingForSave(pricing));
     },
     onSuccess: () => {
       toast.success("Pricing saved");
-      queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(venueId!) });
+      queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(effectiveVenueId!) });
       queryClient.invalidateQueries({ queryKey: venueKeys.all });
     },
     onError: (e) => toastApiError(e),
@@ -318,44 +341,47 @@ export function VenueSetupWizard({
 
   const saveSchedules = useMutation({
     mutationFn: () => {
-      if (!venueId) throw new Error("Save venue details first");
-      return replaceVenueSchedules(venueId, { schedules });
+      if (!effectiveVenueId) throw new Error("Save venue details first");
+      return replaceVenueSchedules(effectiveVenueId, { schedules });
     },
     onSuccess: () => {
       toast.success("Schedule saved");
-      queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(venueId!) });
+      queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(effectiveVenueId!) });
     },
     onError: (e) => toastApiError(e),
   });
 
   const submitForReview = useMutation({
     mutationFn: () => {
-      if (!venueId) throw new Error("Save venue details first");
-      return submitVenueForReview(venueId);
+      if (!effectiveVenueId) throw new Error("Save venue details first");
+      return submitVenueForReview(effectiveVenueId);
     },
     onSuccess: () => {
       toast.success("Venue submitted for admin review");
       queryClient.invalidateQueries({ queryKey: venueKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: venueKeys.managedDetail(effectiveVenueId!),
+      });
     },
     onError: (e) => toastApiError(e),
   });
 
   const saveAmenity = useMutation({
     mutationFn: (payload: VenueAmenityPayload) => {
-      if (!venueId) throw new Error("Save venue details first");
-      return upsertVenueAmenity(venueId, payload);
+      if (!effectiveVenueId) throw new Error("Save venue details first");
+      return upsertVenueAmenity(effectiveVenueId, payload);
     },
     onSuccess: () => {
       toast.success("Amenity added");
-      queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(venueId!) });
+      queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(effectiveVenueId!) });
     },
     onError: (e) => toastApiError(e),
   });
 
   const saveBlock = useMutation({
     mutationFn: () => {
-      if (!venueId) throw new Error("Save venue details first");
-      return addVenueBlock(venueId, {
+      if (!effectiveVenueId) throw new Error("Save venue details first");
+      return addVenueBlock(effectiveVenueId, {
         blockDate: new Date(blockForm.blockDate).toISOString(),
         reason: blockForm.reason || undefined,
         customOpenTime: blockForm.customOpenTime,
@@ -372,7 +398,7 @@ export function VenueSetupWizard({
         customCloseTime: "17:00",
         isBlocked: true,
       });
-      queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(venueId!) });
+      queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(effectiveVenueId!) });
     },
     onError: (e) => toastApiError(e),
   });
@@ -425,6 +451,7 @@ export function VenueSetupWizard({
           coverImage: existing.coverImage,
           pricing: existing.pricing,
           schedules: existing.schedules,
+          amenities: existing.amenities,
         })
       : null);
 
@@ -440,29 +467,7 @@ export function VenueSetupWizard({
   function trySaveDetails() {
     setFieldAttempted((a) => ({ ...a, name: true, address: true }));
     if (isBlank(details.name) || isBlank(details.address)) return;
-    if (isAdminScope && !isEdit && !selectedVendorId) {
-      setVendorAttempted(true);
-      toast.error("Select a vendor for this venue");
-      return;
-    }
-    saveDetails.mutate();
-  }
-
-  function tryContinueCreateStep() {
-    if (createStep === 0) {
-      setFieldAttempted((a) => ({ ...a, name: true }));
-      if (isBlank(details.name)) return;
-      if (isAdminScope && !selectedVendorId) {
-        setVendorAttempted(true);
-        toast.error("Select a vendor for this venue");
-        return;
-      }
-      setCreateStep((s) => s + 1);
-      return;
-    }
-    setFieldAttempted((a) => ({ ...a, name: true, address: true }));
-    if (isBlank(details.name) || isBlank(details.address)) return;
-    if (isAdminScope && !selectedVendorId) {
+    if (isAdminScope && !hasPersistedVenue && !selectedVendorId) {
       setVendorAttempted(true);
       toast.error("Select a vendor for this venue");
       return;
@@ -483,11 +488,11 @@ export function VenueSetupWizard({
   }
 
   const vendorError =
-    vendorAttempted && isAdminScope && !isEdit && !selectedVendorId
+    vendorAttempted && isAdminScope && !hasPersistedVenue && !selectedVendorId
       ? "Select the vendor who owns this venue"
       : null;
 
-  const adminVendorField = isAdminScope && !isEdit && (
+  const adminVendorField = isAdminScope && !hasPersistedVenue && (
     <FormField
       label="Vendor"
       htmlFor="venue-vendor"
@@ -684,7 +689,7 @@ export function VenueSetupWizard({
         uploading={galleryUploading}
         onUpload={onGalleryFiles}
         onRemove={removeGalleryAt}
-        inputId={isEdit ? "venue-gallery-upload-edit" : "venue-gallery-upload-create"}
+        inputId={hasPersistedVenue ? "venue-gallery-upload-edit" : "venue-gallery-upload-create"}
       />
     </>
   );
@@ -741,19 +746,12 @@ export function VenueSetupWizard({
           onPositionChange={(lat, lng) =>
             setDetails({ ...details, latitude: String(lat), longitude: String(lng) })
           }
-          onAddressHint={(hint) =>
-            setDetails((d) => ({
-              ...d,
-              address: hint.fullAddress ?? hint.addressLine ?? d.address,
-              city: hint.city ?? d.city,
-            }))
-          }
         />
       </div>
     </>
   );
 
-  if (isEdit && isLoading) {
+  if (venueId && isLoading && !existing) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -761,184 +759,81 @@ export function VenueSetupWizard({
     );
   }
 
-  // ─── Create mode: guided 2-step wizard ───────────────────────────────────
-  if (!isEdit) {
-    const progress = ((createStep + 1) / CREATE_STEPS.length) * 100;
-
-    return (
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-xl font-bold text-white">Create your venue</h1>
-          <p className="text-sm text-muted-foreground">
-            A few quick steps to get your listing started.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              Step {createStep + 1} of {CREATE_STEPS.length}
-            </span>
-            <span className="font-medium text-foreground">
-              {CREATE_STEPS[createStep].label}
-            </span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="flex gap-2">
-            {CREATE_STEPS.map((step, i) => {
-              const Icon = step.icon;
-              return (
-                <div
-                  key={step.id}
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
-                    i === createStep
-                      ? "border-primary bg-primary/10 text-foreground"
-                      : i < createStep
-                        ? "border-border bg-card text-muted-foreground"
-                        : "border-border bg-card/50 text-muted-foreground",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {step.label}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {createStep === 0 && (
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle>Basic information</CardTitle>
-              <CardDescription>
-                Name, type, and a photo help guests find your venue.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              {basicsFields}
-            </CardContent>
-          </Card>
-        )}
-
-        {createStep === 1 && (
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle>Location</CardTitle>
-              <CardDescription>
-                Pin your venue on the map so guests know where to find you.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              {locationFields}
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="flex items-center justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={createStep === 0}
-            onClick={() => setCreateStep((s) => s - 1)}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
-
-          {createStep < CREATE_STEPS.length - 1 ? (
-            <Button type="button" onClick={tryContinueCreateStep}>
-              Continue
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          ) : (
-            <Button onClick={tryContinueCreateStep} disabled={saveDetails.isPending}>
-              {saveDetails.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Create venue
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Edit mode: full tabbed editor ───────────────────────────────────────
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-xl font-bold text-white">
-              {existing?.name ?? "Edit venue"}
+              {existing?.name ?? (!hasPersistedVenue ? "Create your venue" : "Set up venue")}
             </h1>
             {existing?.status && <StatusBadge status={existing.status} />}
           </div>
           <p className="text-sm text-muted-foreground">
-            Update details, pricing, schedule, and availability.
+            {!hasPersistedVenue
+              ? "Enter your venue details below. Pricing, schedule, and other sections unlock after you save."
+              : "Update details, pricing, schedule, and availability."}
           </p>
         </div>
       </div>
 
-      {readiness && !isAdminScope && (
+      {readiness && !isAdminScope && hasPersistedVenue && (
         <VenueReadinessPanel
           readiness={readiness}
           status={existing?.status}
           rejectionReason={existing?.rejectionReason}
           onSubmit={() => submitForReview.mutate()}
           submitPending={submitForReview.isPending}
-          onGoToCheck={(tab) => setActiveTab(tab)}
+          onGoToCheck={(tab) => handleTabChange(tab)}
           mode="vendor"
         />
       )}
 
-      {readiness && isAdminScope && (
+      {readiness && isAdminScope && hasPersistedVenue && (
         <VenueReadinessPanel
           readiness={readiness}
           status={existing?.status}
-          onGoToCheck={(tab) => setActiveTab(tab)}
+          onGoToCheck={(tab) => handleTabChange(tab)}
           mode="admin"
         />
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="flex h-auto w-full flex-wrap gap-1 bg-muted/50 p-1">
           <TabsTrigger value="details" className="gap-1.5">
             <Building2 className="h-4 w-4" />
             Details
           </TabsTrigger>
-          <TabsTrigger value="pricing" className="gap-1.5">
-            <DollarSign className="h-4 w-4" />
-            Pricing
-            {!existing?.pricing && (
-              <Badge variant="outline" className="ml-1 text-[10px]">
-                Setup
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="schedules" className="gap-1.5">
-            <Clock className="h-4 w-4" />
-            Schedule
-            {existing?.schedules && !existing.schedules.some((s) => s.isOpen) && (
-              <Badge variant="outline" className="ml-1 text-[10px]">
-                Setup
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="amenities" className="gap-1.5">
-            <Sparkles className="h-4 w-4" />
-            Amenities
-          </TabsTrigger>
-          <TabsTrigger value="blocks" className="gap-1.5">
-            <CalendarOff className="h-4 w-4" />
-            Blocks
-          </TabsTrigger>
+          {hasPersistedVenue && (
+            <>
+              <TabsTrigger value="pricing" className="gap-1.5">
+                <DollarSign className="h-4 w-4" />
+                Pricing
+                {!existing?.pricing && (
+                  <Badge variant="outline" className="ml-1 text-[10px]">
+                    Setup
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="schedules" className="gap-1.5">
+                <Clock className="h-4 w-4" />
+                Schedule
+                {existing?.schedules && !existing.schedules.some((s) => s.isOpen) && (
+                  <Badge variant="outline" className="ml-1 text-[10px]">
+                    Setup
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="amenities" className="gap-1.5">
+                <Sparkles className="h-4 w-4" />
+                Amenities
+              </TabsTrigger>
+              <TabsTrigger value="blocks" className="gap-1.5">
+                <CalendarOff className="h-4 w-4" />
+                Blocks
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="details" className="space-y-4">
@@ -968,12 +863,14 @@ export function VenueSetupWizard({
                 {saveDetails.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Save details
+                {hasPersistedVenue ? "Save details" : "Save & continue setup"}
               </Button>
             </CardFooter>
           </Card>
         </TabsContent>
 
+        {hasPersistedVenue && (
+          <>
         <TabsContent value="pricing">
           <Card className="border-border bg-card">
             <CardHeader>
@@ -982,7 +879,7 @@ export function VenueSetupWizard({
                 Set how customers are charged for bookings.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <PricingModelFields
                 value={pricing}
                 onChange={setPricing}
@@ -990,7 +887,10 @@ export function VenueSetupWizard({
               />
             </CardContent>
             <CardFooter className="border-t justify-end">
-              <Button onClick={trySavePricing} disabled={savePricing.isPending}>
+              <Button
+                onClick={trySavePricing}
+                disabled={savePricing.isPending}
+              >
                 {savePricing.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
@@ -1041,9 +941,10 @@ export function VenueSetupWizard({
                 isSaving={saveAmenity.isPending}
                 onAdd={(payload) => saveAmenity.mutate(payload)}
                 onRemove={async (amenityId) => {
-                  await removeVenueAmenity(venueId!, amenityId);
+                  if (!effectiveVenueId) return;
+                  await removeVenueAmenity(effectiveVenueId, amenityId);
                   queryClient.invalidateQueries({
-                    queryKey: venueKeys.managedDetail(venueId!),
+                    queryKey: venueKeys.managedDetail(effectiveVenueId),
                   });
                   toast.success("Amenity removed");
                 }}
@@ -1123,7 +1024,10 @@ export function VenueSetupWizard({
               )}
             </CardContent>
             <CardFooter className="border-t justify-end">
-              <Button onClick={trySaveBlock} disabled={saveBlock.isPending}>
+              <Button
+                onClick={trySaveBlock}
+                disabled={saveBlock.isPending}
+              >
                 {saveBlock.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
@@ -1162,9 +1066,10 @@ export function VenueSetupWizard({
                       variant="ghost"
                       className="text-destructive"
                       onClick={async () => {
-                        await removeVenueBlock(venueId!, b.id);
+                        if (!effectiveVenueId) return;
+                        await removeVenueBlock(effectiveVenueId, b.id);
                         queryClient.invalidateQueries({
-                          queryKey: venueKeys.managedDetail(venueId!),
+                          queryKey: venueKeys.managedDetail(effectiveVenueId),
                         });
                         toast.success("Block removed");
                       }}
@@ -1183,6 +1088,8 @@ export function VenueSetupWizard({
             </Card>
           )}
         </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   );

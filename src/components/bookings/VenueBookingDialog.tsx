@@ -122,6 +122,7 @@ export function VenueBookingDialog({
                 amenities={venue.amenities ?? []}
                 selections={amenitySelections}
                 onChange={setAmenitySelections}
+                currency={venue.pricing?.currency ?? "AED"}
               />
             </div>
           )}

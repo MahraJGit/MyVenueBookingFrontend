@@ -78,6 +78,7 @@ export type ListBookingsResult = {
 export type BookingAmenitySelection = {
   venueAmenityId: string;
   quantity?: number;
+  selectedConfig?: Record<string, unknown>;
 };
 
 export type CreateHoldPayload = {
