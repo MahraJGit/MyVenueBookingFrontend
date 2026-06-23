@@ -52,17 +52,17 @@ export function HotEventsSection() {
       <div className="container mx-auto px-4">
         <div className="section-header py-5 mb-6 flex items-center justify-between border-b border-[#1F1F1F]">
           <h2>Hot Events</h2>
-          <Link href={seeAllHref} className="text-sm hover:text-primary transition-colors">
-            See all
+          <Link href={seeAllHref} className="text-white font-semibold border border-primary rounded-full px-4 py-2 text-sm hover:text-primary transition-colors">
+            View More
           </Link>
         </div>
 
-        <EventCategoryFilters
+        {/* <EventCategoryFilters
           categories={categoryNames}
           activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
           isLoading={loadingCategories}
-        />
+        /> */}
 
         {isError ? (
           <p className="text-sm text-red-400 py-8">

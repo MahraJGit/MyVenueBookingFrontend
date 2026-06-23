@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
+import { VenueCard } from "@/components/venues/VenueCard";
+import { VenueTypeFilters } from "@/components/venues/VenueTypeFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,22 +15,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EventCard } from "@/components/events/EventCard";
-import { EventCategoryFilters } from "@/components/events/EventCategoryFilters";
-import { listPublicEventCategories } from "@/features/event-categories/api";
-import { listPublicEvents } from "@/features/events/api";
-import {
-  ALL_EVENTS_CATEGORY,
-  categoryQueryValue,
-} from "@/features/events/utils";
+import { listPublicVenues, listVenueTypes } from "@/features/venues/api";
+import { venueKeys } from "@/features/venues/query-keys";
+import "@/styles/event-list.css";
 
 const PAGE_SIZE = 8;
 
 const SORT_OPTIONS = [
-  { value: "createdAt-desc", sortBy: "createdAt" as const, sortOrder: "desc" as const, label: "Newest first" },
-  { value: "startDateTime-asc", sortBy: "startDateTime" as const, sortOrder: "asc" as const, label: "Soonest" },
-  { value: "eventName-asc", sortBy: "eventName" as const, sortOrder: "asc" as const, label: "Name A–Z" },
-  { value: "eventName-desc", sortBy: "eventName" as const, sortOrder: "desc" as const, label: "Name Z–A" },
+  {
+    value: "createdAt-desc",
+    sortBy: "createdAt" as const,
+    sortOrder: "desc" as const,
+    label: "Newest first",
+  },
+  {
+    value: "name-asc",
+    sortBy: "name" as const,
+    sortOrder: "asc" as const,
+    label: "Name A–Z",
+  },
+  {
+    value: "name-desc",
+    sortBy: "name" as const,
+    sortOrder: "desc" as const,
+    label: "Name Z–A",
+  },
 ];
 
 function sortValueFromParams(sortBy: string, sortOrder: string): string {
@@ -38,18 +49,17 @@ function sortValueFromParams(sortBy: string, sortOrder: string): string {
   return match?.value ?? "createdAt-desc";
 }
 
-export function EventsListingSection() {
+export function VenuesListingSection() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
-  const categoryFromUrl = searchParams.get("category")?.trim() ?? "";
+  const venueTypeIdFromUrl = searchParams.get("venueTypeId")?.trim() ?? "";
   const searchFromUrl = searchParams.get("search")?.trim() ?? "";
   const cityFromUrl = searchParams.get("city")?.trim() ?? "";
   const sortBy = searchParams.get("sortBy") ?? "createdAt";
   const sortOrder = searchParams.get("sortOrder") ?? "desc";
 
-  const activeCategory = categoryFromUrl || ALL_EVENTS_CATEGORY;
   const sortValue = sortValueFromParams(sortBy, sortOrder);
 
   const [search, setSearch] = useState(searchFromUrl);
@@ -68,17 +78,16 @@ export function EventsListingSection() {
         else sp.delete(key);
       }
       const qs = sp.toString();
-      const href = qs ? `/events?${qs}` : "/events";
+      const href = qs ? `/venues?${qs}` : "/venues";
       if (replace) router.replace(href, { scroll: false });
       else router.push(href);
     },
     [router, searchParams],
   );
 
-  const handleCategoryChange = useCallback(
-    (category: string) => {
-      const value = categoryQueryValue(category);
-      pushParams({ category: value, page: undefined }, true);
+  const handleTypeChange = useCallback(
+    (typeId: string) => {
+      pushParams({ venueTypeId: typeId || undefined, page: undefined }, true);
     },
     [pushParams],
   );
@@ -103,12 +112,13 @@ export function EventsListingSection() {
     });
   };
 
-  const { data: categories = [], isLoading: loadingCategories } = useQuery({
-    queryKey: ["public-event-categories"],
-    queryFn: listPublicEventCategories,
+  const { data: types = [], isLoading: loadingTypes } = useQuery({
+    queryKey: venueKeys.types(),
+    queryFn: listVenueTypes,
   });
 
-  const categoryNames = categories.map((c) => c.name);
+  const activeTypeName =
+    types.find((t) => t.id === venueTypeIdFromUrl)?.name ?? null;
 
   const {
     data,
@@ -117,29 +127,27 @@ export function EventsListingSection() {
     isError,
     error,
   } = useQuery({
-    queryKey: [
-      "public-events",
-      "listing",
+    queryKey: venueKeys.publicList({
       page,
-      categoryFromUrl,
-      searchFromUrl,
-      cityFromUrl,
+      search: searchFromUrl,
+      city: cityFromUrl,
+      venueTypeId: venueTypeIdFromUrl,
       sortBy,
       sortOrder,
-    ],
+    }),
     queryFn: () =>
-      listPublicEvents({
+      listPublicVenues({
         page,
         limit: PAGE_SIZE,
         search: searchFromUrl || undefined,
         city: cityFromUrl || undefined,
-        category: categoryFromUrl || undefined,
-        sortBy: sortBy as "createdAt" | "startDateTime" | "eventName",
+        venueTypeId: venueTypeIdFromUrl || undefined,
+        sortBy: sortBy as "createdAt" | "name",
         sortOrder: sortOrder as "asc" | "desc",
       }),
   });
 
-  const events = data?.data ?? [];
+  const venues = data?.data ?? [];
   const totalPages = data?.meta.totalPages ?? 1;
   const showPagination = !isLoading && totalPages > 1;
 
@@ -148,23 +156,23 @@ export function EventsListingSection() {
       <div className="container mx-auto px-4">
         <div className="mb-10 max-w-3xl">
           <h1 className="page-title mb-3 text-white">
-            Discover <span className="text-gradient-accent">Events</span>
+            Venue <span className="text-gradient-accent">Booking</span>
           </h1>
           <p className="text-muted-foreground">
-            Browse concerts, festivals, sports, and experiences near you.
+            Discover and book event spaces for your next occasion.
           </p>
         </div>
 
-        <EventCategoryFilters
-          categories={categoryNames}
-          activeCategory={activeCategory}
-          onCategoryChange={handleCategoryChange}
-          isLoading={loadingCategories}
+        <VenueTypeFilters
+          types={types}
+          activeTypeId={venueTypeIdFromUrl}
+          onTypeChange={handleTypeChange}
+          isLoading={loadingTypes}
         />
 
         <div className="mb-8 flex flex-wrap gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4">
           <Input
-            placeholder="Search events..."
+            placeholder="Search venues..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -214,12 +222,12 @@ export function EventsListingSection() {
 
         {isError ? (
           <p className="mb-8 py-8 text-sm text-red-400">
-            {error instanceof Error ? error.message : "Could not load events."}
+            {error instanceof Error ? error.message : "Could not load venues."}
           </p>
         ) : null}
 
         {isLoading ? (
-          <div className="event-cards mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="venue-cards mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: PAGE_SIZE }).map((_, i) => (
               <div
                 key={i}
@@ -227,10 +235,10 @@ export function EventsListingSection() {
               />
             ))}
           </div>
-        ) : events.length === 0 ? (
+        ) : venues.length === 0 ? (
           <p className="mb-8 py-8 text-sm text-[#B3B3B3]">
-            No events found
-            {activeCategory !== ALL_EVENTS_CATEGORY ? ` in ${activeCategory}` : ""}
+            No venues found
+            {activeTypeName ? ` in ${activeTypeName}` : ""}
             {searchFromUrl ? ` matching "${searchFromUrl}"` : ""}
             {cityFromUrl ? ` in ${cityFromUrl}` : ""}.
           </p>
@@ -241,9 +249,9 @@ export function EventsListingSection() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : null}
-            <div className="event-cards grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {events.map((event) => (
-                <EventCard key={event.id} event={event} />
+            <div className="venue-cards grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {venues.map((venue) => (
+                <VenueCard key={venue.id} venue={venue} />
               ))}
             </div>
           </div>
@@ -263,7 +271,7 @@ export function EventsListingSection() {
             </Button>
             <span className="flex items-center px-4 text-sm text-muted-foreground">
               Page {page} of {totalPages}
-              {data?.meta.total != null ? ` · ${data.meta.total} events` : ""}
+              {data?.meta.total != null ? ` · ${data.meta.total} venues` : ""}
             </span>
             <Button
               variant="outline"

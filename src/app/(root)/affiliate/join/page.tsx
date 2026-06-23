@@ -390,10 +390,12 @@ const JoinAffiliateFormPage = () => {
   }
 
   return (
-    <section className="py-24">
+    <section className="py-24 pt-28">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-5xl space-y-6">
-          <h1 className="text-3xl font-semibold">List Your Venue</h1>
+          <h1 className="page-title text-white">
+            List Your <span className="text-gradient-accent">Venue</span>
+          </h1>
           <p className="text-muted-foreground">
             Fill in your details to join the MyVenueBooking partner network.
           </p>

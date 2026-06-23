@@ -132,6 +132,8 @@ export type ListPublicEventsParams = {
   search?: string;
   category?: string;
   city?: string;
+  startDate?: string;
+  endDate?: string;
   sortBy?: "createdAt" | "startDateTime" | "eventName";
   sortOrder?: "asc" | "desc";
 };
@@ -178,6 +180,8 @@ export async function listPublicEvents(
   if (params?.search) sp.set("search", params.search);
   if (params?.category) sp.set("category", params.category);
   if (params?.city) sp.set("city", params.city);
+  if (params?.startDate) sp.set("startDate", params.startDate);
+  if (params?.endDate) sp.set("endDate", params.endDate);
   if (params?.sortBy) sp.set("sortBy", params.sortBy);
   if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
 

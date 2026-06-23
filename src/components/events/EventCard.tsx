@@ -7,6 +7,7 @@ import { EventCoverImage } from "@/components/events/EventCoverImage";
 import {
   formatCountdownToEnd,
   formatEventDate,
+  getEventCountdownTargetIso,
   getMinTicketPrice,
 } from "@/features/events/utils";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
@@ -16,18 +17,17 @@ type EventCardProps = {
 };
 
 export function EventCard({ event }: EventCardProps) {
-  const [countdown, setCountdown] = useState(() =>
-    formatCountdownToEnd(event.endDateTime),
-  );
+  const [countdown, setCountdown] = useState<string | null>(null);
   const minTicket = getMinTicketPrice(event);
   const location = [event.city, event.state].filter(Boolean).join(", ");
 
   useEffect(() => {
-    const tick = () => setCountdown(formatCountdownToEnd(event.endDateTime));
+    const tick = () =>
+      setCountdown(formatCountdownToEnd(getEventCountdownTargetIso(event)));
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [event.endDateTime]);
+  }, [event]);
 
   return (
     <Link
@@ -43,7 +43,7 @@ export function EventCard({ event }: EventCardProps) {
       <div className="card-body relative z-0 -mt-10 flex w-full max-w-[92%] flex-1 flex-col rounded-2xl border border-[#303030] bg-[#1B1B1B] transition-all duration-300 ease-in-out group-hover:rounded-t-none">
         <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
           <span>Time to end</span>
-          <span>{countdown}</span>
+          <span>{countdown ?? "--:--:--"}</span>
         </div>
         <div className="flex h-full flex-col gap-4 p-4">
           <h4 className="line-clamp-1">{event.eventName}</h4>

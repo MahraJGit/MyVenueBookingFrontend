@@ -15,7 +15,10 @@ const affiliate = () => {
                 <div className="container mx-auto px-4">
                     <div className="inner h-screen flex items-center justify-center flex-col">
                         <div className="description text-center">
-                            <h1 className='mb-8'>Join the MyVenueBooking affiliate program</h1>
+                            <h1 className='page-title mb-8 text-white'>
+                                Join the{" "}
+                                <span className="text-gradient-accent">Affiliate Program</span>
+                            </h1>
                             <p>Take your business to the next level with one of the best Venue Booking in the world!</p>
                             <Button asChild className='mt-8' size='lg'>
                                 <Link href="/affiliate/join">Join Now</Link>

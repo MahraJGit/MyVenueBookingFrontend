@@ -32,14 +32,36 @@ export function formatEventDate(iso: string): string {
   });
 }
 
-export function formatCountdownToEnd(endIso: string): string {
+export function getEventCountdownTargetIso(
+  event: Pick<PublicEvent, "endDateTime" | "ticketTypes">,
+  nowMs = Date.now(),
+): string {
+  const futureSalesEnds = (event.ticketTypes ?? [])
+    .map((ticket) => ticket.salesEnd)
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .map((value) => new Date(value).getTime())
+    .filter((ms) => !Number.isNaN(ms) && ms > nowMs);
+
+  if (futureSalesEnds.length > 0) {
+    return new Date(Math.min(...futureSalesEnds)).toISOString();
+  }
+
+  return event.endDateTime;
+}
+
+export function formatCountdownToEnd(endIso: string, nowMs = Date.now()): string {
   const end = new Date(endIso).getTime();
-  const now = Date.now();
-  const diff = Math.max(0, end - now);
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  if (Number.isNaN(end)) return "00:00:00";
+
+  const diff = Math.max(0, end - nowMs);
+  const totalSeconds = Math.floor(diff / 1000);
+  const days = Math.floor(totalSeconds / 86_400);
+  const hours = Math.floor((totalSeconds % 86_400) / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const clock = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  return days > 0 ? `${days}d ${clock}` : clock;
 }
 
 function ticketPrice(t: TicketTypeRow): number {
@@ -71,8 +93,15 @@ export function categoryQueryValue(label: string): string | undefined {
   return label;
 }
 
-export function buildEventsPageHref(category: string): string {
+export function buildEventsPageHref(
+  category: string,
+  extra?: { search?: string; city?: string },
+): string {
+  const sp = new URLSearchParams();
   const value = categoryQueryValue(category);
-  if (!value) return "/events";
-  return `/events?category=${encodeURIComponent(value)}`;
+  if (value) sp.set("category", value);
+  if (extra?.search?.trim()) sp.set("search", extra.search.trim());
+  if (extra?.city?.trim()) sp.set("city", extra.city.trim());
+  const qs = sp.toString();
+  return qs ? `/events?${qs}` : "/events";
 }

@@ -123,6 +123,7 @@ export type PublicVenue = {
   schedules?: VenueSchedule[];
   amenities?: VenueAmenity[];
   vendor?: VenueVendor | null;
+  createdAt?: string;
 };
 
 export type ManagedVenue = PublicVenue & {

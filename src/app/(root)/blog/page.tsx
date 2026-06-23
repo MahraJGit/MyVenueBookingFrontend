@@ -15,7 +15,10 @@ const blog = () => {
                 <div className="container mx-auto px-4">
                     <div className="inner h-screen flex items-center justify-center flex-col">
                         <div className="description text-center">
-                            <h1 className='mb-8'>Find Your Perfect<span className='text-primary'> Blogs</span></h1>
+                            <h1 className='page-title mb-8 text-white'>
+                                Find Your Perfect{" "}
+                                <span className="text-gradient-accent">Blogs</span>
+                            </h1>
                             <p>More than 100 concerts in different countries are now available to you.</p>
                         </div>
                     </div>

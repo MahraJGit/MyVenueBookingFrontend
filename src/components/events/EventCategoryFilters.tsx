@@ -25,7 +25,7 @@ export function EventCategoryFilters({
           type="button"
           disabled={isLoading}
           onClick={() => onCategoryChange(button)}
-          className={`text-sm py-2 px-4 bg-[#242424] border border-[#303030] rounded-[18px] transition-colors disabled:opacity-60
+          className={`cursor-pointer text-sm py-2 px-4 bg-[#242424] border border-[#303030] rounded-[18px] transition-colors disabled:opacity-60 disabled:cursor-not-allowed
         ${
           activeCategory === button
             ? `text-[#D580F2] border-[#D7498E] bg-[linear-gradient(180deg,rgba(215,73,142,0.3)_0%,rgba(27,27,27,0)_100%)]`
