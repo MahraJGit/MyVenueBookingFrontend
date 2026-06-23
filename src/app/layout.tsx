@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
-import { Poppins, Inter } from "next/font/google";
+import { Poppins, Inter, Noto_Nastaliq_Urdu, Noto_Sans_Arabic } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import "./globals.css";
 import { AppProviders } from "@/components/providers/app-providers";
+import { isRtlLocale } from "@/i18n/locales";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -15,37 +18,51 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
-export const metadata: Metadata = {
-  title: "Venue Booking | Book Event Tickets & Venues Online",
-  description:
-    "Discover concerts, sports, festivals and live shows. Book event tickets and rent banquet halls, conference rooms and unique venues — secure checkout, flexible refunds, 24/7 booking.",
-  keywords: [
-    "event tickets",
-    "venue booking",
-    "concert tickets",
-    "book a venue",
-    "sports events",
-    "wedding venue",
-    "corporate event space",
-    "Evenjo",
-  ],
-  openGraph: {
-    title: "Evenjo | Book Event Tickets & Venues Online",
-    description:
-      "Your one-stop platform for live events and venue booking. Find tickets, compare spaces, and book in minutes.",
-    type: "website",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("meta");
+  return {
+    title: t("defaultTitle"),
+    description: t("defaultDescription"),
+  };
+}
 
-export default function RootLayout({
+const notoUrdu = Noto_Nastaliq_Urdu({
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-urdu",
+});
+
+const notoArabic = Noto_Sans_Arabic({
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-arabic",
+});
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+  const dir = isRtlLocale(locale) ? "rtl" : "ltr";
+  const fontClass =
+    locale === "ur"
+      ? "font-urdu"
+      : locale === "ar"
+        ? "font-arabic"
+        : "font-inter";
+
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable} dark`}>
-      <body className="font-inter">
-        <AppProviders>{children}</AppProviders>
+    <html
+      lang={locale}
+      dir={dir}
+      className={`${inter.variable} ${poppins.variable} ${notoUrdu.variable} ${notoArabic.variable} dark`}
+    >
+      <body className={fontClass}>
+        <NextIntlClientProvider messages={messages}>
+          <AppProviders>{children}</AppProviders>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

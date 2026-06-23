@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
@@ -49,7 +50,6 @@ import { StatusBadge } from "@/components/venues/StatusBadge";
 import { CountdownTimer } from "@/components/venues/CountdownTimer";
 import {
   bookingStatusBadgeClass,
-  bookingStatusLabel,
   formatBookingTotal,
 } from "@/components/bookings/user-booking-utils";
 import { BookingTotalPrice } from "@/components/currency/BookingTotalPrice";
@@ -104,6 +104,8 @@ export function BookingDetailPanel({
   variant = "default",
 }: BookingDetailPanelProps) {
   const queryClient = useQueryClient();
+  const t = useTranslations("booking");
+  const tCommon = useTranslations("common");
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [startLocal, setStartLocal] = useState("");
   const [endLocal, setEndLocal] = useState("");
@@ -116,7 +118,7 @@ export function BookingDetailPanel({
   const cancelMut = useMutation({
     mutationFn: () => cancelBooking(bookingId),
     onSuccess: () => {
-      toast.success("Booking cancelled");
+      toast.success(t("bookingCancelled"));
       queryClient.invalidateQueries({ queryKey: bookingKeys.all });
       refetch();
     },
@@ -130,7 +132,7 @@ export function BookingDetailPanel({
         endTime: new Date(endLocal).toISOString(),
       }),
     onSuccess: () => {
-      toast.success("Booking rescheduled");
+      toast.success(t("bookingRescheduled"));
       setRescheduleOpen(false);
       queryClient.invalidateQueries({ queryKey: bookingKeys.all });
       refetch();
@@ -158,6 +160,8 @@ export function BookingDetailPanel({
         endLocal={endLocal}
         setEndLocal={setEndLocal}
         onExpire={() => refetch()}
+        t={t}
+        tCommon={tCommon}
       />
     );
   }
@@ -177,6 +181,8 @@ export function BookingDetailPanel({
       endLocal={endLocal}
       setEndLocal={setEndLocal}
       onExpire={() => refetch()}
+      t={t}
+      tCommon={tCommon}
     />
   );
 }
@@ -195,6 +201,8 @@ type DetailBodyProps = {
   endLocal: string;
   setEndLocal: (v: string) => void;
   onExpire: () => void;
+  t: ReturnType<typeof useTranslations<"booking">>;
+  tCommon: ReturnType<typeof useTranslations<"common">>;
 };
 
 function UserBookingDetail({
@@ -211,8 +219,18 @@ function UserBookingDetail({
   endLocal,
   setEndLocal,
   onExpire,
+  t,
+  tCommon,
 }: DetailBodyProps) {
   const tz = booking.venue.timezone;
+  const statusKey = {
+    DRAFT: "draft",
+    HOLD: "hold",
+    PENDING: "pending",
+    CONFIRMED: "confirmed",
+    CANCELLED: "cancelled",
+    COMPLETED: "completed",
+  } as const;
   const isHold = booking.status === "HOLD";
   const canModify =
     booking.status === "HOLD" || booking.status === "CONFIRMED";
@@ -241,14 +259,14 @@ function UserBookingDetail({
           <div>
             <h2 className="text-xl font-bold text-white">{booking.venue.name}</h2>
             <p className="text-xs text-zinc-300">
-              Ref #{booking.id.slice(0, 8).toUpperCase()}
+              {t("bookingRef", { ref: booking.id.slice(0, 8).toUpperCase() })}
             </p>
           </div>
           <Badge
             variant="outline"
             className={cn("shrink-0", bookingStatusBadgeClass(booking.status))}
           >
-            {bookingStatusLabel(booking.status)}
+            {t(statusKey[booking.status])}
           </Badge>
         </div>
         {onClose ? (
@@ -257,7 +275,7 @@ function UserBookingDetail({
             size="icon"
             className="absolute right-3 top-3 h-8 w-8 rounded-full bg-black/40 text-white hover:bg-black/60"
             onClick={onClose}
-            aria-label="Close details"
+            aria-label={t("closeDetails")}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -268,7 +286,7 @@ function UserBookingDetail({
         {isHold && booking.expiresAt ? (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
             <p className="mb-2 text-sm font-medium text-amber-200">
-              Payment required to confirm
+              {t("paymentRequired")}
             </p>
             <CountdownTimer
               expiresAt={booking.expiresAt}
@@ -280,31 +298,31 @@ function UserBookingDetail({
 
         {booking.status === "CONFIRMED" ? (
           <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
-            Your booking is confirmed. We&apos;ve sent the details to your email.
+            {t("bookingConfirmedEmail")}
           </div>
         ) : null}
 
         <div className="grid gap-3 sm:grid-cols-2">
           <DetailStat
             icon={CalendarDays}
-            label="Starts"
+            label={t("starts")}
             value={formatInVenueTimezone(booking.startTime, tz)}
           />
           <DetailStat
             icon={CalendarDays}
-            label="Ends"
+            label={t("ends")}
             value={formatInVenueTimezone(booking.endTime, tz)}
           />
           <DetailStat
             icon={CreditCard}
-            label="Total"
+            label={t("total")}
             value={<BookingTotalPrice booking={booking} />}
             highlight
           />
           {booking.numGuests ? (
             <DetailStat
               icon={Users}
-              label="Guests"
+              label={t("guests")}
               value={String(booking.numGuests)}
             />
           ) : null}
@@ -315,7 +333,7 @@ function UserBookingDetail({
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Location
+                {t("location")}
               </p>
               <p className="text-foreground">{booking.venue.address}</p>
             </div>
@@ -325,7 +343,7 @@ function UserBookingDetail({
         {booking.specialRequests ? (
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 text-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Special requests
+              {t("specialRequests")}
             </p>
             <p className="mt-1 text-foreground">{booking.specialRequests}</p>
           </div>
@@ -338,14 +356,14 @@ function UserBookingDetail({
             <Button asChild className="flex-1 bg-primary hover:bg-primary/90">
               <Link href={`/venues/booking/${booking.id}/checkout`}>
                 <CreditCard className="mr-2 h-4 w-4" />
-                Complete payment
+                {t("completePayment")}
               </Link>
             </Button>
           ) : null}
           <Button asChild variant="outline" className="flex-1 border-zinc-700">
             <Link href={`/venues/${booking.venueId}`}>
               <ExternalLink className="mr-2 h-4 w-4" />
-              View venue
+              {t("viewVenue")}
             </Link>
           </Button>
           {allowReschedule && canModify ? (
@@ -354,7 +372,7 @@ function UserBookingDetail({
               className="flex-1 border-zinc-700"
               onClick={() => setRescheduleOpen(true)}
             >
-              Reschedule
+              {t("reschedule")}
             </Button>
           ) : null}
           {canCancel ? (
@@ -367,7 +385,7 @@ function UserBookingDetail({
               {cancelMut.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              Cancel booking
+              {t("cancelBooking")}
             </Button>
           ) : null}
         </div>
@@ -382,6 +400,8 @@ function UserBookingDetail({
         setEndLocal={setEndLocal}
         onConfirm={() => rescheduleMut.mutate()}
         isPending={rescheduleMut.isPending}
+        t={t}
+        tCommon={tCommon}
       />
     </Card>
   );
@@ -401,6 +421,8 @@ function DefaultBookingDetail({
   endLocal,
   setEndLocal,
   onExpire,
+  t,
+  tCommon,
 }: DetailBodyProps) {
   const tz = booking.venue.timezone;
 
@@ -410,7 +432,7 @@ function DefaultBookingDetail({
         <div>
           <CardTitle className="text-lg">{booking.venue.name}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Booking #{booking.id.slice(0, 8)}
+            {t("bookingNumber", { id: booking.id.slice(0, 8) })}
           </p>
         </div>
         <StatusBadge status={booking.status} />
@@ -422,32 +444,32 @@ function DefaultBookingDetail({
 
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-muted-foreground">Start</dt>
+            <dt className="text-muted-foreground">{t("start")}</dt>
             <dd className="text-foreground">
               {formatInVenueTimezone(booking.startTime, tz)}
             </dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">End</dt>
+            <dt className="text-muted-foreground">{t("end")}</dt>
             <dd className="text-foreground">
               {formatInVenueTimezone(booking.endTime, tz)}
             </dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Total</dt>
+            <dt className="text-muted-foreground">{t("total")}</dt>
             <dd className="font-semibold text-primary">
               {formatBookingTotal(booking)}
             </dd>
           </div>
           {booking.numGuests ? (
             <div>
-              <dt className="text-muted-foreground">Guests</dt>
+              <dt className="text-muted-foreground">{t("guests")}</dt>
               <dd className="text-foreground">{booking.numGuests}</dd>
             </div>
           ) : null}
           {booking.buyer ? (
             <div className="sm:col-span-2">
-              <dt className="text-muted-foreground">Buyer</dt>
+              <dt className="text-muted-foreground">{t("buyer")}</dt>
               <dd className="text-foreground">
                 {booking.buyer.firstName} {booking.buyer.lastName} ({booking.buyer.email})
               </dd>
@@ -455,7 +477,7 @@ function DefaultBookingDetail({
           ) : null}
           {booking.specialRequests ? (
             <div className="sm:col-span-2">
-              <dt className="text-muted-foreground">Special requests</dt>
+              <dt className="text-muted-foreground">{t("specialRequests")}</dt>
               <dd className="text-foreground">{booking.specialRequests}</dd>
             </div>
           ) : null}
@@ -469,7 +491,7 @@ function DefaultBookingDetail({
                 className="border-border"
                 onClick={() => setRescheduleOpen(true)}
               >
-                Reschedule
+                {t("reschedule")}
               </Button>
             )}
           {allowCancel &&
@@ -480,12 +502,12 @@ function DefaultBookingDetail({
                 onClick={() => cancelMut.mutate()}
                 disabled={cancelMut.isPending}
               >
-                Cancel booking
+                {t("cancelBooking")}
               </Button>
             )}
           {onClose ? (
             <Button variant="ghost" onClick={onClose}>
-              Close
+              {tCommon("close")}
             </Button>
           ) : null}
         </div>
@@ -499,6 +521,8 @@ function DefaultBookingDetail({
           setEndLocal={setEndLocal}
           onConfirm={() => rescheduleMut.mutate()}
           isPending={rescheduleMut.isPending}
+          t={t}
+          tCommon={tCommon}
         />
       </CardContent>
     </Card>
@@ -538,6 +562,8 @@ function RescheduleDialog({
   setEndLocal,
   onConfirm,
   isPending,
+  t,
+  tCommon,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -547,16 +573,18 @@ function RescheduleDialog({
   setEndLocal: (v: string) => void;
   onConfirm: () => void;
   isPending: boolean;
+  t: ReturnType<typeof useTranslations<"booking">>;
+  tCommon: ReturnType<typeof useTranslations<"common">>;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="border-zinc-800 bg-zinc-900 text-foreground">
         <DialogHeader>
-          <DialogTitle>Reschedule booking</DialogTitle>
+          <DialogTitle>{t("rescheduleBooking")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-2">
-            <Label htmlFor="reschedule-start">New start date & time</Label>
+            <Label htmlFor="reschedule-start">{t("newStartDateTime")}</Label>
             <Input
               id="reschedule-start"
               type="datetime-local"
@@ -566,7 +594,7 @@ function RescheduleDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="reschedule-end">New end date & time</Label>
+            <Label htmlFor="reschedule-end">{t("newEndDateTime")}</Label>
             <Input
               id="reschedule-end"
               type="datetime-local"
@@ -576,20 +604,19 @@ function RescheduleDialog({
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            Duration must match the original booking. Times should reflect the
-            venue&apos;s local schedule.
+            {t("rescheduleDurationHint")}
           </p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {tCommon("cancel")}
           </Button>
           <Button
             onClick={onConfirm}
             disabled={isPending || !startLocal || !endLocal}
           >
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Confirm reschedule
+            {t("confirmReschedule")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -611,9 +638,11 @@ export function BookingsTable({
   selectedId,
   onSelect,
   isLoading,
-  emptyMessage = "No bookings found.",
+  emptyMessage,
   showBuyer = false,
 }: BookingsTableProps) {
+  const t = useTranslations("booking");
+  const resolvedEmptyMessage = emptyMessage ?? t("noBookingsFound");
   const colCount = showBuyer ? 5 : 4;
 
   return (
@@ -621,20 +650,20 @@ export function BookingsTable({
       <Table>
         <TableHeader>
           <TableRow className="border-border hover:bg-transparent">
-            <TableHead className="text-muted-foreground">Venue</TableHead>
+            <TableHead className="text-muted-foreground">{t("venue")}</TableHead>
             {showBuyer ? (
-              <TableHead className="text-muted-foreground">Buyer</TableHead>
+              <TableHead className="text-muted-foreground">{t("buyer")}</TableHead>
             ) : null}
-            <TableHead className="text-muted-foreground">Start</TableHead>
-            <TableHead className="text-muted-foreground">End</TableHead>
-            <TableHead className="text-muted-foreground">Status</TableHead>
+            <TableHead className="text-muted-foreground">{t("start")}</TableHead>
+            <TableHead className="text-muted-foreground">{t("end")}</TableHead>
+            <TableHead className="text-muted-foreground">{t("status")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading ? (
             <TableSkeleton cols={colCount} />
           ) : bookings.length === 0 ? (
-            <TableEmptyRow colSpan={colCount}>{emptyMessage}</TableEmptyRow>
+            <TableEmptyRow colSpan={colCount}>{resolvedEmptyMessage}</TableEmptyRow>
           ) : (
             bookings.map((booking) => (
               <TableRow

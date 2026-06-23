@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -16,65 +17,61 @@ import {
 
 import "@/styles/auth.css";
 
-const forgetPassword = () => {
+const ForgetPassword = () => {
+  const t = useTranslations("auth");
+  const tCommon = useTranslations("common");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
 
   return (
     <section className="forgot-password">
       <div className="flex flex-col items-center justify-center text-white px-4">
-        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <Image
             src="/images/logo2.png"
-            alt="Logo"
+            alt={tCommon("logoAlt")}
             width={48}
             height={48}
             priority
           />
 
-          {/* Heading */}
           <h2 className="text-xl font-semibold text-white mt-6">
-            Forgot your password?
+            {t("forgotPasswordTitle")}
           </h2>
 
-          {/* Subtext */}
           <p className="text-gray-400 mt-3 text-center text-sm max-w-sm leading-relaxed">
-            Please enter the phone number associated with your account and we'll
-            send you a verification code.
+            {t("forgotPasswordPhoneHint")}
           </p>
         </div>
 
-        {/* Tabs */}
         <Tabs defaultValue="email" className="w-full max-w-sm">
           <TabsList className="grid grid-cols-2 bg-[#242424] border border-[#242424] rounded-lg mb-6 w-full">
             <TabsTrigger
               value="email"
               className="data-[state=active]:bg-pink-600 data-[state=active]:text-white bg-[#242424] text-gray-300"
             >
-              Email
+              {t("emailTab")}
             </TabsTrigger>
             <TabsTrigger
               value="phone"
               className="data-[state=active]:bg-pink-600 data-[state=active]:text-white bg-[#242424] text-gray-300"
             >
-              Phone number
+              {t("phoneNumber")}
             </TabsTrigger>
           </TabsList>
 
-          {/* Email Tab */}
           <TabsContent value="email">
             <form className="flex flex-col space-y-4">
               <div>
                 <Label htmlFor="email" className="text-gray-300 text-xs">
-                  Email
+                  {tCommon("email")}
                 </Label>
                 <div className="relative mt-1">
                   <Mail className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                   <Input
                     id="email"
                     type="email"
-                    placeholder="example@email.com"
+                    placeholder={t("emailPlaceholder")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10 bg-[#242424] border border-[#242424] text-gray-200 placeholder:text-gray-500"
@@ -82,23 +79,26 @@ const forgetPassword = () => {
                 </div>
               </div>
 
+              <p className="text-gray-400 text-xs leading-relaxed">
+                {t("forgotPasswordEmailHint")}
+              </p>
+
               <Button
                 type="submit"
                 variant="default"
                 size="lg"
                 className="mt-6 cursor-pointer w-full bg-pink-600 hover:bg-pink-700"
               >
-                Send reset link
+                {t("sendResetLink")}
               </Button>
             </form>
           </TabsContent>
 
-          {/* Phone Tab */}
           <TabsContent value="phone">
             <form className="flex flex-col space-y-4 max-w-sm mx-auto text-gray-400">
               <div>
                 <Label htmlFor="phone" className="text-gray-300 text-xs">
-                  Phone number
+                  {t("phoneNumber")}
                 </Label>
                 <div className="flex gap-2 mt-1">
                   <Select defaultValue="+1">
@@ -110,7 +110,7 @@ const forgetPassword = () => {
                         <div className="flex items-center gap-2 w-[50px]">
                           <Image
                             src="/svg/usa.svg"
-                            alt="USA Flag"
+                            alt={t("usaFlagAlt")}
                             width={24}
                             height={16}
                           />
@@ -126,7 +126,7 @@ const forgetPassword = () => {
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="23445678"
+                    placeholder={t("phonePlaceholder")}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="bg-[#242424] border border-[#242424] text-white placeholder:text-gray-500 flex-grow"
@@ -140,7 +140,7 @@ const forgetPassword = () => {
                 size="lg"
                 className="mt-6 cursor-pointer w-full bg-pink-600 hover:bg-pink-700"
               >
-                Send code
+                {t("sendCode")}
               </Button>
             </form>
           </TabsContent>
@@ -150,4 +150,4 @@ const forgetPassword = () => {
   );
 };
 
-export default forgetPassword;
+export default ForgetPassword;

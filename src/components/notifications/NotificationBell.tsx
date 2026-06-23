@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useQuery } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '@/features/auth/auth-context'
 import { getUnreadNotificationCount } from '@/features/notifications/api'
 
@@ -16,6 +17,7 @@ export default function NotificationBell({
   href,
   variant = 'user',
 }: NotificationBellProps) {
+  const t = useTranslations('notifications')
   const { isAuthenticated, isReady } = useAuth()
 
   const { data: unreadCount = 0 } = useQuery({
@@ -30,9 +32,9 @@ export default function NotificationBell({
       <Link
         href={href}
         className="relative h-10 w-10 flex items-center justify-center rounded-full bg-[#EAE9E9] cursor-pointer hover:scale-105 transition"
-        aria-label="Notifications"
+        aria-label={t('title')}
       >
-        <Image src="/svg/bell.svg" alt="Notifications" width={22} height={22} />
+        <Image src="/svg/bell.svg" alt={t('title')} width={22} height={22} />
         {unreadCount > 0 ? (
           <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[#D7498E] text-[10px] font-semibold text-white">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -46,7 +48,7 @@ export default function NotificationBell({
     <Link
       href={href}
       className="relative rounded-full p-2 bg-[#1a1a1a] hover:bg-[#222] transition"
-      aria-label="Notifications"
+      aria-label={t('title')}
     >
       <Bell className="h-5 w-5 text-white" />
       {unreadCount > 0 ? (

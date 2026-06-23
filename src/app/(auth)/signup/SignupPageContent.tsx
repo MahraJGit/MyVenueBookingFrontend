@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import Link from "next/link";
 import { SignupPhoneField } from "@/components/signup-phone-field";
 import type { Value } from "react-phone-number-input";
 import { getPublicApiBaseUrl } from "@/lib/env";
-import { signupFormSchema, signupValuesToRegisterBody } from "@/features/auth/schemas";
+import { createSignupFormSchema, signupValuesToRegisterBody } from "@/features/auth/schemas";
 import { registerAccount } from "@/features/auth/api";
 import { mapRegisterApiFieldErrors } from "@/features/auth/map-register-errors";
 import { ApiError } from "@/lib/api/errors";
@@ -25,6 +26,17 @@ export default function SignupPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const redirect = searchParams.get("redirect") || "/";
+
+    const t = useTranslations("auth");
+    const tCommon = useTranslations("common");
+    const tValidation = useTranslations("validation");
+    const tErrors = useTranslations("errors");
+
+    const signupFormSchema = useMemo(
+        () => createSignupFormSchema(tValidation),
+        [tValidation],
+    );
+
     const [formData, setFormData] = useState({
         firstName: "",
         lastName: "",
@@ -42,14 +54,14 @@ export default function SignupPage() {
     const registerMutation = useMutation({
         mutationFn: registerAccount,
         onSuccess: (data) => {
-            toast.success(data.message || "Registered successfully.");
+            toast.success(data.message || t("registeredSuccess"));
             if (data.requireOtp && data.userId) {
                 router.push(
                     `/verify-otp?userId=${encodeURIComponent(data.userId)}&redirect=${encodeURIComponent(redirect)}`,
                 );
                 return;
             }
-            toast.info("OTP not required — continuing to login might be needed.");
+            toast.info(t("otpNotRequired"));
             router.push(
                 `/login${redirect !== "/" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`,
             );
@@ -75,9 +87,8 @@ export default function SignupPage() {
         setFieldErrors({});
 
         if (!getPublicApiBaseUrl()) {
-            toast.error("API not configured", {
-                description:
-                    "Set NEXT_PUBLIC_API_BASE_URL in .env.local (see .env.example).",
+            toast.error(tErrors("apiNotConfigured"), {
+                description: tErrors("apiNotConfiguredDescription"),
             });
             return;
         }
@@ -109,7 +120,7 @@ export default function SignupPage() {
         } catch {
             setFieldErrors((prev) => ({
                 ...prev,
-                phoneE164: "Could not read this phone number. Try again.",
+                phoneE164: t("phoneReadError"),
             }));
         }
     };
@@ -122,13 +133,13 @@ export default function SignupPage() {
                 <div className="flex flex-col items-center mb-8">
                     <Image
                         src="/images/logo2.png"
-                        alt="Logo"
+                        alt={tCommon("logoAlt")}
                         width={48}
                         height={48}
                         priority
                     />
                     <p className="text-gray-400 mt-3 text-center text-sm">
-                        Create your account
+                        {t("createYourAccount")}
                     </p>
                 </div>
 
@@ -140,12 +151,12 @@ export default function SignupPage() {
                     <div className="flex gap-2">
                         <div className="w-1/2">
                             <Label htmlFor="signup-firstName" className="text-gray-300 text-xs">
-                                First name
+                                {t("firstName")}
                             </Label>
                             <Input
                                 id="signup-firstName"
                                 type="text"
-                                placeholder="John"
+                                placeholder={t("firstNamePlaceholder")}
                                 value={formData.firstName}
                                 onChange={(e) => {
                                     setFormData({ ...formData, firstName: e.target.value });
@@ -161,12 +172,12 @@ export default function SignupPage() {
                         </div>
                         <div className="w-1/2">
                             <Label htmlFor="signup-lastName" className="text-gray-300 text-xs">
-                                Last name
+                                {t("lastName")}
                             </Label>
                             <Input
                                 id="signup-lastName"
                                 type="text"
-                                placeholder="Doe"
+                                placeholder={t("lastNamePlaceholder")}
                                 value={formData.lastName}
                                 onChange={(e) => {
                                     setFormData({ ...formData, lastName: e.target.value });
@@ -184,7 +195,7 @@ export default function SignupPage() {
 
                     <div>
                         <Label htmlFor="signup-phone" className="text-gray-300 text-xs">
-                            Phone
+                            {tCommon("phone")}
                         </Label>
                         <SignupPhoneField
                             id="signup-phone"
@@ -198,7 +209,7 @@ export default function SignupPage() {
                             aria-invalid={!!fieldErrors.phoneE164}
                         />
                         <p className="text-[11px] text-gray-500 mt-1.5 leading-snug">
-                            Use your real number—we&apos;ll send a verification code (OTP) by SMS.
+                            {t("phoneOtpHint")}
                         </p>
                         {fieldErrors.phoneE164 ? (
                             <p className="text-xs text-red-400 mt-1">{fieldErrors.phoneE164}</p>
@@ -207,14 +218,14 @@ export default function SignupPage() {
 
                     <div>
                         <Label htmlFor="signup-email" className="text-gray-300 text-xs">
-                            Email
+                            {tCommon("email")}
                         </Label>
                         <div className="relative mt-1">
                             <Mail className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
                             <Input
                                 id="signup-email"
                                 type="email"
-                                placeholder="example@email.com"
+                                placeholder={t("emailPlaceholder")}
                                 value={formData.email}
                                 onChange={(e) => {
                                     setFormData({ ...formData, email: e.target.value });
@@ -233,7 +244,7 @@ export default function SignupPage() {
 
                     <div>
                         <Label htmlFor="signup-password" className="text-gray-300 text-xs">
-                            Password
+                            {t("password")}
                         </Label>
                         <div className="relative mt-1">
                             <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none z-10" />
@@ -259,7 +270,7 @@ export default function SignupPage() {
                                 type="button"
                                 className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-pink-500 focus-visible:outline focus-visible:ring-2 focus-visible:ring-pink-600/40"
                                 onClick={() => setShowPassword((s) => !s)}
-                                aria-label={showPassword ? "Hide password" : "Show password"}
+                                aria-label={showPassword ? t("hidePassword") : t("showPassword")}
                                 disabled={pending}
                             >
                                 {showPassword ? (
@@ -276,7 +287,7 @@ export default function SignupPage() {
 
                     <div>
                         <Label htmlFor="signup-confirmPassword" className="text-gray-300 text-xs">
-                            Confirm password
+                            {t("confirmPassword")}
                         </Label>
                         <div className="relative mt-1">
                             <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none z-10" />
@@ -305,7 +316,7 @@ export default function SignupPage() {
                                 className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-pink-500 focus-visible:outline focus-visible:ring-2 focus-visible:ring-pink-600/40"
                                 onClick={() => setShowConfirmPassword((s) => !s)}
                                 aria-label={
-                                    showConfirmPassword ? "Hide confirm password" : "Show confirm password"
+                                    showConfirmPassword ? t("hideConfirmPassword") : t("showConfirmPassword")
                                 }
                                 disabled={pending}
                             >
@@ -330,11 +341,11 @@ export default function SignupPage() {
                         disabled={pending}
                         className="mt-6 w-full bg-pink-600 hover:bg-pink-700 text-white disabled:opacity-60"
                     >
-                        {pending ? "Creating account..." : "Sign up"}
+                        {pending ? t("creatingAccount") : t("signup")}
                     </Button>
 
                     <div className="text-center mt-4 social-login-divider">
-                        <span className="text-sm text-gray-500">Or continue with</span>
+                        <span className="text-sm text-gray-500">{t("orContinueWith")}</span>
                     </div>
 
                     <div className="flex justify-center gap-3 mt-2">
@@ -346,7 +357,7 @@ export default function SignupPage() {
                         >
                             <Image
                                 src="/images/apple.png"
-                                alt="Apple"
+                                alt={t("socialApple")}
                                 width={20}
                                 height={20}
                                 className="h-6"
@@ -360,7 +371,7 @@ export default function SignupPage() {
                         >
                             <Image
                                 src="/images/google.png"
-                                alt="Google"
+                                alt={t("socialGoogle")}
                                 width={20}
                                 height={20}
                                 className="h-6"
@@ -374,7 +385,7 @@ export default function SignupPage() {
                         >
                             <Image
                                 src="/images/facebook.png"
-                                alt="Facebook"
+                                alt={t("socialFacebook")}
                                 width={20}
                                 height={20}
                                 className="h-6"
@@ -383,12 +394,12 @@ export default function SignupPage() {
                     </div>
 
                     <p className="text-center text-xs text-gray-400 mt-4">
-                        Have an account?{" "}
+                        {t("haveAccount")}{" "}
                         <Link
                             href={`/login${redirect !== "/" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
                             className="text-pink-500 hover:underline"
                         >
-                            Sign in
+                            {t("signIn")}
                         </Link>
                     </p>
                 </form>

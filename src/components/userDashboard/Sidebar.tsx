@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import {
   Ticket,
   User,
@@ -15,30 +16,32 @@ import {
 
 export default function UserSidebar() {
   const pathname = usePathname()
+  const t = useTranslations('userDashboard')
+  const tCommon = useTranslations('common')
 
   const links = [
     {
-      label: 'Tickets',
+      labelKey: 'tickets' as const,
       href: '/userDashboard/tickets',
       icon: Ticket,
     },
     {
-      label: 'Venue bookings',
+      labelKey: 'venueBookings' as const,
       href: '/userDashboard/bookings',
       icon: CalendarDays,
     },
     {
-      label: 'Personal info',
+      labelKey: 'personalInfo' as const,
       href: '/userDashboard/profile',
       icon: User,
     },
     {
-      label: 'Payment',
+      labelKey: 'payment' as const,
       href: '/userDashboard/payment',
       icon: CreditCard,
     },
     {
-      label: 'Notification',
+      labelKey: 'notification' as const,
       href: '/userDashboard/notifications',
       icon: Bell,
     },
@@ -47,12 +50,10 @@ export default function UserSidebar() {
   return (
     <aside className="w-[260px] min-h-screen bg-[#1B1B1B] rounded-2xl  text-white px-4 py-6 flex flex-col border-r border-white/10">
 
-      {/* Logo */}
       <div className="flex items-center gap-2 mb-10 px-2">
-        <Image src="/svg/logo.svg" alt="MyVenueBooking" width={170} height={70} />
+        <Image src="/svg/logo.svg" alt={tCommon('appName')} width={170} height={70} />
       </div>
 
-      {/* Navigation */}
       <nav className="flex flex-col space-y-1">
         {links.map((item) => {
           const isActive = pathname.startsWith(item.href)
@@ -69,7 +70,6 @@ export default function UserSidebar() {
                   : 'text-gray-300 hover:text-white'}
               `}
             >
-              {/* Active Indicator */}
               {isActive && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] bg-primary rounded-full" />
               )}
@@ -79,18 +79,15 @@ export default function UserSidebar() {
                 className={isActive ? 'text-primary' : 'text-gray-400'}
               />
 
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           )
         })}
       </nav>
 
-      {/* Divider */}
       <hr className="my-6 border-white/10" />
 
-      {/* Bottom Section */}
       <div className="mt-auto space-y-1">
-        {/* Settings */}
         <Link
           href="/userDashboard/settings"
           className={`
@@ -112,15 +109,14 @@ export default function UserSidebar() {
                 : 'text-gray-400'
             }
           />
-          Setting
+          {t('settings')}
         </Link>
 
-        {/* Logout */}
         <button
           className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:text-red-400 transition w-full"
         >
           <LogOut size={18} />
-          Log out
+          {t('logOut')}
         </button>
       </div>
     </aside>

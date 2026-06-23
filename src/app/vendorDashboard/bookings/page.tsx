@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import {
   BookingDetailPanel,
@@ -19,6 +20,8 @@ import type { BookingStatus } from "@/features/bookings/types";
 import { bookingKeys } from "@/features/venues/query-keys";
 
 export default function VendorBookingsPage() {
+  const t = useTranslations("vendorDashboard");
+  const tBooking = useTranslations("booking");
   const [status, setStatus] = useState<BookingStatus | "ALL">("ALL");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -38,9 +41,9 @@ export default function VendorBookingsPage() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Venue bookings</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t("venueBookingsTitle")}</h1>
             <p className="text-sm text-muted-foreground">
-              Bookings at your venues — cancel or reschedule as needed.
+              {t("venueBookingsDesc")}
             </p>
           </div>
           <Select
@@ -48,14 +51,14 @@ export default function VendorBookingsPage() {
             onValueChange={(v) => setStatus(v as BookingStatus | "ALL")}
           >
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter status" />
+              <SelectValue placeholder={t("filterStatus")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All statuses</SelectItem>
-              <SelectItem value="HOLD">Hold</SelectItem>
-              <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-              <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              <SelectItem value="COMPLETED">Completed</SelectItem>
+              <SelectItem value="ALL">{t("allStatuses")}</SelectItem>
+              <SelectItem value="HOLD">{t("hold")}</SelectItem>
+              <SelectItem value="CONFIRMED">{tBooking("confirmed")}</SelectItem>
+              <SelectItem value="CANCELLED">{tBooking("cancelled")}</SelectItem>
+              <SelectItem value="COMPLETED">{tBooking("completed")}</SelectItem>
             </SelectContent>
           </Select>
         </div>

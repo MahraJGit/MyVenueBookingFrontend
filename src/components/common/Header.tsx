@@ -3,26 +3,35 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { HeaderAuthActions, HeaderAuthMobileLinks } from '@/components/common/HeaderAuthActions';
 import { CurrencySelect } from '@/components/currency/CurrencySelect';
+import { LanguageSelect } from '@/components/i18n/LanguageSelect';
+import { useLocaleContext } from '@/features/i18n/locale-context';
 import { cn } from '@/lib/utils';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+  const tNav = useTranslations('nav');
+  const tCommon = useTranslations('common');
+  const { isRtl } = useLocaleContext();
 
-  const navItems = [
-    { href: "/", label: "Home" },
-    { href: "/events", label: "Events" },
-    { href: "/attractions", label: "Attractions" },
-    { href: "/corporate", label: "Corporate" },
-    { href: "/venues", label: "Venues" },
-    { href: "/affiliate", label: "List Venue" },
-    { href: "/blog", label: "Blog" },
-  ];
+  const navItems = useMemo(
+    () => [
+      { href: '/', label: tNav('home') },
+      { href: '/events', label: tNav('events') },
+      { href: '/attractions', label: 'Attractions' },
+      { href: '/corporate', label: 'Corporate' },
+      { href: '/venues', label: tNav('venueBooking') },
+      { href: '/affiliate', label: tNav('listYourVenue') },
+      { href: '/blog', label: tNav('blog') },
+    ],
+    [tNav],
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -98,7 +107,10 @@ const Header = () => {
               </ul>
             </nav>
 
-            <div className="hidden shrink-0 items-center gap-2 xl:flex xl:gap-3">
+            <div className={cn('hidden shrink-0 items-center gap-2 xl:flex xl:gap-3', isRtl && 'flex-row-reverse')}>
+              <LanguageSelect
+                triggerClassName="h-9 rounded-full border-[#303030]/80 bg-black/30 text-sm backdrop-blur-sm"
+              />
               <CurrencySelect
                 triggerClassName="h-9 rounded-full border-[#303030]/80 bg-black/30 text-sm backdrop-blur-sm"
               />
@@ -109,7 +121,7 @@ const Header = () => {
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="site-nav-menu-btn relative z-10 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-foreground transition-colors hover:bg-white/10 xl:hidden"
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-label={tCommon('toggleMenu')}
               aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -163,6 +175,10 @@ const Header = () => {
           </nav>
 
           <div className="space-y-3 border-t border-[#303030]/60 px-4 py-4">
+            <LanguageSelect
+              fullWidth
+              triggerClassName="h-10 rounded-2xl border-[#303030]/80 bg-black/30 backdrop-blur-sm"
+            />
             <CurrencySelect
               fullWidth
               triggerClassName="h-10 rounded-2xl border-[#303030]/80 bg-black/30 backdrop-blur-sm"

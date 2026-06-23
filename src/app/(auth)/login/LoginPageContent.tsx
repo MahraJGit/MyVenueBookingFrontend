@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,8 @@ import type { Value } from "react-phone-number-input";
 import { SignupPhoneField } from "@/components/signup-phone-field";
 import { getPublicApiBaseUrl } from "@/lib/env";
 import {
-    emailLoginFormSchema,
-    phoneLoginFormSchema,
+    createEmailLoginFormSchema,
+    createPhoneLoginFormSchema,
     phoneLoginToRequestBody,
 } from "@/features/auth/login-schemas";
 import { loginAccount } from "@/features/auth/api";
@@ -43,6 +44,20 @@ export default function LoginPage() {
     const redirect = searchParams.get("redirect") || "/";
     const [tab, setTab] = useState<"email" | "phone">("email");
 
+    const t = useTranslations("auth");
+    const tCommon = useTranslations("common");
+    const tValidation = useTranslations("validation");
+    const tErrors = useTranslations("errors");
+
+    const emailLoginFormSchema = useMemo(
+        () => createEmailLoginFormSchema(tValidation),
+        [tValidation],
+    );
+    const phoneLoginFormSchema = useMemo(
+        () => createPhoneLoginFormSchema(tValidation),
+        [tValidation],
+    );
+
     const [email, setEmail] = useState("");
     const [phoneE164, setPhoneE164] = useState<Value | undefined>(undefined);
     const [password, setPassword] = useState("");
@@ -60,9 +75,9 @@ export default function LoginPage() {
                 const greet =
                     data.user.firstName?.trim() ||
                     data.user.email?.trim() ||
-                    "there";
-                toast.success(data.message || "Signed in successfully.", {
-                    description: `Welcome back, ${greet}`,
+                    t("defaultGreeting");
+                toast.success(data.message || t("signedInSuccess"), {
+                    description: t("welcomeBackGreeting", { name: greet }),
                 });
                 router.replace(redirect);
                 return;
@@ -78,7 +93,7 @@ export default function LoginPage() {
                 );
                 return;
             }
-            toast.error("Unexpected login response.");
+            toast.error(t("unexpectedLogin"));
         },
         onError: (err: unknown) => {
             if (
@@ -103,9 +118,8 @@ export default function LoginPage() {
         setFieldErrors({});
 
         if (!getPublicApiBaseUrl()) {
-            toast.error("API not configured", {
-                description:
-                    "Set NEXT_PUBLIC_API_BASE_URL in .env.local (see .env.example).",
+            toast.error(tErrors("apiNotConfigured"), {
+                description: tErrors("apiNotConfiguredDescription"),
             });
             return;
         }
@@ -131,9 +145,8 @@ export default function LoginPage() {
         setFieldErrors({});
 
         if (!getPublicApiBaseUrl()) {
-            toast.error("API not configured", {
-                description:
-                    "Set NEXT_PUBLIC_API_BASE_URL in .env.local (see .env.example).",
+            toast.error(tErrors("apiNotConfigured"), {
+                description: tErrors("apiNotConfiguredDescription"),
             });
             return;
         }
@@ -156,7 +169,7 @@ export default function LoginPage() {
         } catch {
             setFieldErrors((prev) => ({
                 ...prev,
-                phoneE164: "Could not read this phone number. Try again.",
+                phoneE164: t("phoneReadError"),
             }));
         }
     };
@@ -167,13 +180,13 @@ export default function LoginPage() {
                 <div className="flex flex-col items-center mb-8">
                     <Image
                         src="/images/logo2.png"
-                        alt="Logo"
+                        alt={tCommon("logoAlt")}
                         width={48}
                         height={48}
                         priority
                     />
                     <p className="text-gray-400 mt-3 text-center text-sm">
-                        Sign in with email or phone
+                        {t("signInWithEmailOrPhone")}
                     </p>
                 </div>
 
@@ -190,13 +203,13 @@ export default function LoginPage() {
                             value="email"
                             className="data-[state=active]:bg-pink-600 data-[state=active]:text-white bg-[#242424] text-gray-300"
                         >
-                            Email
+                            {t("emailTab")}
                         </TabsTrigger>
                         <TabsTrigger
                             value="phone"
                             className="data-[state=active]:bg-pink-600 data-[state=active]:text-white bg-[#242424] text-gray-300"
                         >
-                            Phone number
+                            {t("phoneNumber")}
                         </TabsTrigger>
                     </TabsList>
 
@@ -208,14 +221,14 @@ export default function LoginPage() {
                         >
                             <div>
                                 <Label htmlFor="login-email" className="text-gray-300 text-xs">
-                                    Email
+                                    {tCommon("email")}
                                 </Label>
                                 <div className="relative mt-1">
                                     <Mail className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none z-10" />
                                     <Input
                                         id="login-email"
                                         type="email"
-                                        placeholder="example@email.com"
+                                        placeholder={t("emailPlaceholder")}
                                         value={email}
                                         onChange={(e) => {
                                             setEmail(e.target.value);
@@ -234,7 +247,7 @@ export default function LoginPage() {
 
                             <div>
                                 <Label htmlFor="login-email-password" className="text-gray-300 text-xs">
-                                    Password
+                                    {t("password")}
                                 </Label>
                                 <div className="relative mt-1">
                                     <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none z-10" />
@@ -256,7 +269,7 @@ export default function LoginPage() {
                                         type="button"
                                         className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-pink-500 focus-visible:outline focus-visible:ring-2 focus-visible:ring-pink-600/40"
                                         onClick={() => setShowPassword((s) => !s)}
-                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                        aria-label={showPassword ? t("hidePassword") : t("showPassword")}
                                         disabled={pending}
                                     >
                                         {showPassword ? (
@@ -278,14 +291,14 @@ export default function LoginPage() {
                                         htmlFor="remember-email"
                                         className="text-gray-400 text-xs cursor-pointer"
                                     >
-                                        Remember me
+                                        {t("rememberMe")}
                                     </Label>
                                 </div>
                                 <a
                                     href="#"
                                     className="text-xs text-gray-400 hover:text-pink-500 transition"
                                 >
-                                    Forgot Password?
+                                    {t("forgotPassword")}
                                 </a>
                             </div>
 
@@ -296,11 +309,11 @@ export default function LoginPage() {
                                 disabled={pending}
                                 className="mt-6 w-full bg-pink-600 hover:bg-pink-700 text-white disabled:opacity-60"
                             >
-                                {pending ? "Signing in..." : "Log in"}
+                                {pending ? t("signingIn") : t("login")}
                             </Button>
 
                             <div className="text-center mt-4 social-login-divider">
-                                <span className="text-xs text-gray-500">Or continue with</span>
+                                <span className="text-xs text-gray-500">{t("orContinueWith")}</span>
                             </div>
 
                             <div className="flex justify-center gap-3 mt-2">
@@ -312,7 +325,7 @@ export default function LoginPage() {
                                 >
                                     <Image
                                         src="/images/apple.png"
-                                        alt="Apple"
+                                        alt={t("socialApple")}
                                         width={20}
                                         height={20}
                                         className="h-6"
@@ -326,7 +339,7 @@ export default function LoginPage() {
                                 >
                                     <Image
                                         src="/images/google.png"
-                                        alt="Google"
+                                        alt={t("socialGoogle")}
                                         width={20}
                                         height={20}
                                         className="h-6"
@@ -340,7 +353,7 @@ export default function LoginPage() {
                                 >
                                     <Image
                                         src="/images/facebook.png"
-                                        alt="Facebook"
+                                        alt={t("socialFacebook")}
                                         width={20}
                                         height={20}
                                         className="h-6"
@@ -348,12 +361,12 @@ export default function LoginPage() {
                                 </Button>
                             </div>
                             <p className="text-center text-xs text-gray-400 mt-4">
-                                New to account?{" "}
+                                {t("newToAccount")}{" "}
                                 <Link
                                     href={`/signup${redirect !== "/" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
                                     className="text-pink-500 hover:underline block"
                                 >
-                                    Create account
+                                    {t("createAccount")}
                                 </Link>
                             </p>
                         </form>
@@ -367,7 +380,7 @@ export default function LoginPage() {
                         >
                             <div>
                                 <Label htmlFor="login-phone" className="text-gray-300 text-xs">
-                                    Phone
+                                    {tCommon("phone")}
                                 </Label>
                                 <SignupPhoneField
                                     id="login-phone"
@@ -387,7 +400,7 @@ export default function LoginPage() {
 
                             <div>
                                 <Label htmlFor="login-phone-password" className="text-gray-300 text-xs">
-                                    Password
+                                    {t("password")}
                                 </Label>
                                 <div className="relative mt-1">
                                     <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none z-10" />
@@ -409,7 +422,7 @@ export default function LoginPage() {
                                         type="button"
                                         className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-pink-500 focus-visible:outline focus-visible:ring-2 focus-visible:ring-pink-600/40"
                                         onClick={() => setShowPassword((s) => !s)}
-                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                        aria-label={showPassword ? t("hidePassword") : t("showPassword")}
                                         disabled={pending}
                                     >
                                         {showPassword ? (
@@ -431,14 +444,14 @@ export default function LoginPage() {
                                         htmlFor="remember-phone"
                                         className="text-gray-400 text-xs cursor-pointer"
                                     >
-                                        Remember me
+                                        {t("rememberMe")}
                                     </Label>
                                 </div>
                                 <a
                                     href="#"
                                     className="text-gray-400 hover:text-pink-500 transition"
                                 >
-                                    Forgot Password?
+                                    {t("forgotPassword")}
                                 </a>
                             </div>
 
@@ -449,16 +462,16 @@ export default function LoginPage() {
                                 disabled={pending}
                                 className="mt-6 w-full bg-pink-600 hover:bg-pink-700 text-white disabled:opacity-60"
                             >
-                                {pending ? "Signing in..." : "Log in"}
+                                {pending ? t("signingIn") : t("login")}
                             </Button>
 
                             <p className="text-center text-xs text-gray-400 mt-4">
-                                New to account?{" "}
+                                {t("newToAccount")}{" "}
                                 <Link
                                     href={`/signup${redirect !== "/" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
                                     className="text-pink-500 hover:underline"
                                 >
-                                    Create account
+                                    {t("createAccount")}
                                 </Link>
                             </p>
                         </form>

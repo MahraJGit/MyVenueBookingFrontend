@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { logoutAccount } from "@/features/auth/api";
 import type { AuthUser } from "@/features/auth/types";
 import {
@@ -19,8 +20,14 @@ import {
   getAuthUser,
 } from "@/features/auth/session-storage";
 
+export type DashboardLinkLabelKey =
+  | "customerDashboard"
+  | "vendorDashboard"
+  | "adminDashboard"
+  | "dashboard";
+
 export type DashboardLink = {
-  label: string;
+  labelKey: DashboardLinkLabelKey;
   href: string;
 };
 
@@ -49,15 +56,15 @@ function readSession() {
 
 export function getDashboardLinksForRole(role: string): DashboardLink[] {
   const customerDashboard: DashboardLink = {
-    label: "Customer Dashboard",
+    labelKey: "customerDashboard",
     href: "/userDashboard/tickets",
   };
   const vendorDashboard: DashboardLink = {
-    label: "Vendor Dashboard",
+    labelKey: "vendorDashboard",
     href: "/vendorDashboard",
   };
   const adminDashboard: DashboardLink = {
-    label: "Admin Dashboard",
+    labelKey: "adminDashboard",
     href: "/adminDashbaord/manageEvents",
   };
 
@@ -67,7 +74,7 @@ export function getDashboardLinksForRole(role: string): DashboardLink[] {
   if (role === "ADMIN") {
     return [adminDashboard];
   }
-  return [{ label: "Dashboard", href: customerDashboard.href }];
+  return [{ labelKey: "dashboard", href: customerDashboard.href }];
 }
 
 function buildDisplayName(user: AuthUser): string {
@@ -75,7 +82,7 @@ function buildDisplayName(user: AuthUser): string {
     .map((part) => part?.trim())
     .filter(Boolean)
     .join(" ");
-  return fullName || user.email?.trim() || "Account";
+  return fullName || user.email?.trim() || "";
 }
 
 function buildInitials(user: AuthUser): string {
@@ -89,6 +96,7 @@ function buildInitials(user: AuthUser): string {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const tAuth = useTranslations("auth");
   const [session, setSession] = useState(() => readSession());
   const [isReady, setIsReady] = useState(false);
 
@@ -132,11 +140,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isVendor: role === "VENDOR",
       isAdmin: role === "ADMIN",
       dashboardLinks: user ? getDashboardLinksForRole(role) : [],
-      displayName: user ? buildDisplayName(user) : "",
+      displayName: user
+        ? buildDisplayName(user) || tAuth("account")
+        : "",
       initials: user ? buildInitials(user) : "?",
       logout,
     };
-  }, [session, isReady, logout]);
+  }, [session, isReady, logout, tAuth]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

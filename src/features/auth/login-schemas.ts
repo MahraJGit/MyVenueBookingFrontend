@@ -1,24 +1,32 @@
 import { z } from "zod";
 import { e164ToApiParts, isE164Valid } from "@/lib/phone";
 import type { LoginRequestBody } from "./types";
+import type { ValidationTranslator } from "./schemas";
 
-export const emailLoginFormSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-});
+export function createEmailLoginFormSchema(t: ValidationTranslator) {
+  return z.object({
+    email: z.string().trim().email(t("validEmail")),
+    password: z.string().min(1, t("passwordRequired")),
+  });
+}
 
-export const phoneLoginFormSchema = z.object({
-  phoneE164: z
-    .string()
-    .min(1, "Phone is required")
-    .refine((v) => isE164Valid(v), {
-      message: "Enter a valid international phone number",
-    }),
-  password: z.string().min(1, "Password is required"),
-});
+export function createPhoneLoginFormSchema(t: ValidationTranslator) {
+  return z.object({
+    phoneE164: z
+      .string()
+      .min(1, t("phoneRequired"))
+      .refine((v) => isE164Valid(v), {
+        message: t("invalidPhone"),
+      }),
+    password: z.string().min(1, t("passwordRequired")),
+  });
+}
 
-export type EmailLoginFormValues = z.infer<typeof emailLoginFormSchema>;
-export type PhoneLoginFormValues = z.infer<typeof phoneLoginFormSchema>;
+const _emailSchema = createEmailLoginFormSchema((key) => key);
+const _phoneSchema = createPhoneLoginFormSchema((key) => key);
+
+export type EmailLoginFormValues = z.infer<typeof _emailSchema>;
+export type PhoneLoginFormValues = z.infer<typeof _phoneSchema>;
 
 export function phoneLoginToRequestBody(
   values: PhoneLoginFormValues,

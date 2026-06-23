@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Check, CreditCard, Loader2, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
@@ -26,8 +27,8 @@ import { toast } from "sonner";
 
 const PAYMENT_METHODS_KEY = ["payment-methods"] as const;
 
-function formatBrand(brand: string | null) {
-  if (!brand) return "Card";
+function formatBrand(brand: string | null, fallback: string) {
+  if (!brand) return fallback;
   return brand.charAt(0).toUpperCase() + brand.slice(1);
 }
 
@@ -38,12 +39,15 @@ function formatExpiry(month: number, year: number) {
 }
 
 function CardPreview({ method }: { method: SavedPaymentMethod | null }) {
+  const t = useTranslations("userDashboard");
+  const tCommon = useTranslations("common");
+
   if (!method) {
     return (
       <div className="relative flex h-52 w-full items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-800/50 p-6 text-muted-foreground">
         <div className="flex flex-col items-center gap-2 text-center">
           <CreditCard className="h-8 w-8 opacity-60" />
-          <p className="text-sm">No card saved yet</p>
+          <p className="text-sm">{t("noCardSaved")}</p>
         </div>
       </div>
     );
@@ -52,23 +56,23 @@ function CardPreview({ method }: { method: SavedPaymentMethod | null }) {
   return (
     <div className="relative w-full rounded-2xl bg-linear-to-br from-pink-500 via-purple-600 to-zinc-900 p-6 text-white shadow-lg">
       <div className="mb-5 flex justify-between">
-        <span className="text-sm opacity-80">Credit Card</span>
-        <span className="text-sm uppercase">{formatBrand(method.brand)}</span>
+        <span className="text-sm opacity-80">{t("creditCard")}</span>
+        <span className="text-sm uppercase">{formatBrand(method.brand, t("card"))}</span>
       </div>
       <div className="flex items-center gap-4">
-        <Image src="/svg/cardsim.svg" alt="Chip" width={40} height={30} />
-        <h4 className="uppercase">{formatBrand(method.brand)}</h4>
+        <Image src="/svg/cardsim.svg" alt={t("chipAlt")} width={40} height={30} />
+        <h4 className="uppercase">{formatBrand(method.brand, t("card"))}</h4>
       </div>
       <div className="mt-5 text-lg tracking-widest">
         •••• •••• •••• {method.last4}
       </div>
       <div className="mt-6 flex justify-between text-sm">
         <div>
-          <p className="opacity-70">Default card</p>
-          <p>{method.isDefault ? "Yes" : "No"}</p>
+          <p className="opacity-70">{t("defaultCard")}</p>
+          <p>{method.isDefault ? tCommon("yes") : tCommon("no")}</p>
         </div>
         <div>
-          <p className="opacity-70">Expiry date</p>
+          <p className="opacity-70">{t("expiryDate")}</p>
           <p>{formatExpiry(method.expMonth, method.expYear)}</p>
         </div>
       </div>
@@ -77,6 +81,8 @@ function CardPreview({ method }: { method: SavedPaymentMethod | null }) {
 }
 
 export default function PaymentPage() {
+  const t = useTranslations("userDashboard");
+  const tCommon = useTranslations("common");
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = React.useState(false);
   const stripeConfigured = Boolean(getStripePublishableKey());
@@ -94,7 +100,7 @@ export default function PaymentPage() {
     mutationFn: setDefaultPaymentMethod,
     onSuccess: (data) => {
       queryClient.setQueryData(PAYMENT_METHODS_KEY, data);
-      toast.success("Default card updated.");
+      toast.success(t("defaultCardUpdated"));
     },
     onError: toastApiError,
   });
@@ -103,7 +109,7 @@ export default function PaymentPage() {
     mutationFn: deletePaymentMethod,
     onSuccess: (data) => {
       queryClient.setQueryData(PAYMENT_METHODS_KEY, data);
-      toast.success("Card removed.");
+      toast.success(t("cardRemoved"));
     },
     onError: toastApiError,
   });
@@ -117,10 +123,7 @@ export default function PaymentPage() {
     return (
       <div className="rounded-2xl bg-[#121212] p-8">
         <p className="text-sm text-muted-foreground">
-          Stripe is not configured. Add{" "}
-          <code className="text-pink-400">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>{" "}
-          to <code className="text-pink-400">.env.local</code> and restart the dev
-          server.
+          {t("stripeNotConfigured")}
         </p>
       </div>
     );
@@ -129,10 +132,9 @@ export default function PaymentPage() {
   return (
     <div className="rounded-2xl bg-[#121212] p-8">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold">Payment methods</h1>
+        <h1 className="text-xl font-semibold">{t("paymentMethods")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Cards are stored securely by Stripe. Your card details never touch our
-          servers.
+          {t("paymentMethodsDesc")}
         </p>
       </div>
 
@@ -141,20 +143,20 @@ export default function PaymentPage() {
           {isLoading ? (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading saved cards…
+              {t("loadingCards")}
             </div>
           ) : isError ? (
             <div className="space-y-2">
               <p className="text-sm text-destructive">
-                Could not load payment methods.
+                {t("couldNotLoadCards")}
               </p>
               <Button variant="outline" size="sm" onClick={() => void refetch()}>
-                Try again
+                {tCommon("tryAgain")}
               </Button>
             </div>
           ) : methods.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Add a card to use it when purchasing tickets.
+              {t("addCardHint")}
             </p>
           ) : (
             <ul className="space-y-3">
@@ -167,11 +169,11 @@ export default function PaymentPage() {
                     <CreditCard className="h-5 w-5 text-pink-400" />
                     <div>
                       <p className="font-medium">
-                        {formatBrand(method.brand)} •••• {method.last4}
+                        {formatBrand(method.brand, t("card"))} •••• {method.last4}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Expires {formatExpiry(method.expMonth, method.expYear)}
-                        {method.isDefault ? " · Default" : ""}
+                        {t("expires")} {formatExpiry(method.expMonth, method.expYear)}
+                        {method.isDefault ? t("defaultSuffix") : ""}
                       </p>
                     </div>
                     {method.isDefault ? (
@@ -189,7 +191,7 @@ export default function PaymentPage() {
                           setDefaultMutation.mutate(method.id)
                         }
                       >
-                        Set default
+                        {t("setDefault")}
                       </Button>
                     ) : null}
                     <Button
@@ -198,7 +200,7 @@ export default function PaymentPage() {
                       className="text-muted-foreground hover:text-destructive"
                       disabled={deleteMutation.isPending}
                       onClick={() => deleteMutation.mutate(method.id)}
-                      aria-label="Remove card"
+                      aria-label={t("removeCard")}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -209,7 +211,7 @@ export default function PaymentPage() {
           )}
 
           <p className="text-sm text-muted-foreground">
-            Your default card will be used when you purchase tickets.
+            {t("defaultCardCheckoutHint")}
           </p>
         </div>
 
@@ -226,14 +228,14 @@ export default function PaymentPage() {
                   <div className="flex h-10 w-10 items-center justify-center rounded-full border">
                     <Plus className="h-5 w-5" />
                   </div>
-                  <span>Add payment method</span>
+                  <span>{t("addPaymentMethod")}</span>
                 </div>
               </Card>
             </DialogTrigger>
 
             <DialogContent className="border-zinc-800 bg-zinc-900 sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Add new card</DialogTitle>
+                <DialogTitle>{t("addNewCard")}</DialogTitle>
               </DialogHeader>
               {addOpen ? (
                 <AddCardForm

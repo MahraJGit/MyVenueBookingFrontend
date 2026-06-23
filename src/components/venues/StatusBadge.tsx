@@ -1,11 +1,26 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import type { BookingStatus } from "@/features/bookings/types";
 import type { EntityStatus } from "@/features/venues/types";
-import { entityStatusLabel } from "@/features/venues/utils";
 
 type StatusBadgeProps = {
   status: EntityStatus | BookingStatus | string;
   className?: string;
+};
+
+const STATUS_KEY_MAP: Record<string, string> = {
+  DRAFT: "draft",
+  PENDING: "pendingReview",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+  ACTIVE: "active",
+  INACTIVE: "inactive",
+  CANCELLED: "cancelled",
+  COMPLETED: "completed",
+  HOLD: "hold",
+  CONFIRMED: "confirmed",
 };
 
 function variantForStatus(status: string) {
@@ -25,9 +40,12 @@ function variantForStatus(status: string) {
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
+  const t = useTranslations("entityStatus");
+  const key = STATUS_KEY_MAP[status] ?? "unknown";
+
   return (
     <Badge variant={variantForStatus(status)} className={className}>
-      {entityStatusLabel(status as EntityStatus)}
+      {STATUS_KEY_MAP[status] ? t(key as "draft") : status.charAt(0) + status.slice(1).toLowerCase()}
     </Badge>
   );
 }

@@ -3,6 +3,7 @@
 import { use, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -73,6 +74,7 @@ export default function VenueDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const t = useTranslations("venues");
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
@@ -117,14 +119,12 @@ export default function VenueDetailPage({
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0e0e0e] px-4 text-white">
         <div className="space-y-4 text-center">
-          <h1 className="text-2xl font-bold">Venue not found</h1>
-          <p className="text-zinc-400">
-            The venue you are looking for does not exist or is no longer available.
-          </p>
+          <h1 className="text-2xl font-bold">{t("notFound")}</h1>
+          <p className="text-zinc-400">{t("notFoundDesc")}</p>
           <Button asChild variant="outline" className="border-[#303030]">
             <Link href="/venues">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to venues
+              {t("backToVenues")}
             </Link>
           </Button>
         </div>
@@ -171,7 +171,7 @@ export default function VenueDetailPage({
           className="absolute left-4 top-24 z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-4 py-2 text-sm backdrop-blur-sm transition-colors hover:border-primary hover:text-primary md:left-6 md:top-28"
         >
           <ArrowLeft size={16} />
-          All venues
+          {t("allVenuesLink")}
         </Link>
 
         <button
@@ -184,7 +184,7 @@ export default function VenueDetailPage({
               void navigator.clipboard.writeText(window.location.href);
             }
           }}
-          aria-label="Share venue"
+          aria-label={t("shareVenue")}
         >
           <Share2 size={18} />
         </button>
@@ -208,7 +208,10 @@ export default function VenueDetailPage({
             {(venue.capacityMin || venue.capacityMax) && (
               <span className="flex items-center gap-2">
                 <Users size={15} className="text-primary" />
-                {venue.capacityMin ?? "?"}–{venue.capacityMax ?? "?"} guests
+                {t("guestsRange", {
+                  min: venue.capacityMin ?? "?",
+                  max: venue.capacityMax ?? "?",
+                })}
               </span>
             )}
             {priceInfo && (
@@ -230,10 +233,12 @@ export default function VenueDetailPage({
         <section className="container relative z-10 mx-auto -mt-4 px-4">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
-              Gallery
+              {t("gallery")}
             </h2>
             <span className="text-xs text-zinc-500">
-              {galleryImages.length} photo{galleryImages.length !== 1 ? "s" : ""}
+              {galleryImages.length === 1
+                ? t("photoCount", { count: galleryImages.length })
+                : t("photosCount", { count: galleryImages.length })}
             </span>
           </div>
           <Carousel opts={{ loop: true, align: "start" }} className="w-full">
@@ -268,10 +273,10 @@ export default function VenueDetailPage({
           <div className="space-y-10 lg:col-span-2">
             {/* About */}
             <div>
-              <h2 className="mb-4 text-xl font-bold text-primary">About this venue</h2>
+              <h2 className="mb-4 text-xl font-bold text-primary">{t("aboutVenue")}</h2>
               <div className="rounded-2xl border border-[#303030] bg-[#1B1B1B] p-6">
                 <p className="whitespace-pre-line leading-relaxed text-zinc-300">
-                  {venue.description || "No description provided."}
+                  {venue.description || t("noDescription")}
                 </p>
               </div>
             </div>
@@ -284,7 +289,7 @@ export default function VenueDetailPage({
                     <Building2 size={18} className="text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500">Pricing</p>
+                    <p className="text-xs text-zinc-500">{t("pricing")}</p>
                     <p className="font-semibold text-white">
                       {pricingModelLabel(venue.pricing.modelType)}
                     </p>
@@ -298,7 +303,9 @@ export default function VenueDetailPage({
                     </p>
                     {venue.pricing.taxRate && (
                       <p className="text-xs text-zinc-500">
-                        +{decimalToNumber(venue.pricing.taxRate)}% tax
+                        {t("taxPercent", {
+                          rate: decimalToNumber(venue.pricing.taxRate),
+                        })}
                       </p>
                     )}
                   </div>
@@ -311,9 +318,12 @@ export default function VenueDetailPage({
                     <Users size={18} className="text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500">Capacity</p>
+                    <p className="text-xs text-zinc-500">{t("capacity")}</p>
                     <p className="font-semibold text-white">
-                      {venue.capacityMin ?? "?"} – {venue.capacityMax ?? "?"} guests
+                      {t("guestsRange", {
+                        min: venue.capacityMin ?? "?",
+                        max: venue.capacityMax ?? "?",
+                      })}
                     </p>
                   </div>
                 </div>
@@ -325,7 +335,7 @@ export default function VenueDetailPage({
                     <MapPin size={18} className="text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500">Location</p>
+                    <p className="text-xs text-zinc-500">{t("location")}</p>
                     <p className="font-semibold text-white">{fullAddress}</p>
                   </div>
                 </div>
@@ -335,13 +345,13 @@ export default function VenueDetailPage({
             {/* Property details */}
             {hasPropertyDetails && (
               <div>
-                <h2 className="mb-4 text-xl font-bold text-primary">Property details</h2>
+                <h2 className="mb-4 text-xl font-bold text-primary">{t("propertyDetails")}</h2>
                 <div className="grid gap-4 sm:grid-cols-3">
                   {propertyAttrs.floorArea != null && (
                     <div className="flex items-center gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4">
                       <Maximize2 size={18} className="text-primary" />
                       <div>
-                        <p className="text-xs text-zinc-500">Floor area</p>
+                        <p className="text-xs text-zinc-500">{t("floorArea")}</p>
                         <p className="font-semibold">{propertyAttrs.floorArea} m²</p>
                       </div>
                     </div>
@@ -350,7 +360,7 @@ export default function VenueDetailPage({
                     <div className="flex items-center gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4">
                       <BedDouble size={18} className="text-primary" />
                       <div>
-                        <p className="text-xs text-zinc-500">Bedrooms</p>
+                        <p className="text-xs text-zinc-500">{t("bedrooms")}</p>
                         <p className="font-semibold">{propertyAttrs.bedrooms}</p>
                       </div>
                     </div>
@@ -359,7 +369,7 @@ export default function VenueDetailPage({
                     <div className="flex items-center gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4">
                       <Bath size={18} className="text-primary" />
                       <div>
-                        <p className="text-xs text-zinc-500">Bathrooms</p>
+                        <p className="text-xs text-zinc-500">{t("bathrooms")}</p>
                         <p className="font-semibold">{propertyAttrs.bathrooms}</p>
                       </div>
                     </div>
@@ -373,7 +383,7 @@ export default function VenueDetailPage({
               <div>
                 <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-primary">
                   <Sparkles size={20} />
-                  Amenities
+                  {t("amenities")}
                 </h2>
                 <ul className="flex flex-wrap gap-3">
                   {venue.amenities!.map((a) => {
@@ -383,14 +393,14 @@ export default function VenueDetailPage({
                         key={a.id}
                         className="rounded-full border border-[#303030] bg-[#1B1B1B] px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-primary/50 hover:text-white"
                       >
-                        {a.catalog?.name ?? "Amenity"}
+                        {a.catalog?.name ?? t("amenity")}
                         {priceInfo ? (
                           <span className="ml-2 text-primary">
                             <DisplayPrice amount={priceInfo.amount} currency={currency} />
                             <span className="text-zinc-500"> {priceInfo.suffix}</span>
                           </span>
                         ) : (
-                          <span className="ml-2 text-xs text-primary">Included</span>
+                          <span className="ml-2 text-xs text-primary">{t("included")}</span>
                         )}
                       </li>
                     );
@@ -401,7 +411,7 @@ export default function VenueDetailPage({
 
             {/* Map */}
             <div>
-              <h2 className="mb-4 text-xl font-bold text-primary">Location</h2>
+              <h2 className="mb-4 text-xl font-bold text-primary">{t("location")}</h2>
               <div className="overflow-hidden rounded-2xl border border-[#303030] bg-[#1B1B1B]">
                 <div className="relative min-h-[280px]">
                   {mapEmbedUrl ? (
@@ -416,7 +426,7 @@ export default function VenueDetailPage({
                   ) : (
                     <div className="flex min-h-[280px] items-center justify-center text-zinc-500">
                       <MapPin size={32} className="mr-2" />
-                      <span>Map not available</span>
+                      <span>{t("mapNotAvailable")}</span>
                     </div>
                   )}
                 </div>
@@ -430,12 +440,12 @@ export default function VenueDetailPage({
               <div className="rounded-2xl border border-[#303030] bg-[#1B1B1B] p-6 shadow-xl shadow-black/20">
                 <div className="mb-5 flex items-center gap-2 border-b border-[#303030] pb-4">
                   <CalendarDays size={20} className="text-primary" />
-                  <h2 className="text-lg font-semibold text-white">Check availability</h2>
+                  <h2 className="text-lg font-semibold text-white">{t("checkAvailability")}</h2>
                 </div>
 
                 {priceInfo && (
                   <div className="mb-5 rounded-xl bg-primary/10 px-4 py-3 text-center">
-                    <p className="text-xs uppercase tracking-wider text-zinc-400">From</p>
+                    <p className="text-xs uppercase tracking-wider text-zinc-400">{t("fromLabel")}</p>
                     <p className="text-xl font-bold text-primary">
                       <DisplayPrice amount={priceInfo.price} currency={priceInfo.currency} />
                       <span className="ml-1 text-sm font-normal text-zinc-400">
@@ -461,7 +471,7 @@ export default function VenueDetailPage({
                 {selectedDate && (
                   <div className="mt-5 space-y-3 border-t border-[#303030] pt-5">
                     <h3 className="text-sm font-medium text-zinc-300">
-                      Available slots — {formatDateKey(selectedDate)}
+                      {t("availableSlots", { date: formatDateKey(selectedDate) })}
                     </h3>
                     {dayLoading ? (
                       <div className="flex justify-center py-4">
@@ -485,7 +495,7 @@ export default function VenueDetailPage({
                               setBookingOpen(true);
                             }}
                           >
-                            Book {slotLabel} —{" "}
+                            {t("bookSlot", { slot: slotLabel })} —{" "}
                             <DisplayPrice amount={daySlot.price} currency={currency} />
                           </Button>
                         );
@@ -510,7 +520,7 @@ export default function VenueDetailPage({
                             className="w-full rounded-full bg-primary hover:bg-primary/90"
                             onClick={() => setBookingOpen(true)}
                           >
-                            Continue to book
+                            {t("continueToBook")}
                           </Button>
                         )}
                         {(dayAvailability?.slots?.length ?? 0) > 0 &&
@@ -526,7 +536,7 @@ export default function VenueDetailPage({
 
                 {!selectedDate && (
                   <p className="mt-4 text-center text-xs text-zinc-500">
-                    Select a date to view available time slots
+                    {t("selectDateForSlots")}
                   </p>
                 )}
               </div>

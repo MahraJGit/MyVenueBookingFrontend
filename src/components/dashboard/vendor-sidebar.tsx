@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import {
   X,
   Plus,
@@ -32,6 +33,10 @@ export default function VendorSidebar({
   isOpen: boolean
   onClose: () => void
 }) {
+  const t = useTranslations('vendorDashboard')
+  const tNav = useTranslations('nav')
+  const tCommon = useTranslations('common')
+
   return (
     <aside
       className={`
@@ -51,42 +56,42 @@ export default function VendorSidebar({
       </div>
 
       <div className="flex items-center justify-center gap-2 mb-6 px-2">
-        <Image src="/svg/logo.svg" alt="logo" width={170} height={70} />
+        <Image src="/svg/logo.svg" alt={tCommon('logoAlt')} width={170} height={70} />
       </div>
 
       <div className="mb-6 grid gap-2">
         <Link href={paths.addEvent} onClick={onClose}>
           <Button className="bg-primary hover:bg-primary/80 text-white flex gap-2 w-full">
             <Plus size={18} />
-            Create Event
+            {t('createEvent')}
           </Button>
         </Link>
         <Link href={paths.addVenue} onClick={onClose}>
           <Button variant="outline" className="border-[#303030] text-white hover:bg-primary/20 flex gap-2 w-full">
             <Plus size={18} />
-            Add Venue
+            {t('addVenue')}
           </Button>
         </Link>
       </div>
 
       <Accordion type="multiple" defaultValue={['overview', 'events', 'venues', 'account']} className="space-y-2">
-        <SidebarSection title="Overview" value="overview">
-          <SidebarLink icon={LayoutDashboard} label="Dashboard" href={paths.root} onClose={onClose} />
-          <SidebarLink icon={TrendingUp} label="Analytics" href={paths.analytics} onClose={onClose} />
+        <SidebarSection title={t('overview')} value="overview">
+          <SidebarLink icon={LayoutDashboard} label={t('dashboard')} href={paths.root} onClose={onClose} />
+          <SidebarLink icon={TrendingUp} label={t('analytics')} href={paths.analytics} onClose={onClose} />
         </SidebarSection>
 
-        <SidebarSection title="Events" value="events">
-          <SidebarLink icon={Clapperboard} label="My Events" href={paths.events} onClose={onClose} />
-          <SidebarLink icon={Ticket} label="Ticket Sales" href={paths.tickets} onClose={onClose} />
+        <SidebarSection title={t('eventsSection')} value="events">
+          <SidebarLink icon={Clapperboard} label={t('myEvents')} href={paths.events} onClose={onClose} />
+          <SidebarLink icon={Ticket} label={t('ticketSales')} href={paths.tickets} onClose={onClose} />
         </SidebarSection>
 
-        <SidebarSection title="Venues" value="venues">
-          <SidebarLink icon={Building2} label="My Venues" href={paths.venues} onClose={onClose} />
-          <SidebarLink icon={CalendarDays} label="Venue Bookings" href={paths.venueBookings} onClose={onClose} />
+        <SidebarSection title={t('venuesSection')} value="venues">
+          <SidebarLink icon={Building2} label={t('myVenues')} href={paths.venues} onClose={onClose} />
+          <SidebarLink icon={CalendarDays} label={t('venueBookings')} href={paths.venueBookings} onClose={onClose} />
         </SidebarSection>
 
-        <SidebarSection title="Account" value="account">
-          <SidebarLink icon={Calendar} label="Customer Dashboard" href="/userDashboard/tickets" onClose={onClose} />
+        <SidebarSection title={t('account')} value="account">
+          <SidebarLink icon={Calendar} label={tNav('customerDashboard')} href="/userDashboard/tickets" onClose={onClose} />
         </SidebarSection>
       </Accordion>
     </aside>

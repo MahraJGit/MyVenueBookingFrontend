@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -41,8 +42,8 @@ import { toastApiError } from "@/lib/toasts";
 
 const PAYMENT_METHODS_KEY = ["payment-methods"] as const;
 
-function formatCardBrand(brand: string | null) {
-  if (!brand) return "Card";
+function formatCardBrand(brand: string | null, fallback: string) {
+  if (!brand) return fallback;
   return brand.charAt(0).toUpperCase() + brand.slice(1);
 }
 
@@ -58,6 +59,11 @@ export default function VenueBookingCheckoutPage({
   const { bookingId } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const tVenueCheckout = useTranslations("venueCheckout");
+  const tBooking = useTranslations("booking");
+  const tCheckout = useTranslations("checkout");
+  const tUserDashboard = useTranslations("userDashboard");
+  const tCommon = useTranslations("common");
 
   const { data: booking, isLoading, refetch } = useQuery({
     queryKey: bookingKeys.detail(bookingId),
@@ -85,14 +91,14 @@ export default function VenueBookingCheckoutPage({
       if (result.status === "requires_action") {
         try {
           await confirmCardPaymentIfNeeded(result.clientSecret);
-          toast.success("Payment confirmed!");
+          toast.success(tVenueCheckout("paymentConfirmed"));
           router.push(`/userDashboard/bookings/${bookingId}`);
         } catch (e) {
-          toastApiError(e, "Payment authentication failed");
+          toastApiError(e, tVenueCheckout("paymentAuthFailed"));
         }
         return;
       }
-      toast.success("Booking confirmed!");
+      toast.success(tBooking("bookingConfirmed"));
       router.push(`/userDashboard/bookings/${bookingId}`);
     },
     onError: (e) => {
@@ -100,7 +106,7 @@ export default function VenueBookingCheckoutPage({
         const code = (e as ApiError & { code?: string }).code;
         if (code === "PAYMENT_METHOD_REQUIRED") {
           void refetchPaymentMethods();
-          toast.error("Add a payment method to continue.");
+          toast.error(tVenueCheckout("addPaymentToContinue"));
           return;
         }
       }
@@ -153,7 +159,7 @@ export default function VenueBookingCheckoutPage({
             className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to venue
+            {tVenueCheckout("backToVenue")}
           </Link>
         </div>
 
@@ -162,13 +168,13 @@ export default function VenueBookingCheckoutPage({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wider text-primary">
-                  Secure checkout
+                  {tVenueCheckout("secureCheckout")}
                 </p>
                 <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">
-                  Complete your booking
+                  {tVenueCheckout("completeBooking")}
                 </h1>
                 <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                  Review your reservation details and confirm payment to secure your slot.
+                  {tVenueCheckout("completeBookingDesc")}
                 </p>
               </div>
               {booking.expiresAt ? (
@@ -184,7 +190,7 @@ export default function VenueBookingCheckoutPage({
           <div className="space-y-6 p-6 sm:p-8">
             <section className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Booking summary
+                {tVenueCheckout("bookingSummary")}
               </h2>
 
               <div className="flex gap-4">
@@ -219,14 +225,17 @@ export default function VenueBookingCheckoutPage({
                     <div>
                       <p>{formatInVenueTimezone(booking.startTime, tz)}</p>
                       <p className="text-muted-foreground">
-                        to {formatInVenueTimezone(booking.endTime, tz)}
+                        {tVenueCheckout("toTime", {
+                          time: formatInVenueTimezone(booking.endTime, tz),
+                        })}
                       </p>
                     </div>
                   </div>
 
                   {booking.numGuests ? (
                     <p className="text-sm text-muted-foreground">
-                      {booking.numGuests} guest{booking.numGuests !== 1 ? "s" : ""}
+                      {booking.numGuests}{" "}
+                      {booking.numGuests !== 1 ? tCommon("guests") : tCommon("guest")}
                     </p>
                   ) : null}
                 </div>
@@ -236,7 +245,7 @@ export default function VenueBookingCheckoutPage({
             <section className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Payment method
+                  {tCheckout("paymentMethod")}
                 </h2>
                 <AddCardDialog onSuccess={handleCardAdded} />
               </div>
@@ -244,7 +253,7 @@ export default function VenueBookingCheckoutPage({
               {checkingCard ? (
                 <div className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 px-4 py-5 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading saved cards…
+                  {tUserDashboard("loadingCards")}
                 </div>
               ) : selectedMethod ? (
                 <div className="flex items-center justify-between rounded-xl border border-zinc-700 bg-linear-to-r from-zinc-900 to-zinc-800/80 px-4 py-4">
@@ -254,12 +263,14 @@ export default function VenueBookingCheckoutPage({
                     </div>
                     <div>
                       <p className="font-medium text-white">
-                        {formatCardBrand(selectedMethod.brand)} •••• {selectedMethod.last4}
+                        {formatCardBrand(selectedMethod.brand, tVenueCheckout("cardFallback"))} ••••{" "}
+                        {selectedMethod.last4}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Expires {String(selectedMethod.expMonth).padStart(2, "0")}/
+                        {tUserDashboard("expires")}{" "}
+                        {String(selectedMethod.expMonth).padStart(2, "0")}/
                         {String(selectedMethod.expYear).slice(-2)}
-                        {selectedMethod.isDefault ? " · Default" : ""}
+                        {selectedMethod.isDefault ? tUserDashboard("defaultSuffix") : ""}
                       </p>
                     </div>
                   </div>
@@ -267,20 +278,24 @@ export default function VenueBookingCheckoutPage({
                     href="/userDashboard/payment"
                     className="text-xs font-medium text-primary hover:underline"
                   >
-                    Manage
+                    {tVenueCheckout("manage")}
                   </Link>
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed border-zinc-700 bg-zinc-900/50 px-4 py-6 text-center">
                   <CreditCard className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm font-medium text-white">No payment method saved</p>
+                  <p className="text-sm font-medium text-white">
+                    {tVenueCheckout("noPaymentMethod")}
+                  </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Add a card to complete your booking.
+                    {tVenueCheckout("addCardToBook")}
                   </p>
                   <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
                     <AddCardDialog onSuccess={handleCardAdded} variant="button" />
                     <Button asChild variant="outline" size="sm" className="border-zinc-700">
-                      <Link href="/userDashboard/payment">Go to payment settings</Link>
+                      <Link href="/userDashboard/payment">
+                        {tVenueCheckout("goToPaymentSettings")}
+                      </Link>
                     </Button>
                   </div>
                 </div>
@@ -289,7 +304,9 @@ export default function VenueBookingCheckoutPage({
 
             <section className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
               <div className="flex items-start justify-between gap-4">
-                <span className="text-base font-medium text-white">Total due</span>
+                <span className="text-base font-medium text-white">
+                  {tVenueCheckout("totalDue")}
+                </span>
                 <CheckoutPrice
                   amount={totalAmount}
                   currency={currency}
@@ -299,7 +316,7 @@ export default function VenueBookingCheckoutPage({
               </div>
               <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <ShieldCheck className="h-3.5 w-3.5 text-green-500" />
-                Payments are processed securely by Stripe
+                {tVenueCheckout("stripeSecure")}
               </p>
             </section>
 
@@ -312,15 +329,15 @@ export default function VenueBookingCheckoutPage({
                 {checkoutMut.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing payment…
+                    {tCheckout("processing")}
                   </>
                 ) : (
-                  `Pay ${chargeFormatted}`
+                  tVenueCheckout("payAmount", { amount: chargeFormatted })
                 )}
               </Button>
 
               <p className="text-center text-xs text-muted-foreground">
-                By paying, you agree to the venue&apos;s booking and cancellation policies.
+                {tVenueCheckout("agreePolicies")}
               </p>
             </div>
           </div>
@@ -338,6 +355,7 @@ function AddCardDialog({
   variant?: "link" | "button";
 }) {
   const [open, setOpen] = useState(false);
+  const tUserDashboard = useTranslations("userDashboard");
 
   const handleSuccess = () => {
     setOpen(false);
@@ -354,7 +372,7 @@ function AddCardDialog({
           onClick={() => setOpen(true)}
         >
           <Plus className="mr-1.5 h-4 w-4" />
-          Add card
+          {tUserDashboard("addCard")}
         </Button>
       ) : (
         <button
@@ -363,14 +381,14 @@ function AddCardDialog({
           className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
         >
           <Plus className="h-3.5 w-3.5" />
-          Add card
+          {tUserDashboard("addCard")}
         </button>
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="border-zinc-800 bg-zinc-900 sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add payment method</DialogTitle>
+            <DialogTitle>{tUserDashboard("addPaymentMethod")}</DialogTitle>
           </DialogHeader>
           {open ? (
             <AddCardForm onSuccess={handleSuccess} onCancel={() => setOpen(false)} />

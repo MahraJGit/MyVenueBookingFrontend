@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,10 @@ export function VerifyOtpForm() {
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
   const redirect = searchParams.get("redirect") || "/";
+
+  const t = useTranslations("auth");
+  const tCommon = useTranslations("common");
+  const tErrors = useTranslations("errors");
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpInlineError, setOtpInlineError] = useState("");
@@ -55,8 +60,8 @@ export function VerifyOtpForm() {
         accessToken: data.accessToken,
         user: data.user,
       });
-      toast.success(data.message || "You're verified!", {
-        description: `Signed in as ${data.user.email}`,
+      toast.success(data.message || t("verifiedSuccess"), {
+        description: t("signedInAs", { email: data.user.email }),
       });
       router.replace(redirect);
     },
@@ -71,7 +76,7 @@ export function VerifyOtpForm() {
       setResendInlineError("");
     },
     onSuccess: (data) => {
-      toast.success(data.message || "A new verification code was sent.");
+      toast.success(data.message || t("otpResent"));
       setOtp(["", "", "", "", "", ""]);
       setOtpInlineError("");
       setCooldownSec(RESEND_COOLDOWN_SECONDS);
@@ -140,17 +145,14 @@ export function VerifyOtpForm() {
     if (!userIdParam) return;
 
     if (!getPublicApiBaseUrl()) {
-      toast.error("API not configured", {
-        description:
-          "Set NEXT_PUBLIC_API_BASE_URL in .env.local (see .env.example).",
+      toast.error(tErrors("apiNotConfigured"), {
+        description: tErrors("apiNotConfiguredDescription"),
       });
       return;
     }
 
     if (!isOtpComplete) {
-      setOtpInlineError(
-        "Enter all 6 digits from your SMS (you can paste the full code).",
-      );
+      setOtpInlineError(t("enterAllDigits"));
       return;
     }
 
@@ -161,9 +163,8 @@ export function VerifyOtpForm() {
     if (!userIdParam) return;
 
     if (!getPublicApiBaseUrl()) {
-      toast.error("API not configured", {
-        description:
-          "Set NEXT_PUBLIC_API_BASE_URL in .env.local (see .env.example).",
+      toast.error(tErrors("apiNotConfigured"), {
+        description: tErrors("apiNotConfiguredDescription"),
       });
       return;
     }
@@ -185,15 +186,13 @@ export function VerifyOtpForm() {
       <section className="verify-otp">
         <div className="flex flex-col items-center justify-center text-white px-4 py-24 max-w-xs mx-auto text-center">
           <p className="text-gray-300 text-sm">
-            Verification needs a signup session (missing{" "}
-            <code className="text-xs text-gray-500">userId</code>
-            ). Complete registration first—we&apos;ll send an OTP next.
+            {t("missingUserIdSession")}
           </p>
           <Button asChild variant="outline" className="mt-6 border-[#303030]">
             <Link
               href={`/signup${redirect !== "/" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
             >
-              Back to sign up
+              {t("backToSignup")}
             </Link>
           </Button>
         </div>
@@ -207,16 +206,16 @@ export function VerifyOtpForm() {
         <div className="flex flex-col items-center mb-8">
           <Image
             src="/images/logo2.png"
-            alt="Logo"
+            alt={tCommon("logoAlt")}
             width={48}
             height={48}
             priority
           />
           <h2 className="text-xl font-semibold text-white mt-6">
-            Verify your account
+            {t("verifyAccount")}
           </h2>
           <p className="text-gray-400 mt-3 text-center text-sm max-w-xs leading-relaxed">
-            Enter the 6-digit code we sent to your phone via SMS.
+            {t("enterSixDigitCode")}
           </p>
         </div>
 
@@ -239,7 +238,7 @@ export function VerifyOtpForm() {
                 maxLength={1}
                 disabled={pending}
                 className="bg-[#242424] border border-[#242424] text-white text-center placeholder:text-gray-500 w-12 h-12 text-lg"
-                aria-label={`Digit ${index + 1} of 6`}
+                aria-label={t("digitOfSix", { n: index + 1 })}
               />
             ))}
           </div>
@@ -264,19 +263,18 @@ export function VerifyOtpForm() {
               className="h-auto min-h-0 p-0 text-sm font-medium text-pink-500 hover:text-pink-400 disabled:opacity-50 disabled:no-underline"
             >
               {resendPending
-                ? "Sending code…"
+                ? t("sendingCode")
                 : cooldownSec > 0
-                  ? `Resend code in ${cooldownSec}s`
-                  : "Resend code"}
+                  ? t("resendCodeIn", { seconds: cooldownSec })
+                  : t("resendCode")}
             </Button>
             <span className="sr-only" aria-live="polite">
               {cooldownSec > 0
-                ? `You can resend the code in ${cooldownSec} seconds.`
-                : "You can resend the verification code now."}
+                ? t("resendCooldownSr", { seconds: cooldownSec })
+                : t("resendCodeNow")}
             </span>
             <p className="text-center text-xs text-gray-500 max-w-xs leading-snug">
-              Didn&apos;t get the SMS? You can request a new code after the timer.
-              Standard message rates may apply.
+              {t("smsHint")}
             </p>
             {resendInlineError ? (
               <p
@@ -295,17 +293,17 @@ export function VerifyOtpForm() {
             disabled={pending || !isOtpComplete}
             className="mt-6 cursor-pointer w-full bg-pink-600 hover:bg-pink-700 disabled:opacity-50"
           >
-            {pending ? "Verifying..." : "Verify code"}
+            {pending ? t("verifying") : t("verifyCode")}
           </Button>
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-4">
-          Wrong number?{" "}
+          {t("wrongNumber")}{" "}
           <Link
             href={`/signup${redirect !== "/" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
             className="text-pink-500 hover:underline"
           >
-            Back to sign up
+            {t("backToSignup")}
           </Link>
         </p>
       </div>

@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Minus, Plus, Loader2, CreditCard, Ticket } from "lucide-react";
 import {
   Dialog,
@@ -25,7 +26,7 @@ import { toastApiError } from "@/lib/toasts";
 import { toast } from "sonner";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { CheckoutPrice } from "@/components/currency/CheckoutPrice";
-import { useDisplayPrice } from "@/features/currency/currency-context";
+import { useDisplayPrice, useCurrency } from "@/features/currency/currency-context";
 
 type TicketPurchaseDialogProps = {
   open: boolean;
@@ -54,6 +55,10 @@ export function TicketPurchaseDialog({
 }: TicketPurchaseDialogProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const tTicket = useTranslations("ticketPurchase");
+  const tEvents = useTranslations("events");
+  const tCommon = useTranslations("common");
+  const { formatChargePrice } = useCurrency();
   const [quantities, setQuantities] = React.useState<Quantities>({});
   const [checkingPayment, setCheckingPayment] = React.useState(false);
   const [purchasing, setPurchasing] = React.useState(false);
@@ -95,7 +100,7 @@ export function TicketPurchaseDialog({
           setDefaultCardLabel(null);
         } else {
           setPaymentBlocked(false);
-          const brand = def.brand ? def.brand.toUpperCase() : "Card";
+          const brand = def.brand ? def.brand.toUpperCase() : tTicket("cardLabel");
           setDefaultCardLabel(`${brand} •••• ${def.last4}`);
         }
       })
@@ -109,7 +114,7 @@ export function TicketPurchaseDialog({
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, tTicket]);
 
   const lineItems = React.useMemo(() => {
     return ticketTypes
@@ -149,12 +154,12 @@ export function TicketPurchaseDialog({
     }
 
     if (paymentBlocked) {
-      toast.error("Add a payment method before purchasing tickets.");
+      toast.error(tTicket("addPaymentBeforePurchase"));
       return;
     }
 
     if (lineItems.length === 0) {
-      toast.error("Select at least one ticket.");
+      toast.error(tTicket("selectAtLeastOne"));
       return;
     }
 
@@ -173,9 +178,8 @@ export function TicketPurchaseDialog({
         await completeTicketPurchase(result.orderGroupId, result.paymentIntentId);
       }
 
-      toast.success("Tickets purchased successfully!", {
-        description:
-          "A confirmation email has been sent to you. The event organizer was notified as well.",
+      toast.success(tTicket("purchaseSuccess"), {
+        description: tTicket("purchaseSuccessDesc"),
       });
       onOpenChange(false);
       onPurchaseSuccess?.();
@@ -184,7 +188,7 @@ export function TicketPurchaseDialog({
         const code = (err as ApiError & { code?: string }).code;
         if (code === "PAYMENT_METHOD_REQUIRED") {
           setPaymentBlocked(true);
-          toast.error("Add a payment method in your dashboard to continue.");
+          toast.error(tTicket("addPaymentInDashboard"));
           return;
         }
       }
@@ -198,22 +202,23 @@ export function TicketPurchaseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[90vh] overflow-y-auto border-zinc-800 bg-zinc-900 text-white sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Get tickets</DialogTitle>
+            <DialogTitle>{tTicket("title")}</DialogTitle>
             <DialogDescription className="text-zinc-400">
               {event.eventName}
             </DialogDescription>
           </DialogHeader>
 
           {ticketTypes.length === 0 ? (
-            <p className="text-sm text-zinc-400">No tickets are currently available.</p>
+            <p className="text-sm text-zinc-400">{tTicket("noTicketsAvailable")}</p>
           ) : (
             <div className="space-y-4">
               <ul className="space-y-4">
-                {ticketTypes.map((t) => {
-                  const id = t.id!;
-                  const max = availableCount(t);
+                {ticketTypes.map((ticket) => {
+                  const id = ticket.id!;
+                  const max = availableCount(ticket);
                   const qty = quantities[id] ?? 0;
-                  const price = ticketPrice(t.price);
+                  const price = ticketPrice(ticket.price);
+                  const ticketCurrency = ticket.currency || currency;
 
                   return (
                     <li
@@ -224,19 +229,22 @@ export function TicketPurchaseDialog({
                         <div>
                           <div className="flex items-center gap-2 font-medium">
                             <Ticket className="h-4 w-4 text-primary" />
-                            {t.name}
+                            {ticket.name}
                           </div>
                           <p className="mt-1 text-sm text-zinc-400">
-                            <DisplayPrice amount={price} currency={t.currency || currency} /> each · {max} left
+                            {tTicket("eachLeft", {
+                              price: formatChargePrice(price, ticketCurrency),
+                              count: max,
+                            })}
                           </p>
                         </div>
                         <span className="text-sm font-semibold text-primary">
-                          <DisplayPrice amount={price * qty} currency={t.currency || currency} />
+                          <DisplayPrice amount={price * qty} currency={ticketCurrency} />
                         </span>
                       </div>
 
                       <div className="mt-3 flex items-center justify-between">
-                        <span className="text-xs text-zinc-500">Quantity</span>
+                        <span className="text-xs text-zinc-500">{tEvents("quantity")}</span>
                         <div className="flex items-center gap-2">
                           <Button
                             type="button"
@@ -245,7 +253,7 @@ export function TicketPurchaseDialog({
                             className="h-8 w-8 border-zinc-600"
                             disabled={qty <= 0 || purchasing}
                             onClick={() => setQty(id, -1, max)}
-                            aria-label={`Decrease ${t.name}`}
+                            aria-label={tTicket("decreaseQuantity", { name: ticket.name })}
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
@@ -257,7 +265,7 @@ export function TicketPurchaseDialog({
                             className="h-8 w-8 border-zinc-600"
                             disabled={qty >= max || purchasing}
                             onClick={() => setQty(id, 1, max)}
-                            aria-label={`Increase ${t.name}`}
+                            aria-label={tTicket("increaseQuantity", { name: ticket.name })}
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
@@ -270,7 +278,7 @@ export function TicketPurchaseDialog({
 
               <div className="border-t border-zinc-700 pt-4">
                 <div className="flex items-start justify-between gap-4">
-                  <span className="text-lg font-semibold">Total</span>
+                  <span className="text-lg font-semibold">{tCommon("total")}</span>
                   <CheckoutPrice
                     amount={orderTotal}
                     currency={currency}
@@ -283,21 +291,19 @@ export function TicketPurchaseDialog({
               {checkingPayment ? (
                 <p className="flex items-center gap-2 text-sm text-zinc-400">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Checking payment method…
+                  {tTicket("checkingPayment")}
                 </p>
               ) : paymentBlocked ? (
                 <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-                  <p className="text-amber-200">
-                    You need a saved payment method before you can purchase tickets.
-                  </p>
+                  <p className="text-amber-200">{tTicket("paymentRequired")}</p>
                   <Button asChild variant="link" className="mt-1 h-auto p-0 text-primary">
-                    <Link href="/userDashboard/payment">Add payment method</Link>
+                    <Link href="/userDashboard/payment">{tTicket("addPaymentMethod")}</Link>
                   </Button>
                 </div>
               ) : defaultCardLabel ? (
                 <p className="flex items-center gap-2 text-sm text-zinc-400">
                   <CreditCard className="h-4 w-4 text-primary" />
-                  Pay with {defaultCardLabel}
+                  {tTicket("payWith", { card: defaultCardLabel })}
                 </p>
               ) : null}
 
@@ -314,10 +320,10 @@ export function TicketPurchaseDialog({
                 {purchasing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing…
+                    {tTicket("processing")}
                   </>
                 ) : (
-                  `Pay ${chargeFormatted}`
+                  tTicket("payAmount", { amount: chargeFormatted })
                 )}
               </Button>
             </div>

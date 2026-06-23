@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
+import { useTranslations } from 'next-intl'
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -53,6 +54,7 @@ type NotificationsListProps = {
 }
 
 export default function NotificationsList({ className }: NotificationsListProps) {
+  const t = useTranslations('notifications')
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<'all' | 'read' | 'unread'>('all')
   const [openId, setOpenId] = useState<string | null>(null)
@@ -94,18 +96,18 @@ export default function NotificationsList({ className }: NotificationsListProps)
     }
   }
 
+  const tabLabels = {
+    all: t('tabAll', { count: allNotifications.length }),
+    unread: t('tabUnread', { count: unreadCount }),
+    read: t('tabRead', { count: readCount }),
+  } as const
+
   return (
     <div className={className ?? 'mt-5 rounded-xl bg-[#121212] p-8'}>
       <div className="border-b border-[#242424] mb-6 flex items-center justify-between">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
           <TabsList className="bg-transparent p-0 gap-6">
-            {(
-              [
-                ['all', `All (${allNotifications.length})`],
-                ['unread', `Unread (${unreadCount})`],
-                ['read', `Read (${readCount})`],
-              ] as const
-            ).map(([value, label]) => (
+            {(['all', 'unread', 'read'] as const).map((value) => (
               <TabsTrigger
                 key={value}
                 value={value}
@@ -115,7 +117,7 @@ export default function NotificationsList({ className }: NotificationsListProps)
                   data-[state=active]:text-white
                   text-muted-foreground"
               >
-                {label}
+                {tabLabels[value]}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -125,7 +127,7 @@ export default function NotificationsList({ className }: NotificationsListProps)
           disabled={unreadCount === 0 || markAllMutation.isPending}
           onClick={() => markAllMutation.mutate()}
         >
-          Mark All as Read <CheckCheck className="ml-1 h-4 w-4" />
+          {t('markAllRead')} <CheckCheck className="ml-1 h-4 w-4" />
         </Button>
       </div>
 
@@ -135,19 +137,19 @@ export default function NotificationsList({ className }: NotificationsListProps)
         </div>
       ) : isError ? (
         <div className="py-16 text-center text-muted-foreground">
-          Could not load notifications. Please try again later.
+          {t('loadError')}
         </div>
       ) : filteredNotifications.length === 0 ? (
         <div className="flex flex-col items-center gap-4 py-16 text-center">
           <Image
             src="/svg/notificationbell.svg"
-            alt="no notifications"
+            alt={t('noNotificationsImageAlt')}
             width={200}
             height={200}
           />
-          <h3 className="text-lg font-semibold">No notifications here!</h3>
+          <h3 className="text-lg font-semibold">{t('emptyTitle')}</h3>
           <p className="text-muted-foreground max-w-sm">
-            You&apos;re all caught up. New notifications will appear here.
+            {t('emptyDescription')}
           </p>
         </div>
       ) : (
@@ -202,7 +204,7 @@ export default function NotificationsList({ className }: NotificationsListProps)
                         href={notification.link}
                         className="text-primary hover:underline text-sm inline-block"
                       >
-                        View details
+                        {t('viewDetails')}
                       </Link>
                     ) : null}
                   </div>

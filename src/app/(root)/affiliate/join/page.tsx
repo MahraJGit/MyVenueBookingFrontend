@@ -4,10 +4,10 @@ import * as React from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
@@ -79,6 +79,8 @@ const FileUploadField = ({
   uploadProgress?: number;
   isUploading?: boolean;
 }) => {
+  const t = useTranslations("affiliateJoin");
+
   return (
     <div>
       <p className="mb-2 text-sm">{label}</p>
@@ -88,10 +90,10 @@ const FileUploadField = ({
       >
         <Upload className="mb-2 h-6 w-6 text-white/70" />
         <span className="text-sm font-medium text-white">
-          Click to upload or drag and drop
+          {t("clickToUpload")}
         </span>
         <span className="mt-1 text-xs text-muted-foreground">
-          PDF files only (max. 10MB per file)
+          {t("pdfOnly")}
         </span>
         {selectedFileName ? (
           <span className="mt-1 max-w-full truncate text-xs text-primary">
@@ -100,7 +102,7 @@ const FileUploadField = ({
         ) : null}
         {isUploading ? (
           <span className="mt-1 text-xs text-muted-foreground">
-            Uploading... {uploadProgress ?? 0}%
+            {t("uploadingPercent", { percent: uploadProgress ?? 0 })}
           </span>
         ) : null}
         <input
@@ -125,6 +127,9 @@ type FileKey =
 
 const JoinAffiliateFormPage = () => {
   const router = useRouter();
+  const t = useTranslations("affiliateJoin");
+  const tCommon = useTranslations("common");
+  const tValidation = useTranslations("validation");
   const [authChecked, setAuthChecked] = React.useState(false);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [requestStatus, setRequestStatus] =
@@ -211,29 +216,26 @@ const JoinAffiliateFormPage = () => {
   const statusMeta = React.useMemo(() => {
     if (requestStatus === "APPROVED") {
       return {
-        title: "Your vendor request is approved",
-        description:
-          "Your profile has been approved. You can now start listing and managing venues from your dashboard.",
+        title: t("approvedTitle"),
+        description: t("approvedDesc"),
         badgeVariant: "default" as const,
       };
     }
 
     if (requestStatus === "REJECTED") {
       return {
-        title: "Your vendor request was rejected",
-        description:
-          "Your application has been reviewed and rejected. Please contact support for details before submitting a new request.",
+        title: t("rejectedTitle"),
+        description: t("rejectedDesc"),
         badgeVariant: "destructive" as const,
       };
     }
 
     return {
-      title: "Your vendor request is pending",
-      description:
-        "Your application is under review. We will notify you once the verification process is completed.",
+      title: t("pendingTitle"),
+      description: t("pendingDesc"),
       badgeVariant: "secondary" as const,
     };
-  }, [requestStatus]);
+  }, [requestStatus, t]);
 
   const handleInputChange =
     (field: keyof typeof formValues) =>
@@ -254,18 +256,18 @@ const JoinAffiliateFormPage = () => {
       !incorporationDate ||
       !tradeLicenseExpiryDate
     ) {
-      toast.error("Please select all required dates.");
+      toast.error(t("selectAllDates"));
       return;
     }
 
     if (!files.eidCopy || !files.passportCopy || !files.tradeLicenseCopy) {
-      toast.error("Please upload all required documents.");
+      toast.error(t("uploadAllDocuments"));
       return;
     }
 
     const phoneE164 = formValues.phoneE164?.trim() ?? "";
     if (!isE164Valid(phoneE164)) {
-      toast.error("Enter a valid international phone number.");
+      toast.error(tValidation("invalidPhone"));
       return;
     }
 
@@ -314,7 +316,7 @@ const JoinAffiliateFormPage = () => {
         : [];
 
       if (!eidCopyUrl || !passportCopyUrl || !tradeLicenseCopyUrl) {
-        toast.error("Failed to upload required documents. Please try again.");
+        toast.error(t("uploadDocumentsFailed"));
         return;
       }
 
@@ -344,7 +346,7 @@ const JoinAffiliateFormPage = () => {
         paymentTerms: formValues.paymentTerms as "NET_15" | "NET_30" | "NET_60",
       });
 
-      toast.success("Form submitted successfully.");
+      toast.success(t("formSubmitted"));
       setRequestStatus("PENDING");
     } catch (error: unknown) {
       if (error instanceof ApiError && error.statusCode === 401) {
@@ -362,7 +364,7 @@ const JoinAffiliateFormPage = () => {
       <section className="py-24">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-5xl text-center text-muted-foreground">
-            Checking your session...
+            {t("checkingSession")}
           </div>
         </div>
       </section>
@@ -393,19 +395,15 @@ const JoinAffiliateFormPage = () => {
     <section className="py-24 pt-28">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-5xl space-y-6">
-          <h1 className="page-title text-white">
-            List Your <span className="text-gradient-accent">Venue</span>
-          </h1>
-          <p className="text-muted-foreground">
-            Fill in your details to join the MyVenueBooking partner network.
-          </p>
+          <h1 className="page-title text-white">{t("pageTitle")}</h1>
+          <p className="text-muted-foreground">{t("pageSubtitle")}</p>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="rounded-xl border border-border bg-card p-5">
-              <h2 className="mb-4 text-lg font-medium">Personal Information</h2>
+              <h2 className="mb-4 text-lg font-medium">{t("personalInfo")}</h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Input
-                  placeholder="Vendor Name"
+                  placeholder={t("vendorName")}
                   value={formValues.vendorName}
                   onChange={handleInputChange("vendorName")}
                   required
@@ -417,39 +415,39 @@ const JoinAffiliateFormPage = () => {
                   }
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Business Type" />
+                    <SelectValue placeholder={t("businessType")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="INDIVIDUAL">Individual</SelectItem>
-                    <SelectItem value="COMPANY">Company</SelectItem>
-                    <SelectItem value="PARTNERSHIP">Partnership</SelectItem>
+                    <SelectItem value="INDIVIDUAL">{t("individual")}</SelectItem>
+                    <SelectItem value="COMPANY">{t("company")}</SelectItem>
+                    <SelectItem value="PARTNERSHIP">{t("partnership")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Input
-                  placeholder="Owner Name"
+                  placeholder={t("ownerName")}
                   value={formValues.ownerName}
                   onChange={handleInputChange("ownerName")}
                   required
                 />
                 <Input
-                  placeholder="EID Number"
+                  placeholder={t("eidNumber")}
                   value={formValues.eidNumber}
                   onChange={handleInputChange("eidNumber")}
                   required
                 />
                 <DatePickerField
-                  placeholder="EID Number Expiry Date"
+                  placeholder={t("eidExpiry")}
                   value={eidExpiryDate}
                   onChange={setEidExpiryDate}
                 />
                 <Input
-                  placeholder="Passport Number"
+                  placeholder={t("passportNumber")}
                   value={formValues.passportNumber}
                   onChange={handleInputChange("passportNumber")}
                   required
                 />
                 <DatePickerField
-                  placeholder="Passport Number Expiry Date"
+                  placeholder={t("passportExpiry")}
                   value={passportExpiryDate}
                   onChange={setPassportExpiryDate}
                 />
@@ -457,7 +455,7 @@ const JoinAffiliateFormPage = () => {
                   <div className="grid gap-4 md:grid-cols-2">
                     <FileUploadField
                       id="eid-document"
-                      label="Upload PDF EID"
+                      label={t("uploadEid")}
                       selectedFileName={files.eidCopy?.name}
                       uploadProgress={uploadProgress.eidCopy}
                       isUploading={Boolean(
@@ -469,7 +467,7 @@ const JoinAffiliateFormPage = () => {
                     />
                     <FileUploadField
                       id="passport-document"
-                      label="Upload PDF Passport"
+                      label={t("uploadPassport")}
                       selectedFileName={files.passportCopy?.name}
                       uploadProgress={uploadProgress.passportCopy}
                       isUploading={Boolean(
@@ -487,34 +485,34 @@ const JoinAffiliateFormPage = () => {
             </div>
 
             <div className="rounded-xl border border-border bg-card p-5">
-              <h2 className="mb-4 text-lg font-medium">Business Information</h2>
+              <h2 className="mb-4 text-lg font-medium">{t("businessInfo")}</h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Input
-                  placeholder="Legal Entity Name"
+                  placeholder={t("legalEntityName")}
                   value={formValues.legalEntityName}
                   onChange={handleInputChange("legalEntityName")}
                   required
                 />
                 <DatePickerField
-                  placeholder="Incorporation Date"
+                  placeholder={t("incorporationDate")}
                   value={incorporationDate}
                   onChange={setIncorporationDate}
                 />
                 <Input
-                  placeholder="Trade License Number"
+                  placeholder={t("tradeLicenseNumber")}
                   value={formValues.tradeLicenseNumber}
                   onChange={handleInputChange("tradeLicenseNumber")}
                   required
                 />
                 <DatePickerField
-                  placeholder="Trade License Expiry Date"
+                  placeholder={t("tradeLicenseExpiry")}
                   value={tradeLicenseExpiryDate}
                   onChange={setTradeLicenseExpiryDate}
                 />
                 <div className="md:col-span-2">
                   <FileUploadField
                     id="trade-license-document"
-                    label="Upload PDF Trade License"
+                    label={t("uploadTradeLicense")}
                     selectedFileName={files.tradeLicenseCopy?.name}
                     uploadProgress={uploadProgress.tradeLicenseCopy}
                     isUploading={Boolean(
@@ -531,11 +529,11 @@ const JoinAffiliateFormPage = () => {
             </div>
 
             <div className="rounded-xl border border-border bg-card p-5">
-              <h2 className="mb-4 text-lg font-medium">Contact Information</h2>
+              <h2 className="mb-4 text-lg font-medium">{t("contactInfo")}</h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Input
                   type="email"
-                  placeholder="Email Address"
+                  placeholder={t("emailAddress")}
                   value={formValues.email}
                   onChange={handleInputChange("email")}
                   required
@@ -551,7 +549,7 @@ const JoinAffiliateFormPage = () => {
                   />
                 </div>
                 <Input
-                  placeholder="Address"
+                  placeholder={t("address")}
                   className="md:col-span-2"
                   value={formValues.address}
                   onChange={handleInputChange("address")}
@@ -561,10 +559,10 @@ const JoinAffiliateFormPage = () => {
             </div>
 
             <div className="rounded-xl border border-border bg-card p-5">
-              <h2 className="mb-4 text-lg font-medium">Additional Details</h2>
+              <h2 className="mb-4 text-lg font-medium">{t("additionalDetails")}</h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Input
-                  placeholder="Tax ID"
+                  placeholder={t("taxId")}
                   value={formValues.taxId}
                   onChange={handleInputChange("taxId")}
                   required
@@ -576,18 +574,18 @@ const JoinAffiliateFormPage = () => {
                   }
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Payment Terms" />
+                    <SelectValue placeholder={t("paymentTerms")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="NET_15">Net 15</SelectItem>
-                    <SelectItem value="NET_30">Net 30</SelectItem>
-                    <SelectItem value="NET_60">Net 60</SelectItem>
+                    <SelectItem value="NET_15">{t("net15")}</SelectItem>
+                    <SelectItem value="NET_30">{t("net30")}</SelectItem>
+                    <SelectItem value="NET_60">{t("net60")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="md:col-span-2">
                   <FileUploadField
                     id="verification-documents"
-                    label="Verification Documents"
+                    label={t("verificationDocuments")}
                     selectedFileName={files.verificationDocument?.name}
                     uploadProgress={uploadProgress.verificationDocument}
                     isUploading={Boolean(
@@ -605,7 +603,7 @@ const JoinAffiliateFormPage = () => {
 
             <div className="flex justify-end">
               <Button type="submit" size="lg" disabled={isSubmitting}>
-                {isSubmitting ? "Submitting..." : "Submit"}
+                {isSubmitting ? t("submitting") : tCommon("submit")}
               </Button>
             </div>
           </form>

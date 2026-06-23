@@ -3,12 +3,15 @@
 import React from "react";
 import "@/styles/Home.css";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { HotEventsSection } from "@/components/events/HotEventsSection";
 import { HomeHeroSection } from "@/components/pages/home/HomeHeroSection";
 import { HomeTopVenuesSection } from "@/components/pages/home/HomeTopVenuesSection";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 const Home = () => {
+  const t = useTranslations("home");
+
   return (
     <>
       <HomeHeroSection />
@@ -79,8 +82,8 @@ const Home = () => {
       <section className="testimonials py-10 overflow-hidden relative">
         <div className="container mx-auto px-4">
           <div className="section-header mb-8 text-center">
-            <h2 className="mb-2">Loved by Thousands</h2>
-            <p>Smooth, easy ticket buying — hear it from our happy users.</p>
+            <h2 className="mb-2">{t("lovedByThousands")}</h2>
+            <p>{t("testimonialsSubtitle")}</p>
           </div>
 
           <div className="marquee flex gap-6 mb-6">
@@ -166,8 +169,8 @@ const Home = () => {
       <section className="faq py-10">
         <div className="container mx-auto px-4">
           <div className="section-header mb-8 text-center max-w-[600px] mx-auto">
-            <h2 className="mb-2">Frequently Asked <span className="text-primary">Questions</span></h2>
-            <p>Explore the most common questions and detailed answers about our events, concerts, and security to help guide your journey in the EVENJO.</p>
+            <h2 className="mb-2">{t("faqTitle")} <span className="text-primary">{t("faqTitleHighlight")}</span></h2>
+            <p>{t("faqSubtitle")}</p>
           </div>
 
           <div className="faq-items">
@@ -177,16 +180,16 @@ const Home = () => {
                   <div className="head flex items-center gap-2 text-xs">
                     <Image
                       src="/images/faq-icon.png"
-                      alt="FAQ Icon"
+                      alt={t("faqIconAlt")}
                       width={24}
                       height={24}
                       className="object-contain"
                     />
-                    When Exclusive Private Market for Event ticket sale Opportunities?
+                    {t("faqQ1")}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="mt-2 text-xs">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestiae fuga voluptates voluptas. Minima, error.
+                  {t("faqAnswerPlaceholder")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -195,16 +198,16 @@ const Home = () => {
                   <div className="head flex items-center gap-2 text-xs">
                     <Image
                       src="/images/faq-icon.png"
-                      alt="FAQ Icon"
+                      alt={t("faqIconAlt")}
                       width={24}
                       height={24}
                       className="object-contain"
                     />
-                    How can I purchase tickets for exclusive events?
+                    {t("faqQ2")}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="mt-2 text-xs">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestiae fuga voluptates voluptas. Minima, error.
+                  {t("faqAnswerPlaceholder")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -213,16 +216,16 @@ const Home = () => {
                   <div className="head flex items-center gap-2 text-xs">
                     <Image
                       src="/images/faq-icon.png"
-                      alt="FAQ Icon"
+                      alt={t("faqIconAlt")}
                       width={24}
                       height={24}
                       className="object-contain"
                     />
-                    What is the refund policy for events?
+                    {t("faqQ3")}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="mt-2 text-xs">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestiae fuga voluptates voluptas. Minima, error.
+                  {t("faqAnswerPlaceholder")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -231,16 +234,16 @@ const Home = () => {
                   <div className="head flex items-center gap-2 text-xs">
                     <Image
                       src="/images/faq-icon.png"
-                      alt="FAQ Icon"
+                      alt={t("faqIconAlt")}
                       width={24}
                       height={24}
                       className="object-contain"
                     />
-                    How secure is my personal information with EVENJO?
+                    {t("faqQ4")}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="mt-2 text-xs">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestiae fuga voluptates voluptas. Minima, error.
+                  {t("faqAnswerPlaceholder")}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

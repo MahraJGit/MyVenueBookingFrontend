@@ -9,6 +9,7 @@ import {
   Store,
   Ticket,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Avatar,
@@ -31,9 +32,9 @@ type HeaderAuthActionsProps = {
   stacked?: boolean;
 };
 
-function dashboardIcon(label: string) {
-  if (label.includes("Vendor")) return Store;
-  if (label.includes("Customer")) return Ticket;
+function dashboardIcon(href: string) {
+  if (href.startsWith("/vendorDashboard")) return Store;
+  if (href.startsWith("/userDashboard")) return Ticket;
   return LayoutDashboard;
 }
 
@@ -43,6 +44,9 @@ export function HeaderAuthActions({
   stacked = false,
 }: HeaderAuthActionsProps) {
   const router = useRouter();
+  const tNav = useTranslations("nav");
+  const tAuth = useTranslations("auth");
+  const tCommon = useTranslations("common");
   const { isAuthenticated, isReady, displayName, initials, dashboardLinks, logout } =
     useAuth();
 
@@ -74,7 +78,7 @@ export function HeaderAuthActions({
           className={stacked ? "w-full" : ""}
         >
           <Link href="/signup" onClick={onNavigate}>
-            Register
+            {tAuth("register")}
           </Link>
         </Button>
         <Button
@@ -83,7 +87,7 @@ export function HeaderAuthActions({
           className={stacked ? "w-full" : ""}
         >
           <Link href="/login" onClick={onNavigate}>
-            Login
+            {tAuth("login")}
           </Link>
         </Button>
       </div>
@@ -101,7 +105,7 @@ export function HeaderAuthActions({
         <button
           type="button"
           className={`rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${className}`}
-          aria-label="Open account menu"
+          aria-label={tCommon("openAccountMenu")}
         >
           <Avatar className="h-9 w-9 border border-border">
             <AvatarFallback className="bg-primary/15 text-primary text-sm font-medium">
@@ -116,7 +120,7 @@ export function HeaderAuthActions({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {dashboardLinks.map((link) => {
-          const Icon = dashboardIcon(link.label);
+          const Icon = dashboardIcon(link.href);
           return (
             <DropdownMenuItem
               key={link.href}
@@ -126,7 +130,7 @@ export function HeaderAuthActions({
               }}
             >
               <Icon className="size-4" />
-              {link.label}
+              {tNav(link.labelKey)}
             </DropdownMenuItem>
           );
         })}
@@ -137,12 +141,12 @@ export function HeaderAuthActions({
           }}
         >
           <Settings className="size-4" />
-          Profile Settings
+          {tNav("profileSettings")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onSelect={handleLogout}>
           <LogOut className="size-4" />
-          Logout
+          {tNav("logout")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -152,6 +156,7 @@ export function HeaderAuthActions({
 /** Mobile drawer: full-width links mirroring the avatar menu. */
 export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
+  const tNav = useTranslations("nav");
   const { isAuthenticated, isReady, displayName, dashboardLinks, logout } = useAuth();
 
   if (!isReady) return null;
@@ -175,7 +180,7 @@ export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void 
             router.push(link.href);
           }}
         >
-          {link.label}
+          {tNav(link.labelKey)}
         </button>
       ))}
       <button
@@ -186,7 +191,7 @@ export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void 
           router.push("/userDashboard/profile");
         }}
       >
-        Profile Settings
+        {tNav("profileSettings")}
       </button>
       <button
         type="button"
@@ -196,7 +201,7 @@ export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void 
           await logout();
         }}
       >
-        Logout
+        {tNav("logout")}
       </button>
     </div>
   );

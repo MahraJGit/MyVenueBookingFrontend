@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,9 @@ export function VenueBookingDialog({
   slot,
 }: VenueBookingDialogProps) {
   const router = useRouter();
+  const t = useTranslations("booking");
+  const tCommon = useTranslations("common");
+
   const [numGuests, setNumGuests] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
   const [amenitySelections, setAmenitySelections] = useState<AmenitySelection[]>([]);
@@ -64,7 +68,7 @@ export function VenueBookingDialog({
       });
     },
     onSuccess: (booking) => {
-      toast.success("Slot reserved for 15 minutes");
+      toast.success(t("slotReserved"));
       onOpenChange(false);
       router.push(`/venues/booking/${booking.id}/checkout`);
     },
@@ -73,7 +77,7 @@ export function VenueBookingDialog({
 
   const handleSubmit = () => {
     if (!getAccessToken()) {
-      toast.error("Please log in to book a venue");
+      toast.error(t("loginToBook"));
       router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
@@ -84,7 +88,7 @@ export function VenueBookingDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto border-[#303030] bg-[#1B1B1B] text-white sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Book {venue.name}</DialogTitle>
+          <DialogTitle>{t("bookVenue", { name: venue.name })}</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
           {dateStr} · {slot.startTime} – {slot.endTime} ({venue.timezone})
@@ -92,7 +96,7 @@ export function VenueBookingDialog({
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Number of guests</Label>
+            <Label>{t("numberOfGuests")}</Label>
             <Input
               type="number"
               min={1}
@@ -101,13 +105,13 @@ export function VenueBookingDialog({
               className="border-[#303030] bg-black"
               placeholder={
                 venue.capacityMax
-                  ? `Max ${venue.capacityMax}`
-                  : "Optional"
+                  ? t("maxGuests", { max: venue.capacityMax })
+                  : tCommon("optional")
               }
             />
           </div>
           <div className="space-y-2">
-            <Label>Special requests</Label>
+            <Label>{t("specialRequests")}</Label>
             <Textarea
               value={specialRequests}
               onChange={(e) => setSpecialRequests(e.target.value)}
@@ -117,7 +121,7 @@ export function VenueBookingDialog({
 
           {(venue.amenities?.length ?? 0) > 0 && (
             <div className="space-y-2">
-              <Label>Add-ons</Label>
+              <Label>{t("addOns")}</Label>
               <AmenityPicker
                 amenities={venue.amenities ?? []}
                 selections={amenitySelections}
@@ -133,7 +137,7 @@ export function VenueBookingDialog({
             disabled={holdMut.isPending}
           >
             {holdMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Reserve & checkout
+            {t("reserveAndCheckout")}
           </Button>
         </div>
       </DialogContent>

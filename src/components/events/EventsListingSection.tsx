@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,6 +42,8 @@ function sortValueFromParams(sortBy: string, sortOrder: string): string {
 export function EventsListingSection() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const tEvents = useTranslations("events");
+  const tCommon = useTranslations("common");
 
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
   const categoryFromUrl = searchParams.get("category")?.trim() ?? "";
@@ -148,10 +151,10 @@ export function EventsListingSection() {
       <div className="container mx-auto px-4">
         <div className="mb-10 max-w-3xl">
           <h1 className="page-title mb-3 text-white">
-            Discover <span className="text-gradient-accent">Events</span>
+            {tEvents("title")}
           </h1>
           <p className="text-muted-foreground">
-            Browse concerts, festivals, sports, and experiences near you.
+            {tEvents("allEvents")}
           </p>
         </div>
 
@@ -214,7 +217,7 @@ export function EventsListingSection() {
 
         {isError ? (
           <p className="mb-8 py-8 text-sm text-red-400">
-            {error instanceof Error ? error.message : "Could not load events."}
+            {error instanceof Error ? error.message : tEvents("couldNotLoadEvents")}
           </p>
         ) : null}
 
@@ -229,8 +232,9 @@ export function EventsListingSection() {
           </div>
         ) : events.length === 0 ? (
           <p className="mb-8 py-8 text-sm text-[#B3B3B3]">
-            No events found
-            {activeCategory !== ALL_EVENTS_CATEGORY ? ` in ${activeCategory}` : ""}
+            {activeCategory !== ALL_EVENTS_CATEGORY
+              ? tEvents("noEventsInCategory", { category: activeCategory })
+              : tEvents("noEventsFound")}
             {searchFromUrl ? ` matching "${searchFromUrl}"` : ""}
             {cityFromUrl ? ` in ${cityFromUrl}` : ""}.
           </p>
@@ -259,7 +263,7 @@ export function EventsListingSection() {
                 pushParams({ page: page <= 2 ? undefined : String(page - 1) });
               }}
             >
-              Previous
+              {tCommon("previous")}
             </Button>
             <span className="flex items-center px-4 text-sm text-muted-foreground">
               Page {page} of {totalPages}
@@ -273,7 +277,7 @@ export function EventsListingSection() {
                 pushParams({ page: String(page + 1) });
               }}
             >
-              Next
+              {tCommon("next")}
             </Button>
           </div>
         ) : null}

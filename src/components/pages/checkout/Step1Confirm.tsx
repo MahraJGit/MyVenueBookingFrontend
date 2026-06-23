@@ -1,27 +1,32 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import React from "react";
+import { useTranslations } from "next-intl";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { ShieldCheck, CircleDollarSign } from 'lucide-react';
+} from "@/components/ui/select";
 import Guarantee from "./Guarantee";
 import TimeLeft from "./TimeLeft";
 
-const Step1Confirm = ({ onNext }: any) => {
+const Step1Confirm = ({ onNext }: { onNext: () => void }) => {
+  const t = useTranslations("checkout");
+  const tCommon = useTranslations("common");
+
   return (
     <>
-    <TimeLeft />
+      <TimeLeft />
       <section className="space-y-4">
-        <p>Make sure the number of tickets is correct before proceeding.</p>
+        <p>{t("confirmTicketsHint")}</p>
         <div className="flex justify-between items-center">
-          <p>Ticket quantity</p>
+          <p>{t("ticketQuantity")}</p>
           <Select defaultValue="2">
             <SelectTrigger className="w-[60px]">
-              <SelectValue placeholder="Select a number" />
+              <SelectValue placeholder={t("selectNumber")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="1">1</SelectItem>
@@ -32,7 +37,9 @@ const Step1Confirm = ({ onNext }: any) => {
             </SelectContent>
           </Select>
         </div>
-        <Button className="w-full my-6" onClick={onNext}>Confirm</Button>
+        <Button className="w-full my-6" onClick={onNext}>
+          {tCommon("confirm")}
+        </Button>
       </section>
       <Guarantee />
     </>

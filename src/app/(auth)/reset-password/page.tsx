@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -8,36 +9,35 @@ import Image from "next/image";
 
 import "@/styles/auth.css";
 
-const resetPassword = () => {
+const ResetPassword = () => {
+  const t = useTranslations("auth");
+  const tCommon = useTranslations("common");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   return (
     <section className="set-password">
       <div className="flex flex-col items-center justify-center text-white px-4">
-        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <Image
             src="/images/logo2.png"
-            alt="Logo"
+            alt={tCommon("logoAlt")}
             width={48}
             height={48}
             priority
           />
           <h2 className="text-xl font-semibold text-white mt-6">
-            Reset Password
+            {t("resetPassword")}
           </h2>
           <p className="text-gray-400 mt-3 text-center text-sm max-w-xs leading-relaxed">
-            Enter a new password below to change your password.
+            {t("resetPasswordHint")}
           </p>
         </div>
 
-        {/* Reset Password Form */}
         <form className="flex flex-col space-y-4 max-w-sm mx-auto text-gray-400">
-          {/* New Password */}
           <div>
             <Label htmlFor="newPassword" className="text-gray-300 text-xs">
-              New Password
+              {t("newPassword")}
             </Label>
             <div className="relative mt-1">
               <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
@@ -52,10 +52,9 @@ const resetPassword = () => {
             </div>
           </div>
 
-          {/* Confirm Password */}
           <div>
             <Label htmlFor="confirmPassword" className="text-gray-300 text-xs">
-              Re-enter New Password
+              {t("reenterNewPassword")}
             </Label>
             <div className="relative mt-1">
               <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
@@ -70,21 +69,19 @@ const resetPassword = () => {
             </div>
           </div>
 
-          {/* Submit Button */}
           <Button
             type="submit"
             variant="default"
             size="lg"
             className="mt-6 cursor-pointer w-auto bg-pink-600 hover:bg-pink-700"
           >
-            Reset Password
+            {t("resetPassword")}
           </Button>
 
-          {/* Back to Login Link */}
           <p className="text-center text-xs text-gray-400 mt-4">
-            Remember your password?{" "}
+            {t("rememberPassword")}{" "}
             <a href="#" className="text-pink-500 hover:underline">
-              Back to Login
+              {t("backToLogin")}
             </a>
           </p>
         </form>
@@ -93,4 +90,4 @@ const resetPassword = () => {
   );
 };
 
-export default resetPassword;
+export default ResetPassword;

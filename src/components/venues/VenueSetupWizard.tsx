@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -107,6 +108,8 @@ export function VenueSetupWizard({
   venueId,
   dashboardScope = "vendor",
 }: VenueSetupWizardProps) {
+  const t = useTranslations("venueSetup");
+  const tForms = useTranslations("forms");
   const router = useRouter();
   const queryClient = useQueryClient();
   const paths = useDashboardPaths();
@@ -765,14 +768,12 @@ export function VenueSetupWizard({
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-xl font-bold text-white">
-              {existing?.name ?? (!hasPersistedVenue ? "Create your venue" : "Set up venue")}
+              {existing?.name ?? (!hasPersistedVenue ? t("createVenue") : t("setupVenue"))}
             </h1>
             {existing?.status && <StatusBadge status={existing.status} />}
           </div>
           <p className="text-sm text-muted-foreground">
-            {!hasPersistedVenue
-              ? "Enter your venue details below. Pricing, schedule, and other sections unlock after you save."
-              : "Update details, pricing, schedule, and availability."}
+            {!hasPersistedVenue ? t("createIntro") : t("editIntro")}
           </p>
         </div>
       </div>
@@ -802,35 +803,35 @@ export function VenueSetupWizard({
         <TabsList className="flex h-auto w-full flex-wrap gap-1 bg-muted/50 p-1">
           <TabsTrigger value="details" className="gap-1.5">
             <Building2 className="h-4 w-4" />
-            Details
+            {t("details")}
           </TabsTrigger>
           {hasPersistedVenue && (
             <>
               <TabsTrigger value="pricing" className="gap-1.5">
                 <DollarSign className="h-4 w-4" />
-                Pricing
+                {t("pricing")}
                 {!existing?.pricing && (
                   <Badge variant="outline" className="ml-1 text-[10px]">
-                    Setup
+                    {t("setupBadge")}
                   </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="schedules" className="gap-1.5">
                 <Clock className="h-4 w-4" />
-                Schedule
+                {t("schedule")}
                 {existing?.schedules && !existing.schedules.some((s) => s.isOpen) && (
                   <Badge variant="outline" className="ml-1 text-[10px]">
-                    Setup
+                    {t("setupBadge")}
                   </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="amenities" className="gap-1.5">
                 <Sparkles className="h-4 w-4" />
-                Amenities
+                {t("amenities")}
               </TabsTrigger>
               <TabsTrigger value="blocks" className="gap-1.5">
                 <CalendarOff className="h-4 w-4" />
-                Blocks
+                {t("blocks")}
               </TabsTrigger>
             </>
           )}
@@ -839,8 +840,8 @@ export function VenueSetupWizard({
         <TabsContent value="details" className="space-y-4">
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Basic information</CardTitle>
-              <CardDescription>Name, type, capacity, and cover photo.</CardDescription>
+              <CardTitle>{t("basicInfo")}</CardTitle>
+              <CardDescription>{t("basicInfoDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               {basicsFields}
@@ -849,8 +850,8 @@ export function VenueSetupWizard({
 
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Location</CardTitle>
-              <CardDescription>Address and map pin for your venue.</CardDescription>
+              <CardTitle>{t("location")}</CardTitle>
+              <CardDescription>{t("locationDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               {locationFields}
@@ -863,7 +864,7 @@ export function VenueSetupWizard({
                 {saveDetails.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {hasPersistedVenue ? "Save details" : "Save & continue setup"}
+                {hasPersistedVenue ? t("saveDetails") : t("saveAndContinue")}
               </Button>
             </CardFooter>
           </Card>
@@ -874,9 +875,9 @@ export function VenueSetupWizard({
         <TabsContent value="pricing">
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Pricing</CardTitle>
+              <CardTitle>{t("pricing")}</CardTitle>
               <CardDescription>
-                Set how customers are charged for bookings.
+                {t("pricingDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -894,7 +895,7 @@ export function VenueSetupWizard({
                 {savePricing.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Save pricing
+                {t("savePricing")}
               </Button>
             </CardFooter>
           </Card>

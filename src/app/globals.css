@@ -209,6 +209,8 @@
   --font-size-large: 20px;
   --font-size-x-large: 28px;
   --font-size-xx-large: 72px;
+  --font-urdu: var(--font-urdu);
+  --font-arabic: var(--font-arabic);
 }
 
 /* full-width glass navbar — pill when floating, flat when scrolled */
@@ -263,4 +265,24 @@
   box-shadow:
     0 16px 48px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.font-urdu {
+  font-family: var(--font-urdu), var(--font-inter), sans-serif;
+}
+
+.font-arabic {
+  font-family: var(--font-arabic), var(--font-inter), sans-serif;
+}
+
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .ms-auto {
+  margin-inline-start: auto;
+}
+
+[dir="rtl"] .text-start {
+  text-align: start;
 }

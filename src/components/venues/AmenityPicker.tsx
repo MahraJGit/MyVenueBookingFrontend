@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { VenueAmenity } from "@/features/venues/types";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
@@ -35,9 +36,12 @@ export function AmenityPicker({
   onChange,
   currency,
 }: AmenityPickerProps) {
+  const t = useTranslations("venueAmenities");
+  const tVenues = useTranslations("venues");
+
   if (amenities.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">No add-on amenities available.</p>
+      <p className="text-sm text-muted-foreground">{t("noAddons")}</p>
     );
   }
 
@@ -84,7 +88,7 @@ export function AmenityPicker({
     <div className="space-y-3">
       {amenities.map((amenity) => {
         const sel = selections.find((s) => s.venueAmenityId === amenity.id);
-        const name = amenity.catalog?.name ?? "Amenity";
+        const name = amenity.catalog?.name ?? tVenues("amenity");
         const isIncluded =
           amenity.pricingType === "INCLUDED" || amenity.isIncluded;
         const priceInfo = getVenueAmenityPriceInfo(amenity);
@@ -110,7 +114,7 @@ export function AmenityPicker({
               <Label htmlFor={`amenity-${amenity.id}`} className="flex-1 cursor-pointer">
                 <span className="font-medium text-white">{name}</span>
                 {isIncluded ? (
-                  <span className="ml-2 text-xs text-primary">Included</span>
+                  <span className="ml-2 text-xs text-primary">{t("included")}</span>
                 ) : priceInfo ? (
                   <span className="ml-2 text-xs text-zinc-400">
                     <DisplayPrice amount={priceInfo.amount} currency={currency} />
@@ -120,7 +124,7 @@ export function AmenityPicker({
               </Label>
               {sel?.selected && !isIncluded && amenity.pricingType === "PER_UNIT" && (
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">Qty</Label>
+                  <Label className="text-xs text-muted-foreground">{t("qty")}</Label>
                   <NumberInput
                     integer
                     min={1}
@@ -136,7 +140,7 @@ export function AmenityPicker({
               )}
               {sel?.selected && !isIncluded && amenity.pricingType === "PACKAGE_BASED" && (
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">Guests</Label>
+                  <Label className="text-xs text-muted-foreground">{t("guests")}</Label>
                   <NumberInput
                     integer
                     min={selectedPackage?.minHeads ?? 1}
@@ -156,7 +160,7 @@ export function AmenityPicker({
               <div className="space-y-2 border-t border-[#303030] pt-3 pl-7">
                 {packages.length > 1 && (
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Choose package</Label>
+                    <Label className="text-xs text-muted-foreground">{t("choosePackage")}</Label>
                     <Select
                       value={sel.selectedConfig?.packageId ?? packages[0].id}
                       onValueChange={(packageId) => setPackage(amenity.id, packageId)}
@@ -167,7 +171,8 @@ export function AmenityPicker({
                       <SelectContent>
                         {packages.map((pkg) => (
                           <SelectItem key={pkg.id} value={pkg.id}>
-                            {pkg.name} — {pkg.pricePerHead}/guest
+                            {pkg.name} — {pkg.pricePerHead}
+                            {t("perGuest")}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -191,7 +196,7 @@ export function AmenityPicker({
                     )}
                     {selectedPackage.minHeads && (
                       <p className="text-xs text-muted-foreground">
-                        Minimum {selectedPackage.minHeads} guests
+                        {t("minGuests", { count: selectedPackage.minHeads })}
                       </p>
                     )}
                   </div>

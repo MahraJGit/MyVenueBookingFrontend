@@ -7,6 +7,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   Eye,
@@ -14,12 +15,10 @@ import {
   Trash2,
   Plus,
   Search,
-  Loader2,
   Calendar as CalendarIcon,
   MapPin,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -40,10 +39,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { StatusBadge } from "@/components/venues/StatusBadge";
 import {
   deleteEvent,
   listManagedEvents,
-  type EventApprovalStatus,
   type ManagedEvent,
 } from "@/features/events/api";
 import { toastApiError } from "@/lib/toasts";
@@ -51,6 +50,9 @@ import { format } from "date-fns";
 import { useDashboardPaths } from "@/features/dashboard/paths";
 
 export default function ManageEvents() {
+  const t = useTranslations("adminDashboard");
+  const tCommon = useTranslations("common");
+  const tForms = useTranslations("forms");
   const paths = useDashboardPaths();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -72,9 +74,9 @@ export default function ManageEvents() {
     mutationFn: (id: string) => deleteEvent(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["managed-events"] });
-      toast.success("Event deleted");
+      toast.success(t("eventDeleted"));
     },
-    onError: (e) => toastApiError(e, "Could not delete event."),
+    onError: (e) => toastApiError(e, t("couldNotDeleteEvent")),
   });
 
   const openMediaMutation = {
@@ -90,7 +92,7 @@ export default function ManageEvents() {
       <div className="w-full space-y-6 rounded-2xl bg-[#0e0e0e] p-6 text-white">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <h2 className="w-full text-xl font-bold text-primary lg:w-auto">
-            My Events
+            {t("myEvents")}
           </h2>
 
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
@@ -99,7 +101,7 @@ export default function ManageEvents() {
                 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-70"
               />
               <Input
-                placeholder="Search events..."
+                placeholder={t("searchEvents")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="border-none bg-primary/20 pl-10 text-white placeholder:text-zinc-500"
@@ -111,7 +113,7 @@ export default function ManageEvents() {
             >
               <Link href={paths.addEvent}>
                 <Plus className="mr-2 h-4 w-4" />
-                New event
+                {t("newEvent")}
               </Link>
             </Button>
           </div>
@@ -120,9 +122,9 @@ export default function ManageEvents() {
         {isError ? (
           <Alert variant="destructive">
             <AlertDescription className="flex flex-wrap items-center gap-3">
-              <span>{error instanceof Error ? error.message : "Failed to load events."}</span>
+              <span>{error instanceof Error ? error.message : t("failedLoadEvents")}</span>
               <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
-                Retry
+                {tCommon("retry")}
               </Button>
             </AlertDescription>
           </Alert>
@@ -132,11 +134,11 @@ export default function ManageEvents() {
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground">Event</TableHead>
-                <TableHead className="text-muted-foreground">Starts</TableHead>
-                <TableHead className="text-muted-foreground">City</TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
-                <TableHead className="text-right text-muted-foreground">Actions</TableHead>
+                <TableHead className="text-muted-foreground">{t("tableEvent")}</TableHead>
+                <TableHead className="text-muted-foreground">{t("tableStarts")}</TableHead>
+                <TableHead className="text-muted-foreground">{t("tableCity")}</TableHead>
+                <TableHead className="text-muted-foreground">{t("tableStatus")}</TableHead>
+                <TableHead className="text-right text-muted-foreground">{t("tableActions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -144,7 +146,7 @@ export default function ManageEvents() {
                 <TableSkeleton cols={5} />
               ) : rows.length === 0 ? (
                 <TableEmptyRow colSpan={5}>
-                  No events yet. Create one with &quot;New event&quot; to see it here.
+                  {t("noEventsYet")}
                 </TableEmptyRow>
               ) : (
                 rows.map((ev) => (
@@ -160,9 +162,11 @@ export default function ManageEvents() {
                     </TableCell>
                     <TableCell>{ev.city}</TableCell>
                     <TableCell>
-                      <Badge variant={eventStatusBadgeVariant(ev.status)}>
-                        {eventStatusLabel(ev.status)}
-                      </Badge>
+                      {ev.status ? (
+                        <StatusBadge status={ev.status} />
+                      ) : (
+                        tCommon("notAvailable")
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -171,7 +175,7 @@ export default function ManageEvents() {
                           size="icon"
                           variant="ghost"
                           className="text-zinc-300 hover:text-white"
-                          aria-label="View event"
+                          aria-label={t("viewEvent")}
                           onClick={() => setViewEvent(ev)}
                         >
                           <Eye className="h-4 w-4" />
@@ -181,7 +185,7 @@ export default function ManageEvents() {
                           size="icon"
                           variant="ghost"
                           className="text-zinc-300 hover:text-white"
-                          aria-label="Edit event"
+                          aria-label={t("editEvent")}
                           asChild
                         >
                           <Link
@@ -195,12 +199,12 @@ export default function ManageEvents() {
                           size="icon"
                           variant="ghost"
                           className="text-red-400 hover:text-red-300"
-                          aria-label="Delete event"
+                          aria-label={t("deleteEvent")}
                           disabled={deleteMutation.isPending}
                           onClick={() => {
                             if (
                               !confirm(
-                                `Delete "${ev.eventName}"? This cannot be undone.`,
+                                t("deleteEventConfirm", { name: ev.eventName }),
                               )
                             )
                               return;
@@ -224,35 +228,39 @@ export default function ManageEvents() {
           <DialogHeader>
             <DialogTitle>{viewEvent?.eventName}</DialogTitle>
             <DialogDescription className="text-zinc-400">
-              Event summary (read-only)
+              {t("eventSummary")}
             </DialogDescription>
           </DialogHeader>
           {viewEvent ? (
             <div className="space-y-5 text-sm">
               <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Basic
+                  {t("basic")}
                 </p>
                 <p>
-                  <span className="text-zinc-500">Category:</span>{" "}
-                  {viewEvent.category ?? "—"}
+                  <span className="text-zinc-500">{t("categoryLabel")}</span>{" "}
+                  {viewEvent.category ?? tCommon("notAvailable")}
                 </p>
                 <p>
-                  <span className="text-zinc-500">Status:</span>{" "}
-                  {viewEvent.status ?? "—"}
+                  <span className="text-zinc-500">{t("statusLabel")}</span>{" "}
+                  {viewEvent.status ? (
+                    <StatusBadge status={viewEvent.status} />
+                  ) : (
+                    tCommon("notAvailable")
+                  )}
                 </p>
                 <p>
-                  <span className="text-zinc-500">Slug:</span>{" "}
+                  <span className="text-zinc-500">{t("slugLabel")}</span>{" "}
                   <code className="rounded bg-zinc-900 px-1">{viewEvent.slug}</code>
                 </p>
                 <p className="text-zinc-400">
-                  {viewEvent.eventDescription || "No description provided."}
+                  {viewEvent.eventDescription || t("noDescriptionProvided")}
                 </p>
               </section>
 
               <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Schedule
+                  {t("scheduleLabel")}
                 </p>
                 <p className="flex items-start gap-2 text-zinc-300">
                   <CalendarIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -266,18 +274,18 @@ export default function ManageEvents() {
 
               <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Venue & Location
+                  {t("venueAndLocation")}
                 </p>
                 <p>
-                  <span className="text-zinc-500">Venue name:</span>{" "}
-                  {viewEvent.venueName ?? "—"}
+                  <span className="text-zinc-500">{t("venueNameLabel")}</span>{" "}
+                  {viewEvent.venueName ?? tCommon("notAvailable")}
                 </p>
                 <p>
-                  <span className="text-zinc-500">Venue phone:</span>{" "}
-                  {viewEvent.venuePhone ?? "—"}
+                  <span className="text-zinc-500">{t("venuePhoneLabel")}</span>{" "}
+                  {viewEvent.venuePhone ?? tCommon("notAvailable")}
                 </p>
                 <p>
-                  <span className="text-zinc-500">Venue website:</span>{" "}
+                  <span className="text-zinc-500">{t("venueWebsiteLabel")}</span>{" "}
                   {viewEvent.venueWebsite ? (
                     <a
                       href={viewEvent.venueWebsite}
@@ -288,7 +296,7 @@ export default function ManageEvents() {
                       {viewEvent.venueWebsite}
                     </a>
                   ) : (
-                    "—"
+                    tCommon("notAvailable")
                   )}
                 </p>
                 <p className="flex items-start gap-2 text-zinc-300">
@@ -301,10 +309,10 @@ export default function ManageEvents() {
                   </span>
                 </p>
                 <p className="text-zinc-400">
-                  Lat/Lng: {String(viewEvent.latitude)}, {String(viewEvent.longitude)}
+                  {t("latLngLabel")} {String(viewEvent.latitude)}, {String(viewEvent.longitude)}
                 </p>
                 <p className="text-zinc-400">
-                  Location source: {viewEvent.locationSource}
+                  {t("locationSourceLabel")} {viewEvent.locationSource}
                 </p>
               </section>
 
@@ -317,7 +325,7 @@ export default function ManageEvents() {
 
               <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Tags
+                  {tForms("tags")}
                 </p>
                 {viewEvent.tags?.length ? (
                   <div className="flex flex-wrap gap-2">
@@ -331,28 +339,28 @@ export default function ManageEvents() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-zinc-400">No tags.</p>
+                  <p className="text-zinc-400">{t("noTags")}</p>
                 )}
               </section>
 
               <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Ticket types
+                  {t("ticketTypes")}
                 </p>
                 {viewEvent.ticketTypes.length ? (
                   <ul className="list-inside list-disc space-y-1 text-zinc-300">
-                    {viewEvent.ticketTypes.map((t) => (
-                      <li key={t.id ?? t.name}>
-                        {t.name} — {t.currency} {String(t.price)} × {t.quantityTotal}{" "}
-                        total
-                        {typeof t.quantitySold === "number"
-                          ? ` (${t.quantitySold} sold)`
+                    {viewEvent.ticketTypes.map((ticket) => (
+                      <li key={ticket.id ?? ticket.name}>
+                        {ticket.name} — {ticket.currency} {String(ticket.price)} × {ticket.quantityTotal}{" "}
+                        {t("totalLabel")}
+                        {typeof ticket.quantitySold === "number"
+                          ? ` (${ticket.quantitySold} ${t("soldLabel")})`
                           : ""}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-zinc-400">No ticket types.</p>
+                  <p className="text-zinc-400">{t("noTicketTypes")}</p>
                 )}
               </section>
             </div>
@@ -374,15 +382,18 @@ function EventMediaPreview({
   gallery?: string[] | null;
   onOpenFull: (fileUrl: string) => void;
 }) {
+  const t = useTranslations("adminDashboard");
+  const tForms = useTranslations("forms");
+
   return (
     <section className="space-y-4 rounded-lg border border-zinc-800 p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-        Media
+        {t("mediaLabel")}
       </p>
 
       {coverImage ? (
         <div className="space-y-1.5">
-          <p className="text-xs text-zinc-500">Cover</p>
+          <p className="text-xs text-zinc-500">{t("coverLabel")}</p>
           <button
             type="button"
             onClick={() => onOpenFull(coverImage)}
@@ -391,18 +402,18 @@ function EventMediaPreview({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={coverImage}
-              alt="Cover"
+              alt={tForms("coverImage")}
               className="max-h-48 w-full object-cover transition group-hover:opacity-80"
             />
           </button>
         </div>
       ) : (
-        <p className="text-zinc-400 text-sm">No cover image.</p>
+        <p className="text-zinc-400 text-sm">{t("noCoverImage")}</p>
       )}
 
       {thumbnail ? (
         <div className="space-y-1.5">
-          <p className="text-xs text-zinc-500">Thumbnail</p>
+          <p className="text-xs text-zinc-500">{t("thumbnailLabel")}</p>
           <button
             type="button"
             onClick={() => onOpenFull(thumbnail)}
@@ -411,7 +422,7 @@ function EventMediaPreview({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={thumbnail}
-              alt="Thumbnail"
+              alt={tForms("thumbnail")}
               className="h-24 w-32 object-cover transition group-hover:opacity-80"
             />
           </button>
@@ -420,7 +431,7 @@ function EventMediaPreview({
 
       {gallery?.length ? (
         <div className="space-y-2">
-          <p className="text-xs text-zinc-500">Gallery ({gallery.length})</p>
+          <p className="text-xs text-zinc-500">{t("galleryCount", { count: gallery.length })}</p>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {gallery.map((g, idx) => (
               <button
@@ -432,7 +443,7 @@ function EventMediaPreview({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={g}
-                  alt={`Gallery ${idx + 1}`}
+                  alt={t("galleryImageAlt", { index: idx + 1 })}
                   className="h-full w-full object-cover transition group-hover:opacity-80"
                 />
               </button>
@@ -440,24 +451,10 @@ function EventMediaPreview({
           </div>
         </div>
       ) : (
-        <p className="text-zinc-400 text-sm">No gallery images.</p>
+        <p className="text-zinc-400 text-sm">{t("noGalleryImages")}</p>
       )}
     </section>
   );
-}
-
-function eventStatusBadgeVariant(status: EventApprovalStatus | undefined) {
-  if (status === "APPROVED" || status === "ACTIVE") return "default";
-  if (status === "REJECTED") return "destructive";
-  return "secondary";
-}
-
-function eventStatusLabel(status: EventApprovalStatus | undefined) {
-  if (!status) return "—";
-  if (status === "PENDING") return "Pending";
-  if (status === "APPROVED") return "Approved";
-  if (status === "REJECTED") return "Rejected";
-  return status;
 }
 
 function formatDateSafe(iso: string) {

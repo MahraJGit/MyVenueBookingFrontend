@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Building2, Loader2, Plus, Pencil } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { StatusBadge } from "@/components/venues/StatusBadge";
@@ -19,9 +20,11 @@ import {
 } from "@/components/ui/table";
 import { listManagedVenues } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
-import { entityStatusLabel } from "@/features/venues/utils";
 
 export default function VendorVenuesPage() {
+  const t = useTranslations("vendorDashboard");
+  const tCommon = useTranslations("common");
+  const tForms = useTranslations("forms");
   const { data, isLoading, isFetching } = useQuery({
     queryKey: venueKeys.managedList({}),
     queryFn: () => listManagedVenues({ limit: 50 }),
@@ -34,14 +37,14 @@ export default function VendorVenuesPage() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-foreground">My Venues</h1>
+            <h1 className="text-xl font-bold text-foreground">{t("myVenuesTitle")}</h1>
             <p className="text-sm text-muted-foreground">
-              Manage your venue listings, pricing, and availability.
+              {t("myVenuesDesc")}
             </p>
           </div>
           <Button asChild>
             <Link href="/vendorDashboard/venues/new">
-              <Plus className="mr-2 h-4 w-4" /> Add venue
+              <Plus className="mr-2 h-4 w-4" /> {t("addVenue")}
             </Link>
           </Button>
         </div>
@@ -50,13 +53,13 @@ export default function VendorVenuesPage() {
           title={
             <CardTitle className="flex items-center gap-2 text-lg">
               <Building2 className="h-5 w-5 text-primary" />
-              Your venues
+              {t("yourVenues")}
             </CardTitle>
           }
           description={
             isLoading
-              ? "Loading venues…"
-              : `${venues.length} venue${venues.length === 1 ? "" : "s"}`
+              ? t("loadingVenues")
+              : t("venueCount", { count: venues.length })
           }
           headerAction={
             isFetching && !isLoading ? (
@@ -67,10 +70,10 @@ export default function VendorVenuesPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground">Name</TableHead>
-                <TableHead className="text-muted-foreground">City</TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
-                <TableHead className="text-right text-muted-foreground">Actions</TableHead>
+                <TableHead className="text-muted-foreground">{tCommon("name")}</TableHead>
+                <TableHead className="text-muted-foreground">{tForms("city")}</TableHead>
+                <TableHead className="text-muted-foreground">{tCommon("status")}</TableHead>
+                <TableHead className="text-right text-muted-foreground">{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -78,7 +81,7 @@ export default function VendorVenuesPage() {
                 <TableSkeleton cols={4} />
               ) : venues.length === 0 ? (
                 <TableEmptyRow colSpan={4}>
-                  No venues yet. Create your first venue to get started.
+                  {t("noVenuesYet")}
                 </TableEmptyRow>
               ) : (
                 venues.map((venue) => (
@@ -90,8 +93,7 @@ export default function VendorVenuesPage() {
                         {venue.status && <StatusBadge status={venue.status} />}
                         {venue.status === "DRAFT" && venue.readiness && (
                           <p className="text-xs text-muted-foreground">
-                            Setup {venue.readiness.requiredComplete}/{venue.readiness.requiredTotal} ·{" "}
-                            {entityStatusLabel(venue.status)}
+                            {t("setup")} {venue.readiness.requiredComplete}/{venue.readiness.requiredTotal}
                           </p>
                         )}
                         {venue.status === "REJECTED" && venue.rejectionReason && (
@@ -104,7 +106,7 @@ export default function VendorVenuesPage() {
                     <TableCell className="text-right">
                       <Button asChild size="sm" variant="outline" className="border-border">
                         <Link href={`/vendorDashboard/venues/new?id=${encodeURIComponent(venue.id)}`}>
-                          <Pencil className="mr-1 h-3 w-3" /> Edit
+                          <Pencil className="mr-1 h-3 w-3" /> {tCommon("edit")}
                         </Link>
                       </Button>
                     </TableCell>

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Switch } from '@/components/ui/switch'
 import {
@@ -12,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { LOCALE_OPTIONS } from '@/i18n/locales'
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
@@ -19,6 +21,8 @@ import {
 import type { NotificationPreferences } from '@/features/notifications/types'
 
 export default function NotificationSettings() {
+  const t = useTranslations('notifications')
+  const tCommon = useTranslations('common')
   const queryClient = useQueryClient()
   const [settings, setSettings] = useState<NotificationPreferences | null>(null)
 
@@ -58,40 +62,40 @@ export default function NotificationSettings() {
 
   return (
     <div className="mt-5 rounded-xl bg-[#121212] p-8 ">
-      <h2 className="text-lg font-semibold mb-6">settings</h2>
+      <h2 className="text-lg font-semibold mb-6">{t('settingsTitle')}</h2>
 
       <div className="space-y-4">
         <SettingItem
-          title="Event Reminders"
-          description="Get notified before your event starts, so you never miss it!"
+          title={t('eventReminders')}
+          description={t('eventRemindersDesc')}
           checked={settings.eventReminders}
           onChange={() => toggleSetting('eventReminders')}
         />
 
         <SettingItem
-          title="Exclusive Offers & Discounts"
-          description="Receive special offers and discounts only available for you."
+          title={t('exclusiveOffers')}
+          description={t('exclusiveOffersDesc')}
           checked={settings.exclusiveOffers}
           onChange={() => toggleSetting('exclusiveOffers')}
         />
 
         <SettingItem
-          title="Ticket Availability Alerts"
-          description="Get notified when tickets for your desired event are available for purchase."
+          title={t('ticketAlerts')}
+          description={t('ticketAlertsDesc')}
           checked={settings.ticketAlerts}
           onChange={() => toggleSetting('ticketAlerts')}
         />
 
         <SettingItem
-          title="Email notifications"
-          description="Stay updated with event news and updates directly to your email."
+          title={t('emailNotifications')}
+          description={t('emailNotificationsDesc')}
           checked={settings.emailNotifications}
           onChange={() => toggleSetting('emailNotifications')}
         />
 
         <SettingItem
-          title="Push notifications"
-          description="Receive instant updates and alerts on your phone for upcoming events and offers."
+          title={t('pushNotifications')}
+          description={t('pushNotificationsDesc')}
           checked={settings.pushNotifications}
           onChange={() => toggleSetting('pushNotifications')}
         />
@@ -99,7 +103,7 @@ export default function NotificationSettings() {
 
       <div className="mt-8">
         <label className="block text-sm font-medium mb-2">
-          Select your preferred language
+          {t('preferredLanguage')}
         </label>
 
         <Select
@@ -111,14 +115,18 @@ export default function NotificationSettings() {
           }}
         >
           <SelectTrigger className="w-60 bg-[#151515] border-[#242424]">
-            <SelectValue placeholder="Select language" />
+            <SelectValue placeholder={tCommon('selectLanguage')} />
           </SelectTrigger>
 
           <SelectContent>
-            <SelectItem value="en">🇬🇧 English</SelectItem>
-            <SelectItem value="fr">🇫🇷 French</SelectItem>
-            <SelectItem value="es">🇪🇸 Spanish</SelectItem>
-            <SelectItem value="de">🇩🇪 German</SelectItem>
+            {LOCALE_OPTIONS.map((option) => (
+              <SelectItem key={option.code} value={option.code}>
+                <div className="flex items-center gap-2">
+                  <span aria-hidden>{option.flag}</span>
+                  <span>{option.nativeLabel}</span>
+                </div>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

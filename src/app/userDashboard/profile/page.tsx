@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import {
   Avatar,
@@ -68,9 +69,9 @@ function profileToForm(profile: UserProfile): ProfileFormState {
   }
 }
 
-function displayName(firstName: string, lastName: string) {
+function displayName(firstName: string, lastName: string, fallback: string) {
   const name = [firstName, lastName].filter(Boolean).join(" ").trim()
-  return name || "there"
+  return name || fallback
 }
 
 function syncAuthFromProfile(profile: UserProfile) {
@@ -83,6 +84,10 @@ function syncAuthFromProfile(profile: UserProfile) {
 }
 
 export default function ProfilePage() {
+  const t = useTranslations("userDashboard")
+  const tCommon = useTranslations("common")
+  const tAuth = useTranslations("auth")
+  const tValidation = useTranslations("validation")
   const queryClient = useQueryClient()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [form, setForm] = React.useState<ProfileFormState | null>(null)
@@ -132,10 +137,10 @@ export default function ProfilePage() {
     },
     onSuccess: (updated) => {
       applyProfileUpdate(updated)
-      toast.success("Profile updated")
+      toast.success(t("profileUpdated"))
     },
     onError: (err) => {
-      toastApiError(err, "Could not save profile.")
+      toastApiError(err, t("couldNotSaveProfile"))
     },
   })
 
@@ -146,10 +151,10 @@ export default function ProfilePage() {
     },
     onSuccess: (updated) => {
       applyProfileUpdate(updated)
-      toast.success("Profile photo updated")
+      toast.success(t("profilePhotoUpdated"))
     },
     onError: (err) => {
-      toastApiError(err, "Could not update profile photo.")
+      toastApiError(err, t("couldNotUpdatePhoto"))
     },
   })
 
@@ -170,7 +175,7 @@ export default function ProfilePage() {
     e.target.value = ""
     if (!file) return
     if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image file")
+      toast.error(t("chooseImageFile"))
       return
     }
     avatarMutation.mutate(file)
@@ -188,15 +193,20 @@ export default function ProfilePage() {
     return (
       <div className="rounded-xl bg-[#121212] p-8 text-center">
         <p className="text-muted-foreground mb-4">
-          {error instanceof Error ? error.message : "Failed to load profile."}
+          {error instanceof Error ? error.message : t("failedLoadProfile")}
         </p>
-        <Button onClick={() => refetch()}>Try again</Button>
+        <Button onClick={() => refetch()}>{tCommon("tryAgain")}</Button>
       </div>
     )
   }
 
   const initials = profileInitials(form.firstName, form.lastName)
   const avatarSrc = form.avatarUrl
+  const greetingName = displayName(
+    form.firstName,
+    form.lastName,
+    tAuth("defaultGreeting"),
+  )
 
   return (
     <>
@@ -205,7 +215,7 @@ export default function ProfilePage() {
           <div className="relative">
             <Avatar className="h-20 w-20">
               {avatarSrc ? (
-                <AvatarImage src={avatarSrc} alt="Profile photo" />
+                <AvatarImage src={avatarSrc} alt={t("profilePhotoAlt")} />
               ) : null}
               <AvatarFallback className="text-lg bg-[#2a2a2a] text-white">
                 {initials}
@@ -219,7 +229,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <h4 className="text-lg font-medium">
-              Hey {displayName(form.firstName, form.lastName)}!
+              {t("heyName", { name: greetingName })}
             </h4>
             <p className="text-[#B3B3B3]">{form.email || "—"}</p>
           </div>
@@ -238,7 +248,7 @@ export default function ProfilePage() {
             disabled={avatarMutation.isPending}
             onClick={() => fileInputRef.current?.click()}
           >
-            Change photo
+            {t("changePhoto")}
           </Button>
         </div>
       </div>
@@ -252,7 +262,7 @@ export default function ProfilePage() {
           }}
         >
           <div className="space-y-2">
-            <Label htmlFor="firstName">First name</Label>
+            <Label htmlFor="firstName">{t("firstName")}</Label>
             <div className="relative">
               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -262,12 +272,13 @@ export default function ProfilePage() {
                 onChange={(e) => updateField("firstName")(e.target.value)}
                 required
                 minLength={2}
+                title={tValidation("firstNameMin")}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="lastName">Last name</Label>
+            <Label htmlFor="lastName">{t("lastName")}</Label>
             <div className="relative">
               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -277,12 +288,13 @@ export default function ProfilePage() {
                 onChange={(e) => updateField("lastName")(e.target.value)}
                 required
                 minLength={2}
+                title={tValidation("lastNameMin")}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{tCommon("email")}</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -291,13 +303,13 @@ export default function ProfilePage() {
                 value={form.email}
                 readOnly
                 disabled
-                aria-description="Email cannot be changed here"
+                aria-description={t("emailReadonlyHint")}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
+            <Label htmlFor="phone">{tCommon("phone")}</Label>
             <div className="flex gap-2">
               <Input
                 id="phoneCountryCode"
@@ -305,7 +317,7 @@ export default function ProfilePage() {
                 value={form.phoneCountryCode || "—"}
                 readOnly
                 disabled
-                aria-label="Country code"
+                aria-label={t("countryCode")}
               />
               <Input
                 id="phone"
@@ -313,19 +325,19 @@ export default function ProfilePage() {
                 value={form.phone || "—"}
                 readOnly
                 disabled
-                aria-label="Phone number"
+                aria-label={t("phoneNumber")}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="state">State / region</Label>
+            <Label htmlFor="state">{t("stateRegion")}</Label>
             <div className="relative">
               <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="state"
                 className="pl-10"
-                placeholder="e.g. California or NY"
+                placeholder={t("statePlaceholder")}
                 value={form.state}
                 onChange={(e) => updateField("state")(e.target.value)}
               />
@@ -333,27 +345,27 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="city">City</Label>
+            <Label htmlFor="city">{t("cityPlaceholder")}</Label>
             <Input
               id="city"
-              placeholder="City"
+              placeholder={t("cityPlaceholder")}
               value={form.city}
               onChange={(e) => updateField("city")(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="zipCode">Zip code</Label>
+            <Label htmlFor="zipCode">{t("zipCode")}</Label>
             <Input
               id="zipCode"
-              placeholder="Zip / postal code"
+              placeholder={t("zipPlaceholder")}
               value={form.zipCode}
               onChange={(e) => updateField("zipCode")(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Date of birth</Label>
+            <Label>{t("dateOfBirth")}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -365,7 +377,7 @@ export default function ProfilePage() {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {form.dob ? form.dob.toLocaleDateString() : "Pick a date"}
+                  {form.dob ? form.dob.toLocaleDateString() : t("pickDate")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -389,7 +401,7 @@ export default function ProfilePage() {
               onClick={handleDiscard}
               disabled={saveMutation.isPending || avatarMutation.isPending}
             >
-              Discard
+              {t("discard")}
             </Button>
             <Button
               type="submit"
@@ -399,10 +411,10 @@ export default function ProfilePage() {
               {saveMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving…
+                  {t("saving")}
                 </>
               ) : (
-                "Save changes"
+                t("saveChanges")
               )}
             </Button>
           </div>

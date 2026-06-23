@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ALL_EVENTS_CATEGORY } from "@/features/events/utils";
 
 type EventCategoryFiltersProps = {
@@ -15,7 +16,11 @@ export function EventCategoryFilters({
   onCategoryChange,
   isLoading,
 }: EventCategoryFiltersProps) {
+  const tEvents = useTranslations("events");
   const buttons = [ALL_EVENTS_CATEGORY, ...categories];
+
+  const getLabel = (button: string) =>
+    button === ALL_EVENTS_CATEGORY ? tEvents("allCategory") : button;
 
   return (
     <div className="flex flex-wrap gap-2 mb-8">
@@ -32,7 +37,7 @@ export function EventCategoryFilters({
             : "text-[#B3B3B3] border-[#B3B3B3]"
         }`}
         >
-          {button}
+          {getLabel(button)}
         </button>
       ))}
     </div>

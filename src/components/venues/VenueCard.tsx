@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { PublicVenue } from "@/features/venues/types";
 import { VenueCoverImage } from "@/components/venues/VenueCoverImage";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
@@ -11,6 +12,7 @@ type VenueCardProps = {
 };
 
 export function VenueCard({ venue }: VenueCardProps) {
+  const t = useTranslations("venues");
   const priceInfo = getVenueDisplayPrice(venue);
   const location = venue.city || venue.address || "—";
 
@@ -40,7 +42,7 @@ export function VenueCard({ venue }: VenueCardProps) {
                 </span>
               </>
             ) : (
-              <span>Pricing on request</span>
+              <span>{t("pricingOnRequest")}</span>
             )}
           </div>
         </div>
