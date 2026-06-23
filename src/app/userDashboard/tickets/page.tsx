@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -94,6 +95,9 @@ function statusBadgeClass(status: TicketOrderTabStatus) {
 }
 
 const Tickets = () => {
+  const t = useTranslations('userDashboard')
+  const tCommon = useTranslations('common')
+  const tNav = useTranslations('nav')
   const [activeTab, setActiveTab] = useState<TabValue>('all')
   const [sortBy, setSortBy] = useState<SortOption>('newest')
 
@@ -103,7 +107,7 @@ const Tickets = () => {
   })
 
   React.useEffect(() => {
-    if (isError) toastApiError(error, 'Could not load your tickets.')
+    if (isError) toastApiError(error, t('couldNotLoadTicketsToast'))
   }, [isError, error])
 
   const counts = useMemo(
@@ -124,12 +128,19 @@ const Tickets = () => {
 
   const sortLabel =
     sortBy === 'newest'
-      ? 'Newest first'
+      ? t('newestFirst')
       : sortBy === 'oldest'
-        ? 'Oldest first'
+        ? t('oldestFirst')
         : sortBy === 'amount-high'
-          ? 'Highest amount'
-          : 'Lowest amount'
+          ? t('highestAmount')
+          : t('lowestAmount')
+
+  const tabLabels: Record<TabValue, string> = {
+    all: t('tabAll', { count: counts.all }),
+    pending: t('tabPending', { count: counts.pending }),
+    canceled: t('tabCanceled', { count: counts.canceled }),
+    completed: t('tabCompleted', { count: counts.completed }),
+  }
 
   return (
     <Card className="mt-5 border-border bg-card">
@@ -138,13 +149,8 @@ const Tickets = () => {
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
           <TabsList className="bg-transparent p-0 gap-6">
             {(
-              [
-                ['all', `All (${counts.all})`],
-                ['pending', `Pending (${counts.pending})`],
-                ['canceled', `Canceled (${counts.canceled})`],
-                ['completed', `Completed (${counts.completed})`],
-              ] as const
-            ).map(([value, label]) => (
+              ['all', 'pending', 'canceled', 'completed'] as const
+            ).map((value) => (
               <TabsTrigger
                 key={value}
                 value={value}
@@ -154,7 +160,7 @@ const Tickets = () => {
                   data-[state=active]:text-white
                   text-muted-foreground"
               >
-                {label}
+                {tabLabels[value]}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -173,16 +179,16 @@ const Tickets = () => {
             className="w-44 bg-[#151515] border-[#242424]"
           >
             <DropdownMenuItem onClick={() => setSortBy('newest')}>
-              Newest first
+              {t('newestFirst')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSortBy('oldest')}>
-              Oldest first
+              {t('oldestFirst')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSortBy('amount-high')}>
-              Highest amount
+              {t('highestAmount')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSortBy('amount-low')}>
-              Lowest amount
+              {t('lowestAmount')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -191,36 +197,35 @@ const Tickets = () => {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm">Loading your tickets…</p>
+          <p className="text-sm">{t('loadingTickets')}</p>
         </div>
       ) : isError ? (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-          <p className="text-muted-foreground text-sm">We couldn&apos;t load your tickets.</p>
+          <p className="text-muted-foreground text-sm">{t('couldNotLoadTickets')}</p>
           <Button variant="outline" onClick={() => refetch()}>
-            Try again
+            {tCommon('tryAgain')}
           </Button>
         </div>
       ) : orders.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-6 text-center py-10">
-          <Image src="/svg/no-tickets.svg" alt="no tickets" width={250} height={250} />
-          <h3 className="text-lg font-semibold">Ooops!!!</h3>
+          <Image src="/svg/no-tickets.svg" alt={t('noTicketsYet')} width={250} height={250} />
+          <h3 className="text-lg font-semibold">{t('noTicketsYet')}</h3>
           <p className="text-muted-foreground max-w-sm">
-            You haven&apos;t booked any tickets yet.
-            Explore exciting events and secure your spot now!
+            {t('noTicketsDesc')}
           </p>
           <Button asChild>
             <Link href="/events" className="flex items-center gap-2">
-              Browse Events <ArrowRight className="h-4 w-4" />
+              {t('browseEvents')} <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
         </div>
       ) : filteredTickets.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
           <p className="text-muted-foreground text-sm">
-            No {activeTab} tickets in this view.
+            {t('noTabTickets', { tab: activeTab })}
           </p>
           <Button variant="outline" onClick={() => setActiveTab('all')}>
-            Show all tickets
+            {t('showAllTickets')}
           </Button>
         </div>
       ) : (
@@ -228,13 +233,14 @@ const Tickets = () => {
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground">Event</TableHead>
-                <TableHead className="text-muted-foreground">Order</TableHead>
-                <TableHead className="text-muted-foreground">Order date</TableHead>
-                <TableHead className="text-muted-foreground">Event date</TableHead>
-                <TableHead className="text-muted-foreground">Total</TableHead>
-                <TableHead className="text-muted-foreground">Tickets</TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">{tNav('events')}</TableHead>
+                <TableHead className="text-muted-foreground">{t('order')}</TableHead>
+                <TableHead className="text-muted-foreground">{t('orderDate')}</TableHead>
+                <TableHead className="text-muted-foreground">{t('eventDate')}</TableHead>
+                <TableHead className="text-muted-foreground">{tCommon('total')}</TableHead>
+                <TableHead className="text-muted-foreground">{t('ticketsCol')}</TableHead>
+                <TableHead className="text-muted-foreground">{tCommon('status')}</TableHead>
+                <TableHead className="text-right text-muted-foreground">{tCommon('actions')}</TableHead>
                 <TableHead className="text-right text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -277,7 +283,7 @@ const Tickets = () => {
                         <Link
                           href={`/userDashboard/view-ticket?orderGroupId=${encodeURIComponent(ticket.orderGroupId)}`}
                         >
-                          Details
+                          {t('details')}
                           <ChevronRight className="h-4 w-4" />
                         </Link>
                       </Button>

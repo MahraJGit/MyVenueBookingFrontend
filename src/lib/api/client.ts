@@ -1,4 +1,5 @@
 import { assertApiConfigured } from "@/lib/env";
+import { withLocaleHeaders } from "./locale-headers";
 import { ApiError } from "./errors";
 
 function unreachableApiError(): ApiError {
@@ -25,7 +26,8 @@ export async function apiGet<TResponse>(
   const baseUrl = assertApiConfigured();
   const url = `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
   const { headers: incoming, ...rest } = init ?? {};
-  const headers = new Headers(incoming ?? undefined);
+  const merged = withLocaleHeaders({ headers: incoming, ...rest });
+  const headers = new Headers(merged.headers ?? undefined);
   if (!headers.has("Accept")) {
     headers.set("Accept", "application/json");
   }
@@ -56,7 +58,8 @@ export async function apiPost<TResponse, TBody extends object>(
   const baseUrl = assertApiConfigured();
   const url = `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
   const { headers: incoming, ...rest } = init ?? {};
-  const headers = new Headers(incoming ?? undefined);
+  const merged = withLocaleHeaders({ headers: incoming, ...rest });
+  const headers = new Headers(merged.headers ?? undefined);
   if (!headers.has("Accept")) {
     headers.set("Accept", "application/json");
   }

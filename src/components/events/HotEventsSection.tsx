@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { EventCard } from "@/components/events/EventCard";
 import { EventCategoryFilters } from "@/components/events/EventCategoryFilters";
 import { listPublicEventCategories } from "@/features/event-categories/api";
@@ -17,6 +18,9 @@ const HOMEPAGE_EVENT_LIMIT = 4;
 
 export function HotEventsSection() {
   const [activeCategory, setActiveCategory] = useState(ALL_EVENTS_CATEGORY);
+  const tHome = useTranslations("home");
+  const tEvents = useTranslations("events");
+  const tCommon = useTranslations("common");
 
   const { data: categories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ["public-event-categories"],
@@ -51,9 +55,9 @@ export function HotEventsSection() {
     <section className="shows py-10">
       <div className="container mx-auto px-4">
         <div className="section-header py-5 mb-6 flex items-center justify-between border-b border-[#1F1F1F]">
-          <h2>Hot Events</h2>
+          <h2>{tHome("hotEvents")}</h2>
           <Link href={seeAllHref} className="text-sm hover:text-primary transition-colors">
-            See all
+            {tCommon("seeAll")}
           </Link>
         </div>
 
@@ -66,7 +70,7 @@ export function HotEventsSection() {
 
         {isError ? (
           <p className="text-sm text-red-400 py-8">
-            {error instanceof Error ? error.message : "Could not load events."}
+            {error instanceof Error ? error.message : tHome("couldNotLoadEvents")}
           </p>
         ) : null}
 
@@ -81,8 +85,10 @@ export function HotEventsSection() {
           </div>
         ) : events.length === 0 ? (
           <p className="text-sm text-[#B3B3B3] py-8">
-            No events found
-            {activeCategory !== ALL_EVENTS_CATEGORY ? ` in ${activeCategory}` : ""}.
+            {activeCategory !== ALL_EVENTS_CATEGORY
+              ? tEvents("noEventsInCategory", { category: activeCategory })
+              : tEvents("noEventsFound")}
+            .
           </p>
         ) : (
           <div className="shows-cards grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import type { AmenityCatalogItem, VenueAmenity, VenueAmenityPayload } from "@/features/venues/types";
 import {
   defaultAmenityForm,
@@ -11,7 +12,8 @@ import {
   type PackageOptionForm,
   type VenueAmenityFormState,
 } from "@/features/venues/amenity-catalog";
-import { getPackagesFromConfig, sanitizePackagesForSave } from "@/features/venues/packages";import { Input } from "@/components/ui/input";
+import { getPackagesFromConfig, sanitizePackagesForSave } from "@/features/venues/packages";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { NumberInput } from "@/components/ui/number-input";
@@ -28,7 +30,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FormField } from "@/components/ui/form-field";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fieldClassName, isBlank, requiredMessage } from "@/lib/form-validation";
+import { fieldClassName, isBlank } from "@/lib/form-validation";
 
 export type { AmenityOfferMode, VenueAmenityFormState } from "@/features/venues/amenity-catalog";
 export { defaultAmenityForm } from "@/features/venues/amenity-catalog";
@@ -76,30 +78,37 @@ export function amenityFormToPayload(form: VenueAmenityFormState): VenueAmenityP
   };
 }
 
-export function formatVenueAmenityPrice(amenity: VenueAmenity): string | null {
+export function formatVenueAmenityPrice(
+  amenity: VenueAmenity,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string | null {
   if (amenity.pricingType === "INCLUDED" || amenity.isIncluded) {
     return null;
   }
   const config = amenity.pricingConfig as Record<string, unknown>;
   if (amenity.pricingType === "PER_UNIT" && config.unitPrice != null) {
     const bulk = (config.bulkTiers as Array<{ minQuantity: number; unitPrice: number }>) ?? [];
-    const base = `${config.unitPrice} per unit`;
-    return bulk.length > 0 ? `${base} (bulk tiers apply)` : base;
+    const base = t("perUnitPrice", { price: String(config.unitPrice) });
+    return bulk.length > 0 ? `${base}${t("bulkTiersApply")}` : base;
   }
   if (amenity.pricingType === "PER_HOUR" && config.hourlyPrice != null) {
-    return `${config.hourlyPrice} per hour`;
+    return t("perHourPrice", { price: String(config.hourlyPrice) });
   }
   if (amenity.pricingType === "FLAT_PER_EVENT" && config.flatPrice != null) {
-    return `${config.flatPrice} per booking`;
+    return t("perBookingPrice", { price: String(config.flatPrice) });
   }
   if (amenity.pricingType === "PACKAGE_BASED") {
     const packages = getPackagesFromConfig(config);
-    if (packages.length === 0) return "Package-based pricing";
+    if (packages.length === 0) return t("packagePricing");
     if (packages.length === 1) {
       const itemCount = packages[0].items.length;
-      return `${packages[0].name}: ${packages[0].pricePerHead} / head${itemCount > 0 ? ` · ${itemCount} items` : ""}`;
+      return t("packageHeadItems", {
+        name: packages[0].name,
+        price: String(packages[0].pricePerHead),
+        count: itemCount,
+      });
     }
-    return `${packages.length} packages`;
+    return t("packageCount", { count: packages.length });
   }
   return null;
 }
@@ -131,6 +140,10 @@ export function VenueAmenityEditor({
   onAdd,
   onRemove,
 }: VenueAmenityEditorProps) {
+  const t = useTranslations("venueAmenities");
+  const tVenues = useTranslations("venues");
+  const tCommon = useTranslations("common");
+  const tValidation = useTranslations("validation");
   const [form, setForm] = React.useState<VenueAmenityFormState>(defaultAmenityForm());
   const [attempted, setAttempted] = React.useState(false);
 
@@ -142,17 +155,17 @@ export function VenueAmenityEditor({
   const isPackage = isAddon && form.addonPricingType === "PACKAGE_BASED";
 
   const catalogError =
-    attempted && isBlank(form.catalogId) ? requiredMessage("Amenity") : null;
+    attempted && isBlank(form.catalogId) ? tValidation("required") : null;
   const priceError =
     attempted &&
     isAddon &&
     !isPackage &&
     (form.price <= 0 || Number.isNaN(form.price))
-      ? "Price must be greater than 0"
+      ? t("priceMustBePositive")
       : null;
   const packageError =
     attempted && isPackage && !isPackageValid(form.packages)
-      ? "Each package needs a name, price per head, and at least one item"
+      ? t("packageValidation")
       : null;
 
   function handleAdd() {
@@ -174,12 +187,14 @@ export function VenueAmenityEditor({
         )}
       >
         <p className="text-sm text-muted-foreground">
-          Pick an item from the admin catalog, then configure how it works at{" "}
-          <strong className="text-foreground">this venue</strong> — included for free or a paid
-          add-on with your pricing (per unit, hourly, flat rate, or itemized packages).
+          {t.rich("editorIntro", {
+            venue: () => (
+              <strong className="text-foreground">{t("thisVenue")}</strong>
+            ),
+          })}
         </p>
 
-        <FormField label="Amenity" htmlFor="amenity-catalog" required error={catalogError}>
+        <FormField label={tVenues("amenity")} htmlFor="amenity-catalog" required error={catalogError}>
           <Select
             value={form.catalogId || undefined}
             onValueChange={(v) => {
@@ -193,12 +208,12 @@ export function VenueAmenityEditor({
               aria-invalid={!!catalogError}
               className={fieldClassName(selectTriggerClass, !!catalogError)}
             >
-              <SelectValue placeholder="Select from admin catalog…" />
+              <SelectValue placeholder={t("selectCatalog")} />
             </SelectTrigger>
             <SelectContent className="max-h-72">
               {catalog.length === 0 ? (
                 <SelectItem value="__none" disabled>
-                  No amenities in catalog — ask admin to add some
+                  {t("noCatalogItems")}
                 </SelectItem>
               ) : (
                 catalog.map((c) => {
@@ -206,7 +221,7 @@ export function VenueAmenityEditor({
                   return (
                     <SelectItem key={c.id} value={c.id} disabled={alreadyAdded}>
                       {c.name}
-                      {alreadyAdded ? " (already added)" : ""}
+                      {alreadyAdded ? t("alreadyAdded") : ""}
                     </SelectItem>
                   );
                 })
@@ -215,9 +230,11 @@ export function VenueAmenityEditor({
           </Select>
           {catalog.length > 0 && (
             <p className="text-xs text-muted-foreground">
-              {availableCatalog.length} of {catalog.length} catalog amenities available to add.
-              {existingAmenities.length > 0 &&
-                " Items already on this venue are shown but disabled."}
+              {t("catalogAvailable", {
+                available: availableCatalog.length,
+                total: catalog.length,
+              })}
+              {existingAmenities.length > 0 && t("catalogDisabledHint")}
             </p>
           )}
           {selectedCatalog?.description && (
@@ -226,7 +243,7 @@ export function VenueAmenityEditor({
         </FormField>
 
         <div className="space-y-3">
-          <Label>How is this offered at your venue?</Label>
+          <Label>{t("howOffered")}</Label>
           <RadioGroup
             value={form.offerMode}
             onValueChange={(v) =>
@@ -237,15 +254,15 @@ export function VenueAmenityEditor({
             <label className="flex flex-1 cursor-pointer items-start gap-2 rounded-lg border border-border bg-background px-3 py-2.5">
               <RadioGroupItem value="included" id="offer-included" className="mt-0.5" />
               <div>
-                <span className="text-sm font-medium text-foreground">Included in booking</span>
-                <p className="text-xs text-muted-foreground">Free for guests.</p>
+                <span className="text-sm font-medium text-foreground">{t("includedInBooking")}</span>
+                <p className="text-xs text-muted-foreground">{t("freeForGuests")}</p>
               </div>
             </label>
             <label className="flex flex-1 cursor-pointer items-start gap-2 rounded-lg border border-border bg-background px-3 py-2.5">
               <RadioGroupItem value="addon" id="offer-addon" className="mt-0.5" />
               <div>
-                <span className="text-sm font-medium text-foreground">Paid add-on</span>
-                <p className="text-xs text-muted-foreground">Extra cost for this venue.</p>
+                <span className="text-sm font-medium text-foreground">{t("paidAddon")}</span>
+                <p className="text-xs text-muted-foreground">{t("extraCost")}</p>
               </div>
             </label>
           </RadioGroup>
@@ -254,7 +271,7 @@ export function VenueAmenityEditor({
         {isAddon && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="w-full space-y-2 lg:col-span-2">
-              <Label>Charge type</Label>
+              <Label>{t("chargeType")}</Label>
               <Select
                 value={form.addonPricingType}
                 onValueChange={(v) =>
@@ -263,7 +280,7 @@ export function VenueAmenityEditor({
                     addonPricingType: v as VenueAmenityFormState["addonPricingType"],
                     packages:
                       v === "PACKAGE_BASED" && form.packages.length === 0
-                        ? [newPackageOption("Package 1")]
+                        ? [newPackageOption(t("packageN", { n: 1 }))]
                         : form.packages,
                   })
                 }
@@ -272,17 +289,17 @@ export function VenueAmenityEditor({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PER_UNIT">Per unit (e.g. per chair)</SelectItem>
-                  <SelectItem value="PER_HOUR">Per hour (e.g. staff / equipment)</SelectItem>
-                  <SelectItem value="FLAT_PER_EVENT">Flat per booking</SelectItem>
-                  <SelectItem value="PACKAGE_BASED">Package-based (e.g. catering tiers)</SelectItem>
+                  <SelectItem value="PER_UNIT">{t("perUnit")}</SelectItem>
+                  <SelectItem value="PER_HOUR">{t("perHour")}</SelectItem>
+                  <SelectItem value="FLAT_PER_EVENT">{t("flatPerBooking")}</SelectItem>
+                  <SelectItem value="PACKAGE_BASED">{t("packageBased")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {!isPackage && (
               <>
-                <FormField label="Price" required={isAddon} error={priceError}>
+                <FormField label={tCommon("price")} required={isAddon} error={priceError}>
                   <NumberInput
                     min={0}
                     value={form.price}
@@ -294,7 +311,9 @@ export function VenueAmenityEditor({
                 </FormField>
                 {form.addonPricingType === "PER_UNIT" && (
                   <div className="space-y-2">
-                    <Label>Max per booking</Label>
+                    <Label>
+                      {t("maxPerBooking", { count: "" }).replace(/\s{2,}/g, " ").trim()}
+                    </Label>
                     <NumberInput
                       min={1}
                       integer
@@ -303,7 +322,7 @@ export function VenueAmenityEditor({
                         setForm({ ...form, maxPerBooking: maxPerBooking ?? undefined })
                       }
                       className={inputClass}
-                      placeholder="Optional"
+                      placeholder={tCommon("optional")}
                     />
                   </div>
                 )}
@@ -315,7 +334,7 @@ export function VenueAmenityEditor({
         {isAddon && form.addonPricingType === "PER_UNIT" && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Bulk pricing tiers (optional)</Label>
+              <Label>{t("bulkTiers")}</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -331,7 +350,7 @@ export function VenueAmenityEditor({
                 }
               >
                 <Plus className="mr-1 h-3.5 w-3.5" />
-                Add tier
+                {t("addTier")}
               </Button>
             </div>
             {form.bulkTiers.map((tier, index) => (
@@ -339,7 +358,7 @@ export function VenueAmenityEditor({
                 key={index}
                 className="flex flex-wrap items-end gap-2 rounded-md border border-border bg-background p-3"
               >
-                <FormField label="Min qty" className="min-w-[100px] flex-1">
+                <FormField label={t("minQty")} className="min-w-[100px] flex-1">
                   <NumberInput
                     integer
                     min={1}
@@ -352,7 +371,7 @@ export function VenueAmenityEditor({
                     className={inputClass}
                   />
                 </FormField>
-                <FormField label="Unit price" className="min-w-[100px] flex-1">
+                <FormField label={t("unitPrice")} className="min-w-[100px] flex-1">
                   <NumberInput
                     min={0}
                     value={tier.unitPrice}
@@ -387,10 +406,8 @@ export function VenueAmenityEditor({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label>Packages</Label>
-                <p className="text-xs text-muted-foreground">
-                  Create a package with a price per guest, then list what is included.
-                </p>
+                <Label>{t("packages")}</Label>
+                <p className="text-xs text-muted-foreground">{t("packagesHint")}</p>
               </div>
               <Button
                 type="button"
@@ -401,13 +418,13 @@ export function VenueAmenityEditor({
                     ...form,
                     packages: [
                       ...form.packages,
-                      newPackageOption(`Package ${form.packages.length + 1}`),
+                      newPackageOption(t("packageN", { n: form.packages.length + 1 })),
                     ],
                   })
                 }
               >
                 <Plus className="mr-1 h-3.5 w-3.5" />
-                Add package
+                {t("addPackage")}
               </Button>
             </div>
             {packageError ? <p className="text-sm text-destructive">{packageError}</p> : null}
@@ -417,7 +434,9 @@ export function VenueAmenityEditor({
                 className="space-y-3 rounded-lg border border-border bg-background p-4"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-foreground">Package {pkgIndex + 1}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {t("packageN", { n: pkgIndex + 1 })}
+                  </p>
                   {form.packages.length > 1 && (
                     <Button
                       type="button"
@@ -432,15 +451,15 @@ export function VenueAmenityEditor({
                       }
                     >
                       <Trash2 className="mr-1 h-3.5 w-3.5" />
-                      Remove package
+                      {t("removePackage")}
                     </Button>
                   )}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <FormField label="Package name">
+                  <FormField label={t("packageName")}>
                     <Input
                       className={inputClass}
-                      placeholder="e.g. Premium Buffet"
+                      placeholder={t("packageNamePlaceholder")}
                       value={pkg.name}
                       onChange={(e) => {
                         const packages = [...form.packages];
@@ -449,7 +468,7 @@ export function VenueAmenityEditor({
                       }}
                     />
                   </FormField>
-                  <FormField label="Price / guest">
+                  <FormField label={t("pricePerGuest")}>
                     <NumberInput
                       min={0}
                       value={pkg.pricePerHead}
@@ -461,7 +480,7 @@ export function VenueAmenityEditor({
                       className={inputClass}
                     />
                   </FormField>
-                  <FormField label="Min guests" className="sm:col-span-1">
+                  <FormField label={t("minGuestsOptional")} className="sm:col-span-1">
                     <NumberInput
                       integer
                       min={1}
@@ -472,14 +491,14 @@ export function VenueAmenityEditor({
                         setForm({ ...form, packages });
                       }}
                       className={inputClass}
-                      placeholder="Optional"
+                      placeholder={tCommon("optional")}
                     />
                   </FormField>
                 </div>
-                <FormField label="Package description (optional)">
+                <FormField label={t("packageDescOptional")}>
                   <Textarea
                     className={inputClass}
-                    placeholder="Short summary for guests…"
+                    placeholder={t("packageDescPlaceholder")}
                     value={pkg.description}
                     onChange={(e) => {
                       const packages = [...form.packages];
@@ -492,7 +511,7 @@ export function VenueAmenityEditor({
 
                 <div className="space-y-2 border-t border-border pt-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-sm">Items in this package</Label>
+                    <Label className="text-sm">{t("itemsInPackage")}</Label>
                     <Button
                       type="button"
                       variant="outline"
@@ -507,7 +526,7 @@ export function VenueAmenityEditor({
                       }}
                     >
                       <Plus className="mr-1 h-3.5 w-3.5" />
-                      Add item
+                      {t("addItem")}
                     </Button>
                   </div>
                   {pkg.items.map((item, itemIndex) => (
@@ -515,10 +534,10 @@ export function VenueAmenityEditor({
                       key={item.id}
                       className="grid gap-2 rounded-md border border-border/60 bg-muted/10 p-3 sm:grid-cols-[1fr_1fr_auto]"
                     >
-                      <FormField label="Item name">
+                      <FormField label={t("itemName")}>
                         <Input
                           className={inputClass}
-                          placeholder="e.g. Grilled chicken"
+                          placeholder={t("itemNamePlaceholder")}
                           value={item.name}
                           onChange={(e) => {
                             const packages = [...form.packages];
@@ -529,10 +548,10 @@ export function VenueAmenityEditor({
                           }}
                         />
                       </FormField>
-                      <FormField label="Item detail (optional)">
+                      <FormField label={t("itemDetailOptional")}>
                         <Input
                           className={inputClass}
-                          placeholder="e.g. With herb butter sauce"
+                          placeholder={t("itemDetailPlaceholder")}
                           value={item.description ?? ""}
                           onChange={(e) => {
                             const packages = [...form.packages];
@@ -572,7 +591,7 @@ export function VenueAmenityEditor({
         <div className="flex justify-end border-t border-border pt-4">
           <Button type="button" onClick={handleAdd} disabled={isSaving || disabled}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Add amenity
+            {t("addAmenity")}
           </Button>
         </div>
       </div>
@@ -581,7 +600,7 @@ export function VenueAmenityEditor({
         <ul className="space-y-2">
           {existingAmenities.map((a) => {
             const isIncluded = a.pricingType === "INCLUDED" || a.isIncluded;
-            const priceLabel = formatVenueAmenityPrice(a);
+            const priceLabel = formatVenueAmenityPrice(a, t);
 
             return (
               <li
@@ -594,7 +613,7 @@ export function VenueAmenityEditor({
                       {a.catalog?.name ?? a.id}
                     </span>
                     <Badge variant={isIncluded ? "default" : "secondary"}>
-                      {isIncluded ? "Included" : "Add-on"}
+                      {isIncluded ? t("included") : t("addonBadge")}
                     </Badge>
                     {!isIncluded && a.pricingType && (
                       <Badge variant="outline" className="text-xs">
@@ -622,7 +641,7 @@ export function VenueAmenityEditor({
                   )}
                   {a.maxPerBooking && !isIncluded && (
                     <p className="text-xs text-muted-foreground">
-                      Max {a.maxPerBooking} per booking
+                      {t("maxPerBooking", { count: a.maxPerBooking })}
                     </p>
                   )}
                 </div>
@@ -641,7 +660,7 @@ export function VenueAmenityEditor({
         </ul>
       ) : (
         <p className="rounded-lg border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
-          No amenities yet. Add included items (Wi‑Fi) or paid add-ons (chairs, catering).
+          {t("emptyAmenities")}
         </p>
       )}
     </div>

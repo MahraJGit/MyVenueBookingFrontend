@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   AlertCircle,
   CheckCircle2,
@@ -50,6 +51,7 @@ export function VenueReadinessPanel({
   className,
   mode = "vendor",
 }: VenueReadinessPanelProps) {
+  const t = useTranslations("venueSetup");
   const isAdminMode = mode === "admin";
   const canSubmit =
     !isAdminMode && (status === "DRAFT" || status === "REJECTED");
@@ -61,21 +63,22 @@ export function VenueReadinessPanel({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base">
-              {isAdminMode ? "Setup progress" : "Setup checklist"}
+              {isAdminMode ? t("setupProgress") : t("setupChecklist")}
             </CardTitle>
             <CardDescription>
-              {isAdminMode
-                ? "Admin venues are active immediately. Complete details below for a better listing."
-                : "Complete pricing, schedule, and amenities — blocks are optional — then submit for review."}
+              {isAdminMode ? t("adminReadinessDesc") : t("vendorReadinessDesc")}
             </CardDescription>
           </div>
           <Badge variant={readiness.ready ? "default" : "secondary"}>
-            {readiness.requiredComplete}/{readiness.requiredTotal} required
+            {t("requiredCount", {
+              complete: readiness.requiredComplete,
+              total: readiness.requiredTotal,
+            })}
           </Badge>
         </div>
         <div className="space-y-2 pt-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Overall progress</span>
+            <span>{t("overallProgress")}</span>
             <span>{readiness.percentComplete}%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -92,7 +95,7 @@ export function VenueReadinessPanel({
           <div className="mb-3 flex gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <p className="font-medium">Rejected by admin</p>
+              <p className="font-medium">{t("rejectedByAdmin")}</p>
               <p className="text-destructive/90">{rejectionReason}</p>
             </div>
           </div>
@@ -101,14 +104,14 @@ export function VenueReadinessPanel({
         {isAdminMode && status && ["ACTIVE", "APPROVED"].includes(status) && (
           <div className="mb-3 flex gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <p>This venue is live. Finish pricing and schedule so guests can book.</p>
+            <p>{t("venueLiveHint")}</p>
           </div>
         )}
 
         {isPending && (
           <div className="mb-3 flex gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
             <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
-            <p>Your venue is waiting for admin review. You will be notified once it is approved.</p>
+            <p>{t("pendingReviewHint")}</p>
           </div>
         )}
 
@@ -138,7 +141,7 @@ export function VenueReadinessPanel({
                     <span className="font-medium text-foreground">{check.label}</span>
                     {!check.required && (
                       <Badge variant="outline" className="text-[10px]">
-                        Optional
+                        {t("optional")}
                       </Badge>
                     )}
                   </div>
@@ -154,7 +157,7 @@ export function VenueReadinessPanel({
                     className="shrink-0 text-xs"
                     onClick={() => onGoToCheck(CHECK_TAB_MAP[check.id])}
                   >
-                    Set up
+                    {t("setUp")}
                   </Button>
                 )}
               </li>
@@ -173,12 +176,12 @@ export function VenueReadinessPanel({
             {submitPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting…
+                {t("submitting")}
               </>
             ) : (
               <>
                 <Send className="mr-2 h-4 w-4" />
-                Submit for review
+                {t("submitForReview")}
               </>
             )}
           </Button>

@@ -1,7 +1,10 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Image from "next/image";
 import React from "react";
+import { useTranslations } from "next-intl";
 import Guarantee from "./Guarantee";
 import TimeLeft from "./TimeLeft";
 
@@ -10,18 +13,26 @@ const Step2PaymentMethod = ({
   setPaymentMethod,
   onNext,
   onBack,
-}: any) => {
+}: {
+  paymentMethod: string;
+  setPaymentMethod: (value: string) => void;
+  onNext: () => void;
+  onBack: () => void;
+}) => {
+  const t = useTranslations("checkout");
+  const tCommon = useTranslations("common");
+
   return (
     <>
-    <TimeLeft />
-      <h2 className="font-semibold mb-4">Select Payment Method</h2>
+      <TimeLeft />
+      <h2 className="font-semibold mb-4">{t("selectPaymentMethod")}</h2>
       <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
         <div className="flex items-center space-x-4 bg-[#121212] p-4 rounded-lg mb-1">
           <RadioGroupItem value="paypal" id="paypal" />
           <label className="flex items-center gap-2" htmlFor="paypal">
             <Image
               src="/svg/paypal.svg"
-              alt="paypal logo"
+              alt="PayPal"
               width={35}
               height={25}
             />
@@ -33,7 +44,7 @@ const Step2PaymentMethod = ({
           <label className="flex items-center gap-2" htmlFor="stripe">
             <Image
               src="/svg/stripe.svg"
-              alt="paypal logo"
+              alt="Stripe"
               width={35}
               height={25}
             />
@@ -45,11 +56,11 @@ const Step2PaymentMethod = ({
           <label className="flex items-center gap-2" htmlFor="bitpay">
             <Image
               src="/svg/bitpay.svg"
-              alt="paypal logo"
+              alt="BitPay"
               width={35}
               height={25}
             />
-            bitpay
+            BitPay
           </label>
         </div>
         <div className="flex items-center space-x-4 bg-[#121212] p-4 rounded-lg mb-1">
@@ -57,21 +68,21 @@ const Step2PaymentMethod = ({
           <label className="flex items-center gap-2" htmlFor="visa">
             <Image
               src="/svg/visa.svg"
-              alt="paypal logo"
+              alt="Visa"
               width={35}
               height={25}
             />
-            visa
+            Visa
           </label>
         </div>
       </RadioGroup>
 
       <div className="flex my-6 gap-2">
         <Button className="w-1/2" variant="secondary" onClick={onBack}>
-          Back
+          {tCommon("back")}
         </Button>
         <Button className="w-1/2" disabled={!paymentMethod} onClick={onNext}>
-          Confirm
+          {tCommon("confirm")}
         </Button>
       </div>
       <Guarantee />

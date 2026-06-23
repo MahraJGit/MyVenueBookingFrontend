@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Loader2, Search } from "lucide-react";
 import { VenueCard } from "@/components/venues/VenueCard";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,10 @@ import { venueKeys } from "@/features/venues/query-keys";
 import "@/styles/event-list.css";
 
 function VenuesListingContent() {
+  const t = useTranslations("venues");
+  const tCommon = useTranslations("common");
+  const tNav = useTranslations("nav");
+  const tForms = useTranslations("forms");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
@@ -55,37 +60,37 @@ function VenuesListingContent() {
   return (
     <section className="eventslist py-10 pt-28">
       <div className="container mx-auto px-4">
-        <h1 className="mb-2 text-white text-xl">Venue Booking</h1>
+        <h1 className="mb-2 text-white text-xl">{tNav("venueBooking")}</h1>
         <p className="mb-8 text-muted-foreground">
-          Discover and book event spaces for your next occasion.
+          {t("discoverSubtitle")}
         </p>
 
         <div className="mb-8 flex flex-wrap gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4">
           <Input
-            placeholder="Search venues..."
+            placeholder={t("searchVenuesPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-xs border-[#303030] bg-black text-white"
           />
           <Input
-            placeholder="City"
+            placeholder={tForms("city")}
             value={city}
             onChange={(e) => setCity(e.target.value)}
             className="max-w-[160px] border-[#303030] bg-black text-white"
           />
           <Select value={venueTypeId || "ALL"} onValueChange={(v) => setVenueTypeId(v === "ALL" ? "" : v)}>
             <SelectTrigger className="w-[180px] border-[#303030] bg-black text-white">
-              <SelectValue placeholder="Venue type" />
+              <SelectValue placeholder={t("venueType")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All types</SelectItem>
+              <SelectItem value="ALL">{t("allTypes")}</SelectItem>
               {types.map((t) => (
                 <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Button onClick={applyFilters} className="bg-primary">
-            <Search className="mr-2 h-4 w-4" /> Search
+            <Search className="mr-2 h-4 w-4" /> {tCommon("search")}
           </Button>
         </div>
 
@@ -106,7 +111,7 @@ function VenuesListingContent() {
               ))}
             </div>
             {(data?.data ?? []).length === 0 && (
-              <p className="py-16 text-center text-muted-foreground">No venues found.</p>
+              <p className="py-16 text-center text-muted-foreground">{t("noVenuesFound")}</p>
             )}
             {data && data.meta.totalPages > 1 && (
               <div className="mt-8 flex justify-center gap-2">
@@ -120,10 +125,10 @@ function VenuesListingContent() {
                     router.push(`/venues?${sp.toString()}`);
                   }}
                 >
-                  Previous
+                  {tCommon("previous")}
                 </Button>
                 <span className="flex items-center px-4 text-sm text-muted-foreground">
-                  Page {page} of {data.meta.totalPages}
+                  {t("pageOf", { page, total: data.meta.totalPages })}
                 </span>
                 <Button
                   variant="outline"
@@ -135,7 +140,7 @@ function VenuesListingContent() {
                     router.push(`/venues?${sp.toString()}`);
                   }}
                 >
-                  Next
+                  {tCommon("next")}
                 </Button>
               </div>
             )}

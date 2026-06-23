@@ -1,9 +1,8 @@
 "use client"
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-// import { Card, CardAction, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ChevronDown, CircleArrowRight, Clock1, Search } from 'lucide-react'
+import { ChevronDown, CircleArrowRight, Search } from 'lucide-react'
 import Image from 'next/image'
 import React from 'react'
 import NotificationBell from '@/components/notifications/NotificationBell'
@@ -11,6 +10,7 @@ import { useQuery } from '@tanstack/react-query'
 import { listNotifications } from '@/features/notifications/api'
 import Link from 'next/link'
 import { TrendingUp } from "lucide-react"
+import { useTranslations } from 'next-intl'
 import {
   LineChart,
   Line,
@@ -20,12 +20,10 @@ import {
   Pie,
   Label,
 } from "recharts"
-// import { Pie, PieChart } from "recharts"
 
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -48,13 +46,6 @@ const lineChartData = [
   { month: "Jun", desktop: 300 },
 ]
 
-const lineChartConfig = {
-  desktop: {
-    label: "Revenue",
-    color: "var(--chart-1)",
-  },
-} satisfies ChartConfig
-
 /* ---------------- PIE CHART DATA ---------------- */
 
 const pieChartData = [
@@ -63,16 +54,6 @@ const pieChartData = [
   { browser: "Firefox", visitors: 287, fill: "var(--chart-3)" },
   { browser: "Edge", visitors: 173, fill: "var(--chart-4)" },
 ]
-
-const pieChartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  Chrome: { label: "Chrome", color: "var(--chart-1)" },
-  Safari: { label: "Safari", color: "var(--chart-2)" },
-  Firefox: { label: "Firefox", color: "var(--chart-3)" },
-  Edge: { label: "Edge", color: "var(--chart-4)" },
-} satisfies ChartConfig
 
 const totalVisitors = pieChartData.reduce(
   (acc, item) => acc + item.visitors,
@@ -109,6 +90,27 @@ const upcomingEvents = [
 ]
 
 const Dashboard = () => {
+  const t = useTranslations('adminDashboard')
+  const tCommon = useTranslations('common')
+  const tNotifications = useTranslations('notifications')
+
+  const lineChartConfig = {
+    desktop: {
+      label: t('revenueLabel'),
+      color: "var(--chart-1)",
+    },
+  } satisfies ChartConfig
+
+  const pieChartConfig = {
+    visitors: {
+      label: t('visitors'),
+    },
+    Chrome: { label: "Chrome", color: "var(--chart-1)" },
+    Safari: { label: "Safari", color: "var(--chart-2)" },
+    Firefox: { label: "Firefox", color: "var(--chart-3)" },
+    Edge: { label: "Edge", color: "var(--chart-4)" },
+  } satisfies ChartConfig
+
   const { data: recentNotifications = [] } = useQuery({
     queryKey: ['notifications', 'dashboard-preview'],
     queryFn: () => listNotifications('all'),
@@ -122,16 +124,16 @@ const Dashboard = () => {
         {/* Left Section */}
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src="/images/avatar.png" alt="User Avatar" />
+            <AvatarImage src="/images/avatar.png" alt={t('userAvatarAlt')} />
             <AvatarFallback>SC</AvatarFallback>
           </Avatar>
 
           <div className="leading-tight">
             <h2 className="text-white font-semibold text-sm sm:text-base">
-              Welcome Asanda!
+              {t('welcomeAdmin', { name: 'Asanda' })}
             </h2>
             <span className="text-gray-400 text-xs">
-              System Administrator
+              {t('systemAdministrator')}
             </span>
           </div>
         </div>
@@ -147,7 +149,7 @@ const Dashboard = () => {
             />
             <Input
               type="text"
-              placeholder="Search..."
+              placeholder={t('searchPlaceholder')}
               className="
           pl-10 pr-4 h-10 rounded-full
           bg-[#D7498E75] text-white
@@ -169,7 +171,7 @@ const Dashboard = () => {
             <div className="h-10 w-10 flex items-center justify-center rounded-full bg-[#EAE9E9] cursor-pointer hover:scale-105 transition">
               <Image
                 src="/svg/EventAcc.svg"
-                alt="Events"
+                alt={t('eventsAlt')}
                 width={22}
                 height={22}
               />
@@ -189,10 +191,10 @@ const Dashboard = () => {
             <div className="bg-[#151515] p-5 rounded-2xl text-white">
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 flex items-center justify-center rounded-full bg-[#D7498E]">
-                  <Image src="/svg/booking.svg" alt="Total Events" width={28} height={28} />
+                  <Image src="/svg/booking.svg" alt={t('totalEvents')} width={28} height={28} />
                 </div>
                 <div>
-                  <h3 className="text-sm text-gray-300">Total Events</h3>
+                  <h3 className="text-sm text-gray-300">{t('totalEvents')}</h3>
                   <p className="text-xl font-semibold">280</p>
                 </div>
               </div>
@@ -202,10 +204,10 @@ const Dashboard = () => {
             <div className="bg-[#151515] p-5 rounded-2xl text-white">
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 flex items-center justify-center rounded-full bg-[#D7498E]">
-                  <Image src="/svg/tickets.svg" alt="Total Tickets" width={28} height={28} />
+                  <Image src="/svg/tickets.svg" alt={t('totalTickets')} width={28} height={28} />
                 </div>
                 <div>
-                  <h3 className="text-sm text-gray-300">Total Tickets</h3>
+                  <h3 className="text-sm text-gray-300">{t('totalTickets')}</h3>
                   <p className="text-xl font-semibold">1,420</p>
                 </div>
               </div>
@@ -215,10 +217,10 @@ const Dashboard = () => {
             <div className="bg-[#151515] p-5 rounded-2xl text-white">
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 flex items-center justify-center rounded-full bg-[#D7498E]">
-                  <Image src="/svg/carbon_currency.svg" alt="Total Revenue" width={28} height={28} />
+                  <Image src="/svg/carbon_currency.svg" alt={t('totalRevenue')} width={28} height={28} />
                 </div>
                 <div>
-                  <h3 className="text-sm text-gray-300">Total Revenue</h3>
+                  <h3 className="text-sm text-gray-300">{t('totalRevenue')}</h3>
                   <p className="text-xl font-semibold">$24,680</p>
                 </div>
               </div>
@@ -234,22 +236,22 @@ const Dashboard = () => {
               <CardHeader>
                 <div className="flex flex-wrap gap-2 justify-between items-center">
                   <CardTitle className="flex items-center gap-2 text-primary">
-                    Net Sales <ChevronDown />
+                    {t('netSales')} <ChevronDown />
                   </CardTitle>
-                  <Button variant="outline">Filter: Weekly</Button>
+                  <Button variant="outline">{t('filterWeekly')}</Button>
                 </div>
 
                 <div className="flex flex-wrap gap-6 mt-4 text-sm">
                   <div>
-                    <p>Total Revenue</p>
+                    <p>{t('totalRevenue')}</p>
                     <span className="text-primary text-xl font-bold">156,500 LKR</span>
                   </div>
                   <div>
-                    <p>Total Tickets</p>
+                    <p>{t('totalTickets')}</p>
                     <span className="text-primary text-xl font-bold">2438</span>
                   </div>
                   <div>
-                    <p>Total Events</p>
+                    <p>{t('totalEvents')}</p>
                     <span className="text-primary text-xl font-bold">32</span>
                   </div>
                 </div>
@@ -268,16 +270,16 @@ const Dashboard = () => {
 
               <CardFooter className="flex-col items-start gap-2 text-sm">
                 <div className="flex items-center gap-2 font-medium">
-                  Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+                  {t('trendingUp')} <TrendingUp className="h-4 w-4" />
                 </div>
-                <div className="text-muted-foreground">Showing last 6 months revenue</div>
+                <div className="text-muted-foreground">{t('showingRevenue')}</div>
               </CardFooter>
             </Card>
 
             {/* PIE CHART */}
             <Card className="bg-[#151515]">
               <CardHeader>
-                <CardTitle>Customer Activities</CardTitle>
+                <CardTitle>{t('customerActivities')}</CardTitle>
               </CardHeader>
 
               <CardContent className="pb-0">
@@ -311,7 +313,7 @@ const Dashboard = () => {
                                 y={(viewBox.cy ?? 0) + 20}
                                 className="text-sm fill-muted-foreground"
                               >
-                                Visitors
+                                {t('visitors')}
                               </tspan>
                             </text>
                           )
@@ -324,9 +326,9 @@ const Dashboard = () => {
 
               <CardFooter className="flex-col gap-2 text-sm">
                 <div className="flex items-center gap-2 font-medium">
-                  Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+                  {t('trendingUp')} <TrendingUp className="h-4 w-4" />
                 </div>
-                <div className="text-muted-foreground">Showing total visitors</div>
+                <div className="text-muted-foreground">{t('showingVisitors')}</div>
               </CardFooter>
             </Card>
 
@@ -336,15 +338,15 @@ const Dashboard = () => {
           <div className="bg-[#151515] p-6 rounded-2xl mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* LEFT */}
             <div>
-              <h2 className="text-lg text-primary">Latest Event</h2>
+              <h2 className="text-lg text-primary">{t('latestEvent')}</h2>
               <p className="text-sm mt-2">Alan Walker EDM Festival</p>
 
               <div className="mt-4 space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="h-4 w-4 bg-primary rounded-full" /> Paid Seats
+                  <span className="h-4 w-4 bg-primary rounded-full" /> {t('paidSeats')}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="h-4 w-4 bg-white rounded-full" /> Reserved Seats
+                  <span className="h-4 w-4 bg-white rounded-full" /> {t('reservedSeats')}
                 </div>
               </div>
             </div>
@@ -368,7 +370,7 @@ const Dashboard = () => {
           {/* UPCOMING EVENTS */}
           <div className="bg-[#0D0D0D] rounded-2xl p-4">
             <div className="flex justify-between mb-4">
-              <h3 className="text-sm font-semibold">Upcoming Events</h3>
+              <h3 className="text-sm font-semibold">{t('upcomingEvents')}</h3>
               <CircleArrowRight className="text-primary" />
             </div>
 
@@ -391,17 +393,17 @@ const Dashboard = () => {
           {/* NOTIFICATIONS */}
           <div className="bg-primary rounded-2xl p-4 text-black">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold">Notifications</h3>
+              <h3 className="text-sm font-semibold">{tNotifications('title')}</h3>
               <Link
                 href="/adminDashbaord/notifications"
                 className="text-xs font-medium underline"
               >
-                View all
+                {tCommon('viewAll')}
               </Link>
             </div>
             <div className="space-y-3">
               {recentNotifications.length === 0 ? (
-                <p className="text-sm">No notifications yet.</p>
+                <p className="text-sm">{t('noNotificationsYet')}</p>
               ) : (
                 recentNotifications.map((n) => (
                   <Link

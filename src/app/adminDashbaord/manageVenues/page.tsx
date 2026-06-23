@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Loader2, Pencil, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { StatusBadge } from "@/components/venues/StatusBadge";
@@ -35,6 +36,11 @@ import { toastApiError } from "@/lib/toasts";
 const adminPaths = getDashboardPaths("admin");
 
 export default function ManageVenuesPage() {
+  const t = useTranslations("adminDashboard");
+  const tStatus = useTranslations("entityStatus");
+  const tCommon = useTranslations("common");
+  const tForms = useTranslations("forms");
+  const tVenues = useTranslations("venues");
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<EntityStatus | "ALL">("ALL");
 
@@ -55,7 +61,7 @@ export default function ManageVenuesPage() {
         status: status as "APPROVED" | "ACTIVE" | "INACTIVE" | "CANCELLED",
       }),
     onSuccess: () => {
-      toast.success("Status updated");
+      toast.success(t("statusUpdated"));
       queryClient.invalidateQueries({ queryKey: venueKeys.all });
     },
     onError: (e) => toastApiError(e),
@@ -68,10 +74,9 @@ export default function ManageVenuesPage() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Manage venues</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t("manageVenues")}</h1>
             <p className="text-sm text-muted-foreground">
-              All venues on the platform. Admin-created venues are active immediately;
-              vendor venues stay in draft until they submit for review.
+              {t("manageVenuesDesc")}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -83,19 +88,19 @@ export default function ManageVenuesPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">All statuses</SelectItem>
-                <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="ACTIVE">Active</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="INACTIVE">Inactive</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
+                <SelectItem value="ALL">{t("allStatuses")}</SelectItem>
+                <SelectItem value="DRAFT">{tStatus("draft")}</SelectItem>
+                <SelectItem value="PENDING">{tStatus("pendingReview")}</SelectItem>
+                <SelectItem value="ACTIVE">{tStatus("active")}</SelectItem>
+                <SelectItem value="APPROVED">{tStatus("approved")}</SelectItem>
+                <SelectItem value="INACTIVE">{tStatus("inactive")}</SelectItem>
+                <SelectItem value="REJECTED">{tStatus("rejected")}</SelectItem>
               </SelectContent>
             </Select>
             <Button asChild>
               <Link href={adminPaths.addVenue}>
                 <Plus className="mr-2 h-4 w-4" />
-                Add venue
+                {t("addVenue")}
               </Link>
             </Button>
           </div>
@@ -105,13 +110,13 @@ export default function ManageVenuesPage() {
           title={
             <CardTitle className="flex items-center gap-2 text-lg">
               <Building2 className="h-5 w-5 text-primary" />
-              All venues
+              {t("allVenues")}
             </CardTitle>
           }
           description={
             isLoading
-              ? "Loading venues…"
-              : `${venues.length} venue${venues.length === 1 ? "" : "s"}`
+              ? t("loadingVenuesAdmin")
+              : t("venueCount", { count: venues.length })
           }
           headerAction={
             isFetching && !isLoading ? (
@@ -122,18 +127,18 @@ export default function ManageVenuesPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground">Name</TableHead>
-                <TableHead className="text-muted-foreground">Vendor</TableHead>
-                <TableHead className="text-muted-foreground">City</TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
-                <TableHead className="text-right text-muted-foreground">Actions</TableHead>
+                <TableHead className="text-muted-foreground">{tCommon("name")}</TableHead>
+                <TableHead className="text-muted-foreground">{t("vendorCol")}</TableHead>
+                <TableHead className="text-muted-foreground">{tForms("city")}</TableHead>
+                <TableHead className="text-muted-foreground">{tCommon("status")}</TableHead>
+                <TableHead className="text-right text-muted-foreground">{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableSkeleton cols={5} />
               ) : venues.length === 0 ? (
-                <TableEmptyRow colSpan={5}>No venues found.</TableEmptyRow>
+                <TableEmptyRow colSpan={5}>{tVenues("noVenuesFound")}</TableEmptyRow>
               ) : (
                 venues.map((venue) => (
                   <TableRow key={venue.id} className="border-border">
@@ -150,7 +155,7 @@ export default function ManageVenuesPage() {
                         <Button asChild size="sm" variant="outline" className="border-border">
                           <Link href={adminPaths.editVenue(venue.id)}>
                             <Pencil className="mr-1 h-3 w-3" />
-                            Edit
+                            {tCommon("edit")}
                           </Link>
                         </Button>
                         {venue.status !== "ACTIVE" && venue.status !== "DRAFT" && (
@@ -160,7 +165,7 @@ export default function ManageVenuesPage() {
                               statusMut.mutate({ id: venue.id, status: "ACTIVE" })
                             }
                           >
-                            Activate
+                            {t("activate")}
                           </Button>
                         )}
                         {venue.status === "ACTIVE" && (
@@ -172,7 +177,7 @@ export default function ManageVenuesPage() {
                               statusMut.mutate({ id: venue.id, status: "INACTIVE" })
                             }
                           >
-                            Deactivate
+                            {t("deactivate")}
                           </Button>
                         )}
                       </div>

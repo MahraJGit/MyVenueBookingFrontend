@@ -2,51 +2,49 @@ import { z } from "zod";
 import { e164ToApiParts, isE164Valid } from "@/lib/phone";
 import type { RegisterRequestBody } from "./types";
 
-const passwordRules = z
-  .string()
-  .min(8, "Password must be at least 8 characters")
-  .regex(/[a-z]/, "Password must contain a lowercase letter")
-  .regex(/[A-Z]/, "Password must contain an uppercase letter")
-  .regex(/\d/, "Password must contain a number")
-  .regex(
-    /[@$!%*?&]/,
-    "Password must contain a special character (@$!%*?&)",
-  );
+export type ValidationTranslator = (key: string) => string;
+
+function passwordRules(t: ValidationTranslator) {
+  return z
+    .string()
+    .min(8, t("passwordMin"))
+    .regex(/[a-z]/, t("passwordLowercase"))
+    .regex(/[A-Z]/, t("passwordUppercase"))
+    .regex(/\d/, t("passwordNumber"))
+    .regex(/[@$!%*?&]/, t("passwordSpecial"));
+}
 
 /** Client-side signup form validation (aligned with backend `registerDto`). */
-export const signupFormSchema = z
-  .object({
-    firstName: z
-      .string()
-      .trim()
-      .min(2, "First name must be at least 2 characters"),
-    lastName: z
-      .string()
-      .trim()
-      .min(2, "Last name must be at least 2 characters"),
-    email: z.string().trim().email("Invalid email address"),
-    phoneE164: z.string().optional(),
-    password: passwordRules,
-    confirmPassword: z.string().min(1, "Confirm your password"),
-  })
-  .superRefine((data, ctx) => {
-    if (!data.phoneE164?.trim() || !isE164Valid(data.phoneE164)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Enter a valid international phone number",
-        path: ["phoneE164"],
-      });
-    }
-    if (data.password !== data.confirmPassword) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Passwords do not match",
-        path: ["confirmPassword"],
-      });
-    }
-  });
+export function createSignupFormSchema(t: ValidationTranslator) {
+  return z
+    .object({
+      firstName: z.string().trim().min(2, t("firstNameMin")),
+      lastName: z.string().trim().min(2, t("lastNameMin")),
+      email: z.string().trim().email(t("invalidEmail")),
+      phoneE164: z.string().optional(),
+      password: passwordRules(t),
+      confirmPassword: z.string().min(1, t("confirmPassword")),
+    })
+    .superRefine((data, ctx) => {
+      if (!data.phoneE164?.trim() || !isE164Valid(data.phoneE164)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t("invalidPhone"),
+          path: ["phoneE164"],
+        });
+      }
+      if (data.password !== data.confirmPassword) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t("passwordMismatch"),
+          path: ["confirmPassword"],
+        });
+      }
+    });
+}
 
-export type SignupFormValues = z.infer<typeof signupFormSchema>;
+const _signupSchema = createSignupFormSchema((key) => key);
+export type SignupFormValues = z.infer<typeof _signupSchema>;
 
 export function signupValuesToRegisterBody(
   data: SignupFormValues,

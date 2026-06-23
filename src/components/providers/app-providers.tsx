@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/features/auth/auth-context";
 import { CurrencyProvider } from "@/features/currency/currency-context";
+import { LocaleProvider } from "@/features/i18n/locale-context";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -22,12 +23,14 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CurrencyProvider>
-        <AuthProvider>
-          {children}
-          <Toaster richColors theme="dark" position="top-center" closeButton />
-        </AuthProvider>
-      </CurrencyProvider>
+      <LocaleProvider>
+        <CurrencyProvider>
+          <AuthProvider>
+            {children}
+            <Toaster richColors theme="dark" position="top-center" closeButton />
+          </AuthProvider>
+        </CurrencyProvider>
+      </LocaleProvider>
     </QueryClientProvider>
   );
 }

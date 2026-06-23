@@ -183,9 +183,31 @@
   --font-size-large: 20px;
   --font-size-x-large: 28px;
   --font-size-xx-large: 72px;
+  --font-urdu: var(--font-urdu);
+  --font-arabic: var(--font-arabic);
 }
 
 /* header style */
 header {
   transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+}
+
+.font-urdu {
+  font-family: var(--font-urdu), var(--font-inter), sans-serif;
+}
+
+.font-arabic {
+  font-family: var(--font-arabic), var(--font-inter), sans-serif;
+}
+
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .ms-auto {
+  margin-inline-start: auto;
+}
+
+[dir="rtl"] .text-start {
+  text-align: start;
 }

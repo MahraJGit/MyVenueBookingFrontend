@@ -1,12 +1,14 @@
 "use client";
 
 import { Suspense } from "react";
+import { useTranslations } from "next-intl";
 import "@/styles/event-list.css";
 import { EventsListingSection } from "@/components/events/EventsListingSection";
 
 function EventsListingFallback() {
+  const tCommon = useTranslations("common");
   return (
-    <section className="eventslist py-10">
+    <section className="eventslist py-10" aria-busy="true" aria-label={tCommon("loading")}>
       <div className="container mx-auto px-4">
         <div className="h-10 w-48 bg-[#242424] animate-pulse rounded mb-8" />
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

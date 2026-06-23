@@ -3,6 +3,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/events/EventCard";
 import { EventCategoryFilters } from "@/components/events/EventCategoryFilters";
@@ -18,6 +19,8 @@ const PAGE_SIZE = 12;
 export function EventsListingSection() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const tEvents = useTranslations("events");
+  const tCommon = useTranslations("common");
   const categoryFromUrl = searchParams.get("category");
   const [activeCategory, setActiveCategory] = useState(
     categoryFromUrl?.trim() || ALL_EVENTS_CATEGORY,
@@ -81,7 +84,7 @@ export function EventsListingSection() {
     <section className="eventslist py-10">
       <div className="container mx-auto px-4">
         <div className="section-header py-5 mb-6 flex items-center justify-between border-b border-[#1F1F1F]">
-          <h2>All Events</h2>
+          <h2>{tEvents("allEvents")}</h2>
         </div>
 
         <EventCategoryFilters
@@ -93,7 +96,7 @@ export function EventsListingSection() {
 
         {isError ? (
           <p className="text-sm text-red-400 py-8 mb-8">
-            {error instanceof Error ? error.message : "Could not load events."}
+            {error instanceof Error ? error.message : tEvents("couldNotLoadEvents")}
           </p>
         ) : null}
 
@@ -108,8 +111,10 @@ export function EventsListingSection() {
           </div>
         ) : events.length === 0 ? (
           <p className="text-sm text-[#B3B3B3] py-8 mb-8">
-            No events found
-            {activeCategory !== ALL_EVENTS_CATEGORY ? ` in ${activeCategory}` : ""}.
+            {activeCategory !== ALL_EVENTS_CATEGORY
+              ? tEvents("noEventsInCategory", { category: activeCategory })
+              : tEvents("noEventsFound")}
+            .
           </p>
         ) : (
           <div className="event-cards grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
@@ -128,7 +133,7 @@ export function EventsListingSection() {
               disabled={isFetchingNextPage}
               onClick={() => void fetchNextPage()}
             >
-              {isFetchingNextPage ? "Loading…" : "Load more events"}
+              {isFetchingNextPage ? tCommon("loading") : tEvents("loadMoreEvents")}
             </Button>
           </div>
         ) : null}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   Building2,
   CalendarDays,
@@ -24,11 +25,13 @@ function StatCard({
   value,
   hint,
   href,
+  viewAllLabel,
 }: {
   title: string;
   value: number | string;
   hint: string;
   href: string;
+  viewAllLabel: string;
 }) {
   return (
     <Card className="border-[#303030] bg-[#1B1B1B]">
@@ -41,7 +44,7 @@ function StatCard({
         <p className="text-3xl font-bold text-white">{value}</p>
         <p className="text-xs text-muted-foreground">{hint}</p>
         <Button asChild size="sm" variant="outline" className="border-[#303030]">
-          <Link href={href}>View all</Link>
+          <Link href={href}>{viewAllLabel}</Link>
         </Button>
       </CardContent>
     </Card>
@@ -49,6 +52,8 @@ function StatCard({
 }
 
 export default function VendorDashboardHome() {
+  const t = useTranslations("vendorDashboard");
+  const tCommon = useTranslations("common");
   const paths = getDashboardPaths("vendor");
 
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
@@ -73,23 +78,22 @@ export default function VendorDashboardHome() {
       <div className="space-y-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">Vendor Dashboard</h1>
+            <h1 className="text-2xl font-bold text-white">{t("vendorDashboardTitle")}</h1>
             <p className="text-sm text-muted-foreground">
-              Manage your events and venues. New listings require admin approval before
-              they go live.
+              {t("vendorWelcomeDesc")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild className="bg-primary">
               <Link href={paths.addEvent}>
                 <Plus className="mr-2 h-4 w-4" />
-                Create event
+                {t("createEvent")}
               </Link>
             </Button>
             <Button asChild variant="outline" className="border-[#303030]">
               <Link href={paths.addVenue}>
                 <Plus className="mr-2 h-4 w-4" />
-                Add venue
+                {t("addVenue")}
               </Link>
             </Button>
           </div>
@@ -102,28 +106,32 @@ export default function VendorDashboardHome() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
-              title="My Events"
+              title={t("myEvents")}
               value={events.length}
-              hint={`${pendingEvents} pending approval`}
+              hint={t("pendingApproval", { count: pendingEvents })}
               href={paths.events}
+              viewAllLabel={tCommon("viewAll")}
             />
             <StatCard
-              title="My Venues"
+              title={t("myVenues")}
               value={venues.length}
-              hint={`${pendingVenues} pending approval`}
+              hint={t("pendingApproval", { count: pendingVenues })}
               href={paths.venues}
+              viewAllLabel={tCommon("viewAll")}
             />
             <StatCard
-              title="Venue Bookings"
+              title={t("venueBookings")}
               value="—"
-              hint="Bookings for your venues"
+              hint={t("bookingsForVenues")}
               href={paths.venueBookings}
+              viewAllLabel={tCommon("viewAll")}
             />
             <StatCard
-              title="Analytics"
+              title={t("analytics")}
               value="—"
-              hint="Ticket sales and engagement"
+              hint={t("analyticsDesc")}
               href={paths.analytics}
+              viewAllLabel={tCommon("viewAll")}
             />
           </div>
         )}
@@ -133,22 +141,22 @@ export default function VendorDashboardHome() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Clapperboard className="h-5 w-5 text-primary" />
-                Events
+                {t("eventsSection")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>Create events, manage ticket types, and track approval status.</p>
+              <p>{t("eventsSectionDesc")}</p>
               <div className="flex flex-wrap gap-2 pt-2">
                 <Button asChild size="sm" className="bg-primary">
-                  <Link href={paths.addEvent}>Create event</Link>
+                  <Link href={paths.addEvent}>{t("createEvent")}</Link>
                 </Button>
                 <Button asChild size="sm" variant="outline" className="border-[#303030]">
-                  <Link href={paths.events}>My events</Link>
+                  <Link href={paths.events}>{t("myEventsLink")}</Link>
                 </Button>
                 <Button asChild size="sm" variant="outline" className="border-[#303030]">
                   <Link href={paths.tickets}>
                     <Ticket className="mr-1 h-3 w-3" />
-                    Ticket sales
+                    {t("ticketSales")}
                   </Link>
                 </Button>
               </div>
@@ -159,22 +167,22 @@ export default function VendorDashboardHome() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Building2 className="h-5 w-5 text-primary" />
-                Venues
+                {t("venuesSection")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>Set up venue details, pricing, schedules, and availability blocks.</p>
+              <p>{t("venuesSectionDesc")}</p>
               <div className="flex flex-wrap gap-2 pt-2">
                 <Button asChild size="sm" className="bg-primary">
-                  <Link href={paths.addVenue}>Add venue</Link>
+                  <Link href={paths.addVenue}>{t("addVenue")}</Link>
                 </Button>
                 <Button asChild size="sm" variant="outline" className="border-[#303030]">
-                  <Link href={paths.venues}>My venues</Link>
+                  <Link href={paths.venues}>{t("myVenuesLink")}</Link>
                 </Button>
                 <Button asChild size="sm" variant="outline" className="border-[#303030]">
                   <Link href={paths.venueBookings}>
                     <CalendarDays className="mr-1 h-3 w-3" />
-                    Bookings
+                    {t("venueBookings")}
                   </Link>
                 </Button>
               </div>
@@ -186,12 +194,12 @@ export default function VendorDashboardHome() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <TrendingUp className="h-5 w-5 text-primary" />
-              Reports
+              {t("reports")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Button asChild variant="outline" className="border-[#303030]">
-              <Link href={paths.analytics}>Open analytics & reports</Link>
+              <Link href={paths.analytics}>{t("openAnalytics")}</Link>
             </Button>
           </CardContent>
         </Card>

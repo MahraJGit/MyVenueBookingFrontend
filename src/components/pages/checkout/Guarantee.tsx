@@ -1,24 +1,27 @@
-import { CircleDollarSign, ShieldCheck } from 'lucide-react'
-import React from 'react'
+"use client";
+
+import { CircleDollarSign, ShieldCheck } from "lucide-react";
+import React from "react";
+import { useTranslations } from "next-intl";
 
 const Guarantee = () => {
-    return (
-        <>
-            <div className="Guarantee space-y-3 bg-[#1B1B1B59] p-6 rounded-lg border border-[#99999933]">
-                <p className="flex items-center gap-2">
-                    <ShieldCheck size={24} className="text-primary shrink-0" />
-                    FanProtect : every order is 100% guaranteed
-                </p>
+  const t = useTranslations("checkout");
 
-                <p className="flex items-center gap-2">
-                    <CircleDollarSign size={24} className="text-primary shrink-0" />
-                    Easy Refund
-                </p>
+  return (
+    <div className="Guarantee space-y-3 bg-[#1B1B1B59] p-6 rounded-lg border border-[#99999933]">
+      <p className="flex items-center gap-2">
+        <ShieldCheck size={24} className="text-primary shrink-0" />
+        {t("fanProtect")}
+      </p>
 
-                <p className="ml-8 text-[#999999]">Change of plans? Get your money back up to 24 hours before the event.</p>
-            </div>
-        </>
-    )
-}
+      <p className="flex items-center gap-2">
+        <CircleDollarSign size={24} className="text-primary shrink-0" />
+        {t("easyRefund")}
+      </p>
 
-export default Guarantee
+      <p className="ml-8 text-[#999999]">{t("refundPolicy")}</p>
+    </div>
+  );
+};
+
+export default Guarantee;

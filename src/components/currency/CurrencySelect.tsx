@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   Select,
   SelectContent,
@@ -24,6 +25,8 @@ export function CurrencySelect({
   fullWidth = false,
 }: CurrencySelectProps) {
   const { displayCurrency, setDisplayCurrency } = useCurrency();
+  const t = useTranslations("currency");
+  const tCommon = useTranslations("common");
 
   return (
     <Select
@@ -37,6 +40,7 @@ export function CurrencySelect({
           triggerClassName,
           className,
         )}
+        aria-label={tCommon("selectCurrency")}
       >
         <SelectValue />
       </SelectTrigger>
@@ -45,7 +49,7 @@ export function CurrencySelect({
           <SelectItem key={option.code} value={option.code}>
             <div className="flex items-center gap-2">
               <span aria-hidden>{option.flag}</span>
-              <span>{option.code}</span>
+              <span>{t(option.code)}</span>
             </div>
           </SelectItem>
         ))}

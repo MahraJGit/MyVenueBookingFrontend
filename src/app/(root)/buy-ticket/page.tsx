@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react'
+import { useTranslations } from 'next-intl';
 import "@/styles/buyTicket.css"
 import {
   Select,
@@ -26,10 +27,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 const buyTicket = () => {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState<string>("All");
+  const t = useTranslations('buyTicketPage');
+  const tEvents = useTranslations('events');
+  const tHome = useTranslations('home');
+  const tCommon = useTranslations('common');
+  const tEventList = useTranslations('eventList');
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
   const [ticketCount, setTicketCount] = useState(2);
   const [seatedTogether, setSeatedTogether] = useState(false);
+
+  const tagKeys = ['popular', 'bestSelling', 'vip'] as const;
 
   const openTicketModal = () => setTicketModalOpen(true);
   const closeTicketModal = () => setTicketModalOpen(false);
@@ -48,12 +55,12 @@ const buyTicket = () => {
           className="bg-[#1B1B1B] border-[#303030] rounded-2xl p-0 gap-0 max-w-md overflow-hidden text-white"
         >
           <div className="p-6 pt-8 flex flex-col gap-6">
-            <DialogTitle className="sr-only">Select tickets</DialogTitle>
+            <DialogTitle className="sr-only">{t('selectTickets')}</DialogTitle>
             {/* Seat layout image */}
             <div className="w-full rounded-xl overflow-hidden border border-[#303030]">
               <Image
                 src="/images/seats.png"
-                alt="Cinema seat layout"
+                alt={t('seatLayoutAlt')}
                 width={600}
                 height={200}
                 className="w-full h-auto object-cover"
@@ -61,13 +68,13 @@ const buyTicket = () => {
             </div>
             {/* How many tickets */}
             <div className='flex flex-col gap-3 justify-center items-center'>
-              <h3 className="font-bold text-white mb-3">How Many Tickets ?</h3>
+              <h3 className="font-bold text-white mb-3">{t('howManyTickets')}</h3>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setTicketCount((c) => Math.max(1, c - 1))}
                   className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary text-white border border-[#454545] hover:opacity-90 transition-opacity"
-                  aria-label="Decrease tickets"
+                  aria-label={t('decreaseTickets')}
                 >
                   <Minus className="size-5" />
                 </button>
@@ -76,7 +83,7 @@ const buyTicket = () => {
                   type="button"
                   onClick={() => setTicketCount((c) => c + 1)}
                   className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary text-white border border-[#454545] hover:opacity-90 transition-opacity"
-                  aria-label="Increase tickets"
+                  aria-label={t('increaseTickets')}
                 >
                   <Plus className="size-5" />
                 </button>
@@ -90,16 +97,16 @@ const buyTicket = () => {
                   onCheckedChange={(checked) => setSeatedTogether(checked === true)}
                   className="border-[#454545] data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                 />
-                <span className="text-white font-medium">We want to be seated together</span>
+                <span className="text-white font-medium">{t('seatedTogether')}</span>
               </label>
-              <p className="text-sm text-[#888] pl-7">Most Popular Quality On Our Site</p>
+              <p className="text-sm text-[#888] pl-7">{t('seatedTogetherHint')}</p>
             </div>
             {/* Start button */}
             <Button
               className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 rounded-xl"
               onClick={handleStart}
             >
-              Start
+              {t('start')}
             </Button>
           </div>
         </DialogContent>
@@ -121,16 +128,16 @@ const buyTicket = () => {
             {/* Left Section */}
             <div className="w-full lg:w-[80%]">
               <div className="eventList-header flex flex-col sm:flex-row sm:items-center sm:justify-between py-6 border-b border-[#1B1B1B] gap-4">
-                <h2 className="text-xl font-semibold">All days and times</h2>
+                <h2 className="text-xl font-semibold">{t('allDaysAndTimes')}</h2>
                 <div className="select flex items-center gap-2">
                   <MapPin size={18} className="text-white" />
                   <Select>
                     <SelectTrigger className="w-[180px] location-menu text-white">
-                      <SelectValue placeholder="Select a location" />
+                      <SelectValue placeholder={t('selectLocation')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectLabel>Locations</SelectLabel>
+                        <SelectLabel>{t('locations')}</SelectLabel>
                         <SelectItem value="las-vegas">Las Vegas</SelectItem>
                         <SelectItem value="miami">Miami</SelectItem>
                         <SelectItem value="newyork">New York</SelectItem>
@@ -158,7 +165,7 @@ const buyTicket = () => {
                         <Share2 size={22} />
                         <Bookmark size={22} />
                         <Button variant="secondary" size="sm" onClick={openTicketModal}>
-                          Get Tickets
+                          {t('getTickets')}
                         </Button>
                       </div>
                     </div>
@@ -176,12 +183,12 @@ const buyTicket = () => {
                       </div>
 
                       <div className="event-tags flex flex-wrap items-center gap-2">
-                        {["Popular", "Best Selling", "VIP"].map((tag) => (
+                        {tagKeys.map((tagKey) => (
                           <span
-                            key={tag}
+                            key={tagKey}
                             className="tag text-xs text-[#FFBE5D] py-1.5 px-3 bg-[#FFBE5D14] rounded-2xl"
                           >
-                            {tag}
+                            {t(tagKey)}
                           </span>
                         ))}
                       </div>
@@ -196,7 +203,7 @@ const buyTicket = () => {
               <div className="venue-img h-[250px] sm:h-80 lg:h-[370px] w-full relative rounded-2xl overflow-hidden">
                 <Image
                   src="/images/venue.jpg"
-                  alt="venue-image"
+                  alt={t('venueImageAlt')}
                   fill
                   className="object-cover"
                 />
@@ -222,8 +229,8 @@ const buyTicket = () => {
       <section className='event-banner py-4'>
         <div className="container mx-auto px-4">
           <div className='inner text-center w-full lg:w-[80%] py-12 rounded-2xl'>
-            <p>In Las Vegas</p>
-            <h2 className='text-5xl! mb-4'>MUSIC FESTIVAL</h2>
+            <p>{t('inLasVegas')}</p>
+            <h2 className='text-5xl! mb-4'>{t('musicFestival')}</h2>
             <p>MEHDI LORESTANI WITH DJ HAMED</p>
           </div>
         </div>
@@ -231,7 +238,7 @@ const buyTicket = () => {
       <section className="upcommming-events">
         <div className="container mx-auto px-4">
           <div className="inner ww-full lg:w-[80%]">
-            <h2 className='py-6 border-b border-[#1B1B1B]'>Until 6 months</h2>
+            <h2 className='py-6 border-b border-[#1B1B1B]'>{t('until6Months')}</h2>
             <div className="upcomming-events-cards">
               {/* <div className="card bg-[#191919] p-6 rounded-2xl my-6">
                 <div className="card-header border-b border-[#454545] py-6 border-dashed flex items-center justify-between">
@@ -321,7 +328,7 @@ const buyTicket = () => {
                         <Share2 size={22} />
                         <Bookmark size={22} />
                         <Button variant="secondary" size="sm" onClick={openTicketModal}>
-                          Get Tickets
+                          {t('getTickets')}
                         </Button>
                       </div>
                     </div>
@@ -339,12 +346,12 @@ const buyTicket = () => {
                       </div>
 
                       <div className="event-tags flex flex-wrap items-center gap-2">
-                        {["Popular", "Best Selling", "VIP"].map((tag) => (
+                        {tagKeys.map((tagKey) => (
                           <span
-                            key={tag}
+                            key={tagKey}
                             className="tag text-xs text-[#FFBE5D] py-1.5 px-3 bg-[#FFBE5D14] rounded-2xl"
                           >
-                            {tag}
+                            {t(tagKey)}
                           </span>
                         ))}
                       </div>
@@ -358,14 +365,14 @@ const buyTicket = () => {
       <section className="shows py-10">
         <div className="container mx-auto px-4">
           <div className="section-header py-5 mb-6 flex items-center justify-between border-b border-[#1F1F1F]">
-            <h2>Concert near you</h2>
-            <span className="text-sm">See all</span>
+            <h2>{t('concertNearYou')}</h2>
+            <span className="text-sm">{tHome('seeAll')}</span>
           </div>
           <div className="shows-cards grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             <Link href="/buy-ticket" className="card flex flex-col items-center group relative cursor-pointer">
               <Image
                 src="/images/card-img1.png"
-                alt="concert image"
+                alt={tEventList('concertImageAlt')}
                 width={500}
                 height={343}
                 layout="intrinsic"
@@ -374,7 +381,7 @@ const buyTicket = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents('timeToEnd')}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -385,7 +392,7 @@ const buyTicket = () => {
                     <span className="text-xs">Chelyabinsk</span>
                   </div>
                   <div className="price text-md font-bold text-primary">
-                    from <span>$473.85</span>
+                    {tCommon('from')} <span>$473.85</span>
                   </div>
                 </div>
               </div>
@@ -394,7 +401,7 @@ const buyTicket = () => {
             <Link href="/buy-ticket" className="card flex flex-col items-center group relative cursor-pointer">
               <Image
                 src="/images/card-img1.png"
-                alt="concert image"
+                alt={tEventList('concertImageAlt')}
                 width={500}
                 height={343}
                 layout="intrinsic"
@@ -403,7 +410,7 @@ const buyTicket = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents('timeToEnd')}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -414,7 +421,7 @@ const buyTicket = () => {
                     <span className="text-xs">Chelyabinsk</span>
                   </div>
                   <div className="price text-md font-bold text-primary">
-                    from <span>$473.85</span>
+                    {tCommon('from')} <span>$473.85</span>
                   </div>
                 </div>
               </div>
@@ -423,7 +430,7 @@ const buyTicket = () => {
             <Link href="/buy-ticket" className="card flex flex-col items-center group relative cursor-pointer">
               <Image
                 src="/images/card-img1.png"
-                alt="concert image"
+                alt={tEventList('concertImageAlt')}
                 width={500}
                 height={343}
                 layout="intrinsic"
@@ -432,7 +439,7 @@ const buyTicket = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents('timeToEnd')}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -443,7 +450,7 @@ const buyTicket = () => {
                     <span className="text-xs">Chelyabinsk</span>
                   </div>
                   <div className="price text-md font-bold text-primary">
-                    from <span>$473.85</span>
+                    {tCommon('from')} <span>$473.85</span>
                   </div>
                 </div>
               </div>
@@ -452,7 +459,7 @@ const buyTicket = () => {
             <Link href="/buy-ticket" className="card flex flex-col items-center group relative cursor-pointer">
               <Image
                 src="/images/card-img1.png"
-                alt="concert image"
+                alt={tEventList('concertImageAlt')}
                 width={500}
                 height={343}
                 layout="intrinsic"
@@ -461,7 +468,7 @@ const buyTicket = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents('timeToEnd')}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -472,7 +479,7 @@ const buyTicket = () => {
                     <span className="text-xs">Chelyabinsk</span>
                   </div>
                   <div className="price text-md font-bold text-primary">
-                    from <span>$473.85</span>
+                    {tCommon('from')} <span>$473.85</span>
                   </div>
                 </div>
               </div>

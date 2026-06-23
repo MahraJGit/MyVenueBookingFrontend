@@ -10,16 +10,18 @@ import {
 import NotificationBell from '@/components/notifications/NotificationBell'
 import { CurrencySelect } from '@/components/currency/CurrencySelect'
 import { useAuth } from '@/features/auth/auth-context'
+import { useTranslations } from 'next-intl'
 
 const Topbar = () => {
   const { initials } = useAuth()
+  const t = useTranslations('adminDashboard')
 
   return (
     <header className="flex items-center justify-between gap-4 p-4 bg-[#121212]  border-muted rounded-lg mb-6">
       
       <div className="w-full max-w-sm">
         <Input
-          placeholder="Search..."
+          placeholder={t('searchPlaceholder')}
           className="bg-[#1a1a1a] border-muted text-sm"
         />
       </div>

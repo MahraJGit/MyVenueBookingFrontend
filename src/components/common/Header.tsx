@@ -4,23 +4,33 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { HeaderAuthActions, HeaderAuthMobileLinks } from '@/components/common/HeaderAuthActions';
 import { CurrencySelect } from '@/components/currency/CurrencySelect';
+import { LanguageSelect } from '@/components/i18n/LanguageSelect';
+import { useLocaleContext } from '@/features/i18n/locale-context';
+import { cn } from '@/lib/utils';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+  const tNav = useTranslations('nav');
+  const tCommon = useTranslations('common');
+  const { isRtl } = useLocaleContext();
 
-  const navItems = [
-    { href: "/", label: "Home" },
-    { href: "/events", label: "Events" },
-    { href: "/venues", label: "Venue Booking" },
-    { href: "/affiliate", label: "List Your Venue" },
-    { href: "/blog", label: "Blog" },
-  ];
+  const navItems = useMemo(
+    () => [
+      { href: '/', label: tNav('home') },
+      { href: '/events', label: tNav('events') },
+      { href: '/venues', label: tNav('venueBooking') },
+      { href: '/affiliate', label: tNav('listYourVenue') },
+      { href: '/blog', label: tNav('blog') },
+    ],
+    [tNav],
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,14 +40,12 @@ const Header = () => {
     };
 
     window.addEventListener('scroll', handleScroll);
-    // call once to set initial state
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, [mobileMenuOpen]);
 
   return (
     <>
-      {/* Header*/}
       <header
         className={`fixed top-0 left-0 w-full rounded-lg z-50 h-[75px] transition-all duration-300 ${scrolled
           ? 'bg-background/80 backdrop-blur-md shadow-sm border-b border-border/50'
@@ -47,12 +55,11 @@ const Header = () => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-[75px]">
 
-            {/* Logo */}
             <div className="flex items-center">
               <Link href="/">
                 <Image
                   src="/svg/logo.svg"
-                  alt="Logo"
+                  alt={tCommon('logoAlt')}
                   width={165}
                   height={43}
                   className="h-10 w-auto lg:h-11 transition-all"
@@ -61,7 +68,6 @@ const Header = () => {
               </Link>
             </div>
 
-            {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center">
               <ul className="flex items-center gap-6 lg:gap-8 xl:gap-10">
                 {navItems.map((item) => (
@@ -83,18 +89,17 @@ const Header = () => {
               </ul>
             </nav>
 
-            {/* Desktop CTA */}
-            <div className="hidden lg:flex items-center gap-4">
+            <div className={cn('hidden lg:flex items-center gap-4', isRtl && 'flex-row-reverse')}>
+              <LanguageSelect />
               <CurrencySelect />
 
               <HeaderAuthActions />
             </div>
 
-            {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden z-50 p-2"
-              aria-label="Toggle menu"
+              aria-label={tCommon('toggleMenu')}
             >
               {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
@@ -102,7 +107,6 @@ const Header = () => {
         </div>
       </header>
 
-      {/* Mobile Menu Overlay and Panel moved OUTSIDE the header so the header background doesn't interfere */}
       <div
         className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 lg:hidden ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
@@ -110,14 +114,21 @@ const Header = () => {
       />
 
       <div
-        className={`fixed top-0 right-0 h-full w-80 max-w-full bg-background shadow-2xl z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
+        className={cn(
+          'fixed top-0 h-full w-80 max-w-full bg-background shadow-2xl z-50 transform transition-transform duration-300 ease-in-out lg:hidden',
+          isRtl ? 'left-0' : 'right-0',
+          mobileMenuOpen
+            ? 'translate-x-0'
+            : isRtl
+              ? '-translate-x-full'
+              : 'translate-x-full',
+        )}
       >
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-6 border-b">
             <Image
               src="/svg/logo.svg"
-              alt="Logo"
+              alt={tCommon('logoAlt')}
               width={140}
               height={36}
               className="h-9 w-auto"
@@ -144,6 +155,7 @@ const Header = () => {
           </nav>
 
           <div className="p-6 border-t space-y-4">
+            <LanguageSelect fullWidth />
             <CurrencySelect fullWidth />
 
             <HeaderAuthMobileLinks onNavigate={() => setMobileMenuOpen(false)} />

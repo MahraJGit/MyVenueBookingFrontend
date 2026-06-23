@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import {
   ArrowRight,
   CalendarDays,
@@ -15,11 +16,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import type { Booking } from "@/features/bookings/types";
+import type { Booking, BookingStatus } from "@/features/bookings/types";
 import { formatInVenueTimezone } from "@/features/venues/timezone";
 import {
   bookingStatusBadgeClass,
-  bookingStatusLabel,
 } from "@/components/bookings/user-booking-utils";
 import { BookingTotalPrice } from "@/components/currency/BookingTotalPrice";
 
@@ -45,6 +45,21 @@ function BookingCardSkeleton() {
   );
 }
 
+function useBookingStatusLabel() {
+  const t = useTranslations("booking");
+  return (status: BookingStatus) => {
+    const keys: Record<BookingStatus, string> = {
+      DRAFT: "draft",
+      HOLD: "hold",
+      PENDING: "pending",
+      CONFIRMED: "confirmed",
+      CANCELLED: "cancelled",
+      COMPLETED: "completed",
+    };
+    return t(keys[status] as Parameters<typeof t>[0]);
+  };
+}
+
 function UserBookingCard({
   booking,
   selected,
@@ -54,6 +69,8 @@ function UserBookingCard({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const t = useTranslations("booking");
+  const bookingStatusLabel = useBookingStatusLabel();
   const tz = booking.venue.timezone;
   const isHold = booking.status === "HOLD";
 
@@ -126,7 +143,7 @@ function UserBookingCard({
               >
                 <Link href={`/venues/booking/${booking.id}/checkout`}>
                   <CreditCard className="mr-1.5 h-3.5 w-3.5" />
-                  Complete payment
+                  {t("completePayment")}
                 </Link>
               </Button>
             ) : (
@@ -136,7 +153,7 @@ function UserBookingCard({
               </span>
             )}
             <span className="inline-flex items-center gap-0.5 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
-              View details
+              {t("viewDetails")}
               <ChevronRight className="h-3.5 w-3.5" />
             </span>
           </div>
@@ -181,6 +198,8 @@ export function UserBookingsList({
 }
 
 export function UserBookingsEmptyState({ tab }: { tab: string }) {
+  const t = useTranslations("booking");
+
   return (
     <div className="flex flex-col items-center justify-center gap-5 py-16 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-800/80">
@@ -188,17 +207,17 @@ export function UserBookingsEmptyState({ tab }: { tab: string }) {
       </div>
       <div className="space-y-2">
         <h3 className="text-lg font-semibold text-white">
-          {tab === "all" ? "No venue bookings yet" : `No ${tab.toLowerCase()} bookings`}
+          {tab === "all"
+            ? t("noVenueBookings")
+            : t("noTabBookings", { tab: tab.toLowerCase() })}
         </h3>
         <p className="max-w-sm text-sm text-muted-foreground">
-          {tab === "all"
-            ? "Discover venues and book your next event. Your reservations will appear here."
-            : "Try another tab or browse venues to make a new booking."}
+          {tab === "all" ? t("discoverVenues") : t("tryAnotherTab")}
         </p>
       </div>
       <Button asChild>
         <Link href="/venues" className="inline-flex items-center gap-2">
-          Browse venues
+          {t("browseVenues")}
           <ArrowRight className="h-4 w-4" />
         </Link>
       </Button>

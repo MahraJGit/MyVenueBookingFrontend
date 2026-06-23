@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { CalendarIcon, Loader2, Plus, Trash2, Upload } from "lucide-react"
 
@@ -59,8 +60,8 @@ type TicketForm = {
     salesEnd: string
 }
 
-const defaultTicket = (): TicketForm => ({
-    name: "General",
+const defaultTicket = (ticketName: string): TicketForm => ({
+    name: ticketName,
     price: "0",
     currency: "PKR",
     quantityTotal: "100",
@@ -95,18 +96,26 @@ function toTimeValue(date: Date | null) {
     return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`
 }
 
-function prettyDateTime(value: string) {
-    const d = parseLocalDateTime(value)
-    if (!d) return "Pick date & time"
-    return d.toLocaleString()
-}
-
 export default function AddEventsContentPage() {
+    const t = useTranslations("adminDashboard")
+    const tCommon = useTranslations("common")
+    const tForms = useTranslations("forms")
+    const tCurrency = useTranslations("currency")
+    const tEvents = useTranslations("events")
     const router = useRouter()
     const searchParams = useSearchParams()
     const paths = useDashboardPaths()
     const editId = searchParams.get("id")
     const queryClient = useQueryClient()
+
+    const prettyDateTime = React.useCallback(
+        (value: string) => {
+            const d = parseLocalDateTime(value)
+            if (!d) return t("pickDateTime")
+            return d.toLocaleString()
+        },
+        [t],
+    )
 
     const [eventName, setEventName] = React.useState("")
     const [eventDescription, setEventDescription] = React.useState("")
@@ -138,7 +147,7 @@ export default function AddEventsContentPage() {
     )
     const [startLocal, setStartLocal] = React.useState(() => defaultSchedule().start)
     const [endLocal, setEndLocal] = React.useState(() => defaultSchedule().end)
-    const [tickets, setTickets] = React.useState<TicketForm[]>([defaultTicket()])
+    const [tickets, setTickets] = React.useState<TicketForm[]>([defaultTicket(t("generalTicket"))])
 
     const { data: existing, isLoading: loadingEvent } = useQuery({
         queryKey: ["managed-event", editId],
@@ -166,17 +175,11 @@ export default function AddEventsContentPage() {
         isLoading: false,
     }));
 
-    /*
-    React.useEffect(() => {
-      if (!editId) setLocationSource("CUSTOM")
-    }, [editId])
-    */
-
     const legacyCategoryName = React.useMemo(() => {
-        const t = category.trim()
-        if (!t) return null
-        if (eventCategories.some((c) => c.name === t)) return null
-        return t
+        const cat = category.trim()
+        if (!cat) return null
+        if (eventCategories.some((c) => c.name === cat)) return null
+        return cat
     }, [category, eventCategories])
 
     React.useEffect(() => {
@@ -190,7 +193,6 @@ export default function AddEventsContentPage() {
         setCoverImage(existing.coverImage ?? "")
         setThumbnail(existing.thumbnail ?? "")
         setGalleryUrls(existing.gallery ?? [])
-        // setVenueId(existing.venueId ?? "") // Venue ID field commented out for now
         setVenueName(existing.venueName ?? "")
         setVenuePhone(existing.venuePhone ?? "")
         setVenueWebsite(existing.venueWebsite ?? "https://example.com")
@@ -214,21 +216,21 @@ export default function AddEventsContentPage() {
 
         setTickets(
             existing.ticketTypes.length > 0
-                ? existing.ticketTypes.map((t) => ({
-                    name: t.name,
-                    price: String(t.price),
-                    currency: t.currency || "PKR",
-                    quantityTotal: String(t.quantityTotal),
-                    salesStart: t.salesStart
-                        ? toLocal(typeof t.salesStart === "string" ? t.salesStart : String(t.salesStart))
+                ? existing.ticketTypes.map((ticket) => ({
+                    name: ticket.name,
+                    price: String(ticket.price),
+                    currency: ticket.currency || "PKR",
+                    quantityTotal: String(ticket.quantityTotal),
+                    salesStart: ticket.salesStart
+                        ? toLocal(typeof ticket.salesStart === "string" ? ticket.salesStart : String(ticket.salesStart))
                         : "",
-                    salesEnd: t.salesEnd
-                        ? toLocal(typeof t.salesEnd === "string" ? t.salesEnd : String(t.salesEnd))
+                    salesEnd: ticket.salesEnd
+                        ? toLocal(typeof ticket.salesEnd === "string" ? ticket.salesEnd : String(ticket.salesEnd))
                         : "",
                 }))
-                : [defaultTicket()],
+                : [defaultTicket(t("generalTicket"))],
         )
-    }, [existing])
+    }, [existing, t])
 
     const saveMutation = useMutation({
         mutationFn: async () => {
@@ -240,27 +242,27 @@ export default function AddEventsContentPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["managed-events"] })
-            toast.success(editId ? "Event updated" : "Event created")
+            toast.success(editId ? t("eventUpdated") : t("eventCreated"))
             router.push(paths.events)
         },
-        onError: (e) => toastApiError(e, "Could not save event."),
+        onError: (e) => toastApiError(e, t("couldNotSaveEvent")),
     })
 
     function buildPayload(): CreateEventPayload | Partial<CreateEventPayload> {
         const gallery = galleryUrls
 
-        const ticketPayload = tickets.map((t) => {
+        const ticketPayload = tickets.map((ticket) => {
             const row: CreateEventPayload["ticketTypes"][0] = {
-                name: t.name.trim(),
-                price: Number(t.price),
-                currency: t.currency.trim() || "PKR",
-                quantityTotal: Number(t.quantityTotal),
+                name: ticket.name.trim(),
+                price: Number(ticket.price),
+                currency: ticket.currency.trim() || "PKR",
+                quantityTotal: Number(ticket.quantityTotal),
             }
-            if (t.salesStart) {
-                row.salesStart = new Date(t.salesStart).toISOString()
+            if (ticket.salesStart) {
+                row.salesStart = new Date(ticket.salesStart).toISOString()
             }
-            if (t.salesEnd) {
-                row.salesEnd = new Date(t.salesEnd).toISOString()
+            if (ticket.salesEnd) {
+                row.salesEnd = new Date(ticket.salesEnd).toISOString()
             }
             return row
         })
@@ -290,10 +292,6 @@ export default function AddEventsContentPage() {
             ticketTypes: ticketPayload,
         }
 
-        // Optional venue UUID — re-enable when linking events to venue records:
-        // if (venueId.trim()) {
-        //   return { ...base, venueId: venueId.trim() } as CreateEventPayload
-        // }
         return base as CreateEventPayload
     }
 
@@ -315,11 +313,11 @@ export default function AddEventsContentPage() {
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         if (!category.trim()) {
-            toast.error("Select a category.")
+            toast.error(t("selectCategoryError"))
             return
         }
         if (!coverImage.trim()) {
-            toast.error("Upload a cover image before saving.")
+            toast.error(t("uploadCoverError"))
             return
         }
         saveMutation.mutate()
@@ -331,9 +329,9 @@ export default function AddEventsContentPage() {
             setCoverUploading(true)
             const url = await uploadEventMedia(f)
             setCoverImage(url)
-            toast.success("Cover image uploaded to storage")
+            toast.success(t("coverUploaded"))
         } catch (err) {
-            toastApiError(err, "Upload failed")
+            toastApiError(err, t("uploadFailed"))
         } finally {
             setCoverUploading(false)
         }
@@ -345,9 +343,9 @@ export default function AddEventsContentPage() {
             setThumbnailUploading(true)
             const url = await uploadEventMedia(f)
             setThumbnail(url)
-            toast.success("Thumbnail uploaded to storage")
+            toast.success(t("thumbnailUploaded"))
         } catch (err) {
-            toastApiError(err, "Thumbnail upload failed")
+            toastApiError(err, t("thumbnailUploadFailed"))
         } finally {
             setThumbnailUploading(false)
         }
@@ -364,11 +362,11 @@ export default function AddEventsContentPage() {
             setGalleryUrls((prev) => [...prev, ...results])
             toast.success(
                 list.length === 1
-                    ? "Gallery image uploaded"
-                    : `${list.length} images uploaded`,
+                    ? t("galleryUploaded")
+                    : t("galleryUploadedMany", { count: list.length }),
             )
         } catch (err) {
-            toastApiError(err, "Gallery upload failed")
+            toastApiError(err, t("galleryUploadFailed"))
         } finally {
             setGalleryUploading(false)
         }
@@ -385,6 +383,8 @@ export default function AddEventsContentPage() {
         setTagInput("")
     }
 
+    const currencyOptions = ["PKR", "USD", "EUR", "GBP", "AED", "SAR"] as const
+
     if (editId && loadingEvent) {
         return (
             <div className="flex min-h-[40vh] items-center justify-center text-white">
@@ -399,10 +399,10 @@ export default function AddEventsContentPage() {
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h2 className="text-xl font-bold text-primary">
-                            {editId ? "Edit event" : "Create event"}
+                            {editId ? t("editEventTitle") : t("createEventTitle")}
                         </h2>
                         <p className="text-sm text-zinc-400">
-                            Fields match the API: name, schedule, venue, location, ticket types.
+                            {t("eventFormDesc")}
                         </p>
                     </div>
                     <div className="flex gap-2">
@@ -411,18 +411,18 @@ export default function AddEventsContentPage() {
                             variant="outline"
                             onClick={() => router.push(paths.events)}
                         >
-                            Cancel
+                            {tCommon("cancel")}
                         </Button>
                         <Button type="submit" disabled={saveMutation.isPending}>
                             {saveMutation.isPending ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Saving
+                                    {t("saving")}
                                 </>
                             ) : editId ? (
-                                "Update event"
+                                t("updateEvent")
                             ) : (
-                                "Create event"
+                                t("createEventBtn")
                             )}
                         </Button>
                     </div>
@@ -430,11 +430,11 @@ export default function AddEventsContentPage() {
 
                 <Card className="border-zinc-800 bg-[#0e0e0e]">
                     <CardHeader>
-                        <CardTitle className="text-base text-primary">Basics</CardTitle>
+                        <CardTitle className="text-base text-primary">{t("basics")}</CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2 md:col-span-2">
-                            <Label>Event name</Label>
+                            <Label>{tForms("eventName")}</Label>
                             <Input
                                 required
                                 value={eventName}
@@ -443,7 +443,7 @@ export default function AddEventsContentPage() {
                             />
                         </div>
                         <div className="space-y-2 md:col-span-2">
-                            <Label>Description</Label>
+                            <Label>{tCommon("description")}</Label>
                             <Textarea
                                 required
                                 rows={4}
@@ -453,7 +453,7 @@ export default function AddEventsContentPage() {
                             />
                         </div>
                         <div className="space-y-2 w-full">
-                            <Label>Category</Label>
+                            <Label>{t("categoryLabel").replace(":", "")}</Label>
                             <Select
                                 value={category || undefined}
                                 onValueChange={setCategory}
@@ -466,12 +466,12 @@ export default function AddEventsContentPage() {
                                     <SelectValue
                                         placeholder={
                                             loadingEventCategories
-                                                ? "Loading categories…"
+                                                ? t("loadingCategories")
                                                 : eventCategoriesError
-                                                    ? "Could not load categories"
+                                                    ? t("couldNotLoadCategories")
                                                     : eventCategories.length === 0 && !legacyCategoryName
-                                                        ? "No active categories"
-                                                        : "Select a category"
+                                                        ? t("noActiveCategories")
+                                                        : tForms("selectCategory")
                                         }
                                     />
                                 </SelectTrigger>
@@ -479,7 +479,7 @@ export default function AddEventsContentPage() {
                                     {legacyCategoryName ? (
                                         <SelectItem value={legacyCategoryName}>
                                             {legacyCategoryName}{" "}
-                                            <span className="text-zinc-500">(current value)</span>
+                                            <span className="text-zinc-500">{t("currentValue")}</span>
                                         </SelectItem>
                                     ) : null}
                                     {eventCategories.map((c) => (
@@ -491,7 +491,7 @@ export default function AddEventsContentPage() {
                             </Select>
                             {eventCategoriesError ? (
                                 <p className="text-xs text-red-400">
-                                    Refresh the page or check your connection.
+                                    {t("refreshConnectionHint")}
                                 </p>
                             ) : null}
                             {!eventCategoriesError &&
@@ -500,17 +500,17 @@ export default function AddEventsContentPage() {
                                 !legacyCategoryName ? (
                                 <p className="text-xs text-zinc-400">
                                     {paths.scope === "vendor"
-                                        ? "No active categories yet. Contact an admin to add event categories."
+                                        ? t("noCategoriesContactAdmin")
                                         : (
                                             <>
-                                                Add an active category under{" "}
+                                                {t("addCategoryHint")}{" "}
                                                 <Link
                                                     href={paths.eventCategories}
                                                     className="text-primary underline underline-offset-2"
                                                 >
-                                                    Event categories
+                                                    {t("eventCategoriesLink")}
                                                 </Link>{" "}
-                                                first.
+                                                {t("firstSuffix")}
                                             </>
                                         )}
                                 </p>
@@ -518,7 +518,7 @@ export default function AddEventsContentPage() {
                             ) : null}
                         </div>
                         <div className="space-y-2">
-                            <Label>Timezone</Label>
+                            <Label>{tForms("timezone")}</Label>
                             <Input
                                 required
                                 value={timezone}
@@ -528,19 +528,21 @@ export default function AddEventsContentPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>Start</Label>
+                            <Label>{tForms("startDate")}</Label>
                             <DateTimePicker
                                 value={startLocal}
                                 onChange={setStartLocal}
                                 required
+                                prettyLabel={prettyDateTime(startLocal)}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>End</Label>
+                            <Label>{tForms("endDate")}</Label>
                             <DateTimePicker
                                 value={endLocal}
                                 onChange={setEndLocal}
                                 required
+                                prettyLabel={prettyDateTime(endLocal)}
                             />
                         </div>
                     </CardContent>
@@ -548,16 +550,16 @@ export default function AddEventsContentPage() {
 
                 <Card className="border-zinc-800 bg-[#0e0e0e]">
                     <CardHeader>
-                        <CardTitle className="text-base text-primary">Media</CardTitle>
+                        <CardTitle className="text-base text-primary">{tForms("media")}</CardTitle>
                         <p className="text-sm text-zinc-400">
-                            Images are uploaded to your cloud storage; only the returned links are saved with the event.
+                            {t("mediaUploadDesc")}
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="space-y-3">
-                            <Label>Cover image</Label>
+                            <Label>{tForms("coverImage")}</Label>
                             <p className="text-xs text-zinc-500">
-                                Required. JPEG, PNG, or WebP — uploaded via the platform.
+                                {t("coverRequired")}
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
                                 <Button
@@ -573,12 +575,12 @@ export default function AddEventsContentPage() {
                                     {coverUploading ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Uploading…
+                                            {tCommon("uploading")}
                                         </>
                                     ) : (
                                         <>
                                             <Upload className="mr-2 h-4 w-4" />
-                                            Upload cover image
+                                            {tForms("uploadCover")}
                                         </>
                                     )}
                                 </Button>
@@ -600,7 +602,7 @@ export default function AddEventsContentPage() {
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={coverPreviewUrl}
-                                                alt="Cover preview"
+                                                alt={tForms("coverImage")}
                                                 className="max-h-48 w-full max-w-md rounded-md object-cover"
                                             />
                                         </>
@@ -609,10 +611,10 @@ export default function AddEventsContentPage() {
                                             {loadingCoverPreview ? (
                                                 <>
                                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Loading cover preview...
+                                                    {t("loadingPreview")}
                                                 </>
                                             ) : (
-                                                "Could not load cover preview. File is saved and will still submit."
+                                                t("previewUnavailable")
                                             )}
                                         </div>
                                     )}
@@ -626,20 +628,20 @@ export default function AddEventsContentPage() {
                                         className="text-zinc-400 hover:text-white"
                                         onClick={() => setCoverImage("")}
                                     >
-                                        Remove cover
+                                        {tForms("removeCover")}
                                     </Button>
                                 </div>
                             ) : (
                                 <p className="text-sm text-amber-200/90">
-                                    No cover yet — upload an image to continue.
+                                    {tForms("noCoverYet")}
                                 </p>
                             )}
                         </div>
 
                         <div className="space-y-3 border-t border-zinc-800 pt-6">
-                            <Label>Thumbnail</Label>
+                            <Label>{tForms("thumbnail")}</Label>
                             <p className="text-xs text-zinc-500">
-                                Optional. A smaller preview image shown in event cards and listings.
+                                {t("thumbnailOptional")}
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
                                 <Button
@@ -655,12 +657,12 @@ export default function AddEventsContentPage() {
                                     {thumbnailUploading ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Uploading…
+                                            {tCommon("uploading")}
                                         </>
                                     ) : (
                                         <>
                                             <Upload className="mr-2 h-4 w-4" />
-                                            Upload thumbnail
+                                            {tForms("uploadThumbnail")}
                                         </>
                                     )}
                                 </Button>
@@ -682,7 +684,7 @@ export default function AddEventsContentPage() {
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={thumbnailPreviewUrl}
-                                                alt="Thumbnail preview"
+                                                alt={tForms("thumbnail")}
                                                 className="max-h-32 w-full max-w-xs rounded-md object-cover"
                                             />
                                         </>
@@ -691,10 +693,10 @@ export default function AddEventsContentPage() {
                                             {loadingThumbnailPreview ? (
                                                 <>
                                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Loading thumbnail preview...
+                                                    {t("loadingPreview")}
                                                 </>
                                             ) : (
-                                                "Could not load thumbnail preview. File is saved and will still submit."
+                                                t("previewUnavailable")
                                             )}
                                         </div>
                                     )}
@@ -708,20 +710,20 @@ export default function AddEventsContentPage() {
                                         className="text-zinc-400 hover:text-white"
                                         onClick={() => setThumbnail("")}
                                     >
-                                        Remove thumbnail
+                                        {tForms("removeThumbnail")}
                                     </Button>
                                 </div>
                             ) : (
                                 <p className="text-sm text-zinc-500">
-                                    No thumbnail yet — optional, but recommended for event listings.
+                                    {tForms("noThumbnailYet")}
                                 </p>
                             )}
                         </div>
 
                         <div className="space-y-3 border-t border-zinc-800 pt-6">
-                            <Label>Gallery</Label>
+                            <Label>{tEvents("gallery")}</Label>
                             <p className="text-xs text-zinc-500">
-                                Optional. Add multiple images; each file is uploaded and its URL stored.
+                                {t("galleryOptional")}
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
                                 <Button
@@ -737,12 +739,12 @@ export default function AddEventsContentPage() {
                                     {galleryUploading ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Uploading…
+                                            {tCommon("uploading")}
                                         </>
                                     ) : (
                                         <>
                                             <Upload className="mr-2 h-4 w-4" />
-                                            Add gallery images
+                                            {t("addGalleryImages")}
                                         </>
                                     )}
                                 </Button>
@@ -777,8 +779,8 @@ export default function AddEventsContentPage() {
                                             ) : (
                                                 <div className="flex aspect-video items-center justify-center bg-zinc-900 text-xs text-zinc-400">
                                                     {galleryPreviewQueries[index]?.isLoading
-                                                        ? "Loading preview..."
-                                                        : "Preview unavailable"}
+                                                        ? t("loadingPreview")
+                                                        : t("previewUnavailable")}
                                                 </div>
                                             )}
                                             <div className="flex items-center justify-between gap-2 border-t border-zinc-800 p-2">
@@ -790,7 +792,7 @@ export default function AddEventsContentPage() {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-8 w-8 shrink-0 text-red-400"
-                                                    aria-label="Remove image"
+                                                    aria-label={t("removeImage")}
                                                     onClick={() => removeGalleryAt(index)}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -800,7 +802,7 @@ export default function AddEventsContentPage() {
                                     ))}
                                 </ul>
                             ) : (
-                                <p className="text-sm text-zinc-500">No gallery images yet.</p>
+                                <p className="text-sm text-zinc-500">{t("noGalleryYet")}</p>
                             )}
                         </div>
                     </CardContent>
@@ -809,31 +811,20 @@ export default function AddEventsContentPage() {
                 <Card className="border-zinc-800 bg-[#0e0e0e]">
                     <CardHeader>
                         <CardTitle className="text-base text-primary">
-                            Venue &amp; location
+                            {t("venueAndLocation")}
                         </CardTitle>
                         <p className="text-sm text-zinc-400">
-                            Venue details and where the event takes place. Coordinates are stored
-                            with the event in the database.
+                            {t("venueLocationDesc")}
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="rounded-xl border border-zinc-800 bg-black/30 p-4 md:p-5">
                             <h3 className="mb-4 text-sm font-semibold tracking-wide text-primary">
-                                Venue
+                                {tEvents("venue")}
                             </h3>
                             <div className="grid gap-4 md:grid-cols-2">
-                                {/*
-                <div className="space-y-2">
-                  <Label>Venue ID (optional UUID)</Label>
-                  <Input
-                    value={venueId}
-                    onChange={(e) => setVenueId(e.target.value)}
-                    className="border-zinc-700"
-                  />
-                </div>
-                */}
                                 <div className="space-y-2 md:col-span-2">
-                                    <Label>Venue name</Label>
+                                    <Label>{tForms("venueName")}</Label>
                                     <Input
                                         required
                                         value={venueName}
@@ -842,7 +833,7 @@ export default function AddEventsContentPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Venue phone</Label>
+                                    <Label>{t("venuePhoneLabel").replace(":", "")}</Label>
                                     <Input
                                         required
                                         value={venuePhone}
@@ -851,7 +842,7 @@ export default function AddEventsContentPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Venue website</Label>
+                                    <Label>{tForms("website")}</Label>
                                     <Input
                                         required
                                         type="url"
@@ -865,30 +856,9 @@ export default function AddEventsContentPage() {
 
                         <div className="rounded-xl border border-zinc-800 bg-black/30 p-4 md:p-5">
                             <h3 className="mb-4 text-sm font-semibold tracking-wide text-primary">
-                                Location
+                                {tForms("location")}
                             </h3>
                             <div className="grid gap-4 md:grid-cols-2">
-                                {/*
-                Location source + address/lat-lng inputs — hidden for now; values
-                still come from defaults, edit load, and map search / drag.
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Location source</Label>
-                  <div className="rounded-md border border-zinc-700 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-200">
-                    {locationSource === "VENUE" ? (
-                      <>Venue coordinates (from saved event)</>
-                    ) : (
-                      <>Custom address</>
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-500">
-                    New events default to <strong className="font-medium text-zinc-400">custom address</strong>.
-                    Use the map to search or drag the pin; latitude and longitude are
-                    saved with the event.
-                  </p>
-                </div>
-                */}
-
                                 <div className="md:col-span-2">
                                     <LocationPickerMap
                                         latitude={latitude}
@@ -899,7 +869,7 @@ export default function AddEventsContentPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Country code</Label>
+                                    <Label>{t("countryCode")}</Label>
                                     <Input
                                         required
                                         value={countryCode}
@@ -908,7 +878,7 @@ export default function AddEventsContentPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>City</Label>
+                                    <Label>{tForms("city")}</Label>
                                     <Input
                                         required
                                         value={city}
@@ -917,7 +887,7 @@ export default function AddEventsContentPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>State / region</Label>
+                                    <Label>{t("stateRegion")}</Label>
                                     <Input
                                         required
                                         value={state}
@@ -926,7 +896,7 @@ export default function AddEventsContentPage() {
                                     />
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
-                                    <Label>Address</Label>
+                                    <Label>{tForms("address")}</Label>
                                     <Input
                                         required
                                         value={address}
@@ -935,7 +905,7 @@ export default function AddEventsContentPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>ZIP / postal code</Label>
+                                    <Label>{t("zipPostal")}</Label>
                                     <Input
                                         required
                                         value={zipCode}
@@ -944,7 +914,7 @@ export default function AddEventsContentPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Latitude</Label>
+                                    <Label>{t("latitude")}</Label>
                                     <Input
                                         required
                                         type="number"
@@ -955,7 +925,7 @@ export default function AddEventsContentPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Longitude</Label>
+                                    <Label>{t("longitude")}</Label>
                                     <Input
                                         required
                                         type="number"
@@ -972,7 +942,7 @@ export default function AddEventsContentPage() {
 
                 <Card className="border-zinc-800 bg-[#0e0e0e]">
                     <CardHeader>
-                        <CardTitle className="text-base text-primary">Tags</CardTitle>
+                        <CardTitle className="text-base text-primary">{tForms("tags")}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                         <div className="flex flex-col gap-2 sm:flex-row">
@@ -985,7 +955,7 @@ export default function AddEventsContentPage() {
                                         addTagFromInput()
                                     }
                                 }}
-                                placeholder="Type tag"
+                                placeholder={t("typeTag")}
                                 className="border-zinc-700 sm:flex-1"
                             />
                             <Button
@@ -995,12 +965,11 @@ export default function AddEventsContentPage() {
                                 disabled={!tagInput.trim()}
                                 className="sm:w-auto"
                             >
-                                Add
+                                {tCommon("add")}
                             </Button>
                         </div>
                         <p className="text-xs text-zinc-500">
-                            Click Add (or press Enter). Tags are saved as a JSON string array in
-                            the database.
+                            {t("tagsHint")}
                         </p>
                         <div className="flex flex-wrap gap-2">
                             {tags.map((tag) => (
@@ -1008,7 +977,7 @@ export default function AddEventsContentPage() {
                                     key={tag}
                                     type="button"
                                     className="rounded-full border border-zinc-600 px-2 py-0.5 text-xs"
-                                    onClick={() => setTags((p) => p.filter((t) => t !== tag))}
+                                    onClick={() => setTags((p) => p.filter((item) => item !== tag))}
                                 >
                                     #{tag} ×
                                 </button>
@@ -1019,27 +988,27 @@ export default function AddEventsContentPage() {
 
                 <Card className="border-zinc-800 bg-[#0e0e0e]">
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-base text-primary">Ticket types</CardTitle>
+                        <CardTitle className="text-base text-primary">{t("ticketTypes")}</CardTitle>
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             className="border-zinc-600"
-                            onClick={() => setTickets((t) => [...t, defaultTicket()])}
+                            onClick={() => setTickets((rows) => [...rows, defaultTicket(t("generalTicket"))])}
                         >
                             <Plus className="mr-1 h-4 w-4" />
-                            Add type
+                            {t("addType")}
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        {tickets.map((t, i) => (
+                        {tickets.map((ticket, i) => (
                             <div
                                 key={i}
                                 className="grid gap-3 rounded-lg border border-zinc-800 p-4 md:grid-cols-2"
                             >
                                 <div className="space-y-2 md:col-span-2 flex items-center justify-between">
                                     <span className="text-sm font-medium text-zinc-300">
-                                        Ticket {i + 1}
+                                        {t("ticketN", { n: i + 1 })}
                                     </span>
                                     {tickets.length > 1 ? (
                                         <Button
@@ -1056,10 +1025,10 @@ export default function AddEventsContentPage() {
                                     ) : null}
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Name</Label>
+                                    <Label>{tCommon("name")}</Label>
                                     <Input
                                         required
-                                        value={t.name}
+                                        value={ticket.name}
                                         onChange={(e) =>
                                             setTickets((rows) =>
                                                 rows.map((r, j) =>
@@ -1071,13 +1040,13 @@ export default function AddEventsContentPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Price</Label>
+                                    <Label>{tCommon("price")}</Label>
                                     <Input
                                         required
                                         type="number"
                                         min={0}
                                         step="0.01"
-                                        value={t.price}
+                                        value={ticket.price}
                                         onChange={(e) =>
                                             setTickets((rows) =>
                                                 rows.map((r, j) =>
@@ -1089,9 +1058,9 @@ export default function AddEventsContentPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Currency</Label>
+                                    <Label>{tCurrency("displayCurrency")}</Label>
                                     <Select
-                                        value={t.currency || "PKR"}
+                                        value={ticket.currency || "PKR"}
                                         onValueChange={(value) =>
                                             setTickets((rows) =>
                                                 rows.map((r, j) =>
@@ -1101,25 +1070,24 @@ export default function AddEventsContentPage() {
                                         }
                                     >
                                         <SelectTrigger className="border-zinc-700">
-                                            <SelectValue placeholder="Currency" />
+                                            <SelectValue placeholder={tCurrency("displayCurrency")} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="PKR">PKR — Pakistani Rupee</SelectItem>
-                                            <SelectItem value="USD">USD — US Dollar</SelectItem>
-                                            <SelectItem value="EUR">EUR — Euro</SelectItem>
-                                            <SelectItem value="GBP">GBP — British Pound</SelectItem>
-                                            <SelectItem value="AED">AED — UAE Dirham</SelectItem>
-                                            <SelectItem value="SAR">SAR — Saudi Riyal</SelectItem>
+                                            {currencyOptions.map((code) => (
+                                                <SelectItem key={code} value={code}>
+                                                    {code} — {tCurrency(code)}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Quantity total</Label>
+                                    <Label>{t("quantityTotal")}</Label>
                                     <Input
                                         required
                                         type="number"
                                         min={1}
-                                        value={t.quantityTotal}
+                                        value={ticket.quantityTotal}
                                         onChange={(e) =>
                                             setTickets((rows) =>
                                                 rows.map((r, j) =>
@@ -1130,38 +1098,6 @@ export default function AddEventsContentPage() {
                                         className="border-zinc-700"
                                     />
                                 </div>
-                                {/*
-                <div className="space-y-2">
-                  <Label>Sales start (optional)</Label>
-                  <Input
-                    type="datetime-local"
-                    value={t.salesStart}
-                    onChange={(e) =>
-                      setTickets((rows) =>
-                        rows.map((r, j) =>
-                          j === i ? { ...r, salesStart: e.target.value } : r,
-                        ),
-                      )
-                    }
-                    className="border-zinc-700"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Sales end (optional)</Label>
-                  <Input
-                    type="datetime-local"
-                    value={t.salesEnd}
-                    onChange={(e) =>
-                      setTickets((rows) =>
-                        rows.map((r, j) =>
-                          j === i ? { ...r, salesEnd: e.target.value } : r,
-                        ),
-                      )
-                    }
-                    className="border-zinc-700"
-                  />
-                </div>
-                */}
                             </div>
                         ))}
                     </CardContent>
@@ -1175,11 +1111,14 @@ function DateTimePicker({
     value,
     onChange,
     required,
+    prettyLabel,
 }: {
     value: string
     onChange: (value: string) => void
     required?: boolean
+    prettyLabel: string
 }) {
+    const tCommon = useTranslations("common")
     const selected = parseLocalDateTime(value)
 
     const onDateSelect = (date?: Date) => {
@@ -1200,7 +1139,6 @@ function DateTimePicker({
 
     return (
         <div className="space-y-2">
-            {/* Hidden native input keeps required-form behavior. */}
             <input
                 required={required}
                 value={value}
@@ -1217,7 +1155,7 @@ function DateTimePicker({
                         className="w-full justify-start border-zinc-700 text-left font-normal"
                     >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {prettyDateTime(value)}
+                        {prettyLabel}
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto border-zinc-700 bg-[#0e0e0e] p-2" align="start">
@@ -1228,7 +1166,7 @@ function DateTimePicker({
                         className="rounded-md border border-zinc-800"
                     />
                     <div className="mt-2 border-t border-zinc-800 pt-2">
-                        <Label className="mb-1 block text-xs text-zinc-400">Time</Label>
+                        <Label className="mb-1 block text-xs text-zinc-400">{tCommon("time")}</Label>
                         <Input
                             type="time"
                             value={toTimeValue(selected)}

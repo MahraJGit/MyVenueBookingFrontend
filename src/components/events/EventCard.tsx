@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { PublicEvent } from "@/features/events/api";
 import { EventCoverImage } from "@/components/events/EventCoverImage";
 import {
@@ -16,6 +17,8 @@ type EventCardProps = {
 };
 
 export function EventCard({ event }: EventCardProps) {
+  const tEvents = useTranslations("events");
+  const tCommon = useTranslations("common");
   const [countdown, setCountdown] = useState(() =>
     formatCountdownToEnd(event.endDateTime),
   );
@@ -42,7 +45,7 @@ export function EventCard({ event }: EventCardProps) {
       />
       <div className="card-body relative z-0 -mt-10 flex w-full max-w-[92%] flex-1 flex-col rounded-2xl border border-[#303030] bg-[#1B1B1B] transition-all duration-300 ease-in-out group-hover:rounded-t-none">
         <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-          <span>Time to end</span>
+          <span>{tEvents("timeToEnd")}</span>
           <span>{countdown}</span>
         </div>
         <div className="flex h-full flex-col gap-4 p-4">
@@ -54,13 +57,13 @@ export function EventCard({ event }: EventCardProps) {
           <div className="price text-md mt-auto font-bold text-primary">
             {minTicket ? (
               <>
-                from{" "}
+                {tCommon("from")}{" "}
                 <span>
                   <DisplayPrice amount={minTicket.price} currency={minTicket.currency} />
                 </span>
               </>
             ) : (
-              <span>Tickets coming soon</span>
+              <span>{tEvents("ticketsComingSoon")}</span>
             )}
           </div>
         </div>

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import "@/styles/Home.css";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   Select,
   SelectContent,
@@ -20,6 +21,10 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 
 
 const Home = () => {
+  const t = useTranslations("home");
+  const tCommon = useTranslations("common");
+  const tNav = useTranslations("nav");
+  const tEvents = useTranslations("events");
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [activeFilter, setActiveFilter] = useState<string>("All");
   const [randomCardImages] = React.useState(() => {
@@ -56,11 +61,10 @@ const Home = () => {
           <div className="inner min-h-screen flex items-center md:justify-center justify-end flex-col md:gap-20 gap-8">
             <div className="description text-center">
               <h1 className="mb-8">
-                Find Your Perfect <span className="text-primary">Venue</span>
+                {t("heroTitle")} <span className="text-primary">{t("heroTitleHighlight")}</span>
               </h1>
               <p className="text-lg!">
-                More than 100 concerts in different countries are now available
-                to you.
+                {t("heroSubtitle")}
               </p>
             </div>
             <div className="fillter-wrapper max-w-[81.4%] w-full flex flex-col gap-4 items-center">
@@ -69,12 +73,12 @@ const Home = () => {
                   <div className="flex items-center gap-2 p-3 px-6 mb-4">
                     <Image
                       src="/svg/MusicNote.svg"
-                      alt="Concerts"
+                      alt={tNav("concerts")}
                       width={20}
                       height={20}
                     />
                     <span className="text-sm text-white font-medium">
-                      Concerts
+                      {tNav("concerts")}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 p-3 px-6 mb-4">
@@ -85,7 +89,7 @@ const Home = () => {
                       height={20}
                     />
                     <span className="text-sm text-white font-medium">
-                      Shows
+                      {tNav("shows")}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 p-3 px-6 mb-4">
@@ -96,7 +100,7 @@ const Home = () => {
                       height={20}
                     />
                     <span className="text-sm text-white font-medium">
-                      Sports
+                      {t("sports")}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 p-3 px-6 mb-4">
@@ -107,7 +111,7 @@ const Home = () => {
                       height={20}
                     />
                     <span className="text-sm text-white font-medium">
-                      Corporate meetings
+                      {t("corporateMeetings")}
                     </span>
                   </div>
                 </div>
@@ -123,11 +127,11 @@ const Home = () => {
                         width={20}
                         height={20}
                       />
-                      what
+                      {t("what")}
                     </span>
                     <Select>
                       <SelectTrigger className="md:w-[180px] w-full bg-transparent border border-[#303030] text-gray-400 mt-1">
-                        <SelectValue placeholder="Event Type" />
+                        <SelectValue placeholder={t("eventType")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="concert">Concert</SelectItem>
@@ -149,11 +153,11 @@ const Home = () => {
                         width={20}
                         height={20}
                       />
-                      where
+                      {t("where")}
                     </span>
                     <Select>
                       <SelectTrigger className="md:w-[180px] w-full bg-transparent border border-[#303030] text-gray-400 mt-1">
-                        <SelectValue placeholder="Location" />
+                        <SelectValue placeholder={t("location")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="lahore">Lahore</SelectItem>
@@ -173,7 +177,7 @@ const Home = () => {
                           width={20}
                           height={20}
                         />
-                        when
+                        {t("when")}
                       </span>
                       <CalendarPicker
                         selectedDate={date}
@@ -199,15 +203,15 @@ const Home = () => {
               </div>
               <div className="tags flex gap-8">
                 <div className="tag flex gap-4">
-                  <span>Book Anytime</span>
+                  <span>{t("bookAnytime")}</span>
                 </div>
 
                 <div className="tag flex gap-4">
-                  <span>Refundable Tickets</span>
+                  <span>{t("refundableTickets")}</span>
                 </div>
 
                 <div className="tag flex gap-4">
-                  <span>Smart Deals</span>
+                  <span>{t("smartDeals")}</span>
                 </div>
               </div>
             </div>
@@ -221,7 +225,7 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <div className="section-header py-5 mb-6 flex items-center justify-between border-b border-[#1F1F1F]">
             <h2>Concert</h2>
-            <span className="text-sm">See all</span>
+            <span className="text-sm">{tCommon("seeAll")}</span>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-8">
@@ -264,7 +268,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -293,7 +297,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -322,7 +326,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -351,7 +355,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -377,7 +381,7 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <div className="section-header py-5 mb-6 flex items-center justify-between border-b border-[#1F1F1F]">
             <h2>Shows</h2>
-            <span className="text-sm">See all</span>
+            <span className="text-sm">{tCommon("seeAll")}</span>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-8">
@@ -420,7 +424,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -449,7 +453,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -478,7 +482,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -507,7 +511,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -534,7 +538,7 @@ const Home = () => {
       <section className="top-venues py-10 relative overflow-hidden">
         <div className="container mx-auto px-4">
           <div className="section-header mb-8 text-center">
-            <h2>Top Venues</h2>
+            <h2>{t("topVenues")}</h2>
             <p>Find the singers you're looking for quickly. You can see more.</p>
           </div>
         </div>
@@ -604,7 +608,7 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <div className="section-header py-5 mb-6 flex items-center justify-between border-b border-[#1F1F1F]">
             <h2>Sport</h2>
-            <span className="text-sm">See all</span>
+            <span className="text-sm">{tCommon("seeAll")}</span>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-8">
@@ -647,7 +651,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -676,7 +680,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -705,7 +709,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -734,7 +738,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -760,7 +764,7 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <div className="section-header py-5 mb-6 flex items-center justify-between border-b border-[#1F1F1F]">
             <h2>Festivals</h2>
-            <span className="text-sm">See all</span>
+            <span className="text-sm">{tCommon("seeAll")}</span>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-8">
@@ -802,7 +806,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -831,7 +835,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -860,7 +864,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -889,7 +893,7 @@ const Home = () => {
               <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
                 {/* Timer */}
                 <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>Time to end</span>
+                  <span>{tEvents("timeToEnd")}</span>
                   <span>06:34:15</span>
                 </div>
                 {/* Card Body Content */}
@@ -972,8 +976,8 @@ const Home = () => {
       <section className="testimonials py-10 overflow-hidden relative">
         <div className="container mx-auto px-4">
           <div className="section-header mb-8 text-center">
-            <h2 className="mb-2">Loved by Thousands</h2>
-            <p>Smooth, easy ticket buying — hear it from our happy users.</p>
+            <h2 className="mb-2">{t("lovedByThousands")}</h2>
+            <p>{t("testimonialsSubtitle")}</p>
           </div>
 
           <div className="marquee flex gap-6 mb-6">
@@ -1059,8 +1063,8 @@ const Home = () => {
       <section className="faq py-10">
         <div className="container mx-auto px-4">
           <div className="section-header mb-8 text-center max-w-[600px] mx-auto">
-            <h2 className="mb-2">Frequently Asked <span className="text-primary">Questions</span></h2>
-            <p>Explore the most common questions and detailed answers about our events, concerts, and security to help guide your journey in the EVENJO.</p>
+            <h2 className="mb-2">{t("faqTitle")} <span className="text-primary">{t("faqTitleHighlight")}</span></h2>
+            <p>{t("faqSubtitle")}</p>
           </div>
 
           <div className="faq-items">
@@ -1070,16 +1074,16 @@ const Home = () => {
                   <div className="head flex items-center gap-2 text-xs">
                     <Image
                       src="/images/faq-icon.png"
-                      alt="FAQ Icon"
+                      alt={t("faqIconAlt")}
                       width={24}
                       height={24}
                       className="object-contain"
                     />
-                    When Exclusive Private Market for Event ticket sale Opportunities?
+                    {t("faqQ1")}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="mt-2 text-xs">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestiae fuga voluptates voluptas. Minima, error.
+                  {t("faqAnswerPlaceholder")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -1088,16 +1092,16 @@ const Home = () => {
                   <div className="head flex items-center gap-2 text-xs">
                     <Image
                       src="/images/faq-icon.png"
-                      alt="FAQ Icon"
+                      alt={t("faqIconAlt")}
                       width={24}
                       height={24}
                       className="object-contain"
                     />
-                    How can I purchase tickets for exclusive events?
+                    {t("faqQ2")}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="mt-2 text-xs">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestiae fuga voluptates voluptas. Minima, error.
+                  {t("faqAnswerPlaceholder")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -1106,16 +1110,16 @@ const Home = () => {
                   <div className="head flex items-center gap-2 text-xs">
                     <Image
                       src="/images/faq-icon.png"
-                      alt="FAQ Icon"
+                      alt={t("faqIconAlt")}
                       width={24}
                       height={24}
                       className="object-contain"
                     />
-                    What is the refund policy for events?
+                    {t("faqQ3")}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="mt-2 text-xs">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestiae fuga voluptates voluptas. Minima, error.
+                  {t("faqAnswerPlaceholder")}
                 </AccordionContent>
               </AccordionItem>
 
@@ -1124,16 +1128,16 @@ const Home = () => {
                   <div className="head flex items-center gap-2 text-xs">
                     <Image
                       src="/images/faq-icon.png"
-                      alt="FAQ Icon"
+                      alt={t("faqIconAlt")}
                       width={24}
                       height={24}
                       className="object-contain"
                     />
-                    How secure is my personal information with EVENJO?
+                    {t("faqQ4")}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="mt-2 text-xs">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestiae fuga voluptates voluptas. Minima, error.
+                  {t("faqAnswerPlaceholder")}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

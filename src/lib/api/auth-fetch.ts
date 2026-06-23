@@ -1,5 +1,6 @@
 import { refreshAuthTokens } from "@/features/auth/api";
 import { clearAuthSession, getAccessToken, updateAccessToken } from "@/features/auth/session-storage";
+import { withLocaleHeaders } from "./locale-headers";
 import { ApiError } from "./errors";
 import { assertApiConfigured } from "@/lib/env";
 
@@ -36,7 +37,8 @@ function buildHeaders(extra?: HeadersInit): Headers {
     throw new ApiError(401, "Please login to continue.");
   }
 
-  const headers = new Headers(extra ?? undefined);
+  const merged = withLocaleHeaders({ headers: extra });
+  const headers = new Headers(merged.headers ?? undefined);
   headers.set("Authorization", `Bearer ${token}`);
   return headers;
 }

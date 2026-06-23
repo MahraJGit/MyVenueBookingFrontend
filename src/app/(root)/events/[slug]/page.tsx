@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { CalendarDays, Clock, MapPin, Phone, Globe, Share2, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,20 +35,21 @@ function formatTime(iso: string): string {
 }
 
 function TicketProgress({ sold, total }: { sold: number; total: number }) {
+  const t = useTranslations("events");
   const percent = total > 0 ? (sold / total) * 100 : 0;
   const available = total - sold;
   return (
     <div className="flex flex-col gap-3">
       <div className="flex justify-between text-sm">
-        <span className="text-zinc-400">Total Quantity</span>
+        <span className="text-zinc-400">{t("totalQuantity")}</span>
         <span className="font-semibold text-white">{total}</span>
       </div>
       <div className="flex justify-between text-sm">
-        <span className="text-zinc-400">Sold</span>
+        <span className="text-zinc-400">{t("sold")}</span>
         <span className="font-semibold text-primary">{sold}</span>
       </div>
       <div className="flex justify-between text-sm">
-        <span className="text-zinc-400">Available</span>
+        <span className="text-zinc-400">{t("available")}</span>
         <span className="font-semibold text-white">{available}</span>
       </div>
       <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden mt-1">
@@ -56,7 +58,7 @@ function TicketProgress({ sold, total }: { sold: number; total: number }) {
           style={{ width: `${percent}%` }}
         />
       </div>
-      <p className="text-xs text-zinc-500 text-right">{percent.toFixed(1)}% Sold</p>
+      <p className="text-xs text-zinc-500 text-right">{t("percentSold", { percent: percent.toFixed(1) })}</p>
     </div>
   );
 }
@@ -75,6 +77,9 @@ function EventDetailSkeleton() {
 }
 
 export default function EventDetailPage() {
+  const t = useTranslations("events");
+  const tTickets = useTranslations("tickets");
+  const tCommon = useTranslations("common");
   const { slug } = useParams<{ slug: string }>();
   const pathname = usePathname();
   const router = useRouter();
@@ -93,9 +98,9 @@ export default function EventDetailPage() {
     return (
       <div className="min-h-screen bg-[#0e0e0e] flex items-center justify-center text-white">
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Event not found</h1>
+          <h1 className="text-2xl font-bold">{t("notFound")}</h1>
           <p className="text-zinc-400">
-            {error instanceof Error ? error.message : "The event you are looking for does not exist."}
+            {error instanceof Error ? error.message : t("eventNotFoundDesc")}
           </p>
         </div>
       </div>
@@ -201,15 +206,15 @@ export default function EventDetailPage() {
 
       {/* Event Description */}
       <section className="container mx-auto px-4 py-12">
-        <h2 className="text-xl font-bold text-primary mb-6">Event Description</h2>
+        <h2 className="text-xl font-bold text-primary mb-6">{t("eventDescriptionTitle")}</h2>
         <div className="prose prose-invert max-w-none text-zinc-300 leading-relaxed whitespace-pre-line">
-          {event.eventDescription || "No description provided."}
+          {event.eventDescription || t("noDescriptionProvided")}
         </div>
       </section>
 
       {/* Venue Information */}
       <section className="container mx-auto px-4 py-12">
-        <h2 className="text-xl font-bold text-primary mb-8">Venue Information</h2>
+        <h2 className="text-xl font-bold text-primary mb-8">{t("venueInformation")}</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Venue Details Card */}
           <div className="bg-[#1B1B1B] border border-[#303030] rounded-2xl p-6 flex flex-col gap-6">
@@ -223,7 +228,7 @@ export default function EventDetailPage() {
             </div>
 
             <div className="border-t border-[#303030] pt-4 space-y-4">
-              <h4 className="text-sm font-semibold text-white">Contact Details</h4>
+              <h4 className="text-sm font-semibold text-white">{t("contactDetails")}</h4>
 
               {event.venuePhone && (
                 <div className="flex items-center gap-3">
@@ -231,7 +236,7 @@ export default function EventDetailPage() {
                     <Phone size={14} className="text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500">Phone</p>
+                    <p className="text-xs text-zinc-500">{t("phone")}</p>
                     <p className="text-sm text-white">{event.venuePhone}</p>
                   </div>
                 </div>
@@ -243,7 +248,7 @@ export default function EventDetailPage() {
                     <Globe size={14} className="text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500">Website</p>
+                    <p className="text-xs text-zinc-500">{t("website")}</p>
                     <a
                       href={event.venueWebsite}
                       target="_blank"
@@ -262,7 +267,7 @@ export default function EventDetailPage() {
                     <MapPin size={14} className="text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500">Address</p>
+                    <p className="text-xs text-zinc-500">{t("address")}</p>
                     <p className="text-sm text-white">{fullAddress}</p>
                   </div>
                 </div>
@@ -273,7 +278,7 @@ export default function EventDetailPage() {
           {/* Map */}
           <div className="bg-[#1B1B1B] border border-[#303030] rounded-2xl overflow-hidden flex flex-col">
             <div className="px-6 pt-4 pb-2">
-              <h4 className="text-sm font-semibold text-white">Location Map</h4>
+              <h4 className="text-sm font-semibold text-white">{t("locationMap")}</h4>
             </div>
             <div className="flex-1 min-h-[280px] relative">
               {mapEmbedUrl ? (
@@ -283,7 +288,7 @@ export default function EventDetailPage() {
                   loading="lazy"
                   allowFullScreen
                   referrerPolicy="no-referrer-when-downgrade"
-                  title="Event Location"
+                  title={t("eventLocation")}
                 />
               ) : (
                 <div className="w-full h-full min-h-[280px] flex items-center justify-center text-zinc-500">
@@ -299,7 +304,7 @@ export default function EventDetailPage() {
       {/* Tags */}
       {event.tags?.length > 0 && (
         <section className="container mx-auto px-4 py-8">
-          <h2 className="text-xl font-bold text-primary mb-6">Tags</h2>
+          <h2 className="text-xl font-bold text-primary mb-6">{t("tags")}</h2>
           <div className="flex flex-wrap gap-3">
             {event.tags.map((tag) => (
               <span
@@ -316,7 +321,7 @@ export default function EventDetailPage() {
       {/* Tickets */}
       {event.ticketTypes?.length > 0 && (
         <section className="container mx-auto px-4 py-12">
-          <h2 className="text-xl font-bold text-primary mb-8">Tickets</h2>
+          <h2 className="text-xl font-bold text-primary mb-8">{tTickets("title")}</h2>
           <CurrencyBrowseNotice className="mb-6" chargeLabel="event" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {event.ticketTypes.map((t) => {
@@ -349,10 +354,10 @@ export default function EventDetailPage() {
           <div className="bg-[#1B1B1B] border border-[#303030] rounded-2xl p-6 flex flex-col items-center gap-3">
             <div className="flex items-center gap-2">
               <Ticket size={18} className="text-primary" />
-              <h4 className="font-semibold text-white">Tickets</h4>
+              <h4 className="font-semibold text-white">{tTickets("title")}</h4>
             </div>
             <p className="text-sm text-zinc-400">
-              Tickets available at the box office and online
+              {t("ticketsComingSoon")}
             </p>
             <Button
               variant="outline"
@@ -368,7 +373,7 @@ export default function EventDetailPage() {
                 })
               }
             >
-              Get Tickets
+              {t("buyTickets")}
             </Button>
             <TicketPurchaseDialog
               open={ticketDialogOpen}
