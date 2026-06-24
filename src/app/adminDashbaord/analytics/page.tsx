@@ -1,7 +1,5 @@
 "use client"
 
-// ================= UI Components =================
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -12,8 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-
-// ================= Charts =================
 import {
   ChartContainer,
   ChartTooltip,
@@ -28,8 +24,6 @@ import {
   Pie,
   PieChart,
 } from "recharts"
-
-// ================= Icons =================
 import {
   CalendarRange,
   Search,
@@ -41,31 +35,18 @@ import {
   Activity,
   type LucideIcon,
 } from "lucide-react"
-
-// ================= Next / React =================
-import Image from "next/image"
 import React from "react"
+import { useTranslations } from "next-intl"
 
-const titles = [
-  "ATTENDEE AGE",
-  "ATTENDEE GENDER",
-  "ATTENDEE LOCATION",
-  "ATTENDEE INTERESTS",
-  "TOTAL ENGAGEMENT",
+const cardKeys = [
+  "attendeeAge",
+  "attendeeGender",
+  "attendeeLocation",
+  "attendeeInterests",
+  "totalEngagement",
 ] as const
 
-type CardTitle = typeof titles[number]
-
-const cardIcons: Record<CardTitle, LucideIcon> = {
-  "ATTENDEE AGE": CalendarRange,
-  "ATTENDEE GENDER": Users,
-  "ATTENDEE LOCATION": MapPin,
-  "ATTENDEE INTERESTS": Heart,
-  "TOTAL ENGAGEMENT": Activity,
-}
-
-
-// ----- Data & Config -----
+type CardKey = (typeof cardKeys)[number]
 
 const barChartData = [
   { month: "January", desktop: 186, mobile: 80 },
@@ -76,11 +57,6 @@ const barChartData = [
   { month: "June", desktop: 214, mobile: 140 },
 ]
 
-const barChartConfig = {
-  desktop: { label: "Desktop", color: "var(--chart-1)" },
-  mobile: { label: "Mobile", color: "var(--chart-2)" },
-} satisfies ChartConfig
-
 const pieChartData = [
   { browser: "Chrome", visitors: 275, fill: "var(--chart-1)" },
   { browser: "Safari", visitors: 200, fill: "var(--chart-2)" },
@@ -89,30 +65,45 @@ const pieChartData = [
   { browser: "Other", visitors: 90, fill: "var(--chart-5)" },
 ]
 
-const pieChartConfig = {
-  visitors: { label: "Visitors" },
-  Chrome: { label: "Chrome", color: "var(--chart-1)" },
-  Safari: { label: "Safari", color: "var(--chart-2)" },
-  Firefox: { label: "Firefox", color: "var(--chart-3)" },
-  Edge: { label: "Edge", color: "var(--chart-4)" },
-  Other: { label: "Other", color: "var(--chart-5)" },
-} satisfies ChartConfig
-const analytics = () => {
+export default function AnalyticsPage() {
+  const t = useTranslations("adminAnalytics")
+  const tCommon = useTranslations("common")
+
+  const cardIcons: Record<CardKey, LucideIcon> = {
+    attendeeAge: CalendarRange,
+    attendeeGender: Users,
+    attendeeLocation: MapPin,
+    attendeeInterests: Heart,
+    totalEngagement: Activity,
+  }
+
+  const barChartConfig = {
+    desktop: { label: t("desktop"), color: "var(--chart-1)" },
+    mobile: { label: t("mobile"), color: "var(--chart-2)" },
+  } satisfies ChartConfig
+
+  const pieChartConfig = {
+    visitors: { label: t("visitors") },
+    Chrome: { label: "Chrome", color: "var(--chart-1)" },
+    Safari: { label: "Safari", color: "var(--chart-2)" },
+    Firefox: { label: "Firefox", color: "var(--chart-3)" },
+    Edge: { label: "Edge", color: "var(--chart-4)" },
+    Other: { label: "Other", color: "var(--chart-5)" },
+  } satisfies ChartConfig
+
   return (
     <>
       <div className="topbar bg-[#0D0D0D] rounded-2xl p-4
                 flex flex-col gap-4
                 lg:flex-row lg:items-center lg:justify-between">
 
-        {/* LEFT */}
         <div className="flex items-center gap-3 shrink-0">
           <Users />
           <h2 className="text-white font-semibold text-sm sm:text-base">
-            All Attendee Insights
+            {t("title")}
           </h2>
         </div>
 
-        {/* CENTER (SEARCH) */}
         <div className="relative w-full sm:max-w-xs lg:max-w-sm">
           <Search
             size={18}
@@ -120,7 +111,7 @@ const analytics = () => {
           />
           <Input
             type="text"
-            placeholder="Search..."
+            placeholder={tCommon("search") + "..."}
             className="
         w-full h-10 rounded-full
         pl-10 pr-4
@@ -132,42 +123,40 @@ const analytics = () => {
           />
         </div>
 
-        {/* RIGHT */}
         <div className="flex flex-col sm:flex-row gap-3
                   w-full lg:w-auto
                   sm:justify-end sm:items-center">
 
           <Button variant="outline" className="w-full sm:w-auto flex gap-2">
-            Attendees: 7523 <Users size={16} />
+            {t("attendeesCount", { count: 7523 })} <Users size={16} />
           </Button>
 
           <Button variant="outline" className="w-full sm:w-auto flex gap-2">
-            <SlidersHorizontal size={16} /> Filter
+            <SlidersHorizontal size={16} /> {tCommon("filter")}
           </Button>
         </div>
 
       </div>
       <div className="mt-4 flex flex-col lg:flex-row gap-4">
-        {/* Left Stats Column */}
         <div className="w-full lg:w-2/6 flex flex-col gap-6">
-          {titles.map((title) => {
-            const Icon = cardIcons[title]
+          {cardKeys.map((key) => {
+            const Icon = cardIcons[key]
 
             return (
               <div
-                key={title}
+                key={key}
                 className="bg-[#1E1E1E] p-6 rounded-3xl text-white shadow-lg hover:shadow-2xl transition-shadow duration-300"
               >
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm text-gray-400">{title}</h3>
+                  <h3 className="text-sm text-gray-400">{t(key)}</h3>
                   <Icon className="text-gray-300 hover:text-white cursor-pointer" />
                 </div>
 
-                <h2 className="text-lg font-bold mb-4">18 - 24 Years</h2>
+                <h2 className="text-lg font-bold mb-4">{t("ageRange")}</h2>
 
                 <div className="flex justify-between items-center mt-4">
                   <span className="text-xs flex items-center gap-2 text-green-400">
-                    <TrendingUp className="w-5 h-5" /> 30% Increase
+                    <TrendingUp className="w-5 h-5" /> {t("percentIncrease")}
                   </span>
                   <span className="text-lg font-semibold">2,345</span>
                 </div>
@@ -176,15 +165,11 @@ const analytics = () => {
           })}
         </div>
 
-
-
-        {/* Right Charts Column */}
         <div className="w-full lg:w-4/6 flex flex-col gap-4">
-          {/* Bar Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Bar Chart - Multiple</CardTitle>
-              <CardDescription>January - June 2024</CardDescription>
+              <CardTitle>{t("barChartTitle")}</CardTitle>
+              <CardDescription>{t("barChartPeriod")}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer config={barChartConfig}>
@@ -208,21 +193,19 @@ const analytics = () => {
             </CardContent>
             <CardFooter className="flex-col items-start gap-2 text-sm">
               <div className="flex gap-2 leading-none font-medium">
-                Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+                {t("trendingUp")} <TrendingUp className="h-4 w-4" />
               </div>
               <div className="text-muted-foreground leading-none">
-                Showing total visitors for the last 6 months
+                {t("showingVisitors")}
               </div>
             </CardFooter>
           </Card>
 
-          {/* Pie Charts */}
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* Donut Pie */}
             <Card className="flex-1 flex flex-col">
               <CardHeader className="items-center pb-0">
-                <CardTitle>Pie Chart - Donut</CardTitle>
-                <CardDescription>January - June 2024</CardDescription>
+                <CardTitle>{t("pieChartDonut")}</CardTitle>
+                <CardDescription>{t("barChartPeriod")}</CardDescription>
               </CardHeader>
               <CardContent className="flex-1 pb-0">
                 <ChartContainer
@@ -237,19 +220,18 @@ const analytics = () => {
               </CardContent>
               <CardFooter className="flex-col gap-2 text-sm">
                 <div className="flex items-center gap-2 leading-none font-medium">
-                  Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+                  {t("trendingUp")} <TrendingUp className="h-4 w-4" />
                 </div>
                 <div className="text-muted-foreground leading-none">
-                  Showing total visitors for the last 6 months
+                  {t("showingVisitors")}
                 </div>
               </CardFooter>
             </Card>
 
-            {/* Label Pie */}
             <Card className="flex-1 flex flex-col">
               <CardHeader className="items-center pb-0">
-                <CardTitle>Pie Chart - Label</CardTitle>
-                <CardDescription>January - June 2024</CardDescription>
+                <CardTitle>{t("pieChartLabel")}</CardTitle>
+                <CardDescription>{t("barChartPeriod")}</CardDescription>
               </CardHeader>
               <CardContent className="flex-1 pb-0">
                 <ChartContainer
@@ -264,19 +246,16 @@ const analytics = () => {
               </CardContent>
               <CardFooter className="flex-col gap-2 text-sm">
                 <div className="flex items-center gap-2 leading-none font-medium">
-                  Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+                  {t("trendingUp")} <TrendingUp className="h-4 w-4" />
                 </div>
                 <div className="text-muted-foreground leading-none">
-                  Showing total visitors for the last 6 months
+                  {t("showingVisitors")}
                 </div>
               </CardFooter>
             </Card>
           </div>
         </div>
       </div>
-
     </>
   )
 }
-
-export default analytics

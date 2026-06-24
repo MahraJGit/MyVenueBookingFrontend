@@ -3,6 +3,7 @@
 import * as React from "react"
 import L from "leaflet"
 import { Loader2, MapPin, Search } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -38,6 +39,7 @@ async function fetchGeocodeSearch(
   bias: { lat: number; lon: number } | undefined,
   limit = SUGGESTION_LIMIT,
   signal?: AbortSignal,
+  searchFailedLabel = "Search failed",
 ) {
   const params = new URLSearchParams({ q, limit: String(limit) })
   if (bias) {
@@ -57,13 +59,17 @@ async function fetchGeocodeSearch(
       "error" in data &&
       typeof (data as { error: unknown }).error === "string"
         ? (data as { error: string }).error
-        : "Search failed"
+        : searchFailedLabel
     throw new Error(msg)
   }
   return Array.isArray(data) ? (data as GeocodeSuggestion[]) : []
 }
 
-async function fetchPlaceDetails(placeId: string, signal?: AbortSignal) {
+async function fetchPlaceDetails(
+  placeId: string,
+  signal?: AbortSignal,
+  couldNotLoadLabel = "Could not load place details",
+) {
   const res = await fetch(`/api/geocode?placeId=${encodeURIComponent(placeId)}`, {
     headers: { Accept: "application/json" },
     signal,
@@ -76,7 +82,7 @@ async function fetchPlaceDetails(placeId: string, signal?: AbortSignal) {
       "error" in data &&
       typeof (data as { error: unknown }).error === "string"
         ? (data as { error: string }).error
-        : "Could not load place details"
+        : couldNotLoadLabel
     throw new Error(msg)
   }
   return data as GeocodeSuggestion
@@ -93,6 +99,8 @@ export function LocationPickerMap({
   onPositionChange: (lat: number, lng: number) => void
   onAddressHint?: (hint: AddressHint) => void
 }) {
+  const t = useTranslations("locationPicker")
+  const tCommon = useTranslations("common")
   const [query, setQuery] = React.useState("")
   const [searching, setSearching] = React.useState(false)
   const [resolvingPlace, setResolvingPlace] = React.useState(false)
@@ -212,7 +220,13 @@ export function LocationPickerMap({
 
     const timer = window.setTimeout(async () => {
       try {
-        const hits = await fetchGeocodeSearch(q, searchBias, SUGGESTION_LIMIT, controller.signal)
+        const hits = await fetchGeocodeSearch(
+          q,
+          searchBias,
+          SUGGESTION_LIMIT,
+          controller.signal,
+          t("searchFailed"),
+        )
         setSuggestions(hits)
         setSuggestionsOpen(hits.length > 0)
         setActiveSuggestion(-1)
@@ -229,7 +243,7 @@ export function LocationPickerMap({
       controller.abort()
       window.clearTimeout(timer)
     }
-  }, [query, searchBias])
+  }, [query, searchBias, t])
 
   React.useEffect(() => {
     function onPointerDown(e: MouseEvent) {
@@ -250,9 +264,9 @@ export function LocationPickerMap({
     if ((item.lat == null || item.lon == null) && item.placeId) {
       setResolvingPlace(true)
       try {
-        resolved = await fetchPlaceDetails(item.placeId)
+        resolved = await fetchPlaceDetails(item.placeId, undefined, t("couldNotLoadPlaceDetails"))
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Could not load place")
+        toast.error(err instanceof Error ? err.message : t("couldNotLoadPlace"))
         return
       } finally {
         setResolvingPlace(false)
@@ -260,13 +274,13 @@ export function LocationPickerMap({
     }
 
     if (!applySuggestion(resolved, true, !!onAddressHintRef.current)) {
-      toast.error("Invalid search result")
+      toast.error(t("invalidResult"))
       return
     }
 
     setSuggestionsOpen(false)
     setSuggestions([])
-    toast.success("Location updated")
+    toast.success(t("locationUpdated"))
   }
 
   async function selectSuggestion(item: GeocodeSuggestion) {
@@ -276,20 +290,20 @@ export function LocationPickerMap({
   async function runSearch() {
     const q = query.trim()
     if (q.length < 2) {
-      toast.error("Enter at least 2 characters to search.")
+      toast.error(t("minChars"))
       return
     }
     setSearching(true)
     setSuggestionsOpen(false)
     try {
-      const hits = await fetchGeocodeSearch(q, searchBias, 1)
+      const hits = await fetchGeocodeSearch(q, searchBias, 1, undefined, t("searchFailed"))
       if (hits.length === 0) {
-        toast.message("No results found")
+        toast.message(tCommon("noResults"))
         return
       }
       await resolveAndApply(hits[0])
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Search failed")
+      toast.error(err instanceof Error ? err.message : t("searchFailed"))
     } finally {
       setSearching(false)
     }
@@ -324,11 +338,8 @@ export function LocationPickerMap({
   return (
     <div className="space-y-3">
       <div>
-        <Label>Map</Label>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Start typing for address suggestions near the map pin, or click / drag on the map to set
-          coordinates only.
-        </p>
+        <Label>{t("map")}</Label>
+        <p className="mt-1 text-xs text-muted-foreground">{t("hint")}</p>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -343,7 +354,7 @@ export function LocationPickerMap({
               if (suggestions.length > 0) setSuggestionsOpen(true)
             }}
             onKeyDown={onSearchKeyDown}
-            placeholder="Search places, addresses, landmarks…"
+            placeholder={t("searchPlaceholder")}
             className="border-border bg-input/50 pr-9"
             autoComplete="off"
             role="combobox"
@@ -400,7 +411,7 @@ export function LocationPickerMap({
           ) : (
             <>
               <Search className="mr-2 h-4 w-4" />
-              Search
+              {tCommon("search")}
             </>
           )}
         </Button>

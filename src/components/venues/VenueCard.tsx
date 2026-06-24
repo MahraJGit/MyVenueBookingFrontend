@@ -6,6 +6,7 @@ import type { PublicVenue } from "@/features/venues/types";
 import { VenueCoverImage } from "@/components/venues/VenueCoverImage";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { getVenueDisplayPrice } from "@/features/venues/utils";
+import { useVenuePriceLabels } from "@/features/i18n/use-venue-price-labels";
 
 type VenueCardProps = {
   venue: PublicVenue;
@@ -13,7 +14,8 @@ type VenueCardProps = {
 
 export function VenueCard({ venue }: VenueCardProps) {
   const t = useTranslations("venues");
-  const priceInfo = getVenueDisplayPrice(venue);
+  const priceLabels = useVenuePriceLabels();
+  const priceInfo = getVenueDisplayPrice(venue, priceLabels);
   const location = venue.city || venue.address || "—";
 
   return (

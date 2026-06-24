@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Trash2, Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
@@ -19,13 +20,14 @@ export function VenueGalleryUpload({
   onRemove,
   inputId = "venue-gallery-upload",
 }: VenueGalleryUploadProps) {
+  const t = useTranslations("venueGallery");
+  const tA11y = useTranslations("a11y");
+
   return (
     <div className="space-y-3 sm:col-span-2">
       <div>
-        <Label>Gallery</Label>
-        <p className="text-xs text-muted-foreground mt-1">
-          Optional. Add multiple images — each file is uploaded and saved to your gallery.
-        </p>
+        <Label>{t("title")}</Label>
+        <p className="text-xs text-muted-foreground mt-1">{t("hint")}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button
@@ -37,13 +39,13 @@ export function VenueGalleryUpload({
         >
           {uploading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Uploading…
+              <Loader2 className="me-2 h-4 w-4 animate-spin" />
+              {t("uploading")}
             </>
           ) : (
             <>
-              <Upload className="mr-2 h-4 w-4" />
-              Add gallery images
+              <Upload className="me-2 h-4 w-4" />
+              {t("addImages")}
             </>
           )}
         </Button>
@@ -77,7 +79,7 @@ export function VenueGalleryUpload({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 shrink-0 text-destructive"
-                  aria-label="Remove image"
+                  aria-label={tA11y("removeImage")}
                   onClick={() => onRemove(index)}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -87,7 +89,7 @@ export function VenueGalleryUpload({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">No gallery images yet.</p>
+        <p className="text-sm text-muted-foreground">{t("noImages")}</p>
       )}
     </div>
   );

@@ -31,7 +31,29 @@
       "ratingStarsAlt": "درجہ بندی کے ستارے",
       "whyBookAnytimeTitle": "کسی بھی وقت بک کریں",
       "whyBookAnytimeDesc": "آپ ایک مقررہ مدت میں ٹکٹ کی قیمت دو قسطوں میں ادا کر سکتے ہیں۔ مفت میں انوائسنگ شروع کریں۔",
-      "searchAlt": "تلاش"
+      "searchAlt": "تلاش",
+      "heroBookPrefix": "بک کریں",
+      "heroBookTickets": "ایونٹ ٹکٹ",
+      "heroBookAnd": "اور",
+      "heroBookVenues": "وینوز",
+      "heroBookSuffix": "آن لائن",
+      "heroBookSubtitle": "سولڈ آؤٹ کنسرٹس اور چیمپئن شپ اسپورٹس سے لے کر شادی کی ہالز اور کارپوریٹ اسپیسز تک — دیکھیں کیا دستیاب ہے، آپشنز کا موازنہ کریں، اور منٹوں میں اپنی بکنگ کی تصدیق کریں۔",
+      "trustSecureCheckout": "محفوظ چیک آؤٹ",
+      "trustSecureCheckoutDesc": "خفیہ ادائیگیاں اور محفوظ ڈیٹا",
+      "trustFlexibleRefunds": "لچکدار ریفنڈ",
+      "trustFlexibleRefundsDesc": "اہل ٹکٹ آسانی سے واپس",
+      "trustSmartDeals": "سمارٹ ڈیلز",
+      "trustSmartDealsDesc": "بہترین تجربات پر خصوصی پیشکشیں",
+      "topVenuesSubtitle": "اپنے اگلے موقع کے لیے بینکوئٹ ہالز، لawns اور ایونٹ اسپیسز دریافت کریں۔",
+      "viewMore": "مزید دیکھیں",
+      "couldNotLoadVenues": "وینوز لوڈ نہیں ہو سکے۔",
+      "noVenuesAvailable": "ابھی کوئی وینو دستیاب نہیں۔",
+      "browseVenues": "وینوز براؤز کریں"
+    },
+    "nav": {
+      "attractions": "تفریح اور دلچسپیاں",
+      "corporate": "کارپوریٹ وینوز",
+      "mainNav": "مرکزی نیویگیشن"
     },
     "venues": {
       "venueBooking": "وینو بکنگ",
@@ -525,7 +547,29 @@
       "ratingStarsAlt": "Bewertungssterne",
       "whyBookAnytimeTitle": "Jederzeit buchen",
       "whyBookAnytimeDesc": "Sie können ein Ticket in 2 Raten über einen festen Zeitraum bezahlen. Starten Sie kostenlos mit der Rechnungsstellung.",
-      "searchAlt": "Suchen"
+      "searchAlt": "Suchen",
+      "heroBookPrefix": "Buchen Sie",
+      "heroBookTickets": "Event-Tickets",
+      "heroBookAnd": "&",
+      "heroBookVenues": "Veranstaltungsorte",
+      "heroBookSuffix": "online",
+      "heroBookSubtitle": "Von ausverkauften Konzerten und Meisterschaftssport bis zu Hochzeitssälen und Firmenräumen — entdecken Sie, was läuft, vergleichen Sie Optionen und bestätigen Sie Ihre Buchung in Minuten.",
+      "trustSecureCheckout": "Sichere Kasse",
+      "trustSecureCheckoutDesc": "Verschlüsselte Zahlungen & geschützte Daten",
+      "trustFlexibleRefunds": "Flexible Rückerstattungen",
+      "trustFlexibleRefundsDesc": "Berechtigte Tickets werden mühelos erstattet",
+      "trustSmartDeals": "Smarte Angebote",
+      "trustSmartDealsDesc": "Exklusive Angebote für Top-Erlebnisse",
+      "topVenuesSubtitle": "Entdecken Sie Bankettsäle, Gärten und Eventräume für Ihren nächsten Anlass.",
+      "viewMore": "Mehr anzeigen",
+      "couldNotLoadVenues": "Veranstaltungsorte konnten nicht geladen werden.",
+      "noVenuesAvailable": "Noch keine Veranstaltungsorte verfügbar.",
+      "browseVenues": "Veranstaltungsorte durchsuchen"
+    },
+    "nav": {
+      "attractions": "Attraktionen & Unterhaltung",
+      "corporate": "Firmenveranstaltungsorte",
+      "mainNav": "Hauptnavigation"
     },
     "venues": {
       "venueBooking": "Veranstaltungsort buchen",
@@ -1019,7 +1063,29 @@
       "ratingStarsAlt": "نجوم التقييم",
       "whyBookAnytimeTitle": "احجز في أي وقت",
       "whyBookAnytimeDesc": "يمكنك دفع ثمن التذكرة على دفعتين خلال فترة زمنية محددة. ابدأ الفوترة مجانًا.",
-      "searchAlt": "بحث"
+      "searchAlt": "بحث",
+      "heroBookPrefix": "احجز",
+      "heroBookTickets": "تذاكر الفعاليات",
+      "heroBookAnd": "و",
+      "heroBookVenues": "الأماكن",
+      "heroBookSuffix": "عبر الإنترنت",
+      "heroBookSubtitle": "من الحفلات الموسيقية المبيعة بالكامل ورياضة البطولات إلى قاعات الأفراح والمساحات المؤسسية — اكتشف ما هو متاح، قارن الخيارات، وأكد حجزك في دقائق.",
+      "trustSecureCheckout": "دفع آمن",
+      "trustSecureCheckoutDesc": "مدفوعات مشفرة وبيانات محمية",
+      "trustFlexibleRefunds": "استرداد مرن",
+      "trustFlexibleRefundsDesc": "استرداد التذاكر المؤهلة بسهولة",
+      "trustSmartDeals": "عروض ذكية",
+      "trustSmartDealsDesc": "عروض حصرية على أفضل التجارب",
+      "topVenuesSubtitle": "استكشف قاعات الحفلات والحدائق ومساحات الفعاليات لمناسبتك القادمة.",
+      "viewMore": "عرض المزيد",
+      "couldNotLoadVenues": "تعذر تحميل الأماكن.",
+      "noVenuesAvailable": "لا تتوفر أماكن بعد.",
+      "browseVenues": "تصفح الأماكن"
+    },
+    "nav": {
+      "attractions": "الترفيه والمعالم",
+      "corporate": "أماكن الشركات",
+      "mainNav": "التنقل الرئيسي"
     },
     "venues": {
       "venueBooking": "حجز المكان",
@@ -1513,7 +1579,29 @@
       "ratingStarsAlt": "Étoiles de notation",
       "whyBookAnytimeTitle": "Réserver à tout moment",
       "whyBookAnytimeDesc": "Vous pouvez payer un billet en 2 versements sur une période fixe. Commencez la facturation gratuitement.",
-      "searchAlt": "Rechercher"
+      "searchAlt": "Rechercher",
+      "heroBookPrefix": "Réservez",
+      "heroBookTickets": "des billets d'événements",
+      "heroBookAnd": "et",
+      "heroBookVenues": "des lieux",
+      "heroBookSuffix": "en ligne",
+      "heroBookSubtitle": "Des concerts complets et sports de championnat aux salles de mariage et espaces d'entreprise — découvrez ce qui est disponible, comparez les options et confirmez votre réservation en quelques minutes.",
+      "trustSecureCheckout": "Paiement sécurisé",
+      "trustSecureCheckoutDesc": "Paiements chiffrés et données protégées",
+      "trustFlexibleRefunds": "Remboursements flexibles",
+      "trustFlexibleRefundsDesc": "Billets éligibles remboursés facilement",
+      "trustSmartDeals": "Offres intelligentes",
+      "trustSmartDealsDesc": "Offres exclusives sur les meilleures expériences",
+      "topVenuesSubtitle": "Explorez les salles de banquet, jardins et espaces événementiels pour votre prochaine occasion.",
+      "viewMore": "Voir plus",
+      "couldNotLoadVenues": "Impossible de charger les lieux.",
+      "noVenuesAvailable": "Aucun lieu disponible pour le moment.",
+      "browseVenues": "Parcourir les lieux"
+    },
+    "nav": {
+      "attractions": "Attractions & divertissement",
+      "corporate": "Lieux d'entreprise",
+      "mainNav": "Navigation principale"
     },
     "venues": {
       "venueBooking": "Réservation de lieu",

@@ -26,64 +26,21 @@ import {
 } from "@/features/market-segments/constants";
 import { buildEventsPageHref } from "@/features/events/utils";
 import { venueKeys } from "@/features/venues/query-keys";
+import {
+  useEventSortOptions,
+  useListingLabels,
+  useVenueSortOptions,
+} from "@/features/i18n/use-listing-filters";
+import { useTranslations } from "next-intl";
 import "@/styles/event-list.css";
 
 const PAGE_SIZE = 8;
 
-const EVENT_SORT_OPTIONS = [
-  {
-    value: "createdAt-desc",
-    sortBy: "createdAt" as const,
-    sortOrder: "desc" as const,
-    label: "Newest first",
-  },
-  {
-    value: "startDateTime-asc",
-    sortBy: "startDateTime" as const,
-    sortOrder: "asc" as const,
-    label: "Soonest",
-  },
-  {
-    value: "eventName-asc",
-    sortBy: "eventName" as const,
-    sortOrder: "asc" as const,
-    label: "Name A–Z",
-  },
-  {
-    value: "eventName-desc",
-    sortBy: "eventName" as const,
-    sortOrder: "desc" as const,
-    label: "Name Z–A",
-  },
-];
-
-const VENUE_SORT_OPTIONS = [
-  {
-    value: "createdAt-desc",
-    sortBy: "createdAt" as const,
-    sortOrder: "desc" as const,
-    label: "Newest first",
-  },
-  {
-    value: "name-asc",
-    sortBy: "name" as const,
-    sortOrder: "asc" as const,
-    label: "Name A–Z",
-  },
-  {
-    value: "name-desc",
-    sortBy: "name" as const,
-    sortOrder: "desc" as const,
-    label: "Name Z–A",
-  },
-];
-
 function sortValueFromParams(
   sortBy: string,
   sortOrder: string,
-  isAttractions: boolean,
+  options: { sortBy: string; sortOrder: string; value: string }[],
 ): string {
-  const options = isAttractions ? EVENT_SORT_OPTIONS : VENUE_SORT_OPTIONS;
   const match = options.find(
     (o) => o.sortBy === sortBy && o.sortOrder === sortOrder,
   );
@@ -124,9 +81,14 @@ type SegmentHubPageProps = {
 };
 
 export function SegmentHubPage({ variant }: SegmentHubPageProps) {
+  const t = useTranslations("marketSegments");
+  const labels = useListingLabels();
+  const eventSortOptions = useEventSortOptions();
+  const venueSortOptions = useVenueSortOptions();
+
   const isAttractions = variant === "attractions";
   const basePath = isAttractions ? "/attractions" : "/corporate";
-  const sortOptions = isAttractions ? EVENT_SORT_OPTIONS : VENUE_SORT_OPTIONS;
+  const sortOptions = isAttractions ? eventSortOptions : venueSortOptions;
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -136,7 +98,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
   const cityFromUrl = searchParams.get("city")?.trim() ?? "";
   const sortBy = searchParams.get("sortBy") ?? "createdAt";
   const sortOrder = searchParams.get("sortOrder") ?? "desc";
-  const sortValue = sortValueFromParams(sortBy, sortOrder, isAttractions);
+  const sortValue = sortValueFromParams(sortBy, sortOrder, sortOptions);
 
   const [search, setSearch] = useState(searchFromUrl);
   const [city, setCity] = useState(cityFromUrl);
@@ -182,8 +144,8 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
   };
 
   const description = isAttractions
-    ? "Concerts, festivals, shows, and experiences — find tickets for your next outing."
-    : "Conference centers, banquet halls, and professional spaces for your business events.";
+    ? t("attractionsDescription")
+    : t("corporateDescription");
 
   const {
     data: eventsResult,
@@ -308,13 +270,17 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
           <h1 className="page-title mb-3 text-white">
             {isAttractions ? (
               <>
-                Attractions &{" "}
-                <span className="text-gradient-accent">Entertainment</span>
+                {t("attractionsTitle")}{" "}
+                <span className="text-gradient-accent">
+                  {t("attractionsHighlight")}
+                </span>
               </>
             ) : (
               <>
-                Corporate{" "}
-                <span className="text-gradient-accent">Venues</span>
+                {t("corporateTitle")}{" "}
+                <span className="text-gradient-accent">
+                  {t("corporateHighlight")}
+                </span>
               </>
             )}
           </h1>
@@ -323,7 +289,9 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
 
         <div className="mb-8 flex flex-col gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 sm:flex-row sm:flex-wrap sm:items-center">
           <Input
-            placeholder={isAttractions ? "Search events..." : "Search venues..."}
+            placeholder={
+              isAttractions ? labels.searchEvents : labels.searchVenues
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -332,7 +300,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
             className="w-full border-[#303030] bg-black text-white sm:max-w-xs"
           />
           <Input
-            placeholder="City"
+            placeholder={labels.city}
             value={city}
             onChange={(e) => setCity(e.target.value)}
             onKeyDown={(e) => {
@@ -342,7 +310,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
           />
           <Select value={sortValue} onValueChange={handleSortChange}>
             <SelectTrigger className="w-full border-[#303030] bg-black text-white sm:w-[180px]">
-              <SelectValue placeholder="Sort by" />
+              <SelectValue placeholder={labels.sortBy} />
             </SelectTrigger>
             <SelectContent>
               {sortOptions.map((option) => (
@@ -354,8 +322,8 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
           </Select>
           <div className="flex flex-wrap gap-2 sm:contents">
             <Button onClick={applyFilters} className="w-full bg-primary sm:w-auto">
-              <Search className="mr-2 h-4 w-4" />
-              Search
+              <Search className="me-2 h-4 w-4" />
+              {labels.search}
             </Button>
             {(searchFromUrl || cityFromUrl) && (
               <Button
@@ -367,14 +335,14 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
                   pushParams({ search: undefined, city: undefined, page: undefined });
                 }}
               >
-                Clear filters
+                {labels.clearFilters}
               </Button>
             )}
           </div>
         </div>
 
         <div className="mb-6 flex flex-col gap-3 border-b border-[#1F1F1F] pb-5 sm:flex-row sm:items-center sm:justify-between">
-          <h2>{isAttractions ? "Events" : "Venues"}</h2>
+          <h2>{isAttractions ? t("eventsSection") : t("venuesSection")}</h2>
           <Link
             href={
               isAttractions
@@ -383,19 +351,19 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
             }
             className="w-full rounded-full border border-primary px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:text-primary sm:w-auto"
           >
-            {isAttractions ? "View all events" : "View all venues"}
+            {isAttractions ? t("viewAllEvents") : t("viewAllVenues")}
           </Link>
         </div>
 
         {isError ? (
           <p className="mb-8 py-8 text-sm text-red-400">
-            {error instanceof Error ? error.message : "Could not load results."}
+            {error instanceof Error ? error.message : labels.couldNotLoad}
           </p>
         ) : null}
 
         {!isAttractions && !loadingTypes && corporateTypeIds.length === 0 ? (
           <p className="py-8 text-sm text-[#B3B3B3]">
-            Corporate venue types are not configured yet.
+            {t("corporateTypesNotConfigured")}
           </p>
         ) : isLoading ? (
           <CardSkeletonGrid />
@@ -403,21 +371,21 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
           <p className="mb-8 py-8 text-sm text-[#B3B3B3]">
             {isAttractions ? (
               <>
-                No attractions &amp; entertainment events found
-                {searchFromUrl ? ` matching "${searchFromUrl}"` : ""}
-                {cityFromUrl ? ` in ${cityFromUrl}` : ""}.{" "}
+                {t("noAttractionsEvents")}
+                {searchFromUrl ? ` ${labels.matching(searchFromUrl)}` : ""}
+                {cityFromUrl ? ` ${labels.inCity(cityFromUrl)}` : ""}.{" "}
                 <Link href="/events" className="text-primary hover:underline">
-                  Browse all events
+                  {t("browseAllEvents")}
                 </Link>
                 .
               </>
             ) : (
               <>
-                No corporate venues found
-                {searchFromUrl ? ` matching "${searchFromUrl}"` : ""}
-                {cityFromUrl ? ` in ${cityFromUrl}` : ""}.{" "}
+                {t("noCorporateVenues")}
+                {searchFromUrl ? ` ${labels.matching(searchFromUrl)}` : ""}
+                {cityFromUrl ? ` ${labels.inCity(cityFromUrl)}` : ""}.{" "}
                 <Link href="/venues" className="text-primary hover:underline">
-                  Browse all venues
+                  {t("browseAllVenues")}
                 </Link>
                 .
               </>
@@ -456,13 +424,17 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
                 pushParams({ page: page <= 2 ? undefined : String(page - 1) });
               }}
             >
-              Previous
+              {labels.previous}
             </Button>
             <span className="flex items-center justify-center px-2 text-center text-sm text-muted-foreground sm:px-4">
-              Page {page} of {totalPages}
               {meta?.total != null
-                ? ` · ${meta.total} ${isAttractions ? "events" : "venues"}`
-                : ""}
+                ? labels.pageOfWithCount(
+                    page,
+                    totalPages,
+                    meta.total,
+                    isAttractions ? "events" : "venues",
+                  )
+                : labels.pageOf(page, totalPages)}
             </span>
             <Button
               variant="outline"
@@ -472,7 +444,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
                 pushParams({ page: String(page + 1) });
               }}
             >
-              Next
+              {labels.next}
             </Button>
           </div>
         ) : null}

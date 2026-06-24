@@ -293,7 +293,7 @@ export default function EventDetailPage() {
               ) : (
                 <div className="w-full h-full min-h-[280px] flex items-center justify-center text-zinc-500">
                   <MapPin size={32} className="mr-2" />
-                  <span>Map not available</span>
+                  <span>{t("mapNotAvailable")}</span>
                 </div>
               )}
             </div>

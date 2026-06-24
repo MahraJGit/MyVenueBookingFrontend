@@ -101,6 +101,7 @@ const Tickets = () => {
   const t = useTranslations('userDashboard')
   const tCommon = useTranslations('common')
   const tNav = useTranslations('nav')
+  const tEntity = useTranslations('entityStatus')
   const [activeTab, setActiveTab] = useState<TabValue>('all')
   const [sortBy, setSortBy] = useState<SortOption>('newest')
 
@@ -143,6 +144,13 @@ const Tickets = () => {
     pending: t('tabPending', { count: counts.pending }),
     canceled: t('tabCanceled', { count: counts.canceled }),
     completed: t('tabCompleted', { count: counts.completed }),
+  }
+
+  const statusLabel = (status: TicketOrderTabStatus) => {
+    if (status === 'pending') return tEntity('pending')
+    if (status === 'completed') return tEntity('completed')
+    if (status === 'canceled') return tEntity('canceled')
+    return status
   }
 
   return (
@@ -244,7 +252,7 @@ const Tickets = () => {
             <TableBody>
               {filteredTickets.length === 0 ? (
                 <TableEmptyRow colSpan={8}>
-                  No {activeTab} tickets in this view.
+                  {t('noTabTickets', { tab: tabLabels[activeTab] })}
                 </TableEmptyRow>
               ) : (
                 filteredTickets.map((ticket) => (
@@ -272,7 +280,7 @@ const Tickets = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={statusBadgeClass(ticket.status)}>
-                        {ticket.status}
+                        {statusLabel(ticket.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

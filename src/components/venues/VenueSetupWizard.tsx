@@ -58,11 +58,14 @@ const LocationPickerMap = dynamic(
     import("@/components/maps/location-picker-map").then((m) => m.LocationPickerMap),
   {
     ssr: false,
-    loading: () => (
-      <p className="text-sm text-muted-foreground">Loading map...</p>
-    ),
+    loading: () => <LocationMapLoading />,
   },
 );
+
+function LocationMapLoading() {
+  const t = useTranslations("venueSetup");
+  return <p className="text-sm text-muted-foreground">{t("loadingMap")}</p>;
+}
 import {
   addVenueBlock,
   createVenue,
@@ -85,7 +88,7 @@ import { useDashboardPaths } from "@/features/dashboard/paths";
 import { listAdminVendorProfiles } from "@/features/vendor/api";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
-import { fieldClassName, isBlank, requiredMessage } from "@/lib/form-validation";
+import { fieldClassName, isBlank } from "@/lib/form-validation";
 
 const TIMEZONES = [
   "Asia/Dubai",
@@ -314,13 +317,11 @@ export function VenueSetupWizard({
         const params = new URLSearchParams({ id: venue.id, tab: nextTab });
         router.replace(`${paths.addVenue}?${params.toString()}`);
         toast.success(
-          isAdminScope
-            ? "Details saved — set up pricing next"
-            : "Details saved as draft — set up pricing, then submit for review",
+          isAdminScope ? t("detailsSavedAdmin") : t("detailsSavedVendor"),
         );
         return;
       }
-      toast.success("Venue updated");
+      toast.success(t("venueUpdated"));
       queryClient.invalidateQueries({ queryKey: venueKeys.all });
       queryClient.invalidateQueries({
         queryKey: venueKeys.managedDetail(effectiveVenueId!),
@@ -331,11 +332,11 @@ export function VenueSetupWizard({
 
   const savePricing = useMutation({
     mutationFn: () => {
-      if (!effectiveVenueId) throw new Error("Save venue details first");
+      if (!effectiveVenueId) throw new Error(t("saveVenueDetailsFirst"));
       return upsertVenuePricing(effectiveVenueId, normalizePricingForSave(pricing));
     },
     onSuccess: () => {
-      toast.success("Pricing saved");
+      toast.success(t("pricingSaved"));
       queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(effectiveVenueId!) });
       queryClient.invalidateQueries({ queryKey: venueKeys.all });
     },
@@ -344,11 +345,11 @@ export function VenueSetupWizard({
 
   const saveSchedules = useMutation({
     mutationFn: () => {
-      if (!effectiveVenueId) throw new Error("Save venue details first");
+      if (!effectiveVenueId) throw new Error(t("saveVenueDetailsFirst"));
       return replaceVenueSchedules(effectiveVenueId, { schedules });
     },
     onSuccess: () => {
-      toast.success("Schedule saved");
+      toast.success(t("scheduleSaved"));
       queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(effectiveVenueId!) });
     },
     onError: (e) => toastApiError(e),
@@ -356,11 +357,11 @@ export function VenueSetupWizard({
 
   const submitForReview = useMutation({
     mutationFn: () => {
-      if (!effectiveVenueId) throw new Error("Save venue details first");
+      if (!effectiveVenueId) throw new Error(t("saveVenueDetailsFirst"));
       return submitVenueForReview(effectiveVenueId);
     },
     onSuccess: () => {
-      toast.success("Venue submitted for admin review");
+      toast.success(t("submittedForReview"));
       queryClient.invalidateQueries({ queryKey: venueKeys.all });
       queryClient.invalidateQueries({
         queryKey: venueKeys.managedDetail(effectiveVenueId!),
@@ -371,11 +372,11 @@ export function VenueSetupWizard({
 
   const saveAmenity = useMutation({
     mutationFn: (payload: VenueAmenityPayload) => {
-      if (!effectiveVenueId) throw new Error("Save venue details first");
+      if (!effectiveVenueId) throw new Error(t("saveVenueDetailsFirst"));
       return upsertVenueAmenity(effectiveVenueId, payload);
     },
     onSuccess: () => {
-      toast.success("Amenity added");
+      toast.success(t("amenityAdded"));
       queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(effectiveVenueId!) });
     },
     onError: (e) => toastApiError(e),
@@ -383,7 +384,7 @@ export function VenueSetupWizard({
 
   const saveBlock = useMutation({
     mutationFn: () => {
-      if (!effectiveVenueId) throw new Error("Save venue details first");
+      if (!effectiveVenueId) throw new Error(t("saveVenueDetailsFirst"));
       return addVenueBlock(effectiveVenueId, {
         blockDate: new Date(blockForm.blockDate).toISOString(),
         reason: blockForm.reason || undefined,
@@ -393,7 +394,7 @@ export function VenueSetupWizard({
       });
     },
     onSuccess: () => {
-      toast.success("Block date added");
+      toast.success(t("blockDateAdded"));
       setBlockForm({
         blockDate: "",
         reason: "",
@@ -410,7 +411,7 @@ export function VenueSetupWizard({
     try {
       const url = await uploadVenueMedia(file);
       setDetails((d) => ({ ...d, coverImage: url }));
-      toast.success("Cover image uploaded");
+      toast.success(t("coverUploaded"));
     } catch (e) {
       toastApiError(e);
     }
@@ -424,7 +425,9 @@ export function VenueSetupWizard({
       const results = await Promise.all(list.map((file) => uploadVenueMedia(file)));
       setDetails((d) => ({ ...d, gallery: [...d.gallery, ...results] }));
       toast.success(
-        list.length === 1 ? "Gallery image uploaded" : `${list.length} images uploaded`,
+        list.length === 1
+          ? t("galleryImageUploaded")
+          : t("galleryImagesUploaded", { count: list.length }),
       );
     } catch (e) {
       toastApiError(e);
@@ -459,12 +462,16 @@ export function VenueSetupWizard({
       : null);
 
   const nameError =
-    fieldAttempted.name && isBlank(details.name) ? requiredMessage("Venue name") : null;
+    fieldAttempted.name && isBlank(details.name)
+      ? tForms("fieldRequired", { field: t("venueName") })
+      : null;
   const addressError =
-    fieldAttempted.address && isBlank(details.address) ? requiredMessage("Address") : null;
+    fieldAttempted.address && isBlank(details.address)
+      ? tForms("fieldRequired", { field: tForms("address") })
+      : null;
   const blockDateError =
     fieldAttempted.blockDate && isBlank(blockForm.blockDate)
-      ? requiredMessage("Date")
+      ? tForms("fieldRequired", { field: t("date") })
       : null;
 
   function trySaveDetails() {
@@ -472,7 +479,7 @@ export function VenueSetupWizard({
     if (isBlank(details.name) || isBlank(details.address)) return;
     if (isAdminScope && !hasPersistedVenue && !selectedVendorId) {
       setVendorAttempted(true);
-      toast.error("Select a vendor for this venue");
+      toast.error(t("selectVendorError"));
       return;
     }
     saveDetails.mutate();
@@ -492,12 +499,12 @@ export function VenueSetupWizard({
 
   const vendorError =
     vendorAttempted && isAdminScope && !hasPersistedVenue && !selectedVendorId
-      ? "Select the vendor who owns this venue"
+      ? t("selectVendorHint")
       : null;
 
   const adminVendorField = isAdminScope && !hasPersistedVenue && (
     <FormField
-      label="Vendor"
+      label={t("vendor")}
       htmlFor="venue-vendor"
       required
       error={vendorError}
@@ -509,7 +516,7 @@ export function VenueSetupWizard({
           aria-invalid={!!vendorError}
           className={fieldClassName(cn(inputClass, "w-full"), !!vendorError)}
         >
-          <SelectValue placeholder="Select approved vendor" />
+          <SelectValue placeholder={t("selectVendor")} />
         </SelectTrigger>
         <SelectContent>
           {approvedVendors.map((vendor) => (
@@ -526,7 +533,7 @@ export function VenueSetupWizard({
     <>
       {adminVendorField}
       <FormField
-        label="Venue name"
+        label={t("venueName")}
         htmlFor="venue-name"
         required
         error={nameError}
@@ -534,7 +541,7 @@ export function VenueSetupWizard({
       >
         <Input
           id="venue-name"
-          placeholder="e.g. Sunset Garden Hall"
+          placeholder={t("venueNamePlaceholder")}
           value={details.name}
           onChange={(e) => setDetails({ ...details, name: e.target.value })}
           aria-invalid={!!nameError}
@@ -542,23 +549,23 @@ export function VenueSetupWizard({
         />
       </FormField>
       <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="venue-description">Description</Label>
+        <Label htmlFor="venue-description">{t("description")}</Label>
         <Textarea
           id="venue-description"
-          placeholder="Tell guests what makes your venue special..."
+          placeholder={t("descriptionPlaceholder")}
           value={details.description}
           onChange={(e) => setDetails({ ...details, description: e.target.value })}
           className={cn(inputClass, "min-h-24")}
         />
       </div>
       <div className="space-y-2">
-        <Label>Venue type</Label>
+        <Label>{t("venueType")}</Label>
         <Select
           value={details.venueTypeId}
           onValueChange={(v) => setDetails({ ...details, venueTypeId: v })}
         >
           <SelectTrigger className={cn(inputClass, "w-full")}>
-            <SelectValue placeholder="Select type" />
+            <SelectValue placeholder={t("selectType")} />
           </SelectTrigger>
           <SelectContent>
             {venueTypes.map((t) => (
@@ -571,10 +578,10 @@ export function VenueSetupWizard({
    
       </div>
       <div className="space-y-2">
-        <Label>Capacity</Label>
+        <Label>{t("capacity")}</Label>
         <div className="flex items-center gap-2">
           <NumberInput
-            placeholder="Min"
+            placeholder={t("minPlaceholder")}
             integer
             min={0}
             value={parseOptionalNumericString(details.capacityMin)}
@@ -583,9 +590,9 @@ export function VenueSetupWizard({
             }
             className={inputClass}
           />
-          <span className="text-muted-foreground text-sm">to</span>
+          <span className="text-muted-foreground text-sm">{t("to")}</span>
           <NumberInput
-            placeholder="Max"
+            placeholder={t("maxPlaceholder")}
             integer
             min={0}
             value={parseOptionalNumericString(details.capacityMax)}
@@ -597,11 +604,11 @@ export function VenueSetupWizard({
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="venue-floor-area">Floor area (sq ft)</Label>
+        <Label htmlFor="venue-floor-area">{t("floorArea")}</Label>
         <NumberInput
           id="venue-floor-area"
           min={0}
-          placeholder="e.g. 2500"
+          placeholder={t("floorAreaPlaceholder")}
           value={parseOptionalNumericString(details.floorArea)}
           onValueChange={(n) =>
             setDetails({ ...details, floorArea: n === undefined ? "" : String(n) })
@@ -612,12 +619,12 @@ export function VenueSetupWizard({
       {showPropertyFields && (
         <>
           <div className="space-y-2">
-            <Label htmlFor="venue-bedrooms">Bedrooms</Label>
+            <Label htmlFor="venue-bedrooms">{t("bedrooms")}</Label>
             <NumberInput
               id="venue-bedrooms"
               integer
               min={0}
-              placeholder="e.g. 3"
+              placeholder={t("bedroomsPlaceholder")}
               value={parseOptionalNumericString(details.bedrooms)}
               onValueChange={(n) =>
                 setDetails({ ...details, bedrooms: n === undefined ? "" : String(n) })
@@ -626,11 +633,11 @@ export function VenueSetupWizard({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="venue-bathrooms">Bathrooms</Label>
+            <Label htmlFor="venue-bathrooms">{t("bathrooms")}</Label>
             <NumberInput
               id="venue-bathrooms"
               min={0}
-              placeholder="e.g. 2"
+              placeholder={t("bathroomsPlaceholder")}
               value={parseOptionalNumericString(details.bathrooms)}
               onValueChange={(n) =>
                 setDetails({ ...details, bathrooms: n === undefined ? "" : String(n) })
@@ -641,14 +648,14 @@ export function VenueSetupWizard({
         </>
       )}
       <div className="space-y-2 sm:col-span-2">
-        <Label>Cover image</Label>
+        <Label>{t("coverImage")}</Label>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           {details.coverImage ? (
             <div className="relative h-32 w-48 shrink-0 overflow-hidden rounded-lg border border-border">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={details.coverImage}
-                alt="Venue cover"
+                alt={t("venueCoverAlt")}
                 className="h-full w-full object-cover"
               />
             </div>
@@ -671,7 +678,7 @@ export function VenueSetupWizard({
               onClick={() => coverInputRef.current?.click()}
             >
               <ImagePlus className="mr-2 h-4 w-4" />
-              Upload photo
+              {t("uploadPhoto")}
             </Button>
             {details.coverImage && (
               <Button
@@ -681,7 +688,7 @@ export function VenueSetupWizard({
                 onClick={() => setDetails({ ...details, coverImage: "" })}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Remove
+                {tForms("removeCover")}
               </Button>
             )}
           </div>
@@ -700,14 +707,14 @@ export function VenueSetupWizard({
   const locationFields = (
     <>
       <FormField
-        label="Address"
+        label={tForms("address")}
         htmlFor="venue-address"
         required
         error={addressError}
       >
         <Input
           id="venue-address"
-          placeholder="Street address"
+          placeholder={t("streetPlaceholder")}
           value={details.address}
           onChange={(e) => setDetails({ ...details, address: e.target.value })}
           aria-invalid={!!addressError}
@@ -715,17 +722,17 @@ export function VenueSetupWizard({
         />
       </FormField>
       <div className="space-y-2">
-        <Label htmlFor="venue-city">City</Label>
+        <Label htmlFor="venue-city">{tForms("city")}</Label>
         <Input
           id="venue-city"
-          placeholder="City"
+          placeholder={tForms("city")}
           value={details.city}
           onChange={(e) => setDetails({ ...details, city: e.target.value })}
           className={inputClass}
         />
       </div>
       <div className="space-y-2 sm:col-span-2">
-        <Label>Timezone</Label>
+        <Label htmlFor="venue-timezone">{tForms("timezone")}</Label>
         <Select
           value={details.timezone}
           onValueChange={(v) => setDetails({ ...details, timezone: v })}
@@ -904,10 +911,8 @@ export function VenueSetupWizard({
         <TabsContent value="schedules">
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Weekly schedule</CardTitle>
-              <CardDescription>
-                Set opening hours for each day of the week.
-              </CardDescription>
+              <CardTitle>{t("weeklySchedule")}</CardTitle>
+              <CardDescription>{t("weeklyScheduleDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <VenueScheduleEditor schedules={schedules} onChange={setSchedules} />
@@ -920,7 +925,7 @@ export function VenueSetupWizard({
                 {saveSchedules.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Save schedule
+                {t("saveSchedule")}
               </Button>
             </CardFooter>
           </Card>
@@ -929,11 +934,8 @@ export function VenueSetupWizard({
         <TabsContent value="amenities" className="space-y-4">
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Amenities &amp; services</CardTitle>
-              <CardDescription>
-                Pick from the admin catalog. Mark items as included with the booking or as
-                optional paid add-ons with your pricing.
-              </CardDescription>
+              <CardTitle>{t("amenitiesServices")}</CardTitle>
+              <CardDescription>{t("amenitiesServicesDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <VenueAmenityEditor
@@ -947,7 +949,7 @@ export function VenueSetupWizard({
                   queryClient.invalidateQueries({
                     queryKey: venueKeys.managedDetail(effectiveVenueId),
                   });
-                  toast.success("Amenity removed");
+                  toast.success(t("amenityRemoved"));
                 }}
               />
             </CardContent>
@@ -957,13 +959,11 @@ export function VenueSetupWizard({
         <TabsContent value="blocks" className="space-y-4">
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Block a date</CardTitle>
-              <CardDescription>
-                Mark dates when your venue is closed or has custom hours.
-              </CardDescription>
+              <CardTitle>{t("blockDate")}</CardTitle>
+              <CardDescription>{t("blockDateDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              <FormField label="Date" required error={blockDateError}>
+              <FormField label={t("date")} required error={blockDateError}>
                 <Input
                   type="date"
                   value={blockForm.blockDate}
@@ -975,9 +975,9 @@ export function VenueSetupWizard({
                 />
               </FormField>
               <div className="space-y-2">
-                <Label>Reason</Label>
+                <Label>{t("reason")}</Label>
                 <Input
-                  placeholder="e.g. Private event"
+                  placeholder={t("reasonPlaceholder")}
                   value={blockForm.reason}
                   onChange={(e) =>
                     setBlockForm({ ...blockForm, reason: e.target.value })
@@ -994,13 +994,13 @@ export function VenueSetupWizard({
                   }
                 />
                 <Label htmlFor="fully-blocked" className="cursor-pointer">
-                  Fully blocked (closed all day)
+                  {t("fullyBlocked")}
                 </Label>
               </div>
               {!blockForm.isBlocked && (
                 <>
                   <div className="space-y-2">
-                    <Label>Custom open time</Label>
+                    <Label>{t("customOpenTime")}</Label>
                     <Input
                       type="time"
                       value={blockForm.customOpenTime}
@@ -1011,7 +1011,7 @@ export function VenueSetupWizard({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Custom close time</Label>
+                    <Label>{t("customCloseTime")}</Label>
                     <Input
                       type="time"
                       value={blockForm.customCloseTime}
@@ -1032,7 +1032,7 @@ export function VenueSetupWizard({
                 {saveBlock.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Add block
+                {t("addBlock")}
               </Button>
             </CardFooter>
           </Card>
@@ -1040,7 +1040,7 @@ export function VenueSetupWizard({
           {existing?.blocks && existing.blocks.length > 0 ? (
             <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle className="text-base">Blocked dates</CardTitle>
+                <CardTitle className="text-base">{t("blockedDates")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {existing.blocks.map((b) => (
@@ -1055,7 +1055,7 @@ export function VenueSetupWizard({
                       <Separator orientation="vertical" className="h-4" />
                       <Badge variant={b.isBlocked ? "destructive" : "secondary"}>
                         {b.isBlocked
-                          ? "Closed"
+                          ? t("closed")
                           : `${b.customOpenTime} – ${b.customCloseTime}`}
                       </Badge>
                       {b.reason && (
@@ -1072,7 +1072,7 @@ export function VenueSetupWizard({
                         queryClient.invalidateQueries({
                           queryKey: venueKeys.managedDetail(effectiveVenueId),
                         });
-                        toast.success("Block removed");
+                        toast.success(t("blockRemoved"));
                       }}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -1084,7 +1084,7 @@ export function VenueSetupWizard({
           ) : (
             <Card className="border-border bg-card">
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                No blocked dates. Add dates when your venue is unavailable.
+                {t("noBlockedDates")}
               </CardContent>
             </Card>
           )}

@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -60,6 +61,8 @@ function ticketTypesSummary(
 
 export default function ViewTicketContent() {
   const searchParams = useSearchParams()
+  const t = useTranslations('viewTicket')
+  const tEntity = useTranslations('entityStatus')
   const orderGroupId = searchParams.get('orderGroupId')
 
   const { data: order, isLoading, isError, error } = useQuery({
@@ -69,17 +72,24 @@ export default function ViewTicketContent() {
   })
 
   React.useEffect(() => {
-    if (isError) toastApiError(error, 'Could not load ticket details.')
-  }, [isError, error])
+    if (isError) toastApiError(error, t('loadError'))
+  }, [isError, error, t])
+
+  const statusLabel = (status: string) => {
+    if (status === 'pending') return tEntity('pending')
+    if (status === 'completed') return tEntity('completed')
+    if (status === 'canceled') return tEntity('canceled')
+    return status
+  }
 
   if (!orderGroupId) {
     return (
       <Card className="bg-[#121212] p-4 text-center text-white sm:p-8">
-        <p className="text-muted-foreground mb-4">No order selected.</p>
+        <p className="text-muted-foreground mb-4">{t('noOrderSelected')}</p>
         <Button asChild variant="outline">
           <Link href="/userDashboard/tickets">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to tickets
+            {t('backToTickets')}
           </Link>
         </Button>
       </Card>
@@ -90,7 +100,7 @@ export default function ViewTicketContent() {
     return (
       <Card className="flex flex-col items-center gap-4 bg-[#121212] p-4 py-16 text-white sm:p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Loading order…</p>
+        <p className="text-sm text-muted-foreground">{t('loadingOrder')}</p>
       </Card>
     )
   }
@@ -98,9 +108,9 @@ export default function ViewTicketContent() {
   if (!order) {
     return (
       <Card className="bg-[#121212] p-4 text-center text-white sm:p-8">
-        <p className="text-muted-foreground mb-4">Ticket order not found.</p>
+        <p className="text-muted-foreground mb-4">{t('orderNotFound')}</p>
         <Button asChild variant="outline">
-          <Link href="/userDashboard/tickets">Back to tickets</Link>
+          <Link href="/userDashboard/tickets">{t('backToTickets')}</Link>
         </Button>
       </Card>
     )
@@ -115,7 +125,7 @@ export default function ViewTicketContent() {
         <Button asChild variant="ghost" size="sm" className="px-0 text-muted-foreground">
           <Link href="/userDashboard/tickets">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to tickets
+            {t('backToTickets')}
           </Link>
         </Button>
       </div>
@@ -131,11 +141,11 @@ export default function ViewTicketContent() {
           />
 
           <div className="min-w-0">
-            <h3 className="text-pink-500 font-semibold">Order Details</h3>
+            <h3 className="text-pink-500 font-semibold">{t('orderDetails')}</h3>
             <h2 className="mt-2 text-xl font-bold">{order.eventName}</h2>
 
             <div className="mt-4 text-sm text-muted-foreground">
-              <p>Order Tracking Code</p>
+              <p>{t('orderTrackingCode')}</p>
               <p className="text-white">{order.orderCode}</p>
             </div>
           </div>
@@ -144,18 +154,18 @@ export default function ViewTicketContent() {
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
           <Button variant="outline" size="sm" className="w-full sm:w-auto" disabled>
             <RotateCcw className="mr-2 h-4 w-4" />
-            Refund ticket
+            {t('refundTicket')}
           </Button>
           <Button size="sm" className="w-full bg-pink-500 hover:bg-pink-600 sm:w-auto" disabled>
             <Download className="mr-2 h-4 w-4" />
-            Download ticket
+            {t('downloadTicket')}
           </Button>
         </div>
       </div>
 
       <div className="mt-8">
         <div className="flex items-center gap-1 mb-4">
-          <h4 className="text-pink-500 font-semibold">Event Details</h4>
+          <h4 className="text-pink-500 font-semibold">{t('eventDetails')}</h4>
           <Separator className="bg-zinc-800 flex-1" />
         </div>
 
@@ -163,7 +173,7 @@ export default function ViewTicketContent() {
           <div className="flex gap-3">
             <MapPin className="text-pink-500 shrink-0" />
             <div>
-              <p className="font-medium">Location</p>
+              <p className="font-medium">{t('location')}</p>
               <p className="text-muted-foreground whitespace-pre-line">
                 {formatLocation(order)}
               </p>
@@ -173,7 +183,7 @@ export default function ViewTicketContent() {
           <div className="flex gap-3">
             <Calendar className="text-pink-500 shrink-0" />
             <div>
-              <p className="font-medium">Event Date</p>
+              <p className="font-medium">{t('eventDate')}</p>
               <p className="text-muted-foreground">
                 {formatEventDateTime(order.eventStartDateTime)}
               </p>
@@ -183,7 +193,7 @@ export default function ViewTicketContent() {
           <div className="flex gap-3">
             <Ticket className="text-pink-500 shrink-0" />
             <div>
-              <p className="font-medium">Tickets</p>
+              <p className="font-medium">{t('tickets')}</p>
               <p className="text-muted-foreground">
                 {ticketTypesSummary(order.items)}
               </p>
@@ -194,25 +204,26 @@ export default function ViewTicketContent() {
 
       <div className="mt-10">
         <div className="flex items-center gap-1 mb-4">
-          <h4 className="text-pink-500 font-semibold">Payment</h4>
+          <h4 className="text-pink-500 font-semibold">{t('payment')}</h4>
           <Separator className="bg-zinc-800 flex-1" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-sm">
           <div>
-            <p className="text-muted-foreground">Ticket count</p>
+            <p className="text-muted-foreground">{t('ticketCount')}</p>
             <p className="font-medium">
-              {order.ticketCount} {order.ticketCount === 1 ? 'ticket' : 'tickets'}
+              {order.ticketCount}{' '}
+              {order.ticketCount === 1 ? t('ticketSingular') : t('ticketPlural')}
             </p>
           </div>
 
           <div>
-            <p className="text-muted-foreground">Order status</p>
-            <p className="font-medium capitalize">{order.status}</p>
+            <p className="text-muted-foreground">{t('orderStatus')}</p>
+            <p className="font-medium capitalize">{statusLabel(order.status)}</p>
           </div>
 
           <div>
-            <p className="text-muted-foreground">Total paid</p>
+            <p className="text-muted-foreground">{t('totalPaid')}</p>
             <p className="font-medium">
               <DisplayPrice amount={order.totalAmount} currency={order.currency} />
             </p>
@@ -220,24 +231,24 @@ export default function ViewTicketContent() {
 
           <div className="flex justify-start md:col-span-1 md:row-span-2 md:justify-end">
             <div className="flex h-32 w-32 items-center justify-center rounded-lg border border-pink-500/30 bg-pink-500/20 p-4 text-center text-xs text-muted-foreground">
-              QR code coming soon
+              {t('qrComingSoon')}
             </div>
           </div>
 
           <div>
-            <p className="text-muted-foreground">Order date</p>
+            <p className="text-muted-foreground">{t('orderDate')}</p>
             <p className="font-medium">
               {formatEventDateTime(order.orderDate)}
             </p>
           </div>
 
           <div>
-            <p className="text-muted-foreground">Payment method</p>
-            <p className="font-medium">Stripe</p>
+            <p className="text-muted-foreground">{t('paymentMethod')}</p>
+            <p className="font-medium">{t('stripe')}</p>
           </div>
 
           <div>
-            <p className="text-muted-foreground">Order ID</p>
+            <p className="text-muted-foreground">{t('orderId')}</p>
             <p className="font-medium break-all">{order.orderGroupId}</p>
           </div>
         </div>

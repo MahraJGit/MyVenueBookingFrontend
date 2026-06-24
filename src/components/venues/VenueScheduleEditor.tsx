@@ -1,6 +1,7 @@
 "use client";
 
 import { Copy } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -12,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DAY_NAMES } from "@/features/venues/utils";
+import { useDayNames } from "@/features/i18n/use-day-names";
 import { cn } from "@/lib/utils";
 
 export type ScheduleRow = {
@@ -28,6 +29,9 @@ type VenueScheduleEditorProps = {
 };
 
 export function VenueScheduleEditor({ schedules, onChange }: VenueScheduleEditorProps) {
+  const t = useTranslations("venueSchedule");
+  const dayNames = useDayNames();
+
   const updateRow = (idx: number, patch: Partial<ScheduleRow>) => {
     const next = [...schedules];
     next[idx] = { ...next[idx], ...patch };
@@ -55,18 +59,18 @@ export function VenueScheduleEditor({ schedules, onChange }: VenueScheduleEditor
     <div className="space-y-4">
       <div className="flex justify-end">
         <Button type="button" variant="outline" size="sm" onClick={copyMondayToWeekdays}>
-          <Copy className="mr-2 h-4 w-4" />
-          Copy Monday to weekdays
+          <Copy className="me-2 h-4 w-4" />
+          {t("copyMondayToWeekdays")}
         </Button>
       </div>
       <div className="overflow-hidden rounded-lg border border-border">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="text-muted-foreground">Day</TableHead>
-              <TableHead className="text-muted-foreground">Open</TableHead>
-              <TableHead className="text-muted-foreground">Opens</TableHead>
-              <TableHead className="text-muted-foreground">Closes</TableHead>
+              <TableHead className="text-muted-foreground">{t("day")}</TableHead>
+              <TableHead className="text-muted-foreground">{t("open")}</TableHead>
+              <TableHead className="text-muted-foreground">{t("opens")}</TableHead>
+              <TableHead className="text-muted-foreground">{t("closes")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -78,7 +82,7 @@ export function VenueScheduleEditor({ schedules, onChange }: VenueScheduleEditor
                 )}
               >
                 <TableCell className="font-medium text-foreground">
-                  {DAY_NAMES[row.dayOfWeek]}
+                  {dayNames[row.dayOfWeek]}
                 </TableCell>
                 <TableCell>
                   <Switch

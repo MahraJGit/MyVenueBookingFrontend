@@ -2,6 +2,19 @@ import type { EntityStatus, PricingModel, PublicVenue, UnavailabilityReason } fr
 import { formatMoney } from "@/features/currency/format";
 import { getPackagesFromConfig } from "@/features/venues/packages";
 
+import type { VenuePriceLabels } from "@/features/i18n/use-venue-price-labels";
+
+const FALLBACK_PRICE_LABELS: VenuePriceLabels = {
+  perDay: "per day",
+  perHour: "per hour",
+  flatRate: "flat rate",
+  from: "from",
+  perUnit: "per unit",
+  perBooking: "per booking",
+  perGuestPackage: (name) => `per guest (${name})`,
+  perGuestFromPackages: "per guest (from packages)",
+};
+
 const FALLBACK_IMAGES = [
   "/images/card-img-2.jpg",
   "/images/card-img-3.jpg",
@@ -21,32 +34,38 @@ export function formatVenuePrice(price: number, currency: string): string {
   return formatMoney(price, currency);
 }
 
-export function getVenueAmenityPriceInfo(amenity: {
-  pricingType: string;
-  isIncluded?: boolean;
-  pricingConfig?: Record<string, unknown> | null;
-}): { amount: number; suffix: string } | null {
+export function getVenueAmenityPriceInfo(
+  amenity: {
+    pricingType: string;
+    isIncluded?: boolean;
+    pricingConfig?: Record<string, unknown> | null;
+  },
+  labels: VenuePriceLabels = FALLBACK_PRICE_LABELS,
+): { amount: number; suffix: string } | null {
   if (amenity.pricingType === "INCLUDED" || amenity.isIncluded) {
     return null;
   }
   const config = amenity.pricingConfig ?? {};
   if (amenity.pricingType === "PER_UNIT" && config.unitPrice != null) {
-    return { amount: Number(config.unitPrice), suffix: "per unit" };
+    return { amount: Number(config.unitPrice), suffix: labels.perUnit };
   }
   if (amenity.pricingType === "PER_HOUR" && config.hourlyPrice != null) {
-    return { amount: Number(config.hourlyPrice), suffix: "per hour" };
+    return { amount: Number(config.hourlyPrice), suffix: labels.perHour };
   }
   if (amenity.pricingType === "FLAT_PER_EVENT" && config.flatPrice != null) {
-    return { amount: Number(config.flatPrice), suffix: "per booking" };
+    return { amount: Number(config.flatPrice), suffix: labels.perBooking };
   }
   if (amenity.pricingType === "PACKAGE_BASED") {
     const packages = getPackagesFromConfig(config);
     if (packages.length === 1) {
-      return { amount: Number(packages[0].pricePerHead), suffix: `per guest (${packages[0].name})` };
+      return {
+        amount: Number(packages[0].pricePerHead),
+        suffix: labels.perGuestPackage(packages[0].name),
+      };
     }
     if (packages.length > 1) {
       const min = Math.min(...packages.map((p) => Number(p.pricePerHead)));
-      return { amount: min, suffix: "per guest (from packages)" };
+      return { amount: min, suffix: labels.perGuestFromPackages };
     }
   }
   return null;
@@ -57,7 +76,10 @@ export function decimalToNumber(value: number | string | undefined | null): numb
   return typeof value === "number" ? value : Number(value);
 }
 
-export function getVenueDisplayPrice(venue: PublicVenue): {
+export function getVenueDisplayPrice(
+  venue: PublicVenue,
+  labels: VenuePriceLabels = FALLBACK_PRICE_LABELS,
+): {
   price: number;
   currency: string;
   label: string;
@@ -71,18 +93,18 @@ export function getVenueDisplayPrice(venue: PublicVenue): {
 
   if (pricing.modelType === "DAILY_BLOCK" && config.pricePerDay !== undefined) {
     const daily = decimalToNumber(config.pricePerDay as number);
-    return { price: daily, currency, label: "per day" };
+    return { price: daily, currency, label: labels.perDay };
   }
 
   if (pricing.modelType === "HOURLY") {
-    return { price: base, currency, label: "per hour" };
+    return { price: base, currency, label: labels.perHour };
   }
 
   if (pricing.modelType === "FLAT_RATE") {
-    return { price: base, currency, label: "flat rate" };
+    return { price: base, currency, label: labels.flatRate };
   }
 
-  return { price: base, currency, label: "from" };
+  return { price: base, currency, label: labels.from };
 }
 
 export function pricingModelLabel(model: PricingModel): string {

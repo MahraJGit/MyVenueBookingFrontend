@@ -8,6 +8,7 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { getStripe } from "@/lib/stripe";
 import { createSetupIntent } from "@/features/payments/api";
@@ -22,6 +23,9 @@ type AddCardFormProps = {
 function SetupCardForm({ onSuccess, onCancel }: AddCardFormProps) {
   const stripe = useStripe();
   const elements = useElements();
+  const t = useTranslations("addCardForm");
+  const tCommon = useTranslations("common");
+  const tUser = useTranslations("userDashboard");
   const [submitting, setSubmitting] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,11 +43,11 @@ function SetupCardForm({ onSuccess, onCancel }: AddCardFormProps) {
       });
 
       if (error) {
-        toast.error(error.message ?? "Could not save your card.");
+        toast.error(error.message ?? t("couldNotSaveCard"));
         return;
       }
 
-      toast.success("Card saved successfully.");
+      toast.success(t("cardSaved"));
       onSuccess();
     } catch (err) {
       toastApiError(err);
@@ -68,7 +72,7 @@ function SetupCardForm({ onSuccess, onCancel }: AddCardFormProps) {
             onClick={onCancel}
             disabled={submitting}
           >
-            Cancel
+            {tCommon("cancel")}
           </Button>
         ) : null}
         <Button
@@ -79,10 +83,10 @@ function SetupCardForm({ onSuccess, onCancel }: AddCardFormProps) {
           {submitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving…
+              {t("saving")}
             </>
           ) : (
-            "Add card"
+            tUser("addCard")
           )}
         </Button>
       </div>
@@ -91,6 +95,7 @@ function SetupCardForm({ onSuccess, onCancel }: AddCardFormProps) {
 }
 
 export function AddCardForm(props: AddCardFormProps) {
+  const t = useTranslations("addCardForm");
   const [clientSecret, setClientSecret] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -109,7 +114,7 @@ export function AddCardForm(props: AddCardFormProps) {
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof Error ? err.message : "Failed to initialize card form.",
+            err instanceof Error ? err.message : t("initFailed"),
           );
         }
       } finally {
@@ -123,13 +128,13 @@ export function AddCardForm(props: AddCardFormProps) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8 text-muted-foreground">
         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-        Preparing secure form…
+        {t("preparingForm")}
       </div>
     );
   }
@@ -137,7 +142,7 @@ export function AddCardForm(props: AddCardFormProps) {
   if (error || !clientSecret) {
     return (
       <p className="text-sm text-destructive">
-        {error ?? "Could not load card form. Check Stripe configuration."}
+        {error ?? t("loadFailed")}
       </p>
     );
   }

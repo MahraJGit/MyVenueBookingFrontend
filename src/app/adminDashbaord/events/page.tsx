@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,10 @@ const emptyForm: FormState = {
 };
 
 export default function EventCategoriesPage() {
+  const t = useTranslations("adminEventCategories");
+  const tCommon = useTranslations("common");
+  const tStatus = useTranslations("entityStatus");
+  const tAdmin = useTranslations("adminDashboard");
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -98,11 +103,11 @@ export default function EventCategoriesPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event-categories"] });
-      toast.success("Category created");
+      toast.success(t("categoryCreated"));
       setCreateOpen(false);
       setForm(emptyForm);
     },
-    onError: (err) => toastApiError(err, "Could not create category."),
+    onError: (err) => toastApiError(err, t("couldNotCreate")),
   });
 
   const updateMutation = useMutation({
@@ -116,27 +121,27 @@ export default function EventCategoriesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event-categories"] });
-      toast.success("Category updated");
+      toast.success(t("categoryUpdated"));
       setEditTarget(null);
       setForm(emptyForm);
     },
-    onError: (err) => toastApiError(err, "Could not update category."),
+    onError: (err) => toastApiError(err, t("couldNotUpdate")),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteEventCategory(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event-categories"] });
-      toast.success("Category deleted");
+      toast.success(t("categoryDeleted"));
       setDeleteTarget(null);
     },
-    onError: (err) => toastApiError(err, "Could not delete category."),
+    onError: (err) => toastApiError(err, t("couldNotDelete")),
   });
 
   const errorMessage = useMemo(() => {
     if (!isError || !error) return null;
-    return error instanceof Error ? error.message : "Failed to load categories.";
-  }, [isError, error]);
+    return error instanceof Error ? error.message : t("failedLoad");
+  }, [isError, error, t]);
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -159,36 +164,34 @@ export default function EventCategoriesPage() {
     <div className="w-full max-w-full space-y-6 overflow-x-hidden rounded-2xl bg-[#0e0e0e] p-6 text-white">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-primary">Event categories</h2>
-          <p className="text-sm text-gray-300">
-            Create and manage categories used when listing and filtering events.
-          </p>
+          <h2 className="text-xl font-bold text-primary">{t("title")}</h2>
+          <p className="text-sm text-gray-300">{t("description")}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {isFetching && !isLoading ? (
             <span className="flex items-center gap-1 text-xs text-zinc-500">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Refreshing
+              {tCommon("refreshing")}
             </span>
           ) : null}
           <Button type="button" onClick={openCreate} className="gap-2">
             <Plus className="h-4 w-4" />
-            Add category
+            {t("addCategory")}
           </Button>
         </div>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="category-search" className="text-zinc-300">
-          Search
+          {tCommon("search")}
         </Label>
         <div className="flex flex-row items-end gap-2">
           <Input
             id="category-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or description"
+            placeholder={t("searchPlaceholder")}
             className="border-zinc-700 bg-[#111111] text-white"
             autoComplete="off"
           />
@@ -199,11 +202,11 @@ export default function EventCategoriesPage() {
             onClick={() => setSearch("")}
             disabled={!search}
           >
-            Clear
+            {tCommon("clear")}
           </Button>
         </div>
         <p className="text-xs text-zinc-500">
-          Results update as you type (short delay to limit requests).
+          {t("searchHint")}
         </p>
       </div>
 
@@ -221,7 +224,7 @@ export default function EventCategoriesPage() {
             className="border-red-400/50 text-red-100 hover:bg-red-500/20"
             onClick={() => void refetch()}
           >
-            Retry
+            {tCommon("retry")}
           </Button>
         </div>
       ) : null}
@@ -230,11 +233,11 @@ export default function EventCategoriesPage() {
         <Table className="min-w-[720px]">
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground">Name</TableHead>
-              <TableHead className="text-muted-foreground">Description</TableHead>
-              <TableHead className="text-muted-foreground">Status</TableHead>
-              <TableHead className="text-muted-foreground">Created</TableHead>
-              <TableHead className="text-right text-muted-foreground">Actions</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("name")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("description")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("status")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("created")}</TableHead>
+              <TableHead className="text-right text-muted-foreground">{tCommon("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -257,7 +260,7 @@ export default function EventCategoriesPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={row.isActive ? "default" : "secondary"}>
-                        {row.isActive ? "Active" : "Inactive"}
+                        {row.isActive ? tStatus("active") : tStatus("inactive")}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-zinc-400">
@@ -272,7 +275,7 @@ export default function EventCategoriesPage() {
                           onClick={() => setViewTarget(row)}
                         >
                           <Eye className="h-4 w-4" />
-                          View
+                          {tCommon("view")}
                         </Button>
                         <Button
                           size="sm"
@@ -281,7 +284,7 @@ export default function EventCategoriesPage() {
                           onClick={() => openEdit(row)}
                         >
                           <Pencil className="h-4 w-4" />
-                          Edit
+                          {tCommon("edit")}
                         </Button>
                         <Button
                           size="sm"
@@ -289,7 +292,7 @@ export default function EventCategoriesPage() {
                           onClick={() => setDeleteTarget(row)}
                         >
                           <Trash2 className="h-4 w-4" />
-                          Delete
+                          {tCommon("delete")}
                         </Button>
                       </div>
                     </TableCell>
@@ -302,7 +305,7 @@ export default function EventCategoriesPage() {
                       colSpan={5}
                       className="py-12 text-center text-gray-400"
                     >
-                      No categories found. Add one to get started.
+                      {t("noCategories")}
                     </TableCell>
                   </TableRow>
                 ) : null}
@@ -323,16 +326,13 @@ export default function EventCategoriesPage() {
       >
         <DialogContent className="border-zinc-700 bg-[#111111] text-white">
           <DialogHeader>
-            <DialogTitle>Add category</DialogTitle>
-            <DialogDescription>
-              Categories appear in event filters and can be assigned when creating
-              events.
-            </DialogDescription>
+            <DialogTitle>{t("addTitle")}</DialogTitle>
+            <DialogDescription>{t("addDesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="create-name">Name</Label>
+              <Label htmlFor="create-name">{tCommon("name")}</Label>
               <Input
                 id="create-name"
                 value={form.name}
@@ -344,11 +344,11 @@ export default function EventCategoriesPage() {
                 maxLength={80}
               />
               <p className="text-xs text-zinc-500">
-                2–80 characters. A URL-friendly slug is generated automatically.
+                {t("nameHint")}
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-desc">Description (optional)</Label>
+              <Label htmlFor="create-desc">{t("descriptionOptional")}</Label>
               <Textarea
                 id="create-desc"
                 value={form.description}
@@ -362,11 +362,8 @@ export default function EventCategoriesPage() {
             </div>
             <div className="flex items-center justify-between gap-3 rounded-lg border border-zinc-700 p-3">
               <div>
-                <p className="text-sm font-medium">Active</p>
-                <p className="text-xs text-zinc-500">
-                  Inactive categories stay in the database but can be hidden in
-                  UIs.
-                </p>
+                <p className="text-sm font-medium">{t("activeLabel")}</p>
+                <p className="text-xs text-zinc-500">{t("activeHint")}</p>
               </div>
               <Switch
                 checked={form.isActive}
@@ -388,7 +385,7 @@ export default function EventCategoriesPage() {
               }}
               disabled={createMutation.isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="button"
@@ -398,10 +395,10 @@ export default function EventCategoriesPage() {
               {createMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving
+                  {tAdmin("saving")}
                 </>
               ) : (
-                "Create"
+                tCommon("create")
               )}
             </Button>
           </DialogFooter>
@@ -419,16 +416,13 @@ export default function EventCategoriesPage() {
       >
         <DialogContent className="border-zinc-700 bg-[#111111] text-white">
           <DialogHeader>
-            <DialogTitle>Edit category</DialogTitle>
-            <DialogDescription>
-              If you change the name, the system updates the internal identifier
-              used for URLs when needed.
-            </DialogDescription>
+            <DialogTitle>{t("editTitle")}</DialogTitle>
+            <DialogDescription>{t("editDesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Name</Label>
+              <Label htmlFor="edit-name">{tCommon("name")}</Label>
               <Input
                 id="edit-name"
                 value={form.name}
@@ -441,7 +435,7 @@ export default function EventCategoriesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-desc">Description</Label>
+              <Label htmlFor="edit-desc">{tCommon("description")}</Label>
               <Textarea
                 id="edit-desc"
                 value={form.description}
@@ -455,7 +449,7 @@ export default function EventCategoriesPage() {
             </div>
             <div className="flex items-center justify-between gap-3 rounded-lg border border-zinc-700 p-3">
               <div>
-                <p className="text-sm font-medium">Active</p>
+                <p className="text-sm font-medium">{t("activeLabel")}</p>
               </div>
               <Switch
                 checked={form.isActive}
@@ -477,7 +471,7 @@ export default function EventCategoriesPage() {
               }}
               disabled={updateMutation.isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="button"
@@ -487,10 +481,10 @@ export default function EventCategoriesPage() {
               {updateMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving
+                  {tAdmin("saving")}
                 </>
               ) : (
-                "Save changes"
+                t("saveChanges")
               )}
             </Button>
           </DialogFooter>
@@ -503,23 +497,23 @@ export default function EventCategoriesPage() {
       >
         <DialogContent className="border-zinc-700 bg-[#111111] text-white">
           <DialogHeader>
-            <DialogTitle>Category details</DialogTitle>
-            <DialogDescription>Read-only view of this category.</DialogDescription>
+            <DialogTitle>{t("detailsTitle")}</DialogTitle>
+            <DialogDescription>{t("detailsDesc")}</DialogDescription>
           </DialogHeader>
 
           {viewTarget ? (
             <div className="grid gap-3 text-sm">
-              <Detail label="Name" value={viewTarget.name} />
+              <Detail label={tCommon("name")} value={viewTarget.name} />
               <Detail
-                label="Description"
+                label={tCommon("description")}
                 value={viewTarget.description?.trim() ? viewTarget.description : "—"}
               />
               <Detail
-                label="Status"
-                value={viewTarget.isActive ? "Active" : "Inactive"}
+                label={tCommon("status")}
+                value={viewTarget.isActive ? tStatus("active") : tStatus("inactive")}
               />
-              <Detail label="Created" value={formatDate(viewTarget.createdAt)} />
-              <Detail label="Updated" value={formatDate(viewTarget.updatedAt)} />
+              <Detail label={tCommon("created")} value={formatDate(viewTarget.createdAt)} />
+              <Detail label={tCommon("updated")} value={formatDate(viewTarget.updatedAt)} />
             </div>
           ) : null}
         </DialogContent>
@@ -531,23 +525,20 @@ export default function EventCategoriesPage() {
       >
         <DialogContent className="border-zinc-700 bg-[#111111] text-white">
           <DialogHeader>
-            <DialogTitle>Delete category?</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone. You can only delete a category if no
-              active events are still using it.
-            </DialogDescription>
+            <DialogTitle>{t("deleteTitle")}</DialogTitle>
+            <DialogDescription>{t("deleteDesc")}</DialogDescription>
           </DialogHeader>
 
           {deleteTarget ? (
             <div className="rounded-lg border border-zinc-700 bg-zinc-900/40 p-3 text-sm">
               <p>
-                <span className="text-zinc-400">Name: </span>
+                <span className="text-zinc-400">{tAdmin("nameLabel")}</span>
                 <span className="font-semibold text-white">
                   {deleteTarget.name}
                 </span>
               </p>
               <p className="mt-2 text-zinc-400">
-                Are you sure you want to permanently delete this category?
+                {t("deleteConfirm")}
               </p>
             </div>
           ) : null}
@@ -559,7 +550,7 @@ export default function EventCategoriesPage() {
               onClick={() => setDeleteTarget(null)}
               disabled={deleteMutation.isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="button"
@@ -573,10 +564,10 @@ export default function EventCategoriesPage() {
               {deleteMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting
+                  {tAdmin("deleting")}
                 </>
               ) : (
-                "Yes, delete"
+                t("yesDelete")
               )}
             </Button>
           </DialogFooter>

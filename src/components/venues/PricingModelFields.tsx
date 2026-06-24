@@ -1,6 +1,7 @@
 "use client";
 
 import type { PricingModel, Currency } from "@/features/venues/types";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
@@ -102,6 +103,7 @@ export function normalizePricingForSave(pricing: PricingFormState): PricingFormS
 }
 
 export function PricingModelFields({ value, onChange, showErrors }: PricingModelFieldsProps) {
+  const t = useTranslations("pricingModelFields");
   const set = (patch: Partial<PricingFormState>) => onChange({ ...value, ...patch });
 
   const setConfig = (key: string, val: unknown) =>
@@ -113,7 +115,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
   const selectTriggerClass = cn(inputClass, "w-full");
 
   const basePriceError =
-    showErrors && value.basePrice <= 0 ? "Price must be greater than 0" : null;
+    showErrors && value.basePrice <= 0 ? t("priceMustBePositive") : null;
 
   const activeModel: ActivePricingModel =
     value.modelType === "FLAT_RATE" ? "HOURLY" : value.modelType;
@@ -132,27 +134,25 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Choose one pricing model for this venue. Only a single model can be active at a time.
-      </p>
+      <p className="text-sm text-muted-foreground">{t("intro")}</p>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="w-full space-y-2 sm:col-span-2">
-          <Label>Pricing model</Label>
+          <Label>{t("pricingModel")}</Label>
           <Select value={activeModel} onValueChange={(v) => switchModel(v as ActivePricingModel)}>
             <SelectTrigger className={selectTriggerClass}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="HOURLY">Hourly</SelectItem>
-              <SelectItem value="DAILY_BLOCK">Daily</SelectItem>
-              <SelectItem value="NAMED_SLOTS">Named slots</SelectItem>
+              <SelectItem value="HOURLY">{t("hourly")}</SelectItem>
+              <SelectItem value="DAILY_BLOCK">{t("daily")}</SelectItem>
+              <SelectItem value="NAMED_SLOTS">{t("namedSlots")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="w-full space-y-2">
-          <Label>Currency</Label>
+          <Label>{t("currency")}</Label>
           <Select
             value={value.currency}
             onValueChange={(v) => set({ currency: v as Currency })}
@@ -171,7 +171,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
         </div>
 
         <FormField
-          label={value.modelType === "DAILY_BLOCK" ? "Price per day" : "Base price"}
+          label={value.modelType === "DAILY_BLOCK" ? t("pricePerDay") : t("basePrice")}
           required
           error={basePriceError}
         >
@@ -192,7 +192,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
         </FormField>
 
         <div className="space-y-2 sm:col-span-2">
-          <Label>Tax rate (%)</Label>
+          <Label>{t("taxRate")}</Label>
           <NumberInput
             min={0}
             max={100}
@@ -207,13 +207,13 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
       {value.modelType === "HOURLY" && (
         <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
           <div className="rounded-md border border-border bg-background px-3 py-2 text-sm">
-            <span className="text-muted-foreground">Slot duration: </span>
-            <span className="font-medium text-foreground">60 minutes</span>
-            <span className="text-muted-foreground"> (fixed)</span>
+            <span className="text-muted-foreground">{t("slotDuration")} </span>
+            <span className="font-medium text-foreground">{t("slotDurationMinutes")}</span>
+            <span className="text-muted-foreground"> {t("fixed")}</span>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="buffer-minutes">Buffer time (minutes)</Label>
+            <Label htmlFor="buffer-minutes">{t("bufferTime")}</Label>
             <NumberInput
               id="buffer-minutes"
               min={0}
@@ -227,9 +227,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
               onValueChange={(minutes) => setConfig("bufferMinutes", minutes ?? 0)}
               className={inputClass}
             />
-            <p className="text-xs text-muted-foreground">
-              Time required to prepare the venue before the next booking slot begins.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("bufferHint")}</p>
           </div>
         </div>
       )}
@@ -237,13 +235,12 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
       {value.modelType === "DAILY_BLOCK" && (
         <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
           <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-foreground">
-            A daily booking blocks the <strong>entire venue</strong> for the selected date and
-            time range. No other bookings can overlap that period.
+            {t("dailyBlockInfo")}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="day-start">Daily booking starts</Label>
+              <Label htmlFor="day-start">{t("dailyBookingStarts")}</Label>
               <Input
                 id="day-start"
                 type="time"
@@ -253,7 +250,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="day-end">Daily booking ends</Label>
+              <Label htmlFor="day-end">{t("dailyBookingEnds")}</Label>
               <Input
                 id="day-end"
                 type="time"
@@ -263,7 +260,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="min-days">Minimum days per booking</Label>
+              <Label htmlFor="min-days">{t("minDaysPerBooking")}</Label>
               <NumberInput
                 id="min-days"
                 min={1}
@@ -285,7 +282,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
       {value.modelType === "NAMED_SLOTS" && (
         <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Label>Named slots</Label>
+            <Label>{t("namedSlotsLabel")}</Label>
             <Button
               type="button"
               size="sm"
@@ -295,7 +292,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
                 setConfig("slots", [
                   ...slots,
                   {
-                    name: "Slot",
+                    name: t("defaultSlotName"),
                     startTime: "09:00",
                     endTime: "12:00",
                     price: value.basePrice,
@@ -303,7 +300,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
                 ])
               }
             >
-              <Plus className="mr-1 h-4 w-4" /> Add slot
+              <Plus className="mr-1 h-4 w-4" /> {t("addSlot")}
             </Button>
           </div>
           {slots.map((slot, idx) => (
@@ -312,7 +309,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
               className="grid gap-2 rounded-lg border border-border bg-background p-3 sm:grid-cols-5"
             >
               <Input
-                placeholder="Name"
+                placeholder={t("namePlaceholder")}
                 value={String(slot.name ?? "")}
                 onChange={(e) => {
                   const next = [...slots];
@@ -344,7 +341,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
               <div className="flex gap-2">
                 <NumberInput
                   min={0}
-                  placeholder="Price"
+                  placeholder={t("pricePlaceholder")}
                   value={Number(slot.price) || 0}
                   onValueChange={(price) => {
                     const next = [...slots];
@@ -369,8 +366,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
 
       {value.modelType === "FLAT_RATE" && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground">
-          Flat rate is no longer supported. Please select Hourly, Daily, or Named slots above and
-          save.
+          {t("flatRateDeprecated")}
         </div>
       )}
     </div>

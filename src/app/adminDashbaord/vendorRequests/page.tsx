@@ -3,6 +3,7 @@
 import { useMemo, useState, useCallback } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ExternalLink, Eye, Loader2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -37,7 +38,7 @@ import {
   type VendorVerificationStatus,
 } from "@/features/vendor/api"
 import { getPresignedViewUrl } from "@/features/uploads/api"
-import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton"
+import { TableSkeleton } from "@/components/ui/table-skeleton"
 import { TableShell } from "@/components/ui/table-shell"
 import { toastApiError } from "@/lib/toasts"
 
@@ -55,18 +56,23 @@ function formatDate(dateString: string) {
   return d.toLocaleDateString()
 }
 
-function statusLabel(status: VendorVerificationStatus) {
-  if (status === "APPROVED") return "Approved"
-  if (status === "REJECTED") return "Rejected"
-  return "Pending"
-}
-
 export default function VendorRequests() {
+  const t = useTranslations("adminVendorRequests")
+  const tCommon = useTranslations("common")
+  const tStatus = useTranslations("entityStatus")
+  const tAdmin = useTranslations("adminDashboard")
+  const tForms = useTranslations("forms")
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL")
   const [activeDetails, setActiveDetails] = useState<AdminVendorProfile | null>(null)
   const [rejectTarget, setRejectTarget] = useState<AdminVendorProfile | null>(null)
   const [rejectReason, setRejectReason] = useState("")
+
+  const statusLabel = (status: VendorVerificationStatus) => {
+    if (status === "APPROVED") return tStatus("approved")
+    if (status === "REJECTED") return tStatus("rejected")
+    return tStatus("pending")
+  }
 
   const {
     data: requests = [],
@@ -91,14 +97,14 @@ export default function VendorRequests() {
       setActiveDetails((prev) => (prev?.id === result.id ? result : prev))
       toast.success(
         result.verificationStatus === "APPROVED"
-          ? "Vendor approved"
+          ? t("vendorApproved")
           : result.verificationStatus === "REJECTED"
-            ? "Vendor rejected"
-            : "Status updated",
+            ? t("vendorRejected")
+            : t("statusUpdated"),
       )
     },
     onError: (err) => {
-      toastApiError(err, "Could not update vendor status.")
+      toastApiError(err, t("couldNotUpdate"))
     },
   })
 
@@ -108,8 +114,8 @@ export default function VendorRequests() {
 
   const errorMessage = useMemo(() => {
     if (!isError || !error) return null
-    return error instanceof Error ? error.message : "Failed to load vendor requests."
-  }, [isError, error])
+    return error instanceof Error ? error.message : t("failedLoad")
+  }, [isError, error, t])
 
   const handleRejectSubmit = () => {
     if (!rejectTarget || !rejectReason.trim()) return
@@ -132,17 +138,15 @@ export default function VendorRequests() {
     <div className="w-full max-w-full space-y-6 overflow-x-hidden rounded-2xl bg-[#0e0e0e] p-6 text-white">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-primary">Vendor Requests</h2>
-          <p className="text-sm text-gray-300">
-            Review all vendor onboarding requests and manage approval status.
-          </p>
+          <h2 className="text-xl font-bold text-primary">{t("title")}</h2>
+          <p className="text-sm text-gray-300">{t("description")}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {isFetching && !isLoading ? (
             <span className="flex items-center gap-1 text-xs text-zinc-500">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Refreshing
+              {tCommon("refreshing")}
             </span>
           ) : null}
           <Button
@@ -150,28 +154,28 @@ export default function VendorRequests() {
             onClick={() => setStatusFilter("ALL")}
             disabled={isLoading}
           >
-            All
+            {tCommon("all")}
           </Button>
           <Button
             variant={statusFilter === "PENDING" ? "default" : "outline"}
             onClick={() => setStatusFilter("PENDING")}
             disabled={isLoading}
           >
-            Pending
+            {tStatus("pending")}
           </Button>
           <Button
             variant={statusFilter === "APPROVED" ? "default" : "outline"}
             onClick={() => setStatusFilter("APPROVED")}
             disabled={isLoading}
           >
-            Approved
+            {tStatus("approved")}
           </Button>
           <Button
             variant={statusFilter === "REJECTED" ? "default" : "outline"}
             onClick={() => setStatusFilter("REJECTED")}
             disabled={isLoading}
           >
-            Rejected
+            {tStatus("rejected")}
           </Button>
         </div>
       </div>
@@ -189,7 +193,7 @@ export default function VendorRequests() {
             className="border-red-400/50 text-red-100 hover:bg-red-500/20"
             onClick={() => void refetch()}
           >
-            Retry
+            {tCommon("retry")}
           </Button>
         </div>
       ) : null}
@@ -198,14 +202,14 @@ export default function VendorRequests() {
         <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground">Vendor</TableHead>
-              <TableHead className="text-muted-foreground">Business Type</TableHead>
-              <TableHead className="text-muted-foreground">Owner</TableHead>
-              <TableHead className="text-muted-foreground">Email</TableHead>
-              <TableHead className="text-muted-foreground">Phone</TableHead>
-              <TableHead className="text-muted-foreground">Status</TableHead>
-              <TableHead className="text-muted-foreground">Submitted</TableHead>
-              <TableHead className="text-right text-muted-foreground">Actions</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("vendor")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("businessType")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("owner")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("email")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("phone")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("status")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("submitted")}</TableHead>
+              <TableHead className="text-right text-muted-foreground">{tCommon("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -242,7 +246,7 @@ export default function VendorRequests() {
                           onClick={() => setActiveDetails(request)}
                         >
                           <Eye className="h-4 w-4" />
-                          View
+                          {tCommon("view")}
                         </Button>
 
                         <Select
@@ -268,13 +272,13 @@ export default function VendorRequests() {
                               {pendingRowId === request.id ? (
                                 <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
                               ) : null}
-                              <SelectValue placeholder="Set status" />
+                              <SelectValue placeholder={t("setStatus")} />
                             </span>
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="PENDING">Pending</SelectItem>
-                            <SelectItem value="APPROVED">Approve</SelectItem>
-                            <SelectItem value="REJECTED">Reject</SelectItem>
+                            <SelectItem value="PENDING">{tStatus("pending")}</SelectItem>
+                            <SelectItem value="APPROVED">{tAdmin("approve")}</SelectItem>
+                            <SelectItem value="REJECTED">{tAdmin("reject")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -288,7 +292,7 @@ export default function VendorRequests() {
                       colSpan={8}
                       className="py-12 text-center text-gray-400"
                     >
-                      No vendor requests found for this filter.
+                      {t("noRequests")}
                     </TableCell>
                   </TableRow>
                 ) : null}
@@ -304,62 +308,62 @@ export default function VendorRequests() {
       >
         <DialogContent className="max-h-[85vh] overflow-y-auto border-zinc-700 bg-[#111111] text-white">
           <DialogHeader>
-            <DialogTitle>Vendor Request Details</DialogTitle>
-            <DialogDescription>
-              Full registration data submitted by the vendor.
-            </DialogDescription>
+            <DialogTitle>{t("detailsTitle")}</DialogTitle>
+            <DialogDescription>{t("detailsDesc")}</DialogDescription>
           </DialogHeader>
 
           {activeDetails ? (
             <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-              <DetailRow label="Vendor Name" value={activeDetails.vendorName} />
-              <DetailRow label="Business Type" value={activeDetails.businessType} />
-              <DetailRow label="Owner Name" value={activeDetails.ownerName} />
-              <DetailRow label="Email" value={activeDetails.email} />
-              <DetailRow label="Phone" value={activeDetails.phone} />
-              <DetailRow label="Address" value={activeDetails.address} />
-              <DetailRow label="EID Number" value={activeDetails.eidNumber} />
-              <DetailRow label="EID Expiry" value={formatDate(activeDetails.eidExpiry)} />
-              <DetailRow label="Passport Number" value={activeDetails.passportNumber} />
+              <DetailRow label={t("vendorName")} value={activeDetails.vendorName} />
+              <DetailRow label={tCommon("businessType")} value={activeDetails.businessType} />
+              <DetailRow label={t("ownerName")} value={activeDetails.ownerName} />
+              <DetailRow label={tCommon("email")} value={activeDetails.email} />
+              <DetailRow label={tCommon("phone")} value={activeDetails.phone} />
+              <DetailRow label={tForms("address")} value={activeDetails.address} />
+              <DetailRow label={t("eidNumber")} value={activeDetails.eidNumber} />
+              <DetailRow label={t("eidExpiry")} value={formatDate(activeDetails.eidExpiry)} />
+              <DetailRow label={t("passportNumber")} value={activeDetails.passportNumber} />
               <DetailRow
-                label="Passport Expiry"
+                label={t("passportExpiry")}
                 value={formatDate(activeDetails.passportExpiry)}
               />
-              <DetailRow label="Legal Entity" value={activeDetails.legalEntityName} />
+              <DetailRow label={t("legalEntity")} value={activeDetails.legalEntityName} />
               <DetailRow
-                label="Incorporation Date"
+                label={t("incorporationDate")}
                 value={formatDate(activeDetails.incorporationDate)}
               />
-              <DetailRow label="Trade License No." value={activeDetails.tradeLicenseNumber} />
+              <DetailRow label={t("tradeLicenseNo")} value={activeDetails.tradeLicenseNumber} />
               <DetailRow
-                label="Trade License Expiry"
+                label={t("tradeLicenseExpiry")}
                 value={formatDate(activeDetails.tradeLicenseExpiry)}
               />
-              <DetailRow label="Tax ID" value={activeDetails.taxId} />
-              <DetailRow label="Payment Terms" value={activeDetails.paymentTerms} />
+              <DetailRow label={t("taxId")} value={activeDetails.taxId} />
+              <DetailRow label={t("paymentTerms")} value={activeDetails.paymentTerms} />
               <DetailRow
-                label="Status"
+                label={tCommon("status")}
                 value={statusLabel(activeDetails.verificationStatus)}
               />
-              <DetailRow label="Submitted At" value={formatDate(activeDetails.createdAt)} />
+              <DetailRow label={t("submittedAt")} value={formatDate(activeDetails.createdAt)} />
 
               {activeDetails.rejectedReason ? (
                 <div className="md:col-span-2 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-red-200">
-                  <p className="font-semibold">Rejection Reason</p>
+                  <p className="font-semibold">{t("rejectionReason")}</p>
                   <p className="mt-1">{activeDetails.rejectedReason}</p>
                 </div>
               ) : null}
 
               <div className="md:col-span-2 space-y-2 rounded-md border border-zinc-700 p-3">
-                <p className="font-semibold">Uploaded Files</p>
-                <FileLink label="EID Copy" url={activeDetails.eidCopyUrl} />
-                <FileLink label="Passport Copy" url={activeDetails.passportCopyUrl} />
-                <FileLink label="Trade License Copy" url={activeDetails.tradeLicenseCopyUrl} />
+                <p className="font-semibold">{t("uploadedFiles")}</p>
+                <FileLink label={t("eidCopy")} url={activeDetails.eidCopyUrl} notProvided={tCommon("notProvided")} openError={t("couldNotOpenDoc")} />
+                <FileLink label={t("passportCopy")} url={activeDetails.passportCopyUrl} notProvided={tCommon("notProvided")} openError={t("couldNotOpenDoc")} />
+                <FileLink label={t("tradeLicenseCopy")} url={activeDetails.tradeLicenseCopyUrl} notProvided={tCommon("notProvided")} openError={t("couldNotOpenDoc")} />
                 {activeDetails.verificationDocuments.map((fileUrl, index) => (
                   <FileLink
                     key={`${fileUrl}-${index}`}
-                    label={`Verification Document ${index + 1}`}
+                    label={t("verificationDocument", { n: index + 1 })}
                     url={fileUrl}
+                    notProvided={tCommon("notProvided")}
+                    openError={t("couldNotOpenDoc")}
                   />
                 ))}
               </div>
@@ -379,20 +383,17 @@ export default function VendorRequests() {
       >
         <DialogContent className="border-zinc-700 bg-[#111111] text-white">
           <DialogHeader>
-            <DialogTitle>Reject Vendor Request</DialogTitle>
-            <DialogDescription>
-              Enter the rejection reason. This is stored with the application and can be
-              shown to the applicant.
-            </DialogDescription>
+            <DialogTitle>{t("rejectTitle")}</DialogTitle>
+            <DialogDescription>{t("rejectDesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
             <p className="text-sm text-gray-300">
-              Vendor:{" "}
+              {t("vendorLabel")}{" "}
               <span className="font-semibold text-white">{rejectTarget?.vendorName}</span>
             </p>
             <Textarea
-              placeholder="Enter rejection reason..."
+              placeholder={t("rejectPlaceholder")}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               className="min-h-28 border-zinc-700"
@@ -409,7 +410,7 @@ export default function VendorRequests() {
               }}
               disabled={updateMutation.isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -419,10 +420,10 @@ export default function VendorRequests() {
               {updateMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting
+                  {tCommon("submitting")}
                 </>
               ) : (
-                "Confirm Reject"
+                t("confirmReject")
               )}
             </Button>
           </DialogFooter>
@@ -441,7 +442,17 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function FileLink({ label, url }: { label: string; url: string }) {
+function FileLink({
+  label,
+  url,
+  notProvided,
+  openError,
+}: {
+  label: string
+  url: string
+  notProvided: string
+  openError: string
+}) {
   const [loading, setLoading] = useState(false)
 
   const openSecure = useCallback(async () => {
@@ -450,16 +461,16 @@ function FileLink({ label, url }: { label: string; url: string }) {
       const viewUrl = await getPresignedViewUrl(url)
       window.open(viewUrl, "_blank", "noopener,noreferrer")
     } catch (err) {
-      toastApiError(err, "Could not open document.")
+      toastApiError(err, openError)
     } finally {
       setLoading(false)
     }
-  }, [url])
+  }, [url, openError])
 
   if (!url?.trim()) {
     return (
       <p className="text-sm text-zinc-500">
-        {label}: <span className="text-zinc-600">Not provided</span>
+        {label}: <span className="text-zinc-600">{notProvided}</span>
       </p>
     )
   }

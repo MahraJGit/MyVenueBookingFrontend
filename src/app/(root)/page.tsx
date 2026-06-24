@@ -37,8 +37,8 @@ const Home = () => {
                     />
                   </div>
                   <div className="sm:w-[50%] w-full self-center text-center px-8">
-                    <h3>Refundable Tickets</h3>
-                    <p>You can pay a ticket in 2 portions throughout a fixed period of time.Start invoicing for free.</p>
+                    <h3>{t("refundableTickets")}</h3>
+                    <p>{t("trustFlexibleRefundsDesc")}</p>
                   </div>
                 </div>
                 <div className="card flex sm:flex-row sm:gap-0 gap-16 flex-col-reverse rounded-2xl h-[50%] sm:py-4 py-12">
@@ -52,8 +52,8 @@ const Home = () => {
                     />
                   </div>
                   <div className="sm:w-[50%] w-full self-center text-center px-8">
-                    <h3>Refundable Tickets</h3>
-                    <p>You can pay a ticket in 2 portions throughout a fixed period of time.Start invoicing for free.</p>
+                    <h3>{t("smartDeals")}</h3>
+                    <p>{t("trustSmartDealsDesc")}</p>
                   </div>
                 </div>
               </div>
@@ -62,8 +62,8 @@ const Home = () => {
             <div className="md:w-[40%] w-full">
               <div className="card py-8 px-12 flex flex-col gap-16 rounded-2xl items-center">
                 <div className="flex flex-col gap-2 text-center">
-                  <h3>Book Anytime</h3>
-                  <p>You can pay a ticket in 2 portions throughout a fixed period of time.Start invoicing for free.</p>
+                  <h3>{t("whyBookAnytimeTitle")}</h3>
+                  <p>{t("whyBookAnytimeDesc")}</p>
                 </div>
                 <Image
                   src="/images/service-24.png"
@@ -96,22 +96,21 @@ const Home = () => {
                       className="testimonial min-w-[280px] max-w-[300px] rounded-2xl py-3 px-4 bg-[#1B1B1B]"
                     >
                       <p className="text-xs!">
-                        Vestibulum eu quam nec neque pellentesque efficitur id eget
-                        nisl. Proin porta est convallis lacus bl
+                        {t("testimonialQuote")}
                       </p>
                       <div className="profile flex gap-2 mt-4">
                         <Image
                           src="/images/profile.png"
-                          alt="user image"
+                          alt={t("userImageAlt")}
                           width={32}
                           height={32}
                           className="rounded-[50%]"
                         />
                         <div className="name">
-                          <h5>Jane Cooper</h5>
+                          <h5>{t("sampleUserName")}</h5>
                           <Image
                             src="/images/stars.png"
-                            alt="rating stars"
+                            alt={t("ratingStarsAlt")}
                             width={60}
                             height={12}
                           />
@@ -134,22 +133,21 @@ const Home = () => {
                       className="testimonial min-w-[280px] max-w-[300px] rounded-2xl py-3 px-4 bg-[#1B1B1B]"
                     >
                       <p className="text-xs!">
-                        Vestibulum eu quam nec neque pellentesque efficitur id eget
-                        nisl. Proin porta est convallis lacus bl
+                        {t("testimonialQuote")}
                       </p>
                       <div className="profile flex gap-2 mt-4">
                         <Image
                           src="/images/profile.png"
-                          alt="user image"
+                          alt={t("userImageAlt")}
                           width={32}
                           height={32}
                           className="rounded-[50%]"
                         />
                         <div className="name">
-                          <h5>Jane Cooper</h5>
+                          <h5>{t("sampleUserName")}</h5>
                           <Image
                             src="/images/stars.png"
-                            alt="rating stars"
+                            alt={t("ratingStarsAlt")}
                             width={60}
                             height={12}
                           />

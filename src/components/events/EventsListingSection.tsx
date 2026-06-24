@@ -24,18 +24,20 @@ import {
   ALL_EVENTS_CATEGORY,
   categoryQueryValue,
 } from "@/features/events/utils";
+import {
+  useEventSortOptions,
+  useListingLabels,
+} from "@/features/i18n/use-listing-filters";
+import "@/styles/event-list.css";
 
 const PAGE_SIZE = 8;
 
-const SORT_OPTIONS = [
-  { value: "createdAt-desc", sortBy: "createdAt" as const, sortOrder: "desc" as const, label: "Newest first" },
-  { value: "startDateTime-asc", sortBy: "startDateTime" as const, sortOrder: "asc" as const, label: "Soonest" },
-  { value: "eventName-asc", sortBy: "eventName" as const, sortOrder: "asc" as const, label: "Name A–Z" },
-  { value: "eventName-desc", sortBy: "eventName" as const, sortOrder: "desc" as const, label: "Name Z–A" },
-];
-
-function sortValueFromParams(sortBy: string, sortOrder: string): string {
-  const match = SORT_OPTIONS.find(
+function sortValueFromParams(
+  sortBy: string,
+  sortOrder: string,
+  sortOptions: ReturnType<typeof useEventSortOptions>,
+): string {
+  const match = sortOptions.find(
     (o) => o.sortBy === sortBy && o.sortOrder === sortOrder,
   );
   return match?.value ?? "createdAt-desc";
@@ -45,7 +47,8 @@ export function EventsListingSection() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tEvents = useTranslations("events");
-  const tCommon = useTranslations("common");
+  const sortOptions = useEventSortOptions();
+  const labels = useListingLabels();
 
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
   const categoryFromUrl = searchParams.get("category")?.trim() ?? "";
@@ -55,7 +58,7 @@ export function EventsListingSection() {
   const sortOrder = searchParams.get("sortOrder") ?? "desc";
 
   const activeCategory = categoryFromUrl || ALL_EVENTS_CATEGORY;
-  const sortValue = sortValueFromParams(sortBy, sortOrder);
+  const sortValue = sortValueFromParams(sortBy, sortOrder, sortOptions);
 
   const [search, setSearch] = useState(searchFromUrl);
   const [city, setCity] = useState(cityFromUrl);
@@ -97,7 +100,7 @@ export function EventsListingSection() {
   };
 
   const handleSortChange = (value: string) => {
-    const option = SORT_OPTIONS.find((o) => o.value === value);
+    const option = sortOptions.find((o) => o.value === value);
     if (!option) return;
     const isDefault =
       option.sortBy === "createdAt" && option.sortOrder === "desc";
@@ -162,7 +165,7 @@ export function EventsListingSection() {
 
         <div className="mb-8 flex flex-col gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 sm:flex-row sm:flex-wrap sm:items-center">
           <Input
-            placeholder="Search events..."
+            placeholder={labels.searchEvents}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -171,7 +174,7 @@ export function EventsListingSection() {
             className="w-full border-[#303030] bg-black text-white sm:max-w-xs"
           />
           <Input
-            placeholder="City"
+            placeholder={labels.city}
             value={city}
             onChange={(e) => setCity(e.target.value)}
             onKeyDown={(e) => {
@@ -181,10 +184,10 @@ export function EventsListingSection() {
           />
           <Select value={sortValue} onValueChange={handleSortChange}>
             <SelectTrigger className="w-full border-[#303030] bg-black text-white sm:w-[180px]">
-              <SelectValue placeholder="Sort by" />
+              <SelectValue placeholder={labels.sortBy} />
             </SelectTrigger>
             <SelectContent>
-              {SORT_OPTIONS.map((option) => (
+              {sortOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -194,7 +197,7 @@ export function EventsListingSection() {
           <div className="flex flex-wrap gap-2 sm:contents">
             <Button onClick={applyFilters} className="w-full bg-primary sm:w-auto">
               <Search className="mr-2 h-4 w-4" />
-              Search
+              {labels.search}
             </Button>
             {(searchFromUrl || cityFromUrl) && (
               <Button
@@ -206,7 +209,7 @@ export function EventsListingSection() {
                   pushParams({ search: undefined, city: undefined, page: undefined });
                 }}
               >
-                Clear filters
+                {labels.clearFilters}
               </Button>
             )}
           </div>
@@ -232,8 +235,8 @@ export function EventsListingSection() {
             {activeCategory !== ALL_EVENTS_CATEGORY
               ? tEvents("noEventsInCategory", { category: activeCategory })
               : tEvents("noEventsFound")}
-            {searchFromUrl ? ` matching "${searchFromUrl}"` : ""}
-            {cityFromUrl ? ` in ${cityFromUrl}` : ""}.
+            {searchFromUrl ? labels.matching(searchFromUrl) : ""}
+            {cityFromUrl ? labels.inCity(cityFromUrl) : ""}.
           </p>
         ) : (
           <div className="relative mb-8">
@@ -260,11 +263,12 @@ export function EventsListingSection() {
                 pushParams({ page: page <= 2 ? undefined : String(page - 1) });
               }}
             >
-              {tCommon("previous")}
+              {labels.previous}
             </Button>
             <span className="flex items-center justify-center px-2 text-center text-sm text-muted-foreground sm:px-4">
-              Page {page} of {totalPages}
-              {data?.meta.total != null ? ` · ${data.meta.total} events` : ""}
+              {data?.meta.total != null
+                ? labels.pageOfWithCount(page, totalPages, data.meta.total, "events")
+                : labels.pageOf(page, totalPages)}
             </span>
             <Button
               variant="outline"
@@ -274,7 +278,7 @@ export function EventsListingSection() {
                 pushParams({ page: String(page + 1) });
               }}
             >
-              {tCommon("next")}
+              {labels.next}
             </Button>
           </div>
         ) : null}

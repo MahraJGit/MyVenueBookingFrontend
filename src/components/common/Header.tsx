@@ -54,8 +54,8 @@ const Header = () => {
     () => [
       { href: '/', label: tNav('home') },
       { href: '/events', label: tNav('events') },
-      { href: '/attractions', label: 'Attractions' },
-      { href: '/corporate', label: 'Corporate' },
+      { href: '/attractions', label: tNav('attractions') },
+      { href: '/corporate', label: tNav('corporate') },
       { href: '/venues', label: tNav('venueBooking') },
       { href: '/affiliate', label: tNav('listYourVenue') },
       { href: '/blog', label: tNav('blog') },
@@ -138,7 +138,7 @@ const Header = () => {
 
             <nav
               className="hidden min-w-0 flex-1 items-center justify-center 2xl:flex"
-              aria-label="Main"
+              aria-label={tNav('mainNav')}
             >
               <ul className="flex items-center gap-0.5 2xl:gap-1">
                 {navItems.map((item) => {

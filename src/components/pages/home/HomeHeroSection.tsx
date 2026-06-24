@@ -6,28 +6,32 @@ import {
   Tag,
   Undo2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { listPublicEventCategories } from "@/features/event-categories/api";
 import { listVenueTypes } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
-const TRUST_ITEMS = [
-  {
-    icon: ShieldCheck,
-    title: "Secure checkout",
-    description: "Encrypted payments & protected data",
-  },
-  {
-    icon: Undo2,
-    title: "Flexible refunds",
-    description: "Eligible tickets refunded with ease",
-  },
-  {
-    icon: Tag,
-    title: "Smart deals",
-    description: "Exclusive offers on top experiences",
-  },
-] as const;
 
 export function HomeHeroSection() {
+  const t = useTranslations("home");
+
+  const trustItems = [
+    {
+      icon: ShieldCheck,
+      title: t("trustSecureCheckout"),
+      description: t("trustSecureCheckoutDesc"),
+    },
+    {
+      icon: Undo2,
+      title: t("trustFlexibleRefunds"),
+      description: t("trustFlexibleRefundsDesc"),
+    },
+    {
+      icon: Tag,
+      title: t("trustSmartDeals"),
+      description: t("trustSmartDealsDesc"),
+    },
+  ] as const;
+
   const { data: eventCategories = [] } = useQuery({
     queryKey: ["public-event-categories", "hero"],
     queryFn: () => listPublicEventCategories(),
@@ -40,6 +44,9 @@ export function HomeHeroSection() {
     staleTime: 5 * 60 * 1000,
   });
 
+  void eventCategories;
+  void venueTypes;
+
   return (
     <section className="hero" aria-labelledby="hero-heading">
       <div className="hero-glow hero-glow--left" aria-hidden />
@@ -48,30 +55,25 @@ export function HomeHeroSection() {
 
       <div className="hero-shell container relative z-10 mx-auto flex flex-1 flex-col px-4 sm:px-6 lg:px-8">
         <div className="inner flex flex-col items-center gap-8 sm:gap-10 md:gap-12">
-          {/* Copy block */}
           <div className="description mx-auto max-w-4xl text-center">
-
             <h1
               id="hero-heading"
               className="hero-title mb-6 md:mb-8"
             >
-              Book{" "}
-              <span className="text-gradient-accent">Event Tickets</span>
-              {" & "}
-              <span className="text-gradient-accent">Venues</span>
-              {" "}Online
+              {t("heroBookPrefix")}{" "}
+              <span className="text-gradient-accent">{t("heroBookTickets")}</span>
+              {" "}{t("heroBookAnd")}{" "}
+              <span className="text-gradient-accent">{t("heroBookVenues")}</span>
+              {" "}{t("heroBookSuffix")}
             </h1>
 
             <p className="mx-auto max-w-2xl text-base leading-relaxed text-[#B3B3B3] md:text-lg">
-              From sold-out concerts and championship sports to wedding halls and
-              corporate spaces — discover what&apos;s on, compare options, and
-              confirm your booking in minutes.
+              {t("heroBookSubtitle")}
             </p>
           </div>
 
-          {/* Trust row */}
           <ul className="hero-trust grid w-full max-w-4xl gap-3 sm:grid-cols-3 sm:gap-4">
-            {TRUST_ITEMS.map(({ icon: Icon, title, description }) => (
+            {trustItems.map(({ icon: Icon, title, description }) => (
               <li
                 key={title}
                 className="hero-trust-item flex items-start gap-3 rounded-xl border border-[#252525] bg-[#121212]/80 px-4 py-3.5 backdrop-blur-sm"

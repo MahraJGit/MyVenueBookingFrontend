@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 export const ALL_VENUE_TYPES = "all";
 
 type VenueTypeOption = {
@@ -20,8 +22,10 @@ export function VenueTypeFilters({
   onTypeChange,
   isLoading,
 }: VenueTypeFiltersProps) {
+  const tCommon = useTranslations("common");
+
   const pills: VenueTypeOption[] = [
-    { id: ALL_VENUE_TYPES, name: "All" },
+    { id: ALL_VENUE_TYPES, name: tCommon("all") },
     ...types,
   ];
 

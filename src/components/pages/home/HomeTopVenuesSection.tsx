@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { VenueMarqueeChip } from "@/components/venues/VenueMarqueeChip";
 import { listPublicVenues } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
@@ -63,7 +64,7 @@ function MarqueeSkeleton({ className }: { className?: string }) {
           className="flex h-[83px] w-[280px] shrink-0 animate-pulse items-center gap-3 rounded-[12px] border border-[#303030] bg-[#1A1A1A] p-1"
         >
           <div className="h-[75px] w-[75px] shrink-0 rounded-[10px] bg-[#242424]" />
-          <div className="flex flex-1 flex-col gap-2 pr-2">
+          <div className="flex flex-1 flex-col gap-2 pe-2">
             <div className="h-3.5 w-3/4 rounded bg-[#242424]" />
             <div className="h-3 w-1/2 rounded bg-[#242424]" />
           </div>
@@ -74,6 +75,8 @@ function MarqueeSkeleton({ className }: { className?: string }) {
 }
 
 export function HomeTopVenuesSection() {
+  const t = useTranslations("home");
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: venueKeys.publicList({
       page: 1,
@@ -99,24 +102,23 @@ export function HomeTopVenuesSection() {
       <div className="container mx-auto px-4">
         <div className="section-header mb-8 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
           <div>
-            <h2>Top Venues</h2>
+            <h2>{t("topVenues")}</h2>
             <p className="mt-1 text-sm text-[#9A9A9A]">
-              Explore banquet halls, lawns, and event spaces for your next
-              occasion.
+              {t("topVenuesSubtitle")}
             </p>
           </div>
           <Link
             href="/venues"
             className="shrink-0 rounded-full border border-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:text-primary"
           >
-            View More
+            {t("viewMore")}
           </Link>
         </div>
       </div>
 
       {isError ? (
         <p className="container mx-auto px-4 text-sm text-red-400">
-          {error instanceof Error ? error.message : "Could not load venues."}
+          {error instanceof Error ? error.message : t("couldNotLoadVenues")}
         </p>
       ) : null}
 
@@ -127,9 +129,9 @@ export function HomeTopVenuesSection() {
         </div>
       ) : venues.length === 0 ? (
         <p className="container mx-auto px-4 text-center text-sm text-[#B3B3B3]">
-          No venues available yet.{" "}
+          {t("noVenuesAvailable")}{" "}
           <Link href="/venues" className="text-primary hover:underline">
-            Browse venues
+            {t("browseVenues")}
           </Link>
         </p>
       ) : (

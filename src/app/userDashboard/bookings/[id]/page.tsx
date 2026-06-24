@@ -3,6 +3,7 @@
 import { use } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, CalendarDays, CheckCircle2, Loader2 } from "lucide-react";
 import { BookingDetailPanel } from "@/components/bookings/BookingDetailPanel";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ export default function UserBookingDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const t = useTranslations("userDashboard");
 
   const { data: booking, isLoading } = useQuery({
     queryKey: bookingKeys.detail(id),
@@ -30,7 +32,7 @@ export default function UserBookingDetailPage({
       >
         <Link href="/userDashboard/bookings" className="inline-flex items-center gap-2">
           <ArrowLeft className="h-4 w-4" />
-          Back to bookings
+          {t("backToBookings")}
         </Link>
       </Button>
 
@@ -43,11 +45,9 @@ export default function UserBookingDetailPage({
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-400" />
             <div>
-              <p className="font-semibold text-green-300">Booking confirmed!</p>
+              <p className="font-semibold text-green-300">{t("bookingConfirmed")}</p>
               <p className="mt-1 text-sm text-green-200/80">
-                Your payment was successful. Your reservation at{" "}
-                <span className="font-medium text-green-200">{booking.venue.name}</span>{" "}
-                is confirmed.
+                {t("bookingConfirmedDesc", { venue: booking.venue.name })}
               </p>
             </div>
           </div>
@@ -57,9 +57,9 @@ export default function UserBookingDetailPage({
           <div className="flex items-start gap-3">
             <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
             <div>
-              <p className="font-semibold text-amber-200">Payment pending</p>
+              <p className="font-semibold text-amber-200">{t("paymentPending")}</p>
               <p className="mt-1 text-sm text-amber-200/80">
-                Complete payment to secure your booking before the hold expires.
+                {t("paymentPendingDesc")}
               </p>
             </div>
           </div>

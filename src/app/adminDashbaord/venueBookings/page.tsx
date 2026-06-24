@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import {
@@ -19,6 +20,8 @@ import type { BookingStatus } from "@/features/bookings/types";
 import { bookingKeys } from "@/features/venues/query-keys";
 
 export default function AdminVenueBookingsPage() {
+  const t = useTranslations("adminVenueBookings");
+  const tStatus = useTranslations("entityStatus");
   const [status, setStatus] = useState<BookingStatus | "ALL">("ALL");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -38,10 +41,8 @@ export default function AdminVenueBookingsPage() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">All venue bookings</h1>
-            <p className="text-sm text-muted-foreground">
-              Platform-wide booking oversight.
-            </p>
+            <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("description")}</p>
           </div>
           <Select
             value={status}
@@ -51,11 +52,11 @@ export default function AdminVenueBookingsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All statuses</SelectItem>
-              <SelectItem value="HOLD">Hold</SelectItem>
-              <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-              <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              <SelectItem value="COMPLETED">Completed</SelectItem>
+              <SelectItem value="ALL">{t("allStatuses")}</SelectItem>
+              <SelectItem value="HOLD">{tStatus("hold")}</SelectItem>
+              <SelectItem value="CONFIRMED">{tStatus("confirmed")}</SelectItem>
+              <SelectItem value="CANCELLED">{tStatus("cancelled")}</SelectItem>
+              <SelectItem value="COMPLETED">{tStatus("completed")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -67,7 +68,7 @@ export default function AdminVenueBookingsPage() {
             onSelect={setSelectedId}
             isLoading={isLoading}
             showBuyer
-            emptyMessage="No bookings."
+            emptyMessage={t("noBookings")}
           />
 
           {selectedId && (

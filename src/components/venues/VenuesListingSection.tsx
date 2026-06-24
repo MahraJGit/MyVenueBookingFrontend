@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { VenueCard } from "@/components/venues/VenueCard";
 import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
 import { VenueTypeFilters } from "@/components/venues/VenueTypeFilters";
@@ -18,33 +19,20 @@ import {
 } from "@/components/ui/select";
 import { listPublicVenues, listVenueTypes } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
+import {
+  useListingLabels,
+  useVenueSortOptions,
+} from "@/features/i18n/use-listing-filters";
 import "@/styles/event-list.css";
 
 const PAGE_SIZE = 8;
 
-const SORT_OPTIONS = [
-  {
-    value: "createdAt-desc",
-    sortBy: "createdAt" as const,
-    sortOrder: "desc" as const,
-    label: "Newest first",
-  },
-  {
-    value: "name-asc",
-    sortBy: "name" as const,
-    sortOrder: "asc" as const,
-    label: "Name A–Z",
-  },
-  {
-    value: "name-desc",
-    sortBy: "name" as const,
-    sortOrder: "desc" as const,
-    label: "Name Z–A",
-  },
-];
-
-function sortValueFromParams(sortBy: string, sortOrder: string): string {
-  const match = SORT_OPTIONS.find(
+function sortValueFromParams(
+  sortBy: string,
+  sortOrder: string,
+  sortOptions: ReturnType<typeof useVenueSortOptions>,
+): string {
+  const match = sortOptions.find(
     (o) => o.sortBy === sortBy && o.sortOrder === sortOrder,
   );
   return match?.value ?? "createdAt-desc";
@@ -53,6 +41,9 @@ function sortValueFromParams(sortBy: string, sortOrder: string): string {
 export function VenuesListingSection() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations("venuesListing");
+  const sortOptions = useVenueSortOptions();
+  const labels = useListingLabels();
 
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
   const venueTypeIdFromUrl = searchParams.get("venueTypeId")?.trim() ?? "";
@@ -61,7 +52,7 @@ export function VenuesListingSection() {
   const sortBy = searchParams.get("sortBy") ?? "createdAt";
   const sortOrder = searchParams.get("sortOrder") ?? "desc";
 
-  const sortValue = sortValueFromParams(sortBy, sortOrder);
+  const sortValue = sortValueFromParams(sortBy, sortOrder, sortOptions);
 
   const [search, setSearch] = useState(searchFromUrl);
   const [city, setCity] = useState(cityFromUrl);
@@ -102,7 +93,7 @@ export function VenuesListingSection() {
   };
 
   const handleSortChange = (value: string) => {
-    const option = SORT_OPTIONS.find((o) => o.value === value);
+    const option = sortOptions.find((o) => o.value === value);
     if (!option) return;
     const isDefault =
       option.sortBy === "createdAt" && option.sortOrder === "desc";
@@ -119,7 +110,7 @@ export function VenuesListingSection() {
   });
 
   const activeTypeName =
-    types.find((t) => t.id === venueTypeIdFromUrl)?.name ?? null;
+    types.find((type) => type.id === venueTypeIdFromUrl)?.name ?? null;
 
   const {
     data,
@@ -157,11 +148,9 @@ export function VenuesListingSection() {
       <div className="container mx-auto px-4">
         <div className="mb-10 max-w-3xl">
           <h1 className="page-title mb-3 text-white">
-            Venue <span className="text-gradient-accent">Booking</span>
+            {t("title")} <span className="text-gradient-accent">{t("titleHighlight")}</span>
           </h1>
-          <p className="text-muted-foreground">
-            Discover and book event spaces for your next occasion.
-          </p>
+          <p className="text-muted-foreground">{t("description")}</p>
         </div>
 
         <VenueTypeFilters
@@ -173,7 +162,7 @@ export function VenuesListingSection() {
 
         <div className="mb-8 flex flex-col gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 sm:flex-row sm:flex-wrap sm:items-center">
           <Input
-            placeholder="Search venues..."
+            placeholder={labels.searchVenues}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -182,7 +171,7 @@ export function VenuesListingSection() {
             className="w-full border-[#303030] bg-black text-white sm:max-w-xs"
           />
           <Input
-            placeholder="City"
+            placeholder={labels.city}
             value={city}
             onChange={(e) => setCity(e.target.value)}
             onKeyDown={(e) => {
@@ -192,10 +181,10 @@ export function VenuesListingSection() {
           />
           <Select value={sortValue} onValueChange={handleSortChange}>
             <SelectTrigger className="w-full border-[#303030] bg-black text-white sm:w-[180px]">
-              <SelectValue placeholder="Sort by" />
+              <SelectValue placeholder={labels.sortBy} />
             </SelectTrigger>
             <SelectContent>
-              {SORT_OPTIONS.map((option) => (
+              {sortOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -205,7 +194,7 @@ export function VenuesListingSection() {
           <div className="flex flex-wrap gap-2 sm:contents">
             <Button onClick={applyFilters} className="w-full bg-primary sm:w-auto">
               <Search className="mr-2 h-4 w-4" />
-              Search
+              {labels.search}
             </Button>
             {(searchFromUrl || cityFromUrl) && (
               <Button
@@ -217,7 +206,7 @@ export function VenuesListingSection() {
                   pushParams({ search: undefined, city: undefined, page: undefined });
                 }}
               >
-                Clear filters
+                {labels.clearFilters}
               </Button>
             )}
           </div>
@@ -225,7 +214,7 @@ export function VenuesListingSection() {
 
         {isError ? (
           <p className="mb-8 py-8 text-sm text-red-400">
-            {error instanceof Error ? error.message : "Could not load venues."}
+            {error instanceof Error ? error.message : t("couldNotLoad")}
           </p>
         ) : null}
 
@@ -240,10 +229,10 @@ export function VenuesListingSection() {
           </ResponsiveEventCardsGrid>
         ) : venues.length === 0 ? (
           <p className="mb-8 py-8 text-sm text-[#B3B3B3]">
-            No venues found
-            {activeTypeName ? ` in ${activeTypeName}` : ""}
-            {searchFromUrl ? ` matching "${searchFromUrl}"` : ""}
-            {cityFromUrl ? ` in ${cityFromUrl}` : ""}.
+            {t("noVenuesFound")}
+            {activeTypeName ? t("inType", { type: activeTypeName }) : ""}
+            {searchFromUrl ? labels.matching(searchFromUrl) : ""}
+            {cityFromUrl ? labels.inCity(cityFromUrl) : ""}.
           </p>
         ) : (
           <div className="relative mb-8">
@@ -270,11 +259,12 @@ export function VenuesListingSection() {
                 pushParams({ page: page <= 2 ? undefined : String(page - 1) });
               }}
             >
-              Previous
+              {labels.previous}
             </Button>
             <span className="flex items-center justify-center px-2 text-center text-sm text-muted-foreground sm:px-4">
-              Page {page} of {totalPages}
-              {data?.meta.total != null ? ` · ${data.meta.total} venues` : ""}
+              {data?.meta.total != null
+                ? labels.pageOfWithCount(page, totalPages, data.meta.total, "venues")
+                : labels.pageOf(page, totalPages)}
             </span>
             <Button
               variant="outline"
@@ -284,7 +274,7 @@ export function VenuesListingSection() {
                 pushParams({ page: String(page + 1) });
               }}
             >
-              Next
+              {labels.next}
             </Button>
           </div>
         ) : null}

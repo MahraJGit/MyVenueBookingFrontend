@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { PublicVenue } from "@/features/venues/types";
 import { getFallbackVenueImage } from "@/features/venues/utils";
 
@@ -11,12 +12,14 @@ type VenueMarqueeChipProps = {
 };
 
 export function VenueMarqueeChip({ venue }: VenueMarqueeChipProps) {
+  const t = useTranslations("venues");
   const fallback = getFallbackVenueImage(venue.id);
   const initial = venue.coverImage?.trim() || fallback;
   const [src, setSrc] = useState(initial);
 
   const subtitle =
-    [venue.city, venue.venueType?.name].filter(Boolean).join(" · ") || "Venue";
+    [venue.city, venue.venueType?.name].filter(Boolean).join(" · ") ||
+    t("venueLabel");
 
   return (
     <Link

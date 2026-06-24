@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Eye, ExternalLink, Loader2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
@@ -38,7 +39,7 @@ import {
   type EventApprovalStatus,
   type ManagedEvent,
 } from "@/features/events/api"
-import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton"
+import { TableSkeleton } from "@/components/ui/table-skeleton"
 import { TableShell } from "@/components/ui/table-shell"
 import { toastApiError } from "@/lib/toasts"
 
@@ -55,15 +56,6 @@ function statusBadgeVariant(status: EventApprovalStatus | undefined) {
   if (status === "APPROVED" || status === "ACTIVE") return "default"
   if (status === "REJECTED" || status === "CANCELLED") return "destructive"
   return "secondary"
-}
-
-function statusLabel(status: EventApprovalStatus | undefined) {
-  if (!status) return "Unknown"
-  if (status === "PENDING") return "Pending"
-  if (status === "APPROVED") return "Approved"
-  if (status === "REJECTED") return "Rejected"
-  if (status === "DRAFT") return "Draft"
-  return status.charAt(0) + status.slice(1).toLowerCase()
 }
 
 function formatDate(dateString: string) {
@@ -92,11 +84,25 @@ function reviewableStatus(
 }
 
 export default function EventReviewsPage() {
+  const t = useTranslations("adminEventReviews")
+  const tCommon = useTranslations("common")
+  const tStatus = useTranslations("entityStatus")
+  const tAdmin = useTranslations("adminDashboard")
+  const tForms = useTranslations("forms")
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL")
   const [activeDetails, setActiveDetails] = useState<ManagedEvent | null>(null)
   const [rejectTarget, setRejectTarget] = useState<ManagedEvent | null>(null)
   const [rejectReason, setRejectReason] = useState("")
+
+  const statusLabel = (status: EventApprovalStatus | undefined) => {
+    if (!status) return tStatus("unknown")
+    if (status === "PENDING") return tStatus("pending")
+    if (status === "APPROVED") return tStatus("approved")
+    if (status === "REJECTED") return tStatus("rejected")
+    if (status === "DRAFT") return tStatus("draft")
+    return status.charAt(0) + status.slice(1).toLowerCase()
+  }
 
   const {
     data: listResult,
@@ -131,13 +137,11 @@ export default function EventReviewsPage() {
       queryClient.invalidateQueries({ queryKey: ["managed-events"] })
       setActiveDetails((prev) => (prev?.id === result.id ? result : prev))
       toast.success(
-        result.status === "APPROVED"
-          ? "Event approved and published"
-          : "Event rejected",
+        result.status === "APPROVED" ? t("eventApproved") : t("eventRejected"),
       )
     },
     onError: (err) => {
-      toastApiError(err, "Could not update event status.")
+      toastApiError(err, t("couldNotUpdate"))
     },
   })
 
@@ -147,8 +151,8 @@ export default function EventReviewsPage() {
 
   const errorMessage = useMemo(() => {
     if (!isError || !error) return null
-    return error instanceof Error ? error.message : "Failed to load vendor events."
-  }, [isError, error])
+    return error instanceof Error ? error.message : t("failedLoad")
+  }, [isError, error, t])
 
   const handleRejectSubmit = () => {
     if (!rejectTarget || !rejectReason.trim()) return
@@ -171,18 +175,15 @@ export default function EventReviewsPage() {
     <div className="w-full max-w-full space-y-6 overflow-x-hidden rounded-2xl bg-[#0e0e0e] p-6 text-white">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-primary">Event Reviews</h2>
-          <p className="text-sm text-gray-300">
-            Review events submitted by vendors. Approved events appear on the public
-            site; rejected events stay unpublished.
-          </p>
+          <h2 className="text-xl font-bold text-primary">{t("title")}</h2>
+          <p className="text-sm text-gray-300">{t("description")}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {isFetching && !isLoading ? (
             <span className="flex items-center gap-1 text-xs text-zinc-500">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Refreshing
+              {tCommon("refreshing")}
             </span>
           ) : null}
           <Button
@@ -190,7 +191,7 @@ export default function EventReviewsPage() {
             onClick={() => setStatusFilter("ALL")}
             disabled={isLoading}
           >
-            All
+            {tCommon("all")}
           </Button>
           {REVIEW_STATUSES.map((s) => (
             <Button
@@ -218,7 +219,7 @@ export default function EventReviewsPage() {
             className="border-red-400/50 text-red-100 hover:bg-red-500/20"
             onClick={() => void refetch()}
           >
-            Retry
+            {tCommon("retry")}
           </Button>
         </div>
       ) : null}
@@ -227,13 +228,13 @@ export default function EventReviewsPage() {
         <Table className="min-w-[960px]">
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground">Event</TableHead>
-              <TableHead className="text-muted-foreground">Vendor</TableHead>
-              <TableHead className="text-muted-foreground">City</TableHead>
-              <TableHead className="text-muted-foreground">Starts</TableHead>
-              <TableHead className="text-muted-foreground">Status</TableHead>
-              <TableHead className="text-muted-foreground">Submitted</TableHead>
-              <TableHead className="text-right text-muted-foreground">Actions</TableHead>
+              <TableHead className="text-muted-foreground">{tAdmin("tableEvent")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("vendor")}</TableHead>
+              <TableHead className="text-muted-foreground">{tAdmin("tableCity")}</TableHead>
+              <TableHead className="text-muted-foreground">{t("starts")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("status")}</TableHead>
+              <TableHead className="text-muted-foreground">{tCommon("submitted")}</TableHead>
+              <TableHead className="text-right text-muted-foreground">{tCommon("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -275,7 +276,7 @@ export default function EventReviewsPage() {
                             onClick={() => setActiveDetails(ev)}
                           >
                             <Eye className="h-4 w-4" />
-                            View
+                            {tCommon("view")}
                           </Button>
 
                           <Select
@@ -300,15 +301,15 @@ export default function EventReviewsPage() {
                                 {pendingRowId === ev.id ? (
                                   <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
                                 ) : null}
-                                <SelectValue placeholder="Set status" />
+                                <SelectValue placeholder={t("setStatus")} />
                               </span>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="PENDING" disabled>
-                                Pending
+                                {tStatus("pending")}
                               </SelectItem>
-                              <SelectItem value="APPROVED">Approve</SelectItem>
-                              <SelectItem value="REJECTED">Reject</SelectItem>
+                              <SelectItem value="APPROVED">{tAdmin("approve")}</SelectItem>
+                              <SelectItem value="REJECTED">{tAdmin("reject")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -323,7 +324,7 @@ export default function EventReviewsPage() {
                       colSpan={7}
                       className="py-12 text-center text-gray-400"
                     >
-                      No vendor-submitted events found for this filter.
+                      {t("noEvents")}
                     </TableCell>
                   </TableRow>
                 ) : null}
@@ -340,9 +341,7 @@ export default function EventReviewsPage() {
         <DialogContent className="max-h-[85vh] overflow-y-auto border-zinc-700 bg-[#111111] text-white">
           <DialogHeader>
             <DialogTitle>{activeDetails?.eventName}</DialogTitle>
-            <DialogDescription>
-              Event details submitted by the vendor for review.
-            </DialogDescription>
+            <DialogDescription>{t("detailsDesc")}</DialogDescription>
           </DialogHeader>
 
           {activeDetails ? (
@@ -359,7 +358,7 @@ export default function EventReviewsPage() {
                       rel="noopener noreferrer"
                     >
                       <ExternalLink className="mr-1 h-3.5 w-3.5" />
-                      View on site
+                      {t("viewOnSite")}
                     </Link>
                   </Button>
                 ) : null}
@@ -367,30 +366,30 @@ export default function EventReviewsPage() {
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <DetailRow
-                  label="Vendor"
+                  label={tCommon("vendor")}
                   value={activeDetails.vendorProfile?.vendorName ?? "—"}
                 />
                 <DetailRow
-                  label="Vendor email"
+                  label={t("vendorEmail")}
                   value={activeDetails.vendorProfile?.email ?? "—"}
                 />
-                <DetailRow label="Category" value={activeDetails.category ?? "—"} />
-                <DetailRow label="City" value={activeDetails.city} />
+                <DetailRow label={tCommon("category")} value={activeDetails.category ?? "—"} />
+                <DetailRow label={tForms("city")} value={activeDetails.city} />
                 <DetailRow
-                  label="Starts"
+                  label={t("starts")}
                   value={formatDateTime(activeDetails.startDateTime)}
                 />
                 <DetailRow
-                  label="Ends"
+                  label={t("ends")}
                   value={formatDateTime(activeDetails.endDateTime)}
                 />
-                <DetailRow label="Venue" value={activeDetails.venueName ?? "—"} />
-                <DetailRow label="Address" value={activeDetails.address ?? "—"} />
+                <DetailRow label={tForms("venueName")} value={activeDetails.venueName ?? "—"} />
+                <DetailRow label={tForms("address")} value={activeDetails.address ?? "—"} />
               </div>
 
               {activeDetails.eventDescription ? (
                 <div>
-                  <p className="font-semibold text-zinc-400">Description</p>
+                  <p className="font-semibold text-zinc-400">{tCommon("description")}</p>
                   <p className="mt-1 whitespace-pre-wrap text-zinc-200">
                     {activeDetails.eventDescription}
                   </p>
@@ -399,12 +398,16 @@ export default function EventReviewsPage() {
 
               {activeDetails.ticketTypes.length > 0 ? (
                 <div>
-                  <p className="font-semibold text-zinc-400">Ticket types</p>
+                  <p className="font-semibold text-zinc-400">{t("ticketTypes")}</p>
                   <ul className="mt-2 list-inside list-disc space-y-1 text-zinc-200">
-                    {activeDetails.ticketTypes.map((t) => (
-                      <li key={t.id ?? t.name}>
-                        {t.name} — {t.currency} {String(t.price)} ({t.quantityTotal}{" "}
-                        available)
+                    {activeDetails.ticketTypes.map((tt) => (
+                      <li key={tt.id ?? tt.name}>
+                        {t("ticketAvailable", {
+                          name: tt.name,
+                          currency: tt.currency,
+                          price: String(tt.price),
+                          quantity: tt.quantityTotal,
+                        })}
                       </li>
                     ))}
                   </ul>
@@ -424,7 +427,7 @@ export default function EventReviewsPage() {
                     })
                   }
                 >
-                  Approve
+                  {tAdmin("approve")}
                 </Button>
                 <Button
                   variant="destructive"
@@ -433,13 +436,13 @@ export default function EventReviewsPage() {
                   }
                   onClick={() => setRejectTarget(activeDetails)}
                 >
-                  Reject
+                  {tAdmin("reject")}
                 </Button>
                 <Button variant="outline" className="border-zinc-700" asChild>
                   <Link
                     href={`/adminDashbaord/addEvents?id=${encodeURIComponent(activeDetails.id)}`}
                   >
-                    Edit in dashboard
+                    {t("editInDashboard")}
                   </Link>
                 </Button>
               </div>
@@ -459,18 +462,16 @@ export default function EventReviewsPage() {
       >
         <DialogContent className="border-zinc-700 bg-[#111111] text-white">
           <DialogHeader>
-            <DialogTitle>Reject Event</DialogTitle>
-            <DialogDescription>
-              Optionally add a reason for rejection (stored for your records).
-            </DialogDescription>
+            <DialogTitle>{t("rejectTitle")}</DialogTitle>
+            <DialogDescription>{t("rejectDesc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-zinc-300">
-              Event:{" "}
+              {t("eventLabel")}{" "}
               <span className="font-semibold text-white">{rejectTarget?.eventName}</span>
             </p>
             <Textarea
-              placeholder="Rejection reason (optional)..."
+              placeholder={t("rejectPlaceholder")}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               className="min-h-[100px] border-zinc-700 bg-zinc-900 text-white"
@@ -485,7 +486,7 @@ export default function EventReviewsPage() {
                 setRejectReason("")
               }}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -495,10 +496,10 @@ export default function EventReviewsPage() {
               {updateMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Rejecting…
+                  {t("rejecting")}
                 </>
               ) : (
-                "Confirm Reject"
+                t("confirmReject")
               )}
             </Button>
           </DialogFooter>

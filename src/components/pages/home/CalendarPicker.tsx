@@ -1,7 +1,8 @@
-"use client"
+"use client";
 
 import * as React from "react"
 import { ChevronDownIcon } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -17,6 +18,7 @@ export function CalendarPicker({
   selectedDate: Date | undefined
   onDateChange: (date: Date | undefined) => void
 }) {
+  const t = useTranslations("home")
   const [open, setOpen] = React.useState(false)
 
   return (
@@ -26,7 +28,7 @@ export function CalendarPicker({
           variant="outline"
           className="md:w-[220px] w-full justify-between font-normal bg-transparent border border-[#303030] text-gray-400"
         >
-          {selectedDate ? selectedDate.toLocaleDateString() : "Select date"}
+          {selectedDate ? selectedDate.toLocaleDateString() : t("selectDate")}
           <ChevronDownIcon className="ml-2 h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>

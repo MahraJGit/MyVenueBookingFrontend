@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Clock, DollarSign, Eye, Loader2, MapPin } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { StatusBadge } from "@/components/venues/StatusBadge";
@@ -55,6 +56,10 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 export default function VenueReviewsPage() {
+  const t = useTranslations("adminVenueReviews");
+  const tCommon = useTranslations("common");
+  const tAdmin = useTranslations("adminDashboard");
+  const tForms = useTranslations("forms");
   const queryClient = useQueryClient();
   const [viewVenue, setViewVenue] = useState<ManagedVenue | null>(null);
   const [rejectVenue, setRejectVenue] = useState<ManagedVenue | null>(null);
@@ -89,7 +94,7 @@ export default function VenueReviewsPage() {
       reason?: string;
     }) => updateVenueStatus(id, { status, reason: r }),
     onSuccess: () => {
-      toast.success("Venue status updated");
+      toast.success(t("statusUpdated"));
       queryClient.invalidateQueries({ queryKey: venueKeys.all });
       setRejectVenue(null);
       setViewVenue(null);
@@ -107,11 +112,8 @@ export default function VenueReviewsPage() {
     <RoleGuard allowedRoles={["ADMIN"]}>
       <div className="mx-auto max-w-6xl space-y-6">
         <div>
-          <h1 className="text-xl font-bold text-white">Venue reviews</h1>
-          <p className="text-sm text-muted-foreground">
-            Only venues with pricing and schedule configured appear here — vendors must
-            complete setup before submission.
-          </p>
+          <h1 className="text-xl font-bold text-white">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("description")}</p>
         </div>
 
         <Card className="border-border bg-card">
@@ -119,12 +121,12 @@ export default function VenueReviewsPage() {
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Building2 className="h-5 w-5 text-primary" />
-                Pending submissions
+                {t("pendingSubmissions")}
               </CardTitle>
               <CardDescription>
                 {isLoading
-                  ? "Loading review queue…"
-                  : `${venues.length} venue${venues.length === 1 ? "" : "s"} ready for approval`}
+                  ? t("loadingQueue")
+                  : t("venueCount", { count: venues.length })}
               </CardDescription>
             </div>
             {isFetching && !isLoading && (
@@ -136,11 +138,11 @@ export default function VenueReviewsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground">Venue</TableHead>
-                  <TableHead className="text-muted-foreground">Vendor</TableHead>
-                  <TableHead className="text-muted-foreground">Pricing</TableHead>
-                  <TableHead className="text-muted-foreground">Schedule</TableHead>
-                  <TableHead className="text-right text-muted-foreground">Actions</TableHead>
+                  <TableHead className="text-muted-foreground">{tForms("venueName")}</TableHead>
+                  <TableHead className="text-muted-foreground">{tCommon("vendor")}</TableHead>
+                  <TableHead className="text-muted-foreground">{t("pricing")}</TableHead>
+                  <TableHead className="text-muted-foreground">{t("schedule")}</TableHead>
+                  <TableHead className="text-right text-muted-foreground">{tCommon("actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -148,8 +150,7 @@ export default function VenueReviewsPage() {
                   <TableSkeleton cols={5} />
                 ) : venues.length === 0 ? (
                   <TableEmptyRow colSpan={5}>
-                      No venues pending review. Vendors must finish pricing and schedule,
-                      then submit for approval.
+                      {t("noPending")}
                   </TableEmptyRow>
                 ) : (
                   venues.map((venue) => {
@@ -195,7 +196,7 @@ export default function VenueReviewsPage() {
                         <TableCell>
                           <Badge variant="outline" className="gap-1 font-normal">
                             <Clock className="h-3 w-3" />
-                            {openDays} open day{openDays === 1 ? "" : "s"}
+                            {t("openDays", { count: openDays })}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -207,7 +208,7 @@ export default function VenueReviewsPage() {
                               onClick={() => setViewVenue(venue)}
                             >
                               <Eye className="mr-1 h-3 w-3" />
-                              View
+                              {tCommon("view")}
                             </Button>
                             <Button
                               size="sm"
@@ -220,10 +221,10 @@ export default function VenueReviewsPage() {
                               {isApproving ? (
                                 <>
                                   <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                                  Approving…
+                                  {t("approving")}
                                 </>
                               ) : (
-                                "Approve"
+                                tAdmin("approve")
                               )}
                             </Button>
                             <Button
@@ -232,7 +233,7 @@ export default function VenueReviewsPage() {
                               disabled={isApproving || isRejecting}
                               onClick={() => setRejectVenue(venue)}
                             >
-                              Reject
+                              {tAdmin("reject")}
                             </Button>
                           </div>
                         </TableCell>
@@ -254,10 +255,8 @@ export default function VenueReviewsPage() {
       >
         <DialogContent className="max-h-[85vh] overflow-y-auto border-border bg-card text-foreground sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{detail?.name ?? "Venue details"}</DialogTitle>
-            <DialogDescription>
-              Full submission details from the vendor for your review.
-            </DialogDescription>
+            <DialogTitle>{detail?.name ?? t("venueDetails")}</DialogTitle>
+            <DialogDescription>{t("detailsDesc")}</DialogDescription>
           </DialogHeader>
 
           {detailLoading && !venueDetail ? (
@@ -285,13 +284,13 @@ export default function VenueReviewsPage() {
               )}
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <DetailRow label="Vendor" value={detail.vendor?.vendorName ?? "—"} />
-                <DetailRow label="Vendor email" value={detail.vendor?.email ?? "—"} />
-                <DetailRow label="City" value={detail.city ?? "—"} />
-                <DetailRow label="Address" value={detail.address} />
-                <DetailRow label="Timezone" value={detail.timezone} />
+                <DetailRow label={tCommon("vendor")} value={detail.vendor?.vendorName ?? "—"} />
+                <DetailRow label={t("vendorEmail")} value={detail.vendor?.email ?? "—"} />
+                <DetailRow label={tForms("city")} value={detail.city ?? "—"} />
+                <DetailRow label={tForms("address")} value={detail.address} />
+                <DetailRow label={tForms("timezone")} value={detail.timezone} />
                 <DetailRow
-                  label="Capacity"
+                  label={t("capacity")}
                   value={
                     detail.capacityMin || detail.capacityMax
                       ? `${detail.capacityMin ?? "—"} – ${detail.capacityMax ?? "—"}`
@@ -302,7 +301,7 @@ export default function VenueReviewsPage() {
 
               {detail.description ? (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">Description</p>
+                  <p className="text-xs font-medium text-muted-foreground">{tCommon("description")}</p>
                   <p className="mt-1 whitespace-pre-wrap text-foreground">
                     {detail.description}
                   </p>
@@ -313,7 +312,7 @@ export default function VenueReviewsPage() {
 
               {detail.pricing ? (
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Pricing</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t("pricing")}</p>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary" className="gap-1 font-normal">
                       <DollarSign className="h-3 w-3" />
@@ -326,7 +325,7 @@ export default function VenueReviewsPage() {
                       )}
                     </span>
                     <span className="text-muted-foreground">
-                      · Tax {decimalToNumber(detail.pricing.taxRate)}%
+                      {t("taxRate", { rate: decimalToNumber(detail.pricing.taxRate) })}
                     </span>
                   </div>
                 </div>
@@ -334,7 +333,7 @@ export default function VenueReviewsPage() {
 
               {detail.schedules && detail.schedules.some((s) => s.isOpen) ? (
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Open schedule</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t("openSchedule")}</p>
                   <ul className="space-y-1 text-foreground">
                     {detail.schedules
                       .filter((s) => s.isOpen)
@@ -350,7 +349,7 @@ export default function VenueReviewsPage() {
 
               {detail.amenities && detail.amenities.length > 0 ? (
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Amenities</p>
+                  <p className="text-xs font-medium text-muted-foreground">{tForms("amenities")}</p>
                   <ul className="flex flex-wrap gap-2">
                     {detail.amenities.map((a) => (
                       <Badge key={a.id} variant="outline">
@@ -376,10 +375,10 @@ export default function VenueReviewsPage() {
                   pendingStatus === "ACTIVE" ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Approving…
+                      {t("approving")}
                     </>
                   ) : (
-                    "Approve"
+                    tAdmin("approve")
                   )}
                 </Button>
                 <Button
@@ -390,7 +389,7 @@ export default function VenueReviewsPage() {
                     setViewVenue(null);
                   }}
                 >
-                  Reject
+                  {tAdmin("reject")}
                 </Button>
               </div>
             </div>
@@ -409,15 +408,15 @@ export default function VenueReviewsPage() {
       >
         <DialogContent className="border-border bg-card text-foreground">
           <DialogHeader>
-            <DialogTitle>Reject venue</DialogTitle>
+            <DialogTitle>{t("rejectTitle")}</DialogTitle>
             <DialogDescription>
               {rejectVenue
-                ? `Tell the vendor why "${rejectVenue.name}" was not approved. They can fix issues and resubmit.`
-                : "Provide a rejection reason for the vendor."}
+                ? t("rejectDescNamed", { name: rejectVenue.name })
+                : t("rejectDesc")}
             </DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder="Rejection reason (required)"
+            placeholder={t("rejectPlaceholder")}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             className="border-border bg-input/50 min-h-24"
@@ -430,7 +429,7 @@ export default function VenueReviewsPage() {
                 setReason("");
               }}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -454,10 +453,10 @@ export default function VenueReviewsPage() {
               pendingStatus === "REJECTED" ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Rejecting…
+                  {t("rejecting")}
                 </>
               ) : (
-                "Reject venue"
+                t("rejectVenue")
               )}
             </Button>
           </DialogFooter>
