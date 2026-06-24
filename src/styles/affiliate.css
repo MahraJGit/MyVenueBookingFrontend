@@ -1,12 +1,18 @@
 .affiliate-hero {
-    padding: 100px 0;
+    padding: 6rem 0 4rem;
+
+    @media (min-width: 640px) {
+        padding: 7rem 0 4rem;
+    }
+
     background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url('/images/hero-bg.jpg') no-repeat center center/cover;
 
     .inner .description {
         max-width: 80%;
+        padding: 0 0.5rem;
 
         @media (max-width: 1024px) {
-            max-width: 70%;
+            max-width: 85%;
         }
 
         @media (max-width: 768px) {
@@ -16,21 +22,27 @@
 }
 
 .news-letter {
-    padding: 40px 0;
+    padding: 2.5rem 0;
 
     .inner {
-        padding: 32px 0;
+        padding: 2rem 1rem;
+
+        @media (min-width: 640px) {
+            padding: 2rem 1.5rem;
+        }
+
         background: linear-gradient(89.97deg, #0F0F0F 2.42%, rgba(19, 15, 20, 0.974681) 25.46%, rgba(29, 14, 34, 0.909574) 46.72%, rgba(215, 73, 142, 0) 168.98%), url('/images/hero-bg.jpg') no-repeat center center/cover;
 
         .content-wrapper {
             max-width: 90%;
             margin: 0 auto;
+            text-align: center;
 
-            @media (max-width: 1024px) {
-                max-width: 70%;
+            @media (min-width: 640px) {
+                text-align: left;
             }
 
-            @media (max-width: 768px) {
+            @media (max-width: 1024px) {
                 max-width: 100%;
             }
         }
@@ -42,6 +54,28 @@
         background: linear-gradient(180deg, #1B1B1B 0%, rgba(14, 4, 17, 0.2) 50.4%, #1B1B1B 100%),
             linear-gradient(90deg, rgba(27, 27, 27, 0.8) 0%, rgba(14, 4, 17, 0.2) 48.08%, rgba(27, 27, 27, 0.8) 100%);
 
+    }
+}
+
+.why-us-blogs {
+    .points ul {
+        padding-left: 0;
+        list-style: none;
+    }
+
+    .points li + li {
+        margin-top: 1rem;
+    }
+
+    .points h4 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .points p {
+        font-size: 0.875rem;
+        color: #B3B3B3;
     }
 }
 
@@ -59,6 +93,11 @@
                 rgba(13, 13, 13, 0.85) 50%,
                 rgba(13, 13, 13, 0) 100%);
         z-index: 1;
+        pointer-events: none;
+
+        @media (max-width: 768px) {
+            width: 15%;
+        }
     }
 
     &::after {
@@ -73,6 +112,11 @@
                 rgba(13, 13, 13, 0.85) 50%,
                 rgba(13, 13, 13, 0) 100%);
         z-index: 1;
+        pointer-events: none;
+
+        @media (max-width: 768px) {
+            width: 15%;
+        }
     }
 
     .marquee-track {

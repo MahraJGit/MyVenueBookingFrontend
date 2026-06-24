@@ -14,20 +14,22 @@ export function isRtlLocale(locale: string): boolean {
   return RTL_LOCALES.includes(locale as AppLocale);
 }
 
+export type CountryCode = "GB" | "PK" | "DE" | "SA" | "FR";
+
 export type LocaleMeta = {
   code: AppLocale;
   label: string;
   nativeLabel: string;
-  flag: string;
+  countryCode: CountryCode;
   dir: "ltr" | "rtl";
 };
 
 export const LOCALE_OPTIONS: LocaleMeta[] = [
-  { code: "en", label: "English", nativeLabel: "English", flag: "🇬🇧", dir: "ltr" },
-  { code: "ur", label: "Urdu", nativeLabel: "اردو", flag: "🇵🇰", dir: "rtl" },
-  { code: "de", label: "German", nativeLabel: "Deutsch", flag: "🇩🇪", dir: "ltr" },
-  { code: "ar", label: "Arabic", nativeLabel: "العربية", flag: "🇸🇦", dir: "rtl" },
-  { code: "fr", label: "French", nativeLabel: "Français", flag: "🇫🇷", dir: "ltr" },
+  { code: "en", label: "English", nativeLabel: "English", countryCode: "GB", dir: "ltr" },
+  { code: "ur", label: "Urdu", nativeLabel: "اردو", countryCode: "PK", dir: "rtl" },
+  { code: "de", label: "German", nativeLabel: "Deutsch", countryCode: "DE", dir: "ltr" },
+  { code: "ar", label: "Arabic", nativeLabel: "العربية", countryCode: "SA", dir: "rtl" },
+  { code: "fr", label: "French", nativeLabel: "Français", countryCode: "FR", dir: "ltr" },
 ];
 
 export function isAppLocale(value: string): value is AppLocale {

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { EventCard } from "@/components/events/EventCard";
+import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
 import { EventCategoryFilters } from "@/components/events/EventCategoryFilters";
 import { listPublicEventCategories } from "@/features/event-categories/api";
 import { listPublicEvents } from "@/features/events/api";
@@ -75,14 +76,14 @@ export function HotEventsSection() {
         ) : null}
 
         {loadingEvents ? (
-          <div className="shows-cards grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <ResponsiveEventCardsGrid>
             {Array.from({ length: HOMEPAGE_EVENT_LIMIT }).map((_, i) => (
               <div
                 key={i}
                 className="h-[420px] rounded-[20px] bg-[#242424] animate-pulse"
               />
             ))}
-          </div>
+          </ResponsiveEventCardsGrid>
         ) : events.length === 0 ? (
           <p className="text-sm text-[#B3B3B3] py-8">
             {activeCategory !== ALL_EVENTS_CATEGORY
@@ -91,11 +92,11 @@ export function HotEventsSection() {
             .
           </p>
         ) : (
-          <div className="shows-cards grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <ResponsiveEventCardsGrid>
             {events.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
-          </div>
+          </ResponsiveEventCardsGrid>
         )}
       </div>
     </section>

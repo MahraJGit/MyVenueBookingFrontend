@@ -15,17 +15,17 @@ export const SUPPORTED_CURRENCIES: Currency[] = [
 export type CurrencyOption = {
   code: Currency;
   label: string;
-  flag: string;
+  countryCode: string;
 };
 
 export const CURRENCY_OPTIONS: CurrencyOption[] = [
-  { code: "AED", label: "UAE Dirham", flag: "🇦🇪" },
-  { code: "PKR", label: "Pakistani Rupee", flag: "🇵🇰" },
-  { code: "USD", label: "US Dollar", flag: "🇺🇸" },
-  { code: "EUR", label: "Euro", flag: "🇪🇺" },
-  { code: "GBP", label: "British Pound", flag: "🇬🇧" },
-  { code: "SAR", label: "Saudi Riyal", flag: "🇸🇦" },
-  { code: "QAR", label: "Qatari Riyal", flag: "🇶🇦" },
+  { code: "AED", label: "UAE Dirham", countryCode: "AE" },
+  { code: "PKR", label: "Pakistani Rupee", countryCode: "PK" },
+  { code: "USD", label: "US Dollar", countryCode: "US" },
+  { code: "EUR", label: "Euro", countryCode: "EU" },
+  { code: "GBP", label: "British Pound", countryCode: "GB" },
+  { code: "SAR", label: "Saudi Riyal", countryCode: "SA" },
+  { code: "QAR", label: "Qatari Riyal", countryCode: "QA" },
 ];
 
 export const DISPLAY_CURRENCY_STORAGE_KEY = "displayCurrency";

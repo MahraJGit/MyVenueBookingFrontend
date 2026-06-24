@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import { EventCard } from "@/components/events/EventCard";
+import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
 import { VenueCard } from "@/components/venues/VenueCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,14 +108,14 @@ function sortMergedVenues(
 
 function CardSkeletonGrid({ count = PAGE_SIZE }: { count?: number }) {
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    <ResponsiveEventCardsGrid>
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
           className="h-[420px] animate-pulse rounded-[20px] bg-[#242424]"
         />
       ))}
-    </div>
+    </ResponsiveEventCardsGrid>
   );
 }
 
@@ -301,7 +302,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
   const items = isAttractions ? events : venues;
 
   return (
-    <section className="eventslist py-10 pt-28">
+    <section className="eventslist py-10 pt-24 sm:pt-28">
       <div className="container mx-auto px-4">
         <div className="section-header mb-10 max-w-3xl">
           <h1 className="page-title mb-3 text-white">
@@ -312,14 +313,15 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
               </>
             ) : (
               <>
-                <span className="text-gradient-accent">Corporate</span> Venues
+                Corporate{" "}
+                <span className="text-gradient-accent">Venues</span>
               </>
             )}
           </h1>
           <p className="text-muted-foreground">{description}</p>
         </div>
 
-        <div className="mb-8 flex flex-wrap gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4">
+        <div className="mb-8 flex flex-col gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 sm:flex-row sm:flex-wrap sm:items-center">
           <Input
             placeholder={isAttractions ? "Search events..." : "Search venues..."}
             value={search}
@@ -327,7 +329,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
             onKeyDown={(e) => {
               if (e.key === "Enter") applyFilters();
             }}
-            className="max-w-xs border-[#303030] bg-black text-white"
+            className="w-full border-[#303030] bg-black text-white sm:max-w-xs"
           />
           <Input
             placeholder="City"
@@ -336,10 +338,10 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
             onKeyDown={(e) => {
               if (e.key === "Enter") applyFilters();
             }}
-            className="max-w-[160px] border-[#303030] bg-black text-white"
+            className="w-full border-[#303030] bg-black text-white sm:max-w-[160px]"
           />
           <Select value={sortValue} onValueChange={handleSortChange}>
-            <SelectTrigger className="w-[180px] border-[#303030] bg-black text-white">
+            <SelectTrigger className="w-full border-[#303030] bg-black text-white sm:w-[180px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -350,26 +352,28 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={applyFilters} className="bg-primary">
-            <Search className="mr-2 h-4 w-4" />
-            Search
-          </Button>
-          {(searchFromUrl || cityFromUrl) && (
-            <Button
-              variant="outline"
-              className="border-[#303030] text-muted-foreground"
-              onClick={() => {
-                setSearch("");
-                setCity("");
-                pushParams({ search: undefined, city: undefined, page: undefined });
-              }}
-            >
-              Clear filters
+          <div className="flex flex-wrap gap-2 sm:contents">
+            <Button onClick={applyFilters} className="w-full bg-primary sm:w-auto">
+              <Search className="mr-2 h-4 w-4" />
+              Search
             </Button>
-          )}
+            {(searchFromUrl || cityFromUrl) && (
+              <Button
+                variant="outline"
+                className="w-full border-[#303030] text-muted-foreground sm:w-auto"
+                onClick={() => {
+                  setSearch("");
+                  setCity("");
+                  pushParams({ search: undefined, city: undefined, page: undefined });
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
+          </div>
         </div>
 
-        <div className="mb-6 flex items-center justify-between border-b border-[#1F1F1F] pb-5">
+        <div className="mb-6 flex flex-col gap-3 border-b border-[#1F1F1F] pb-5 sm:flex-row sm:items-center sm:justify-between">
           <h2>{isAttractions ? "Events" : "Venues"}</h2>
           <Link
             href={
@@ -377,7 +381,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
                 ? buildEventsPageHref(ATTRACTIONS_ENTERTAINMENT_CATEGORY)
                 : "/venues"
             }
-            className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:text-primary"
+            className="w-full rounded-full border border-primary px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:text-primary sm:w-auto"
           >
             {isAttractions ? "View all events" : "View all venues"}
           </Link>
@@ -427,26 +431,26 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
               </div>
             ) : null}
             {isAttractions ? (
-              <div className="event-cards grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <ResponsiveEventCardsGrid>
                 {events.map((event) => (
                   <EventCard key={event.id} event={event} />
                 ))}
-              </div>
+              </ResponsiveEventCardsGrid>
             ) : (
-              <div className="venue-cards grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <ResponsiveEventCardsGrid>
                 {venues.map((venue) => (
                   <VenueCard key={venue.id} venue={venue} />
                 ))}
-              </div>
+              </ResponsiveEventCardsGrid>
             )}
           </div>
         )}
 
         {showPagination ? (
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+          <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-2">
             <Button
               variant="outline"
-              className="border-[#303030]"
+              className="border-[#303030] sm:min-w-[7rem]"
               disabled={page <= 1 || isFetching}
               onClick={() => {
                 pushParams({ page: page <= 2 ? undefined : String(page - 1) });
@@ -454,7 +458,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
             >
               Previous
             </Button>
-            <span className="flex items-center px-4 text-sm text-muted-foreground">
+            <span className="flex items-center justify-center px-2 text-center text-sm text-muted-foreground sm:px-4">
               Page {page} of {totalPages}
               {meta?.total != null
                 ? ` · ${meta.total} ${isAttractions ? "events" : "venues"}`
@@ -462,7 +466,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
             </span>
             <Button
               variant="outline"
-              className="border-[#303030]"
+              className="border-[#303030] sm:min-w-[7rem]"
               disabled={page >= totalPages || isFetching}
               onClick={() => {
                 pushParams({ page: String(page + 1) });

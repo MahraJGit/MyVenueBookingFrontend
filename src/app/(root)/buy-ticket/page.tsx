@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useTranslations } from 'next-intl';
 import "@/styles/buyTicket.css"
+import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid"
 import {
   Select,
   SelectContent,
@@ -24,6 +25,62 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Checkbox } from '@/components/ui/checkbox';
+
+const NEARBY_CONCERTS = [
+  { title: "Slave's Snow", date: 'Mar 6, 2025', location: 'Chelyabinsk', price: '$473.85' },
+  { title: "Slave's Snow", date: 'Mar 6, 2025', location: 'Chelyabinsk', price: '$473.85' },
+  { title: "Slave's Snow", date: 'Mar 6, 2025', location: 'Chelyabinsk', price: '$473.85' },
+  { title: "Slave's Snow", date: 'Mar 6, 2025', location: 'Chelyabinsk', price: '$473.85' },
+] as const;
+
+function NearbyConcertCard({
+  title,
+  date,
+  location,
+  price,
+  imageAlt,
+  timeToEndLabel,
+  fromLabel,
+}: {
+  title: string;
+  date: string;
+  location: string;
+  price: string;
+  imageAlt: string;
+  timeToEndLabel: string;
+  fromLabel: string;
+}) {
+  return (
+    <Link
+      href="/buy-ticket"
+      className="card group relative flex w-full min-w-0 cursor-pointer flex-col"
+    >
+      <Image
+        src="/images/card-img1.png"
+        alt={imageAlt}
+        width={500}
+        height={343}
+        className="aspect-[500/343] w-full rounded-[20px] object-cover"
+      />
+      <div className="card-body relative z-0 mx-auto -mt-10 flex w-full max-w-[92%] flex-1 flex-col rounded-2xl border border-[#303030] bg-[#1B1B1B] transition-all duration-300 ease-in-out group-hover:rounded-t-none">
+        <div className="timer visibility-hidden absolute -top-10 right-0 left-0 z-10 flex max-h-0 justify-between overflow-hidden rounded-t-2xl bg-[#850D06] px-4 py-2 opacity-0 transition-all duration-300 ease-in-out group-hover:visible group-hover:max-h-10 group-hover:opacity-100">
+          <span>{timeToEndLabel}</span>
+          <span>06:34:15</span>
+        </div>
+        <div className="flex flex-col gap-4 p-4">
+          <h4 className="line-clamp-1">{title}</h4>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs">{date}</span>
+            <span className="line-clamp-1 text-right text-xs">{location}</span>
+          </div>
+          <div className="price text-md font-bold text-primary">
+            {fromLabel} <span>{price}</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 const buyTicket = () => {
   const router = useRouter();
@@ -368,123 +425,20 @@ const buyTicket = () => {
             <h2>{t('concertNearYou')}</h2>
             <span className="text-sm">{tHome('seeAll')}</span>
           </div>
-          <div className="shows-cards grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <Link href="/buy-ticket" className="card flex flex-col items-center group relative cursor-pointer">
-              <Image
-                src="/images/card-img1.png"
-                alt={tEventList('concertImageAlt')}
-                width={500}
-                height={343}
-                layout="intrinsic"
-                className="rounded-[20px] object-cover h-[343px]! "
+          <ResponsiveEventCardsGrid>
+            {NEARBY_CONCERTS.map((concert, index) => (
+              <NearbyConcertCard
+                key={`${concert.title}-${index}`}
+                title={concert.title}
+                date={concert.date}
+                location={concert.location}
+                price={concert.price}
+                imageAlt={tEventList('concertImageAlt')}
+                timeToEndLabel={tEvents('timeToEnd')}
+                fromLabel={tCommon('from')}
               />
-              <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
-                {/* Timer */}
-                <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>{tEvents('timeToEnd')}</span>
-                  <span>06:34:15</span>
-                </div>
-                {/* Card Body Content */}
-                <div className="p-4 flex flex-col gap-4">
-                  <h4>Slave’s Snow</h4>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs">Mar 6, 2025</span>
-                    <span className="text-xs">Chelyabinsk</span>
-                  </div>
-                  <div className="price text-md font-bold text-primary">
-                    {tCommon('from')} <span>$473.85</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            <Link href="/buy-ticket" className="card flex flex-col items-center group relative cursor-pointer">
-              <Image
-                src="/images/card-img1.png"
-                alt={tEventList('concertImageAlt')}
-                width={500}
-                height={343}
-                layout="intrinsic"
-                className="rounded-[20px] object-cover h-[343px]! "
-              />
-              <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
-                {/* Timer */}
-                <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>{tEvents('timeToEnd')}</span>
-                  <span>06:34:15</span>
-                </div>
-                {/* Card Body Content */}
-                <div className="p-4 flex flex-col gap-4">
-                  <h4>Slave’s Snow</h4>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs">Mar 6, 2025</span>
-                    <span className="text-xs">Chelyabinsk</span>
-                  </div>
-                  <div className="price text-md font-bold text-primary">
-                    {tCommon('from')} <span>$473.85</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            <Link href="/buy-ticket" className="card flex flex-col items-center group relative cursor-pointer">
-              <Image
-                src="/images/card-img1.png"
-                alt={tEventList('concertImageAlt')}
-                width={500}
-                height={343}
-                layout="intrinsic"
-                className="rounded-[20px] object-cover h-[343px]! "
-              />
-              <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
-                {/* Timer */}
-                <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>{tEvents('timeToEnd')}</span>
-                  <span>06:34:15</span>
-                </div>
-                {/* Card Body Content */}
-                <div className="p-4 flex flex-col gap-4">
-                  <h4>Slave’s Snow</h4>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs">Mar 6, 2025</span>
-                    <span className="text-xs">Chelyabinsk</span>
-                  </div>
-                  <div className="price text-md font-bold text-primary">
-                    {tCommon('from')} <span>$473.85</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            <Link href="/buy-ticket" className="card flex flex-col items-center group relative cursor-pointer">
-              <Image
-                src="/images/card-img1.png"
-                alt={tEventList('concertImageAlt')}
-                width={500}
-                height={343}
-                layout="intrinsic"
-                className="rounded-[20px] object-cover h-[343px]! "
-              />
-              <div className="card-body max-w-[92%] w-full border border-[#303030] rounded-2xl bg-[#1B1B1B] -mt-10 relative z-0 group-hover:rounded-t-none transition-all duration-300 ease-in-out">
-                {/* Timer */}
-                <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-                  <span>{tEvents('timeToEnd')}</span>
-                  <span>06:34:15</span>
-                </div>
-                {/* Card Body Content */}
-                <div className="p-4 flex flex-col gap-4">
-                  <h4>Slave’s Snow</h4>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs">Mar 6, 2025</span>
-                    <span className="text-xs">Chelyabinsk</span>
-                  </div>
-                  <div className="price text-md font-bold text-primary">
-                    {tCommon('from')} <span>$473.85</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          </div>
+            ))}
+          </ResponsiveEventCardsGrid>
         </div>
       </section>
     </>

@@ -4,21 +4,27 @@ import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import "@/styles/event-list.css";
 import { EventsListingSection } from "@/components/events/EventsListingSection";
+import { EventsPageHeader } from "@/components/events/EventsPageHeader";
+import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
 
 function EventsListingFallback() {
   const tCommon = useTranslations("common");
   return (
-    <section className="eventslist py-10 pt-28" aria-busy="true" aria-label={tCommon("loading")}>
+    <section
+      className="eventslist py-10 pt-24 sm:pt-28"
+      aria-busy="true"
+      aria-label={tCommon("loading")}
+    >
       <div className="container mx-auto px-4">
-        <div className="h-10 w-48 bg-[#242424] animate-pulse rounded mb-8" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <EventsPageHeader />
+        <ResponsiveEventCardsGrid>
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="h-[420px] rounded-[20px] bg-[#242424] animate-pulse"
+              className="h-[420px] animate-pulse rounded-[20px] bg-[#242424]"
             />
           ))}
-        </div>
+        </ResponsiveEventCardsGrid>
       </div>
     </section>
   );

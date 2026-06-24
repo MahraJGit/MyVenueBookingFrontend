@@ -74,7 +74,7 @@ export default function ViewTicketContent() {
 
   if (!orderGroupId) {
     return (
-      <Card className="bg-[#121212] p-8 text-white text-center">
+      <Card className="bg-[#121212] p-4 text-center text-white sm:p-8">
         <p className="text-muted-foreground mb-4">No order selected.</p>
         <Button asChild variant="outline">
           <Link href="/userDashboard/tickets">
@@ -88,7 +88,7 @@ export default function ViewTicketContent() {
 
   if (isLoading) {
     return (
-      <Card className="bg-[#121212] p-8 text-white flex flex-col items-center gap-4 py-16">
+      <Card className="flex flex-col items-center gap-4 bg-[#121212] p-4 py-16 text-white sm:p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-sm text-muted-foreground">Loading order…</p>
       </Card>
@@ -97,7 +97,7 @@ export default function ViewTicketContent() {
 
   if (!order) {
     return (
-      <Card className="bg-[#121212] p-8 text-white text-center">
+      <Card className="bg-[#121212] p-4 text-center text-white sm:p-8">
         <p className="text-muted-foreground mb-4">Ticket order not found.</p>
         <Button asChild variant="outline">
           <Link href="/userDashboard/tickets">Back to tickets</Link>
@@ -110,9 +110,9 @@ export default function ViewTicketContent() {
     order.eventImage ?? getFallbackEventImage(order.eventId)
 
   return (
-    <Card className="bg-[#121212] p-8 text-white">
+    <Card className="bg-[#121212] p-4 text-white sm:p-8">
       <div className="mb-6">
-        <Button asChild variant="ghost" size="sm" className="text-muted-foreground px-0">
+        <Button asChild variant="ghost" size="sm" className="px-0 text-muted-foreground">
           <Link href="/userDashboard/tickets">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to tickets
@@ -120,17 +120,17 @@ export default function ViewTicketContent() {
         </Button>
       </div>
 
-      <div className="flex items-start justify-between flex-wrap gap-6">
-        <div className="flex gap-6">
+      <div className="flex flex-col flex-wrap items-start justify-between gap-6 lg:flex-row">
+        <div className="flex w-full flex-col gap-4 sm:flex-row sm:gap-6 lg:w-auto">
           <Image
             src={imageSrc}
             alt={order.eventName}
             width={120}
             height={120}
-            className="rounded-xl object-cover"
+            className="h-[120px] w-full max-w-[120px] rounded-xl object-cover"
           />
 
-          <div>
+          <div className="min-w-0">
             <h3 className="text-pink-500 font-semibold">Order Details</h3>
             <h2 className="mt-2 text-xl font-bold">{order.eventName}</h2>
 
@@ -141,12 +141,12 @@ export default function ViewTicketContent() {
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <Button variant="outline" size="sm" disabled>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" disabled>
             <RotateCcw className="mr-2 h-4 w-4" />
             Refund ticket
           </Button>
-          <Button size="sm" className="bg-pink-500 hover:bg-pink-600" disabled>
+          <Button size="sm" className="w-full bg-pink-500 hover:bg-pink-600 sm:w-auto" disabled>
             <Download className="mr-2 h-4 w-4" />
             Download ticket
           </Button>
@@ -218,8 +218,8 @@ export default function ViewTicketContent() {
             </p>
           </div>
 
-          <div className="row-span-2 flex justify-end">
-            <div className="h-32 w-32 rounded-lg bg-pink-500/20 border border-pink-500/30 flex items-center justify-center text-xs text-muted-foreground p-4 text-center">
+          <div className="flex justify-start md:col-span-1 md:row-span-2 md:justify-end">
+            <div className="flex h-32 w-32 items-center justify-center rounded-lg border border-pink-500/30 bg-pink-500/20 p-4 text-center text-xs text-muted-foreground">
               QR code coming soon
             </div>
           </div>

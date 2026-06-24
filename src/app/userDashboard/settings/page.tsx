@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { CountryFlag } from '@/components/i18n/CountryFlag'
 import { LOCALE_OPTIONS } from '@/i18n/locales'
 import {
   getNotificationPreferences,
@@ -54,14 +55,14 @@ export default function NotificationSettings() {
 
   if (isLoading || !settings) {
     return (
-      <div className="mt-5 flex justify-center rounded-xl bg-[#121212] p-16">
+      <div className="mt-2 flex justify-center rounded-xl bg-[#121212] p-8 sm:mt-5 sm:p-16">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <div className="mt-5 rounded-xl bg-[#121212] p-8 ">
+    <div className="mt-2 rounded-xl bg-[#121212] p-4 sm:mt-5 sm:p-8">
       <h2 className="text-lg font-semibold mb-6">{t('settingsTitle')}</h2>
 
       <div className="space-y-4">
@@ -114,7 +115,7 @@ export default function NotificationSettings() {
             saveMutation.mutate({ language: value })
           }}
         >
-          <SelectTrigger className="w-60 bg-[#151515] border-[#242424]">
+          <SelectTrigger className="w-full bg-[#151515] border-[#242424] sm:w-60">
             <SelectValue placeholder={tCommon('selectLanguage')} />
           </SelectTrigger>
 
@@ -122,7 +123,7 @@ export default function NotificationSettings() {
             {LOCALE_OPTIONS.map((option) => (
               <SelectItem key={option.code} value={option.code}>
                 <div className="flex items-center gap-2">
-                  <span aria-hidden>{option.flag}</span>
+                  <CountryFlag code={option.countryCode} className="h-3.5 w-5" />
                   <span>{option.nativeLabel}</span>
                 </div>
               </SelectItem>
@@ -146,13 +147,13 @@ function SettingItem({
   onChange: () => void
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg bg-[#151515] px-5 py-4">
-      <div className="max-w-[80%]">
+    <div className="flex flex-col gap-4 rounded-lg bg-[#151515] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <div className="min-w-0 sm:max-w-[80%]">
         <h4 className="text-sm font-medium">{title}</h4>
         <p className="text-sm text-muted-foreground mt-1">{description}</p>
       </div>
 
-      <Switch checked={checked} onCheckedChange={onChange} />
+      <Switch checked={checked} onCheckedChange={onChange} className="shrink-0 self-end sm:self-auto" />
     </div>
   )
 }

@@ -12,9 +12,17 @@ import {
   Settings,
   LogOut,
   CalendarDays,
+  X,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
-export default function UserSidebar() {
+type UserSidebarProps = {
+  isOpen: boolean
+  onClose: () => void
+}
+
+export default function UserSidebar({ isOpen, onClose }: UserSidebarProps) {
   const pathname = usePathname()
   const t = useTranslations('userDashboard')
   const tCommon = useTranslations('common')
@@ -48,13 +56,34 @@ export default function UserSidebar() {
   ]
 
   return (
-    <aside className="w-[260px] min-h-screen bg-[#1B1B1B] rounded-2xl  text-white px-4 py-6 flex flex-col border-r border-white/10">
-
-      <div className="flex items-center gap-2 mb-10 px-2">
-        <Image src="/svg/logo.svg" alt={tCommon('appName')} width={170} height={70} />
+    <aside
+      className={cn(
+        'fixed top-0 left-0 z-50 flex h-full w-[260px] flex-col',
+        'bg-[#1B1B1B] px-4 py-6 text-white',
+        'border-r border-white/10 lg:static lg:m-4 lg:min-h-[calc(100vh-2rem)] lg:rounded-2xl lg:border-r-0',
+        'transform transition-transform duration-300',
+        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+      )}
+    >
+      <div className="mb-2 flex justify-end lg:hidden">
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label={tCommon('close')}>
+          <X />
+        </Button>
       </div>
 
-      <nav className="flex flex-col space-y-1">
+      <div className="mb-8 flex items-center gap-2 px-2 lg:mb-10">
+        <Link href="/">
+        <Image
+          src="/svg/logo.svg"
+          alt={tCommon('appName')}
+          width={170}
+          height={70}
+          className="h-auto w-[140px] sm:w-[170px]"
+        />
+          </Link>
+      </div>
+
+      <nav className="flex flex-col space-y-1 overflow-y-auto">
         {links.map((item) => {
           const isActive = pathname.startsWith(item.href)
           const Icon = item.icon
@@ -63,16 +92,15 @@ export default function UserSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`
-                relative flex items-center gap-3 px-4 py-2 text-sm transition
-                ${isActive
-                  ? 'text-primary'
-                  : 'text-gray-300 hover:text-white'}
-              `}
-            >
-              {isActive && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] bg-primary rounded-full" />
+              onClick={onClose}
+              className={cn(
+                'relative flex items-center gap-3 px-4 py-2 text-sm transition',
+                isActive ? 'text-primary' : 'text-gray-300 hover:text-white',
               )}
+            >
+              {isActive ? (
+                <span className="absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-full bg-primary" />
+              ) : null}
 
               <Icon
                 size={18}
@@ -90,16 +118,17 @@ export default function UserSidebar() {
       <div className="mt-auto space-y-1">
         <Link
           href="/userDashboard/settings"
-          className={`
-            relative flex items-center gap-3 px-4 py-2 text-sm transition
-            ${pathname.startsWith('/userDashboard/settings')
+          onClick={onClose}
+          className={cn(
+            'relative flex items-center gap-3 px-4 py-2 text-sm transition',
+            pathname.startsWith('/userDashboard/settings')
               ? 'text-primary'
-              : 'text-gray-300 hover:text-white'}
-          `}
-        >
-          {pathname.startsWith('/userDashboard/settings') && (
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] bg-primary rounded-full" />
+              : 'text-gray-300 hover:text-white',
           )}
+        >
+          {pathname.startsWith('/userDashboard/settings') ? (
+            <span className="absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-full bg-primary" />
+          ) : null}
 
           <Settings
             size={18}
@@ -113,7 +142,8 @@ export default function UserSidebar() {
         </Link>
 
         <button
-          className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:text-red-400 transition w-full"
+          type="button"
+          className="flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-300 transition hover:text-red-400"
         >
           <LogOut size={18} />
           {t('logOut')}

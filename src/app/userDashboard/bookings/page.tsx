@@ -19,7 +19,10 @@ import {
 } from "@/components/bookings/user-booking-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DashboardFilterBar,
+  DashboardScrollableTabs,
+} from "@/components/userDashboard/DashboardScrollableTabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,7 +96,7 @@ export default function UserBookingsPage() {
             {t("bookingsSubtitle")}
           </p>
         </div>
-        <Button asChild className="bg-primary hover:bg-primary/90">
+        <Button asChild className="w-full bg-primary hover:bg-primary/90 sm:w-auto">
           <Link href="/venues" className="inline-flex items-center gap-2">
             <Plus className="h-4 w-4" />
             {t("bookAVenue")}
@@ -103,58 +106,57 @@ export default function UserBookingsPage() {
 
       <Card className="border-zinc-800 bg-zinc-950/40">
         <CardContent className="p-6 sm:p-8">
-          <div className="mb-6 flex flex-col gap-4 border-b border-zinc-800 pb-6 sm:flex-row sm:items-center sm:justify-between">
-            <Tabs
+          <DashboardFilterBar
+            className="border-zinc-800"
+            action={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full shrink-0 border-zinc-700 bg-zinc-900/50 text-muted-foreground sm:w-auto"
+                  >
+                    {sortLabel}
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="border-zinc-800 bg-zinc-900">
+                  <DropdownMenuItem onClick={() => setSortBy("newest")}>
+                    {t("newestFirst")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("oldest")}>
+                    {t("oldestFirst")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("amount-high")}>
+                    {t("highestAmount")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("amount-low")}>
+                    {t("lowestAmount")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          >
+            <DashboardScrollableTabs
+              variant="pill"
               value={activeTab}
-              onValueChange={(v) => {
-                setActiveTab(v as BookingTabValue);
+              onValueChange={(value) => {
+                setActiveTab(value);
                 setSelectedId(null);
               }}
-              className="w-full sm:w-auto"
-            >
-              <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0 sm:w-auto">
-                {TAB_VALUES.map((value) => (
-                  <TabsTrigger
-                    key={value}
-                    value={value}
-                    className="rounded-lg border border-transparent px-3 py-2 text-sm data-[state=active]:border-zinc-700 data-[state=active]:bg-zinc-900 data-[state=active]:text-white data-[state=active]:shadow-none text-muted-foreground"
-                  >
+              items={TAB_VALUES.map((value) => ({
+                value,
+                label: (
+                  <>
                     {tabLabel(value)}
                     <span className="ml-1.5 rounded-full bg-zinc-800 px-1.5 py-0.5 text-xs tabular-nums">
                       {tabCount(value)}
                     </span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 border-zinc-700 bg-zinc-900/50 text-muted-foreground"
-                >
-                  {sortLabel}
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="border-zinc-800 bg-zinc-900">
-                <DropdownMenuItem onClick={() => setSortBy("newest")}>
-                  {t("newestFirst")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("oldest")}>
-                  {t("oldestFirst")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("amount-high")}>
-                  {t("highestAmount")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("amount-low")}>
-                  {t("lowestAmount")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                  </>
+                ),
+              }))}
+            />
+          </DashboardFilterBar>
 
           {isLoading ? (
             <div className="flex flex-col items-center justify-center gap-4 py-16 text-muted-foreground">

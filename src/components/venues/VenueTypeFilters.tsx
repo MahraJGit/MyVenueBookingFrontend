@@ -26,7 +26,7 @@ export function VenueTypeFilters({
   ];
 
   return (
-    <div className="mb-8 flex flex-wrap gap-2">
+    <div className="-mx-1 mb-8 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:pb-0">
       {pills.map((type) => {
         const isActive =
           type.id === ALL_VENUE_TYPES
@@ -41,7 +41,7 @@ export function VenueTypeFilters({
             onClick={() =>
               onTypeChange(type.id === ALL_VENUE_TYPES ? "" : type.id)
             }
-            className={`cursor-pointer rounded-[18px] border border-[#303030] bg-[#242424] px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60
+            className={`shrink-0 cursor-pointer whitespace-nowrap rounded-[18px] border border-[#303030] bg-[#242424] px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60
         ${
           isActive
             ? `border-[#D7498E] bg-[linear-gradient(180deg,rgba(215,73,142,0.3)_0%,rgba(27,27,27,0)_100%)] text-[#D580F2]`

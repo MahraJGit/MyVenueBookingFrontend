@@ -210,8 +210,8 @@ export default function ProfilePage() {
 
   return (
     <>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8 bg-[#121212] p-6 rounded-lg">
-        <div className="flex gap-4 items-center">
+      <div className="mb-6 flex flex-col gap-4 rounded-lg bg-[#121212] p-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div className="flex items-center gap-4">
           <div className="relative">
             <Avatar className="h-20 w-20">
               {avatarSrc ? (
@@ -234,7 +234,7 @@ export default function ProfilePage() {
             <p className="text-[#B3B3B3]">{form.email || "—"}</p>
           </div>
         </div>
-        <div>
+        <div className="w-full sm:w-auto">
           <input
             ref={fileInputRef}
             type="file"
@@ -245,6 +245,7 @@ export default function ProfilePage() {
           <Button
             type="button"
             variant="outline"
+            className="w-full sm:w-auto"
             disabled={avatarMutation.isPending}
             onClick={() => fileInputRef.current?.click()}
           >
@@ -253,7 +254,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="rounded-xl bg-[#121212] p-8">
+      <div className="rounded-xl bg-[#121212] p-4 sm:p-8">
         <form
           className="grid grid-cols-1 md:grid-cols-2 gap-6"
           onSubmit={(e) => {
@@ -394,10 +395,11 @@ export default function ProfilePage() {
             </Popover>
           </div>
 
-          <div className="col-span-full flex justify-end gap-4 pt-4">
+          <div className="col-span-full flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end sm:gap-4">
             <Button
               type="button"
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={handleDiscard}
               disabled={saveMutation.isPending || avatarMutation.isPending}
             >
@@ -405,7 +407,7 @@ export default function ProfilePage() {
             </Button>
             <Button
               type="submit"
-              className="bg-pink-500 hover:bg-pink-600"
+              className="w-full bg-pink-500 hover:bg-pink-600 sm:w-auto"
               disabled={saveMutation.isPending || avatarMutation.isPending}
             >
               {saveMutation.isPending ? (

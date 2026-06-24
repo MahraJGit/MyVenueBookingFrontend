@@ -75,7 +75,7 @@ export function HeaderAuthActions({
           asChild
           variant={stacked ? "outline" : "ghost"}
           size={stacked ? "default" : "sm"}
-          className={stacked ? "w-full" : ""}
+          className={stacked ? "h-11 w-full rounded-xl" : ""}
         >
           <Link href="/signup" onClick={onNavigate}>
             {tAuth("register")}
@@ -84,7 +84,7 @@ export function HeaderAuthActions({
         <Button
           asChild
           size={stacked ? "default" : "sm"}
-          className={stacked ? "w-full" : ""}
+          className={stacked ? "h-11 w-full rounded-xl" : ""}
         >
           <Link href="/login" onClick={onNavigate}>
             {tAuth("login")}
@@ -169,12 +169,12 @@ export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void 
 
   return (
     <div className="space-y-1">
-      <p className="px-1 pb-2 text-sm font-medium text-muted-foreground">{displayName}</p>
+      <p className="mb-2 px-3 text-sm font-medium text-foreground">{displayName}</p>
       {dashboardLinks.map((link) => (
         <button
           key={link.href}
           type="button"
-          className="flex w-full items-center rounded-md px-3 py-2.5 text-left text-base font-medium hover:text-primary transition-colors"
+          className="flex w-full items-center rounded-xl px-3 py-3 text-left text-[15px] font-medium text-foreground/90 transition-colors hover:bg-white/5 hover:text-primary"
           onClick={() => {
             onNavigate?.();
             router.push(link.href);
@@ -185,7 +185,7 @@ export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void 
       ))}
       <button
         type="button"
-        className="flex w-full items-center rounded-md px-3 py-2.5 text-left text-base font-medium hover:text-primary transition-colors"
+        className="flex w-full items-center rounded-xl px-3 py-3 text-left text-[15px] font-medium text-foreground/90 transition-colors hover:bg-white/5 hover:text-primary"
         onClick={() => {
           onNavigate?.();
           router.push("/userDashboard/profile");
@@ -195,7 +195,7 @@ export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void 
       </button>
       <button
         type="button"
-        className="flex w-full items-center rounded-md px-3 py-2.5 text-left text-base font-medium text-destructive hover:text-destructive/90 transition-colors"
+        className="flex w-full items-center rounded-xl px-3 py-3 text-left text-[15px] font-medium text-destructive transition-colors hover:bg-destructive/10"
         onClick={async () => {
           onNavigate?.();
           await logout();

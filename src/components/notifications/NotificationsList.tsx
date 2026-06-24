@@ -7,7 +7,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  DashboardFilterBar,
+  DashboardScrollableTabs,
+} from '@/components/userDashboard/DashboardScrollableTabs'
 import {
   ChevronDown,
   CheckCircle,
@@ -103,33 +106,29 @@ export default function NotificationsList({ className }: NotificationsListProps)
   } as const
 
   return (
-    <div className={className ?? 'mt-5 rounded-xl bg-[#121212] p-8'}>
-      <div className="border-b border-[#242424] mb-6 flex items-center justify-between">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-          <TabsList className="bg-transparent p-0 gap-6">
-            {(['all', 'unread', 'read'] as const).map((value) => (
-              <TabsTrigger
-                key={value}
-                value={value}
-                className="pb-3 rounded-none text-sm
-                  data-[state=active]:border-b-2
-                  data-[state=active]:border-primary
-                  data-[state=active]:text-white
-                  text-muted-foreground"
-              >
-                {tabLabels[value]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        <Button
-          variant="ghost"
-          disabled={unreadCount === 0 || markAllMutation.isPending}
-          onClick={() => markAllMutation.mutate()}
-        >
-          {t('markAllRead')} <CheckCheck className="ml-1 h-4 w-4" />
-        </Button>
-      </div>
+    <div className={className ?? 'mt-2 rounded-xl bg-[#121212] p-4 sm:mt-5 sm:p-8'}>
+      <DashboardFilterBar
+        className="border-[#242424]"
+        action={
+          <Button
+            variant="ghost"
+            className="w-full sm:w-auto"
+            disabled={unreadCount === 0 || markAllMutation.isPending}
+            onClick={() => markAllMutation.mutate()}
+          >
+            {t('markAllRead')} <CheckCheck className="ml-1 h-4 w-4" />
+          </Button>
+        }
+      >
+        <DashboardScrollableTabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          items={(['all', 'unread', 'read'] as const).map((value) => ({
+            value,
+            label: tabLabels[value],
+          }))}
+        />
+      </DashboardFilterBar>
 
       {isLoading ? (
         <div className="flex justify-center py-16">

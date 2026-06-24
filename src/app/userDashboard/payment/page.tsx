@@ -121,7 +121,7 @@ export default function PaymentPage() {
 
   if (!stripeConfigured) {
     return (
-      <div className="rounded-2xl bg-[#121212] p-8">
+      <div className="rounded-2xl bg-[#121212] p-4 sm:p-8">
         <p className="text-sm text-muted-foreground">
           {t("stripeNotConfigured")}
         </p>
@@ -130,7 +130,7 @@ export default function PaymentPage() {
   }
 
   return (
-    <div className="rounded-2xl bg-[#121212] p-8">
+    <div className="rounded-2xl bg-[#121212] p-4 sm:p-8">
       <div className="mb-6">
         <h1 className="text-xl font-semibold">{t("paymentMethods")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -163,9 +163,9 @@ export default function PaymentPage() {
               {methods.map((method) => (
                 <li
                   key={method.id}
-                  className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/80 p-4"
+                  className="flex flex-col gap-3 rounded-lg border border-zinc-700 bg-zinc-800/80 p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <CreditCard className="h-5 w-5 text-pink-400" />
                     <div>
                       <p className="font-medium">
@@ -180,7 +180,7 @@ export default function PaymentPage() {
                       <Check className="h-4 w-4 text-green-500" />
                     ) : null}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex w-full gap-2 sm:w-auto">
                     {!method.isDefault ? (
                       <Button
                         variant="outline"

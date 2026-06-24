@@ -8,7 +8,6 @@ import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { TableEmptyRow } from '@/components/ui/table-skeleton'
 import { TableShell } from '@/components/ui/table-shell'
@@ -34,6 +33,10 @@ import {
   type TicketOrderTabStatus,
 } from '@/features/ticket-purchases/api'
 import { DisplayPrice } from '@/components/currency/DisplayPrice'
+import {
+  DashboardFilterBar,
+  DashboardScrollableTabs,
+} from '@/components/userDashboard/DashboardScrollableTabs'
 import { toastApiError } from '@/lib/toasts'
 
 type SortOption = 'newest' | 'oldest' | 'amount-high' | 'amount-low'
@@ -143,56 +146,48 @@ const Tickets = () => {
   }
 
   return (
-    <Card className="mt-5 border-border bg-card">
-      <CardContent className="p-10">
-      <div className="flex items-center justify-between border-b border-muted mb-6">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
-          <TabsList className="bg-transparent p-0 gap-6">
-            {(
-              ['all', 'pending', 'canceled', 'completed'] as const
-            ).map((value) => (
-              <TabsTrigger
-                key={value}
-                value={value}
-                className="pb-3 rounded-none text-sm
-                  data-[state=active]:border-b-2 
-                  data-[state=active]:border-primary
-                  data-[state=active]:text-white
-                  text-muted-foreground"
-              >
-                {tabLabels[value]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+    <Card className="mt-2 border-border bg-card sm:mt-5">
+      <CardContent className="p-4 sm:p-6 lg:p-10">
+      <DashboardFilterBar
+        className="border-muted"
+        action={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full text-muted-foreground sm:w-auto">
+                {sortLabel}
+                <ArrowUpDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground">
-              {sortLabel}
-              <ArrowUpDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent
-            align="end"
-            className="w-44 bg-[#151515] border-[#242424]"
-          >
-            <DropdownMenuItem onClick={() => setSortBy('newest')}>
-              {t('newestFirst')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSortBy('oldest')}>
-              {t('oldestFirst')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSortBy('amount-high')}>
-              {t('highestAmount')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSortBy('amount-low')}>
-              {t('lowestAmount')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+            <DropdownMenuContent
+              align="end"
+              className="w-44 bg-[#151515] border-[#242424]"
+            >
+              <DropdownMenuItem onClick={() => setSortBy('newest')}>
+                {t('newestFirst')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('oldest')}>
+                {t('oldestFirst')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('amount-high')}>
+                {t('highestAmount')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('amount-low')}>
+                {t('lowestAmount')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
+      >
+        <DashboardScrollableTabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          items={(['all', 'pending', 'canceled', 'completed'] as const).map((value) => ({
+            value,
+            label: tabLabels[value],
+          }))}
+        />
+      </DashboardFilterBar>
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-muted-foreground">
@@ -229,19 +224,21 @@ const Tickets = () => {
           </Button>
         </div>
       ) : (
-        <TableShell>
-          <Table>
-            <TableHeader>
+        <TableShell className="overflow-hidden border-0 bg-transparent shadow-none" contentClassName="p-0">
+          <Table
+            containerClassName="overscroll-x-contain"
+            className="[&_td]:px-4 [&_td]:text-sm [&_th]:px-4 [&_th]:text-sm"
+          >
+            <TableHeader className="whitespace-nowrap">
               <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground">{tNav('events')}</TableHead>
-                <TableHead className="text-muted-foreground">{t('order')}</TableHead>
-                <TableHead className="text-muted-foreground">{t('orderDate')}</TableHead>
-                <TableHead className="text-muted-foreground">{t('eventDate')}</TableHead>
-                <TableHead className="text-muted-foreground">{tCommon('total')}</TableHead>
-                <TableHead className="text-muted-foreground">{t('ticketsCol')}</TableHead>
-                <TableHead className="text-muted-foreground">{tCommon('status')}</TableHead>
-                <TableHead className="text-right text-muted-foreground">{tCommon('actions')}</TableHead>
-                <TableHead className="text-right text-muted-foreground">Actions</TableHead>
+                <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">{tNav('events')}</TableHead>
+                <TableHead className="min-w-[120px] whitespace-nowrap text-muted-foreground">{t('order')}</TableHead>
+                <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">{t('orderDate')}</TableHead>
+                <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">{t('eventDate')}</TableHead>
+                <TableHead className="min-w-[100px] whitespace-nowrap text-muted-foreground">{tCommon('total')}</TableHead>
+                <TableHead className="min-w-[90px] whitespace-nowrap text-muted-foreground">{t('ticketsCol')}</TableHead>
+                <TableHead className="min-w-[100px] whitespace-nowrap text-muted-foreground">{tCommon('status')}</TableHead>
+                <TableHead className="min-w-[100px] whitespace-nowrap text-right text-muted-foreground">{tCommon('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
