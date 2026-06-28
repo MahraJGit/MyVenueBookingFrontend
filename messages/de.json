@@ -653,6 +653,7 @@
     "updateProfile": "Profil aktualisieren",
     "profileUpdated": "Profil erfolgreich aktualisiert",
     "logOut": "Abmelden",
+    "searchPlaceholder": "Tickets, Buchungen suchen…",
     "venueReservations": "Veranstaltungsort-Reservierungen",
     "myVenueBookings": "Meine Veranstaltungsort-Buchungen",
     "bookingsSubtitle": "Verfolgen Sie anstehende Reservierungen, schließen Sie ausstehende Zahlungen ab und verwalten Sie Ihre Buchungen an einem Ort.",

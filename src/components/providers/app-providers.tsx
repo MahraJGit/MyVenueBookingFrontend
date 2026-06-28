@@ -4,6 +4,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/features/auth/auth-context";
+import { AuthCookieSync } from "@/components/auth/AuthCookieSync";
 import { CurrencyProvider } from "@/features/currency/currency-context";
 import { LocaleProvider } from "@/features/i18n/locale-context";
 
@@ -26,6 +27,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <LocaleProvider>
         <CurrencyProvider>
           <AuthProvider>
+            <AuthCookieSync />
             {children}
             <Toaster richColors theme="dark" position="top-center" closeButton />
           </AuthProvider>

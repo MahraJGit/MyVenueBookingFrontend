@@ -653,6 +653,7 @@
     "updateProfile": "تحديث الملف الشخصي",
     "profileUpdated": "تم تحديث الملف الشخصي بنجاح",
     "logOut": "تسجيل الخروج",
+    "searchPlaceholder": "البحث عن التذاكر والحجوزات…",
     "venueReservations": "حجوزات الأماكن",
     "myVenueBookings": "حجوزات أماكني",
     "bookingsSubtitle": "تتبع الحجوزات القادمة، وأكمل المدفوعات المعلقة، وأدر حجوزاتك في مكان واحد.",

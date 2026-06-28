@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
-import { getVendorRedirectForAdminPath } from "@/features/dashboard/paths";
+import { getVendorRedirectForAdminPath } from "@/features/dashboard/admin-vendor-redirect";
 
 /**
  * Vendors should use /vendorDashboard — redirect them away from /adminDashbaord routes.

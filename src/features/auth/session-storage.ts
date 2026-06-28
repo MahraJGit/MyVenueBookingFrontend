@@ -1,4 +1,6 @@
 import type { AuthUser } from "./types";
+import { clearAuthRoleCookie, setAuthRoleCookie } from "./auth-cookies";
+import { isAppRole } from "./roles";
 
 const ACCESS = "mvb_access_token";
 const USER = "mvb_user_json";
@@ -16,6 +18,9 @@ export function persistAuthSession(session: { accessToken: string; user: AuthUse
   sessionStorage.setItem(ACCESS, session.accessToken);
   sessionStorage.setItem(USER, JSON.stringify(session.user));
   sessionStorage.removeItem("mvb_refresh_token");
+  if (isAppRole(session.user.role)) {
+    setAuthRoleCookie(session.user.role);
+  }
   notifyAuthChanged();
 }
 
@@ -24,6 +29,7 @@ export function clearAuthSession() {
   sessionStorage.removeItem(ACCESS);
   sessionStorage.removeItem(USER);
   sessionStorage.removeItem("mvb_refresh_token");
+  clearAuthRoleCookie();
   notifyAuthChanged();
 }
 
@@ -53,6 +59,10 @@ export function patchAuthUser(partial: Partial<AuthUser>) {
   if (typeof window === "undefined") return;
   const user = getAuthUser();
   if (!user) return;
-  sessionStorage.setItem(USER, JSON.stringify({ ...user, ...partial }));
+  const nextUser = { ...user, ...partial };
+  sessionStorage.setItem(USER, JSON.stringify(nextUser));
+  if (isAppRole(nextUser.role)) {
+    setAuthRoleCookie(nextUser.role);
+  }
   notifyAuthChanged();
 }

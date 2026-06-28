@@ -2,10 +2,12 @@
 
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
+import {
+  ADMIN_DASHBOARD_PREFIX,
+  VENDOR_DASHBOARD_PREFIX,
+} from "@/features/dashboard/admin-vendor-redirect";
 
-export const ADMIN_DASHBOARD_PREFIX = "/adminDashbaord";
-export const VENDOR_DASHBOARD_PREFIX = "/vendorDashboard";
-
+export { ADMIN_DASHBOARD_PREFIX, VENDOR_DASHBOARD_PREFIX, getVendorRedirectForAdminPath } from "@/features/dashboard/admin-vendor-redirect";
 export type DashboardScope = "admin" | "vendor";
 
 export type DashboardPaths = {
@@ -69,33 +71,4 @@ export function useDashboardPaths(): DashboardPaths {
   const pathname = usePathname();
   const scope = resolveDashboardScope(pathname);
   return useMemo(() => getDashboardPaths(scope), [scope]);
-}
-
-/** Map legacy admin dashboard URLs to vendor dashboard equivalents. */
-export function getVendorRedirectForAdminPath(
-  pathname: string,
-  search: string,
-): string | null {
-  if (!pathname.startsWith(ADMIN_DASHBOARD_PREFIX)) return null;
-
-  if (pathname === `${ADMIN_DASHBOARD_PREFIX}/manageEvents`) {
-    return `${VENDOR_DASHBOARD_PREFIX}/events`;
-  }
-  if (pathname === `${ADMIN_DASHBOARD_PREFIX}/addEvents`) {
-    return `${VENDOR_DASHBOARD_PREFIX}/events/new${search}`;
-  }
-  if (pathname === `${ADMIN_DASHBOARD_PREFIX}/manageTickets`) {
-    return `${VENDOR_DASHBOARD_PREFIX}/tickets`;
-  }
-  if (pathname === `${ADMIN_DASHBOARD_PREFIX}/analytics`) {
-    return `${VENDOR_DASHBOARD_PREFIX}/analytics`;
-  }
-  if (
-    pathname === `${ADMIN_DASHBOARD_PREFIX}/dashboard` ||
-    pathname === ADMIN_DASHBOARD_PREFIX
-  ) {
-    return VENDOR_DASHBOARD_PREFIX;
-  }
-
-  return VENDOR_DASHBOARD_PREFIX;
 }
