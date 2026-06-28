@@ -17,15 +17,15 @@ const BlogPage = () => {
 
     return (
         <>
-            <section className="blog-hero">
-                <div className="container mx-auto px-4">
-                    <div className="inner h-screen flex items-center justify-center flex-col">
-                        <div className="description text-center">
-                            <h1 className='page-title mb-8 text-white'>
+            <section className="blog-hero page-below-header">
+                <div className="container mx-auto px-4 sm:px-6">
+                    <div className="inner flex min-h-[60vh] flex-col items-center justify-center py-10 sm:min-h-[70vh] sm:py-16">
+                        <div className="description max-w-3xl text-center">
+                            <h1 className='page-title mb-6 text-white sm:mb-8'>
                                 {t('heroTitle')}{' '}
                                 <span className="text-gradient-accent">{t('heroTitleHighlight')}</span>
                             </h1>
-                            <p>{t('heroSubtitle')}</p>
+                            <p className="mx-auto max-w-2xl text-[#B3B3B3]">{t('heroSubtitle')}</p>
                         </div>
                     </div>
                 </div>
@@ -74,12 +74,12 @@ const BlogPage = () => {
                                         <p className="text-[#707070] mb-4 text-sm leading-relaxed">
                                             {t('sampleDesc1')}
                                         </p>
-                                        <a
-                                            className="flex items-center gap-1 text-sm font-normal text-primary"
-                                            href=""
+                                        <span
+                                            className="inline-flex cursor-default items-center gap-1 text-sm font-normal text-primary"
+                                            aria-hidden
                                         >
                                             {t('readMore')} <ArrowUpRight size={14} />
-                                        </a>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -108,12 +108,12 @@ const BlogPage = () => {
                                             <p className="text-[#707070] mb-3 text-sm leading-relaxed">
                                                 {t('sampleDesc2')}
                                             </p>
-                                            <a
-                                                className="flex items-center gap-1 text-sm font-normal text-primary"
-                                                href=""
+                                            <span
+                                                className="inline-flex cursor-default items-center gap-1 text-sm font-normal text-primary"
+                                                aria-hidden
                                             >
                                                 {t('readMore')} <ArrowUpRight size={14} />
-                                            </a>
+                                            </span>
                                         </div>
                                     </div>
                                 ))}
@@ -139,9 +139,12 @@ const BlogPage = () => {
                                         <p className='text-[#707070] mb-4'>
                                             {t('sampleDesc1')}
                                         </p>
-                                        <a className='flex items-center my-3 mx-5 text-sm font-normal' href="">{t('readMore')} <span className='text-primary'>
-                                            <ArrowUpRight size={14} />
-                                        </span></a>
+                                        <span
+                                            className="inline-flex cursor-default items-center gap-1 text-sm font-normal text-primary"
+                                            aria-hidden
+                                        >
+                                            {t('readMore')} <ArrowUpRight size={14} />
+                                        </span>
                                     </div>
                                 </div>
                             ))}

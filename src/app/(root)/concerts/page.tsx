@@ -63,7 +63,7 @@ const concerts = () => {
     return (
         <>
             {/* eventslist section start */}
-            <section className="eventslist py-10">
+            <section className="eventslist public-listing-section">
                 <div className="container mx-auto px-4">
 
                     <div className="top-bar mb-10">

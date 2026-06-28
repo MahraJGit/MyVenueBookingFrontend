@@ -392,7 +392,7 @@ const JoinAffiliateFormPage = () => {
   }
 
   return (
-    <section className="py-24 pt-28">
+    <section className="public-listing-section pb-16">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-5xl space-y-6">
           <h1 className="page-title text-white">{t("pageTitle")}</h1>

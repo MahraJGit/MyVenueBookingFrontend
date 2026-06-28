@@ -3,13 +3,24 @@
 .forgot-password,
 .verify-otp,
 .set-password {
-    padding: 100px 0;
+    min-height: 100svh;
+    padding: calc(var(--site-header-offset) + 2rem) 0 3rem;
     background: url("/images/pattern.png") no-repeat top center;
 }
 
-.auth-layout {
-    background: url("/images/light.png") no-repeat top center;
+@media (min-width: 640px) {
+    .login,
+    .signup,
+    .forgot-password,
+    .verify-otp,
+    .set-password {
+        padding: calc(var(--site-header-offset) + 3rem) 0 4rem;
+    }
+}
 
+.auth-layout {
+    min-height: 100svh;
+    background: url("/images/light.png") no-repeat top center;
 }
 
 .social-login-divider {

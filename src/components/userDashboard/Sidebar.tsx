@@ -9,13 +9,13 @@ import {
   User,
   CreditCard,
   Bell,
-  Settings,
-  LogOut,
   CalendarDays,
+  Settings,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { DashboardLogoutButton } from '@/components/dashboard/dashboard-shared'
 
 type UserSidebarProps = {
   isOpen: boolean
@@ -141,13 +141,7 @@ export default function UserSidebar({ isOpen, onClose }: UserSidebarProps) {
           {t('settings')}
         </Link>
 
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-300 transition hover:text-red-400"
-        >
-          <LogOut size={18} />
-          {t('logOut')}
-        </button>
+        <DashboardLogoutButton onAfterLogout={onClose} />
       </div>
     </aside>
   )

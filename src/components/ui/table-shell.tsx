@@ -16,6 +16,7 @@ type TableShellProps = {
   children: React.ReactNode
   className?: string
   contentClassName?: string
+  variant?: "default" | "dashboard"
 }
 
 export function TableShell({
@@ -25,11 +26,19 @@ export function TableShell({
   children,
   className,
   contentClassName,
+  variant = "default",
 }: TableShellProps) {
   const hasHeader = title || description || headerAction
 
   return (
-    <Card className={cn("border-border bg-card", className)}>
+    <Card
+      className={cn(
+        variant === "dashboard"
+          ? "border-[#303030] bg-[#1B1B1B] text-white"
+          : "border-border bg-card",
+        className,
+      )}
+    >
       {hasHeader ? (
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0 pb-4">
           {(title || description) && (

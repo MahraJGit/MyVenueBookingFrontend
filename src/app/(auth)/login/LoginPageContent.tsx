@@ -294,12 +294,12 @@ export default function LoginPage() {
                                         {t("rememberMe")}
                                     </Label>
                                 </div>
-                                <a
-                                    href="#"
+                                <Link
+                                    href="/forgot-password"
                                     className="text-xs text-gray-400 hover:text-pink-500 transition"
                                 >
                                     {t("forgotPassword")}
-                                </a>
+                                </Link>
                             </div>
 
                             <Button
@@ -447,12 +447,12 @@ export default function LoginPage() {
                                         {t("rememberMe")}
                                     </Label>
                                 </div>
-                                <a
-                                    href="#"
+                                <Link
+                                    href="/forgot-password"
                                     className="text-gray-400 hover:text-pink-500 transition"
                                 >
                                     {t("forgotPassword")}
-                                </a>
+                                </Link>
                             </div>
 
                             <Button

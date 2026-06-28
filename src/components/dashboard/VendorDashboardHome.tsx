@@ -7,7 +7,6 @@ import {
   Building2,
   CalendarDays,
   Clapperboard,
-  Loader2,
   Plus,
   Ticket,
   TrendingUp,
@@ -19,6 +18,10 @@ import { listManagedEvents } from "@/features/events/api";
 import { listManagedVenues } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
 import { getDashboardPaths } from "@/features/dashboard/paths";
+import {
+  DashboardLoadingState,
+  DashboardPageHeader,
+} from "@/components/dashboard/dashboard-shared";
 
 function StatCard({
   title,
@@ -77,12 +80,10 @@ export default function VendorDashboardHome() {
     <RoleGuard allowedRoles={["VENDOR", "ADMIN"]}>
       <div className="space-y-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white">{t("vendorDashboardTitle")}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t("vendorWelcomeDesc")}
-            </p>
-          </div>
+          <DashboardPageHeader
+            title={t("vendorDashboardTitle")}
+            description={t("vendorWelcomeDesc")}
+          />
           <div className="flex flex-wrap gap-2">
             <Button asChild className="bg-primary">
               <Link href={paths.addEvent}>
@@ -100,9 +101,7 @@ export default function VendorDashboardHome() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <DashboardLoadingState />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard

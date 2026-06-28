@@ -89,7 +89,7 @@ export default function ManageEvents() {
 
   return (
     <div className="flex w-full flex-col gap-8">
-      <div className="w-full space-y-6 rounded-2xl bg-[#0e0e0e] p-6 text-white">
+      <div className="w-full space-y-6 rounded-2xl border border-[#303030] bg-[#0e0e0e] p-4 text-white sm:p-6">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <h2 className="w-full text-xl font-bold text-primary lg:w-auto">
             {t("myEvents")}

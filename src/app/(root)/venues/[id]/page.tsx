@@ -1,10 +1,11 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Bath,
@@ -24,6 +25,7 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
 import { AvailabilityCalendar } from "@/components/venues/AvailabilityCalendar";
 import { SlotPicker } from "@/components/venues/SlotPicker";
@@ -53,18 +55,104 @@ import type { AvailabilitySlot } from "@/features/venues/types";
 function VenueDetailSkeleton() {
   return (
     <div className="min-h-screen bg-[#0e0e0e] text-white">
-      <div className="h-[400px] animate-pulse bg-zinc-900" />
-      <div className="container mx-auto space-y-8 px-4 py-10">
+      <div className="h-[45vh] min-h-[260px] max-h-[480px] animate-pulse bg-zinc-900 sm:min-h-[320px]" />
+      <div className="container mx-auto space-y-8 px-4 py-8 sm:px-6 sm:py-10">
         <div className="h-8 w-48 animate-pulse rounded bg-zinc-800" />
         <div className="grid gap-8 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
+          <div className="order-2 space-y-6 lg:order-1 lg:col-span-2">
             <div className="h-40 animate-pulse rounded-2xl bg-zinc-800" />
             <div className="h-32 animate-pulse rounded-2xl bg-zinc-800" />
           </div>
-          <div className="h-96 animate-pulse rounded-2xl bg-zinc-800" />
+          <div className="order-1 h-[420px] animate-pulse rounded-2xl bg-zinc-800 lg:order-2" />
         </div>
       </div>
     </div>
+  );
+}
+
+function VenueGallery({
+  images,
+  venueName,
+  photoCountLabel,
+  swipeHint,
+}: {
+  images: string[];
+  venueName: string;
+  photoCountLabel: string;
+  swipeHint: string;
+}) {
+  const t = useTranslations("venues");
+  const [api, setApi] = useState<CarouselApi>();
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+    const onSelect = () => setActiveIndex(api.selectedScrollSnap());
+    onSelect();
+    api.on("select", onSelect);
+    api.on("reInit", onSelect);
+    return () => {
+      api.off("select", onSelect);
+      api.off("reInit", onSelect);
+    };
+  }, [api]);
+
+  return (
+    <section className="container relative z-10 mx-auto -mt-4 px-4 sm:px-6">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
+          {t("gallery")}
+        </h2>
+        <span className="shrink-0 text-xs text-zinc-500">{photoCountLabel}</span>
+      </div>
+      <Carousel opts={{ loop: true, align: "start" }} setApi={setApi} className="w-full">
+        <CarouselContent className="-ml-3">
+          {images.map((img, i) => (
+            <CarouselItem
+              key={`${img}-${i}`}
+              className="basis-[85%] pl-3 sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
+            >
+              <div className="group relative aspect-[16/10] overflow-hidden rounded-xl border border-[#303030] sm:aspect-auto sm:h-[140px] md:h-[150px]">
+                <Image
+                  src={img}
+                  alt={`${venueName} gallery ${i + 1}`}
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  sizes="(max-width: 640px) 85vw, (max-width: 1024px) 50vw, 25vw"
+                />
+                <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        {images.length > 1 && (
+          <>
+            <CarouselPrevious className="left-1 h-8 w-8 border-white/20 bg-black/60 text-white hover:bg-black/80 hover:text-white sm:left-2 sm:h-9 sm:w-9" />
+            <CarouselNext className="right-1 h-8 w-8 border-white/20 bg-black/60 text-white hover:bg-black/80 hover:text-white sm:right-2 sm:h-9 sm:w-9" />
+          </>
+        )}
+      </Carousel>
+      {images.length > 1 && (
+        <div className="mt-3 flex flex-col items-center gap-2">
+          <div className="flex items-center gap-1.5" role="tablist" aria-label={photoCountLabel}>
+            {images.map((img, i) => (
+              <button
+                key={`dot-${img}-${i}`}
+                type="button"
+                role="tab"
+                aria-selected={i === activeIndex}
+                aria-label={`${i + 1} / ${images.length}`}
+                onClick={() => api?.scrollTo(i)}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === activeIndex ? "w-5 bg-primary" : "w-1.5 bg-zinc-600 hover:bg-zinc-500"
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-[11px] text-zinc-500 sm:hidden">{swipeHint}</p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -79,6 +167,24 @@ export default function VenueDetailPage({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
+
+  const handleShare = useCallback(async (venueName: string) => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: venueName, url });
+      } catch {
+        /* user dismissed share sheet */
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success(t("linkCopied"));
+    } catch {
+      toast.error(t("shareFailed"));
+    }
+  }, [t]);
 
   const { data: venue, isLoading, isError } = useQuery({
     queryKey: venueKeys.publicDetail(id),
@@ -154,9 +260,9 @@ export default function VenueDetailPage({
     (propertyAttrs.floorArea || propertyAttrs.bedrooms || propertyAttrs.bathrooms);
 
   return (
-    <div className="min-h-screen bg-[#0e0e0e] text-white">
+    <div className="min-h-screen overflow-x-hidden bg-[#0e0e0e] text-white">
       {/* Hero */}
-      <section className="relative h-[380px] overflow-hidden md:h-[480px]">
+      <section className="relative h-[42vh] min-h-[260px] max-h-[500px] overflow-hidden sm:min-h-[320px] md:h-[480px]">
         <Image
           src={coverUrl}
           alt={venue.name}
@@ -168,7 +274,7 @@ export default function VenueDetailPage({
 
         <Link
           href="/venues"
-          className="absolute left-4 top-24 z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-4 py-2 text-sm backdrop-blur-sm transition-colors hover:border-primary hover:text-primary md:left-6 md:top-28"
+          className="absolute left-3 top-[calc(var(--site-header-offset)+0.5rem)] z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-xs backdrop-blur-md transition-colors hover:border-primary hover:text-primary sm:left-4 sm:px-4 sm:py-2 sm:text-sm md:left-6"
         >
           <ArrowLeft size={16} />
           {t("allVenuesLink")}
@@ -176,29 +282,23 @@ export default function VenueDetailPage({
 
         <button
           type="button"
-          className="absolute right-4 top-24 z-10 rounded-full border border-white/20 bg-black/30 p-2.5 backdrop-blur-sm transition-colors hover:border-primary md:right-6 md:top-28"
-          onClick={() => {
-            if (navigator.share) {
-              void navigator.share({ title: venue.name, url: window.location.href });
-            } else {
-              void navigator.clipboard.writeText(window.location.href);
-            }
-          }}
+          className="absolute right-3 top-[calc(var(--site-header-offset)+0.5rem)] z-10 rounded-full border border-white/20 bg-black/40 p-2 backdrop-blur-md transition-colors hover:border-primary hover:bg-black/50 sm:right-4 sm:p-2.5 md:right-6"
+          onClick={() => void handleShare(venue.name)}
           aria-label={t("shareVenue")}
         >
           <Share2 size={18} />
         </button>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-end px-4 pb-10 text-center md:pb-14">
+        <div className="absolute inset-0 flex flex-col items-center justify-end px-4 pb-8 text-center sm:pb-10 md:pb-14">
           {venue.venueType?.name && (
-            <span className="mb-3 rounded-full border border-primary/40 bg-primary/10 px-4 py-1 text-xs font-medium uppercase tracking-wider text-primary">
+            <span className="mb-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-primary sm:mb-3 sm:px-4 sm:text-xs">
               {venue.venueType.name}
             </span>
           )}
-          <h1 className="mb-4 max-w-4xl text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+          <h1 className="mb-3 line-clamp-2 max-w-4xl px-1 text-2xl font-bold tracking-tight sm:mb-4 sm:text-3xl md:text-4xl lg:text-5xl">
             {venue.name}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-300">
+          <div className="flex w-full max-w-2xl flex-col items-center justify-center gap-2 text-xs text-zinc-300 sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-2 sm:text-sm">
             {fullAddress && (
               <span className="flex items-center gap-2">
                 <MapPin size={15} className="shrink-0 text-primary" />
@@ -215,7 +315,7 @@ export default function VenueDetailPage({
               </span>
             )}
             {priceInfo && (
-              <span className="flex items-center gap-2 font-semibold text-primary">
+              <span className="hidden items-center gap-2 font-semibold text-primary lg:flex">
                 <DisplayPriceWithSuffix
                   amount={priceInfo.price}
                   currency={priceInfo.currency}
@@ -230,51 +330,27 @@ export default function VenueDetailPage({
 
       {/* Gallery Slider */}
       {hasGallery && (
-        <section className="container relative z-10 mx-auto -mt-4 px-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
-              {t("gallery")}
-            </h2>
-            <span className="text-xs text-zinc-500">
-              {galleryImages.length === 1
-                ? t("photoCount", { count: galleryImages.length })
-                : t("photosCount", { count: galleryImages.length })}
-            </span>
-          </div>
-          <Carousel opts={{ loop: true, align: "start" }} className="w-full">
-            <CarouselContent className="-ml-3">
-              {galleryImages.map((img, i) => (
-                <CarouselItem
-                  key={`${img}-${i}`}
-                  className="basis-1/2 pl-3 sm:basis-1/3 md:basis-1/4"
-                >
-                  <div className="group relative h-[120px] overflow-hidden rounded-xl border border-[#303030] md:h-[150px]">
-                    <Image
-                      src={img}
-                      alt={`${venue.name} gallery ${i + 1}`}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="left-2 h-9 w-9 border-white/20 bg-black/60 text-white hover:bg-black/80 hover:text-white" />
-            <CarouselNext className="right-2 h-9 w-9 border-white/20 bg-black/60 text-white hover:bg-black/80 hover:text-white" />
-          </Carousel>
-        </section>
+        <VenueGallery
+          images={galleryImages}
+          venueName={venue.name}
+          photoCountLabel={
+            galleryImages.length === 1
+              ? t("photoCount", { count: galleryImages.length })
+              : t("photosCount", { count: galleryImages.length })
+          }
+          swipeHint={t("swipeForMorePhotos")}
+        />
       )}
 
       {/* Main Content */}
-      <section className="container mx-auto px-4 py-10 lg:py-14">
-        <div className="grid gap-10 lg:grid-cols-3 lg:gap-12">
+      <section className="container mx-auto max-w-full px-4 py-8 sm:px-6 sm:py-10 lg:py-14">
+        <div className="grid min-w-0 gap-8 lg:grid-cols-3 lg:gap-10 xl:gap-12">
           {/* Left column — details */}
-          <div className="space-y-10 lg:col-span-2">
+          <div className="order-2 min-w-0 space-y-8 sm:space-y-10 lg:order-1 lg:col-span-2">
             {/* About */}
             <div>
-              <h2 className="mb-4 text-xl font-bold text-primary">{t("aboutVenue")}</h2>
-              <div className="rounded-2xl border border-[#303030] bg-[#1B1B1B] p-6">
+              <h2 className="mb-3 text-lg font-bold text-primary sm:mb-4 sm:text-xl">{t("aboutVenue")}</h2>
+              <div className="rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 sm:p-6">
                 <p className="whitespace-pre-line leading-relaxed text-zinc-300">
                   {venue.description || t("noDescription")}
                 </p>
@@ -345,8 +421,8 @@ export default function VenueDetailPage({
             {/* Property details */}
             {hasPropertyDetails && (
               <div>
-                <h2 className="mb-4 text-xl font-bold text-primary">{t("propertyDetails")}</h2>
-                <div className="grid gap-4 sm:grid-cols-3">
+                <h2 className="mb-3 text-lg font-bold text-primary sm:mb-4 sm:text-xl">{t("propertyDetails")}</h2>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
                   {propertyAttrs.floorArea != null && (
                     <div className="flex items-center gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4">
                       <Maximize2 size={18} className="text-primary" />
@@ -381,7 +457,7 @@ export default function VenueDetailPage({
             {/* Amenities */}
             {(venue.amenities?.length ?? 0) > 0 && (
               <div>
-                <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-primary">
+                <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-primary sm:mb-4 sm:text-xl">
                   <Sparkles size={20} />
                   {t("amenities")}
                 </h2>
@@ -411,20 +487,20 @@ export default function VenueDetailPage({
 
             {/* Map */}
             <div>
-              <h2 className="mb-4 text-xl font-bold text-primary">{t("location")}</h2>
+              <h2 className="mb-3 text-lg font-bold text-primary sm:mb-4 sm:text-xl">{t("location")}</h2>
               <div className="overflow-hidden rounded-2xl border border-[#303030] bg-[#1B1B1B]">
-                <div className="relative min-h-[280px]">
+                <div className="relative min-h-[220px] sm:min-h-[280px]">
                   {mapEmbedUrl ? (
                     <iframe
                       src={mapEmbedUrl}
-                      className="h-full min-h-[280px] w-full border-0"
+                      className="h-full min-h-[220px] w-full border-0 sm:min-h-[280px]"
                       loading="lazy"
                       allowFullScreen
                       referrerPolicy="no-referrer-when-downgrade"
                       title={`${venue.name} location`}
                     />
                   ) : (
-                    <div className="flex min-h-[280px] items-center justify-center text-zinc-500">
+                    <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 px-4 text-center text-sm text-zinc-500 sm:min-h-[280px] sm:flex-row">
                       <MapPin size={32} className="mr-2" />
                       <span>{t("mapNotAvailable")}</span>
                     </div>
@@ -435,18 +511,27 @@ export default function VenueDetailPage({
           </div>
 
           {/* Right column — booking */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-28 space-y-5">
-              <div className="rounded-2xl border border-[#303030] bg-[#1B1B1B] p-6 shadow-xl shadow-black/20">
-                <div className="mb-5 flex items-center gap-2 border-b border-[#303030] pb-4">
-                  <CalendarDays size={20} className="text-primary" />
-                  <h2 className="text-lg font-semibold text-white">{t("checkAvailability")}</h2>
+          <div className="order-1 min-w-0 lg:order-2 lg:col-span-1">
+            <div className="lg:sticky lg:top-[calc(var(--site-header-offset)+1rem)]">
+              <div
+                className="w-full max-w-full min-w-0 overflow-hidden rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 shadow-xl shadow-black/25 sm:p-6"
+                aria-labelledby="booking-panel-title"
+              >
+                <div className="mb-4 flex items-center gap-2.5 border-b border-[#303030] pb-3 sm:mb-5 sm:pb-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                    <CalendarDays size={18} className="text-primary" />
+                  </div>
+                  <h2 id="booking-panel-title" className="text-base font-semibold text-white sm:text-lg">
+                    {t("checkAvailability")}
+                  </h2>
                 </div>
 
                 {priceInfo && (
-                  <div className="mb-5 rounded-xl bg-primary/10 px-4 py-3 text-center">
-                    <p className="text-xs uppercase tracking-wider text-zinc-400">{t("fromLabel")}</p>
-                    <p className="text-xl font-bold text-primary">
+                  <div className="mb-4 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2.5 text-center sm:mb-5 sm:px-4 sm:py-3">
+                    <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-400 sm:text-xs">
+                      {t("fromLabel")}
+                    </p>
+                    <p className="mt-0.5 text-lg font-bold text-primary sm:text-xl">
                       <DisplayPrice amount={priceInfo.price} currency={priceInfo.currency} />
                       <span className="ml-1 text-sm font-normal text-zinc-400">
                         {priceInfo.label}
@@ -456,26 +541,34 @@ export default function VenueDetailPage({
                   </div>
                 )}
 
-                <AvailabilityCalendar
-                  month={calendarMonth}
-                  onMonthChange={setCalendarMonth}
-                  availability={monthAvailability}
-                  selected={selectedDate}
-                  onSelect={(d) => {
-                    setSelectedDate(d);
-                    setSelectedSlot(null);
-                  }}
-                  className="border-0 bg-transparent p-0"
-                />
+                <div className="relative mt-1">
+                  <AvailabilityCalendar
+                    month={calendarMonth}
+                    onMonthChange={setCalendarMonth}
+                    availability={monthAvailability}
+                    selected={selectedDate}
+                    onSelect={(d) => {
+                      setSelectedDate(d);
+                      setSelectedSlot(null);
+                    }}
+                    className="border-0 bg-transparent p-0"
+                  />
+                </div>
 
                 {selectedDate && (
-                  <div className="mt-5 space-y-3 border-t border-[#303030] pt-5">
-                    <h3 className="text-sm font-medium text-zinc-300">
+                  <div
+                    className="mt-4 min-w-0 space-y-3 border-t border-[#303030] pt-4 sm:mt-5 sm:pt-5"
+                    aria-live="polite"
+                    aria-busy={dayLoading}
+                  >
+                    <h3 className="text-xs font-medium text-zinc-300 sm:text-sm">
                       {t("availableSlots", { date: formatDateKey(selectedDate) })}
                     </h3>
                     {dayLoading ? (
-                      <div className="flex justify-center py-4">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      <div className="flex flex-col items-center justify-center gap-2 py-6">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
+                        <span className="sr-only">{t("loadingSlots")}</span>
+                        <p className="text-xs text-zinc-500">{t("loadingSlots")}</p>
                       </div>
                     ) : !dayAvailability?.available ? (
                       <p className="text-center text-sm text-zinc-500">
@@ -489,7 +582,7 @@ export default function VenueDetailPage({
                           : `${daySlot.startTime} – ${daySlot.endTime}`;
                         return (
                           <Button
-                            className="w-full rounded-full bg-primary hover:bg-primary/90"
+                            className="h-auto min-h-11 w-full whitespace-normal rounded-full bg-primary px-4 py-2.5 text-sm shadow-lg shadow-primary/20 hover:bg-primary/90"
                             onClick={() => {
                               setSelectedSlot(daySlot);
                               setBookingOpen(true);
@@ -517,7 +610,7 @@ export default function VenueDetailPage({
                         />
                         {selectedSlot?.available && (
                           <Button
-                            className="w-full rounded-full bg-primary hover:bg-primary/90"
+                            className="h-11 w-full rounded-full bg-primary shadow-lg shadow-primary/20 hover:bg-primary/90"
                             onClick={() => setBookingOpen(true)}
                           >
                             {t("continueToBook")}
@@ -535,7 +628,7 @@ export default function VenueDetailPage({
                 )}
 
                 {!selectedDate && (
-                  <p className="mt-4 text-center text-xs text-zinc-500">
+                  <p className="mt-4 rounded-lg bg-zinc-900/50 px-3 py-2.5 text-center text-xs leading-relaxed text-zinc-500">
                     {t("selectDateForSlots")}
                   </p>
                 )}

@@ -8,6 +8,7 @@ import { Lock } from "lucide-react";
 import Image from "next/image";
 
 import "@/styles/auth.css";
+import Link from "next/link";
 
 const ResetPassword = () => {
   const t = useTranslations("auth");
@@ -80,9 +81,9 @@ const ResetPassword = () => {
 
           <p className="text-center text-xs text-gray-400 mt-4">
             {t("rememberPassword")}{" "}
-            <a href="#" className="text-pink-500 hover:underline">
+            <Link href="/login" className="text-pink-500 hover:underline">
               {t("backToLogin")}
-            </a>
+            </Link>
           </p>
         </form>
       </div>

@@ -107,7 +107,34 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
+  }
+
+  .page-header-spacer {
+    height: var(--site-header-offset);
+    flex-shrink: 0;
+  }
+
+  .page-below-header {
+    padding-top: var(--site-header-offset);
+  }
+
+  .public-listing-section {
+    padding-top: calc(var(--site-header-offset) + 2.5rem);
+    padding-bottom: 2.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .public-listing-section {
+      padding-top: calc(var(--site-header-offset) + 3rem);
+    }
+  }
+
+  .page-hero-full {
+    display: flex;
+    flex-direction: column;
+    min-height: 100svh;
+    padding-top: var(--site-header-offset);
   }
 
   h1 {

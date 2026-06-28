@@ -30,13 +30,13 @@ const Checkout = () => {
   };
 
   return (
-    <section className="checkout-hero py-10">
+    <section className="checkout-hero public-listing-section">
       <div className="container mx-auto px-4">
         <div className="inner">
           {/* ✅ Use StepTracker Component */}
           <StepTracker currentStep={currentStep} />
 
-          <div className="min-h-screen flex flex-col lg:flex-row items-start lg:items-center gap-10">
+          <div className="flex min-h-0 flex-col items-start gap-10 lg:min-h-[70vh] lg:flex-row lg:items-center">
             {/* Left side - venue info */}
             <div className="w-full lg:w-1/2 px-2 sm:px-4">
               <div className="venue-card max-w-lg mx-auto">

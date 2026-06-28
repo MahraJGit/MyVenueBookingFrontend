@@ -6,7 +6,7 @@ import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCar
 
 function VenuesListingFallback() {
   return (
-    <section className="eventslist py-10 pt-24 sm:pt-28">
+    <section className="eventslist public-listing-section">
       <div className="container mx-auto px-4">
         <div className="mb-10 max-w-3xl">
           <div className="mb-3 h-10 w-full max-w-md animate-pulse rounded bg-[#242424]" />

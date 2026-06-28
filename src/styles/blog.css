@@ -1,6 +1,25 @@
 .blog-hero {
-  background-image: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),url('/images/hero-bg.jpg');
+  background-image: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url('/images/hero-bg.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+}
+
+.blog-hero .inner {
+  min-height: calc(100svh - var(--site-header-offset));
+}
+
+.our-articles .card-img,
+.latest-blog .card-img {
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+.latest-blog .card-body a {
+  margin-inline: 0;
+}
+
+.pegination button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }

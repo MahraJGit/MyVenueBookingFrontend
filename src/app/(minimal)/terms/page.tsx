@@ -33,7 +33,7 @@ export default async function TermsPage() {
 
   return (
     <>
-      <div className="header-space h-[75px] bg-transparent"></div>
+      <div className="page-header-spacer" aria-hidden />
 
       <section className="terms py-10 sm:py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">

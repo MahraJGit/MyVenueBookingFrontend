@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 
 import "@/styles/auth.css";
+import Link from "next/link";
 
 const ForgetPassword = () => {
   const t = useTranslations("auth");
@@ -145,6 +146,12 @@ const ForgetPassword = () => {
             </form>
           </TabsContent>
         </Tabs>
+
+        <p className="mt-6 text-center text-xs text-gray-400">
+          <Link href="/login" className="text-pink-500 hover:underline">
+            {t("backToLogin")}
+          </Link>
+        </p>
       </div>
     </section>
   );

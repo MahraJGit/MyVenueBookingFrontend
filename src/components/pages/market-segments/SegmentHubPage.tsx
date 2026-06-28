@@ -264,7 +264,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
   const items = isAttractions ? events : venues;
 
   return (
-    <section className="eventslist py-10 pt-24 sm:pt-28">
+    <section className="eventslist public-listing-section">
       <div className="container mx-auto px-4">
         <div className="section-header mb-10 max-w-3xl">
           <h1 className="page-title mb-3 text-white">

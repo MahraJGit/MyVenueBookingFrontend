@@ -13,10 +13,11 @@ type TopbarProps = {
 }
 
 const Topbar = ({ onMenuClick }: TopbarProps) => {
-  const t = useTranslations('adminDashboard')
+  const t = useTranslations('userDashboard')
+  const tCommon = useTranslations('common')
 
   return (
-    <header className="mb-4 flex flex-col gap-3 rounded-lg border border-muted bg-[#121212] p-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4">
+    <header className="mb-4 flex flex-col gap-3 rounded-xl border border-[#303030] bg-[#121212] p-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         {onMenuClick ? (
           <Button
@@ -25,7 +26,7 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
             size="icon"
             className="shrink-0 lg:hidden"
             onClick={onMenuClick}
-            aria-label="Open menu"
+            aria-label={tCommon('toggleMenu')}
           >
             <Menu className="text-white" />
           </Button>
@@ -34,7 +35,7 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
         <div className="min-w-0 flex-1 sm:max-w-sm">
           <Input
             placeholder={t('searchPlaceholder')}
-            className="w-full border-muted bg-[#1a1a1a] text-sm"
+            className="w-full border-[#303030] bg-[#1a1a1a] text-sm"
           />
         </div>
       </div>

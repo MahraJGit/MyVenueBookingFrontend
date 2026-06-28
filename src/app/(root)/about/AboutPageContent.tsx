@@ -12,7 +12,7 @@ export default function AboutPageContent() {
     <>
       <section className="about-hero py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <div className="inner min-h-[80vh] flex items-center justify-center flex-col text-center">
+          <div className="inner min-h-[70vh] flex flex-col items-center justify-center py-10 sm:min-h-[75vh] sm:py-16">
             <div className="description max-w-3xl">
               <h1 className="font-bold mb-10 flex items-center justify-center flex-wrap leading-tight">
                 Ab
@@ -187,7 +187,7 @@ export default function AboutPageContent() {
           </div>
         </div>
       </section>
-      <section className="contact-us">
+      <section className="contact-us pb-16" id="contact-us">
         <div className="container mx-auto px-4">
           <div className="inner">
             <div className="contact-us-cards flex flex-wrap justify-center gap-6 w-full">

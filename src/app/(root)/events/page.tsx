@@ -11,7 +11,7 @@ function EventsListingFallback() {
   const tCommon = useTranslations("common");
   return (
     <section
-      className="eventslist py-10 pt-24 sm:pt-28"
+      className="eventslist public-listing-section"
       aria-busy="true"
       aria-label={tCommon("loading")}
     >

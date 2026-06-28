@@ -273,6 +273,11 @@
                         rgba(13, 13, 13, 0.85) 50%,
                         rgba(13, 13, 13, 0) 100%);
             z-index: 1;
+            pointer-events: none;
+
+            @media (max-width: 768px) {
+                  width: 15%;
+            }
       }
 
       &::after {
@@ -287,6 +292,11 @@
                         rgba(13, 13, 13, 0.85) 50%,
                         rgba(13, 13, 13, 0) 100%);
             z-index: 1;
+            pointer-events: none;
+
+            @media (max-width: 768px) {
+                  width: 15%;
+            }
       }
 
       .marquee-track {

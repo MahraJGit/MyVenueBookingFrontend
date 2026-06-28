@@ -171,7 +171,7 @@ const buyTicket = () => {
 
       <section className="buyTicket-hero">
         <div className="container mx-auto px-4">
-          <div className="inner min-h-screen flex items-start justify-end flex-col pb-10">
+          <div className="inner flex min-h-[60vh] flex-col justify-end pb-10 sm:min-h-[70vh]">
             <div className="description text-left">
               <h1 className='mb-8'>Adele</h1>
               <p>"A Night to Remember: Adele Live with Her Greatest Hits " 🎶✨</p>

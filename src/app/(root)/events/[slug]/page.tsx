@@ -125,9 +125,9 @@ export default function EventDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0e0e0e] text-white">
+    <div className="min-h-screen overflow-x-hidden bg-[#0e0e0e] text-white">
       {/* Hero / Cover */}
-      <section className="relative h-[420px] md:h-[520px] overflow-hidden">
+      <section className="relative h-[42vh] min-h-[280px] max-h-[520px] overflow-hidden sm:min-h-[360px] md:h-[520px]">
         <Image
           src={coverUrl}
           alt={event.eventName}
@@ -139,7 +139,9 @@ export default function EventDetailPage() {
 
         {/* Share button — top right */}
         <button
-          className="absolute top-6 right-6 z-10 p-2.5 rounded-full border border-white/20 bg-black/30 backdrop-blur-sm hover:border-primary transition-colors"
+          type="button"
+          aria-label={tCommon('share')}
+          className="absolute right-3 top-[calc(var(--site-header-offset)+0.5rem)] z-10 rounded-full border border-white/20 bg-black/40 p-2.5 backdrop-blur-md transition-colors hover:border-primary sm:right-6"
           onClick={() => {
             if (navigator.share) {
               navigator.share({ title: event.eventName, url: window.location.href });
@@ -152,19 +154,19 @@ export default function EventDetailPage() {
         </button>
 
         {/* Centered content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-[0.15em] uppercase mb-8">
+        <div className="absolute inset-0 flex flex-col items-center justify-end px-4 pb-8 text-center sm:justify-center sm:pb-0">
+          <h1 className="mb-4 line-clamp-3 max-w-4xl text-2xl font-bold tracking-tight sm:mb-8 sm:text-4xl sm:tracking-[0.12em] md:text-5xl lg:text-7xl lg:uppercase">
             {event.eventName}
           </h1>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-zinc-300">
+          <div className="flex w-full max-w-3xl flex-col items-center justify-center gap-2 text-xs text-zinc-300 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3 sm:text-sm">
             <span className="flex items-center gap-2">
               <CalendarDays size={16} className="text-primary" />
               {formatEventDate(event.startDateTime)}
             </span>
             <span className="flex items-center gap-2">
-              <MapPin size={16} className="text-primary" />
-              {event.venueName || event.city}...
+              <MapPin size={16} className="shrink-0 text-primary" />
+              <span className="line-clamp-1">{event.venueName || event.city}</span>
             </span>
             <span className="flex items-center gap-2">
               <Clock size={16} className="text-primary" />
@@ -213,47 +215,49 @@ export default function EventDetailPage() {
       </section>
 
       {/* Venue Information */}
-      <section className="container mx-auto px-4 py-12">
+      <section className="container mx-auto px-4 py-12 sm:px-6">
         <h2 className="text-xl font-bold text-primary mb-8">{t("venueInformation")}</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Venue Details Card */}
-          <div className="bg-[#1B1B1B] border border-[#303030] rounded-2xl p-6 flex flex-col gap-6">
-            <div>
-              <h3 className="text-lg font-semibold text-white">
+          <div className="flex min-w-0 flex-col gap-6 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 sm:p-6">
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold break-words text-white">
                 {event.venueName || event.eventName}
               </h3>
-              <p className="text-sm text-zinc-400 flex items-center gap-1 mt-1">
-                <MapPin size={14} /> {event.city}{event.state ? `, ${event.state}` : ""}
+              <p className="mt-1 flex items-start gap-1 text-sm text-zinc-400">
+                <MapPin size={14} className="mt-0.5 shrink-0" />
+                <span className="break-words">{event.city}{event.state ? `, ${event.state}` : ""}</span>
               </p>
             </div>
 
-            <div className="border-t border-[#303030] pt-4 space-y-4">
+            <div className="space-y-4 border-t border-[#303030] pt-4">
               <h4 className="text-sm font-semibold text-white">{t("contactDetails")}</h4>
 
               {event.venuePhone && (
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20">
                     <Phone size={14} className="text-primary" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-zinc-500">{t("phone")}</p>
-                    <p className="text-sm text-white">{event.venuePhone}</p>
+                    <p className="break-all text-sm text-white">{event.venuePhone}</p>
                   </div>
                 </div>
               )}
 
               {event.venueWebsite && (
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20">
                     <Globe size={14} className="text-primary" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-zinc-500">{t("website")}</p>
                     <a
                       href={event.venueWebsite}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline"
+                      title={event.venueWebsite}
+                      className="break-all text-sm text-primary hover:underline"
                     >
                       {event.venueWebsite}
                     </a>
@@ -262,13 +266,13 @@ export default function EventDetailPage() {
               )}
 
               {fullAddress && (
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20">
                     <MapPin size={14} className="text-primary" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-zinc-500">{t("address")}</p>
-                    <p className="text-sm text-white">{fullAddress}</p>
+                    <p className="break-words text-sm text-white">{fullAddress}</p>
                   </div>
                 </div>
               )}
@@ -276,7 +280,7 @@ export default function EventDetailPage() {
           </div>
 
           {/* Map */}
-          <div className="bg-[#1B1B1B] border border-[#303030] rounded-2xl overflow-hidden flex flex-col">
+          <div className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#303030] bg-[#1B1B1B]">
             <div className="px-6 pt-4 pb-2">
               <h4 className="text-sm font-semibold text-white">{t("locationMap")}</h4>
             </div>
