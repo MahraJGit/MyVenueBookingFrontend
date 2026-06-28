@@ -53,7 +53,7 @@ export function CurrencySelect({
         )}
         aria-label={`${tCommon("selectCurrency")}: ${t(current.code)}`}
       >
-        <CountryFlag code={current.countryCode} className="h-3.5 w-5" />
+        {/* <CountryFlag code={current.countryCode} className="h-3.5 w-5" /> */}
         <span>{current.code}</span>
       </button>
 
@@ -77,7 +77,7 @@ export function CurrencySelect({
                       : "text-foreground hover:bg-white/5",
                   )}
                 >
-                  <CountryFlag code={option.countryCode} className="h-5 w-7" />
+                  {/* <CountryFlag code={option.countryCode} className="h-5 w-7" /> */}
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-medium">{t(option.code)}</span>
                     <span className="block text-xs text-muted-foreground">{option.code}</span>

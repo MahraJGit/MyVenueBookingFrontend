@@ -43,10 +43,11 @@ export default function VendorSidebar({
         fixed lg:static top-0 left-0 z-50
         h-full w-[280px]
         bg-[#1B1B1BCC] text-white
-        flex flex-col p-4 m-4 rounded-2xl
+        flex flex-col p-4
+        border-r border-white/10
+        lg:m-4 lg:min-h-[calc(100vh-2rem)] lg:rounded-2xl lg:border-r-0
         transform transition-transform duration-300
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0
+        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}
     >
       <div className="flex justify-end lg:hidden mb-2">
@@ -56,7 +57,15 @@ export default function VendorSidebar({
       </div>
 
       <div className="flex items-center justify-center gap-2 mb-6 px-2">
-        <Image src="/svg/logo.svg" alt={tCommon('logoAlt')} width={170} height={70} />
+        <Link href="/">
+          <Image
+            src="/svg/logo.svg"
+            alt={tCommon('logoAlt')}
+            width={170}
+            height={70}
+            className="h-auto w-[140px] sm:w-[170px]"
+          />
+        </Link>
       </div>
 
       <div className="mb-6 grid gap-2">
