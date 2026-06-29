@@ -12,6 +12,7 @@ import {
   getMinTicketPrice,
 } from "@/features/events/utils";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 
 type EventCardProps = {
   event: PublicEvent;
@@ -33,10 +34,16 @@ export function EventCard({ event }: EventCardProps) {
   }, [event]);
 
   return (
-    <Link
-      href={`/events/${event.slug}`}
-      className="card group relative flex h-full cursor-pointer flex-col items-center"
-    >
+    <div className="card group relative flex h-full flex-col items-center">
+      <FavoriteButton
+        type="event"
+        id={event.id}
+        className="absolute top-3 right-3 z-20"
+      />
+      <Link
+        href={`/events/${event.slug}`}
+        className="relative flex h-full w-full cursor-pointer flex-col items-center"
+      >
       <EventCoverImage
         coverImage={event.coverImage}
         thumbnail={event.thumbnail}
@@ -68,6 +75,7 @@ export function EventCard({ event }: EventCardProps) {
           </div>
         </div>
       </div>
-    </Link>
+      </Link>
+    </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   LogOut,
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import {
   Avatar,
   AvatarFallback,
+  AvatarImage,
 } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -24,6 +26,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/features/auth/auth-context";
+import { getMyProfile } from "@/features/users/api";
+import { resolveAvatarSrc } from "@/features/users/profile-display";
 
 type HeaderAuthActionsProps = {
   className?: string;
@@ -47,8 +51,16 @@ export function HeaderAuthActions({
   const tNav = useTranslations("nav");
   const tAuth = useTranslations("auth");
   const tCommon = useTranslations("common");
-  const { isAuthenticated, isReady, displayName, initials, dashboardLinks, logout } =
+  const { isAuthenticated, isReady, displayName, initials, dashboardLinks, logout, user } =
     useAuth();
+
+  const { data: profile } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: getMyProfile,
+    enabled: isAuthenticated,
+  });
+
+  const avatarSrc = resolveAvatarSrc(profile?.avatarUrl ?? user?.avatarUrl);
 
   if (!isReady) {
     return (
@@ -108,6 +120,9 @@ export function HeaderAuthActions({
           aria-label={tCommon("openAccountMenu")}
         >
           <Avatar className="h-9 w-9 border border-border">
+            {avatarSrc ? (
+              <AvatarImage src={avatarSrc} alt={displayName} />
+            ) : null}
             <AvatarFallback className="bg-primary/15 text-primary text-sm font-medium">
               {initials}
             </AvatarFallback>

@@ -610,6 +610,16 @@
     "apiNotConfigured": "API ترتیب نہیں ہے",
     "apiNotConfiguredDescription": ".env.local میں NEXT_PUBLIC_API_BASE_URL سیٹ کریں (دیکھیں .env.example)۔"
   },
+  "favorites": {
+    "addToFavourites": "Add to favourites",
+    "removeFromFavourites": "Remove from favourites",
+    "loginRequiredTitle": "Sign in to save favourites",
+    "loginRequiredDesc": "Create an account or log in to save events and venues you love.",
+    "login": "Log in",
+    "signup": "Sign up",
+    "events": "Events",
+    "venues": "Venues"
+  },
   "notifications": {
     "title": "اطلاعات",
     "markAllRead": "سب کو پڑھا ہوا نشان زد کریں",
@@ -641,6 +651,12 @@
     "title": "میرا اکاؤنٹ",
     "tickets": "ٹکٹیں",
     "venueBookings": "وینو بکنگز",
+    "favourites": "Favourites",
+    "favouritesSubtitle": "Events and venues you've saved for later.",
+    "noFavourites": "No favourites yet",
+    "noFavouritesDesc": "Tap the heart on any event or venue to save it here.",
+    "browseVenues": "Browse venues",
+    "couldNotLoadFavourites": "We couldn't load your favourites.",
     "personalInfo": "ذاتی معلومات",
     "payment": "ادائیگی",
     "notification": "اطلاع",
@@ -857,6 +873,7 @@
     "manageVenuesDesc": "پلیٹ فارم پر تمام وینوز۔ ایڈمن کے بنائے وینوز فوری فعال ہوتے ہیں؛ وینڈر وینوز جائزے کے لیے جمع کرانے تک ڈرافٹ میں رہتے ہیں۔",
     "addVenue": "وینو شامل کریں",
     "allVenues": "تمام وینوز",
+    "allStatuses": "تمام حیثیتیں",
     "loadingVenuesAdmin": "وینوز لوڈ ہو رہے ہیں…",
     "activate": "فعال کریں",
     "deactivate": "غیر فعال کریں",

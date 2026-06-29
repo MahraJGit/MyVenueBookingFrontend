@@ -80,6 +80,7 @@ function syncAuthFromProfile(profile: UserProfile) {
     lastName: profile.lastName,
     phone: profile.phone ?? undefined,
     phoneCountryCode: profile.phoneCountryCode,
+    avatarUrl: profile.avatarUrl,
   })
 }
 

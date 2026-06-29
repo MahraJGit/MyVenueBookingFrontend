@@ -7,6 +7,7 @@ import { VenueCoverImage } from "@/components/venues/VenueCoverImage";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { getVenueDisplayPrice } from "@/features/venues/utils";
 import { useVenuePriceLabels } from "@/features/i18n/use-venue-price-labels";
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 
 type VenueCardProps = {
   venue: PublicVenue;
@@ -19,10 +20,16 @@ export function VenueCard({ venue }: VenueCardProps) {
   const location = venue.city || venue.address || "—";
 
   return (
-    <Link
-      href={`/venues/${venue.id}`}
-      className="card group relative flex h-full cursor-pointer flex-col items-center"
-    >
+    <div className="card group relative flex h-full flex-col items-center">
+      <FavoriteButton
+        type="venue"
+        id={venue.id}
+        className="absolute top-3 right-3 z-20"
+      />
+      <Link
+        href={`/venues/${venue.id}`}
+        className="relative flex h-full w-full cursor-pointer flex-col items-center"
+      >
       <VenueCoverImage
         coverImage={venue.coverImage || null}
         venueName={venue.name}
@@ -49,6 +56,7 @@ export function VenueCard({ venue }: VenueCardProps) {
           </div>
         </div>
       </div>
-    </Link>
+      </Link>
+    </div>
   );
 }

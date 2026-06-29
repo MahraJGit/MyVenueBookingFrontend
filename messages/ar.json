@@ -610,6 +610,16 @@
     "apiNotConfigured": "لم يتم تكوين API",
     "apiNotConfiguredDescription": "عيّن NEXT_PUBLIC_API_BASE_URL في .env.local (راجع .env.example)."
   },
+  "favorites": {
+    "addToFavourites": "Add to favourites",
+    "removeFromFavourites": "Remove from favourites",
+    "loginRequiredTitle": "Sign in to save favourites",
+    "loginRequiredDesc": "Create an account or log in to save events and venues you love.",
+    "login": "Log in",
+    "signup": "Sign up",
+    "events": "Events",
+    "venues": "Venues"
+  },
   "notifications": {
     "title": "الإشعارات",
     "markAllRead": "تحديد الكل كمقروء",
@@ -641,6 +651,12 @@
     "title": "حسابي",
     "tickets": "التذاكر",
     "venueBookings": "حجوزات الأماكن",
+    "favourites": "Favourites",
+    "favouritesSubtitle": "Events and venues you've saved for later.",
+    "noFavourites": "No favourites yet",
+    "noFavouritesDesc": "Tap the heart on any event or venue to save it here.",
+    "browseVenues": "Browse venues",
+    "couldNotLoadFavourites": "We couldn't load your favourites.",
     "personalInfo": "المعلومات الشخصية",
     "payment": "الدفع",
     "notification": "الإشعارات",
@@ -857,6 +873,7 @@
     "manageVenuesDesc": "جميع الأماكن على المنصة. الأماكن التي ينشئها المسؤول تكون نشطة فورًا؛ أماكن المورّد تبقى مسودة حتى تُقدَّم للمراجعة.",
     "addVenue": "إضافة مكان",
     "allVenues": "جميع الأماكن",
+    "allStatuses": "جميع الحالات",
     "loadingVenuesAdmin": "جارٍ تحميل الأماكن…",
     "activate": "تفعيل",
     "deactivate": "إلغاء التفعيل",

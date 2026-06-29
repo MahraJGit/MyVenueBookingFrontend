@@ -610,6 +610,16 @@
     "apiNotConfigured": "API not configured",
     "apiNotConfiguredDescription": "Set NEXT_PUBLIC_API_BASE_URL in .env.local (see .env.example)."
   },
+  "favorites": {
+    "addToFavourites": "Add to favourites",
+    "removeFromFavourites": "Remove from favourites",
+    "loginRequiredTitle": "Sign in to save favourites",
+    "loginRequiredDesc": "Create an account or log in to save events and venues you love.",
+    "login": "Log in",
+    "signup": "Sign up",
+    "events": "Events",
+    "venues": "Venues"
+  },
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Mark all as read",
@@ -641,6 +651,12 @@
     "title": "My Account",
     "tickets": "Tickets",
     "venueBookings": "Venue bookings",
+    "favourites": "Favourites",
+    "favouritesSubtitle": "Events and venues you've saved for later.",
+    "noFavourites": "No favourites yet",
+    "noFavouritesDesc": "Tap the heart on any event or venue to save it here.",
+    "browseVenues": "Browse venues",
+    "couldNotLoadFavourites": "We couldn't load your favourites.",
     "personalInfo": "Personal info",
     "payment": "Payment",
     "notification": "Notification",
@@ -861,6 +877,7 @@
     "manageVenuesDesc": "All venues on the platform. Admin-created venues are active immediately; vendor venues stay in draft until they submit for review.",
     "addVenue": "Add venue",
     "allVenues": "All venues",
+    "allStatuses": "All statuses",
     "loadingVenuesAdmin": "Loading venues…",
     "activate": "Activate",
     "deactivate": "Deactivate",

@@ -610,6 +610,16 @@
     "apiNotConfigured": "API nicht konfiguriert",
     "apiNotConfiguredDescription": "Setzen Sie NEXT_PUBLIC_API_BASE_URL in .env.local (siehe .env.example)."
   },
+  "favorites": {
+    "addToFavourites": "Add to favourites",
+    "removeFromFavourites": "Remove from favourites",
+    "loginRequiredTitle": "Sign in to save favourites",
+    "loginRequiredDesc": "Create an account or log in to save events and venues you love.",
+    "login": "Log in",
+    "signup": "Sign up",
+    "events": "Events",
+    "venues": "Venues"
+  },
   "notifications": {
     "title": "Benachrichtigungen",
     "markAllRead": "Alle als gelesen markieren",
@@ -641,6 +651,12 @@
     "title": "Mein Konto",
     "tickets": "Tickets",
     "venueBookings": "Veranstaltungsort-Buchungen",
+    "favourites": "Favourites",
+    "favouritesSubtitle": "Events and venues you've saved for later.",
+    "noFavourites": "No favourites yet",
+    "noFavouritesDesc": "Tap the heart on any event or venue to save it here.",
+    "browseVenues": "Browse venues",
+    "couldNotLoadFavourites": "We couldn't load your favourites.",
     "personalInfo": "Persönliche Daten",
     "payment": "Zahlung",
     "notification": "Benachrichtigung",
@@ -857,6 +873,7 @@
     "manageVenuesDesc": "Alle Veranstaltungsorte auf der Plattform. Von Admins erstellte Orte sind sofort aktiv; Anbieter-Orte bleiben im Entwurf, bis sie zur Prüfung eingereicht werden.",
     "addVenue": "Veranstaltungsort hinzufügen",
     "allVenues": "Alle Veranstaltungsorte",
+    "allStatuses": "Alle Status",
     "loadingVenuesAdmin": "Veranstaltungsorte werden geladen…",
     "activate": "Aktivieren",
     "deactivate": "Deaktivieren",
