@@ -224,6 +224,7 @@
     "allEvents": "تمام تقریبات",
     "eventDetails": "تقریب کی تفصیلات",
     "buyTickets": "ٹکٹیں خریدیں",
+    "previewModeBanner": "پریویو موڈ — آپ کی ایونٹ گاہکوں کو یوں نظر آتی ہے۔",
     "ticketTypes": "ٹکٹ کی اقسام",
     "soldOut": "فروخت مکمل",
     "available": "دستیاب",
@@ -844,6 +845,11 @@
     "failedLoadEvents": "ایونٹس لوڈ نہیں ہو سکے۔",
     "noEventsYet": "ابھی تک کوئی ایونٹ نہیں۔ یہاں دیکھنے کے لیے \"نیا ایونٹ\" سے ایک بنائیں۔",
     "viewEvent": "ایونٹ دیکھیں",
+    "previewEvent": "پریویو: {name}",
+    "publicPreviewDesc": "عوامی صفحے کا پریویو",
+    "openInNewTab": "نئے ٹیب میں کھولیں",
+    "previewNotAvailable": "عوامی پریویو ابھی دستیاب نہیں",
+    "previewNotAvailableDesc": "گاہکوں کے دیکھنے سے پہلے یہ ایونٹ سائٹ پر فعال ہونا چاہیے۔ ایونٹ میں ترمیم کریں یا منظوری کا انتظار کریں۔",
     "editEvent": "ایونٹ میں ترمیم",
     "deleteEvent": "ایونٹ حذف کریں",
     "deleteEventConfirm": "\"{name}\" حذف کریں؟ یہ واپس نہیں ہو سکتا۔",
@@ -1518,6 +1524,7 @@
     "pageOfWithCount": "Page {page} of {totalPages} · {total} {type}",
     "eventsCount": "events",
     "venuesCount": "venues",
+    "bookingsCount": "bookings",
     "couldNotLoad": "Could not load results."
   },
   "marketSegments": {

@@ -224,6 +224,7 @@
     "allEvents": "جميع الفعاليات",
     "eventDetails": "تفاصيل الفعالية",
     "buyTickets": "شراء التذاكر",
+    "previewModeBanner": "وضع المعاينة — هكذا تظهر فعاليتك للعملاء.",
     "ticketTypes": "أنواع التذاكر",
     "soldOut": "نفدت الكمية",
     "available": "متاح",
@@ -844,6 +845,11 @@
     "failedLoadEvents": "فشل تحميل الفعاليات.",
     "noEventsYet": "لا توجد فعاليات بعد. أنشئ واحدة عبر \"فعالية جديدة\" لعرضها هنا.",
     "viewEvent": "عرض الفعالية",
+    "previewEvent": "معاينة: {name}",
+    "publicPreviewDesc": "معاينة الصفحة العامة",
+    "openInNewTab": "فتح في تبويب جديد",
+    "previewNotAvailable": "المعاينة العامة غير متاحة بعد",
+    "previewNotAvailableDesc": "يجب أن تكون هذه الفعالية نشطة على الموقع قبل أن يتمكن العملاء من عرضها. عدّل الفعالية أو انتظر الموافقة.",
     "editEvent": "تعديل الفعالية",
     "deleteEvent": "حذف الفعالية",
     "deleteEventConfirm": "حذف \"{name}\"؟ لا يمكن التراجع عن ذلك.",
@@ -1518,6 +1524,7 @@
     "pageOfWithCount": "Page {page} of {totalPages} · {total} {type}",
     "eventsCount": "events",
     "venuesCount": "venues",
+    "bookingsCount": "bookings",
     "couldNotLoad": "Could not load results."
   },
   "marketSegments": {

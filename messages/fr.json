@@ -224,6 +224,7 @@
     "allEvents": "Tous les événements",
     "eventDetails": "Détails de l'événement",
     "buyTickets": "Acheter des billets",
+    "previewModeBanner": "Mode aperçu — voici comment votre événement apparaît aux clients.",
     "ticketTypes": "Types de billets",
     "soldOut": "Complet",
     "available": "Disponible",
@@ -844,6 +845,11 @@
     "failedLoadEvents": "Échec du chargement des événements.",
     "noEventsYet": "Aucun événement pour l'instant. Créez-en un avec « Nouvel événement » pour le voir ici.",
     "viewEvent": "Voir l'événement",
+    "previewEvent": "Aperçu : {name}",
+    "publicPreviewDesc": "Aperçu de la page publique",
+    "openInNewTab": "Ouvrir dans un nouvel onglet",
+    "previewNotAvailable": "Aperçu public pas encore disponible",
+    "previewNotAvailableDesc": "Cet événement doit être actif sur le site avant que les clients puissent le consulter. Modifiez l'événement ou attendez l'approbation.",
     "editEvent": "Modifier l'événement",
     "deleteEvent": "Supprimer l'événement",
     "deleteEventConfirm": "Supprimer « {name} » ? Cette action est irréversible.",
@@ -1518,6 +1524,7 @@
     "pageOfWithCount": "Page {page} of {totalPages} · {total} {type}",
     "eventsCount": "events",
     "venuesCount": "venues",
+    "bookingsCount": "bookings",
     "couldNotLoad": "Could not load results."
   },
   "marketSegments": {
