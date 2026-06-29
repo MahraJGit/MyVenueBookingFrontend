@@ -31,6 +31,10 @@ import {
   resolveAvatarSrc,
 } from "@/features/users/profile-display"
 import { patchAuthUser } from "@/features/auth/session-storage"
+import {
+  DashboardContentPanel,
+  dashboardListItemClass,
+} from "@/components/dashboard/dashboard-shared"
 import { toastApiError } from "@/lib/toasts"
 import { toast } from "sonner"
 
@@ -184,20 +188,24 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[320px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
-      </div>
+      <DashboardContentPanel>
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardContentPanel>
     )
   }
 
   if (isError || !profile || !form) {
     return (
-      <div className="rounded-xl bg-[#121212] p-8 text-center">
-        <p className="text-muted-foreground mb-4">
-          {error instanceof Error ? error.message : t("failedLoadProfile")}
-        </p>
-        <Button onClick={() => refetch()}>{tCommon("tryAgain")}</Button>
-      </div>
+      <DashboardContentPanel>
+        <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <p className="text-sm text-muted-foreground">
+            {error instanceof Error ? error.message : t("failedLoadProfile")}
+          </p>
+          <Button onClick={() => refetch()}>{tCommon("tryAgain")}</Button>
+        </div>
+      </DashboardContentPanel>
     )
   }
 
@@ -210,8 +218,8 @@ export default function ProfilePage() {
   )
 
   return (
-    <>
-      <div className="mb-6 flex flex-col gap-4 rounded-lg bg-[#121212] p-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <DashboardContentPanel>
+      <div className={`mb-6 flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 ${dashboardListItemClass}`}>
         <div className="flex items-center gap-4">
           <div className="relative">
             <Avatar className="h-20 w-20">
@@ -232,7 +240,7 @@ export default function ProfilePage() {
             <h4 className="text-lg font-medium">
               {t("heyName", { name: greetingName })}
             </h4>
-            <p className="text-[#B3B3B3]">{form.email || "—"}</p>
+            <p className="text-muted-foreground">{form.email || "—"}</p>
           </div>
         </div>
         <div className="w-full sm:w-auto">
@@ -255,9 +263,8 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="rounded-xl bg-[#121212] p-4 sm:p-8">
-        <form
-          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+      <form
+        className="grid grid-cols-1 gap-6 md:grid-cols-2"
           onSubmit={(e) => {
             e.preventDefault()
             saveMutation.mutate()
@@ -408,7 +415,7 @@ export default function ProfilePage() {
             </Button>
             <Button
               type="submit"
-              className="w-full bg-pink-500 hover:bg-pink-600 sm:w-auto"
+              className="w-full sm:w-auto"
               disabled={saveMutation.isPending || avatarMutation.isPending}
             >
               {saveMutation.isPending ? (
@@ -422,7 +429,6 @@ export default function ProfilePage() {
             </Button>
           </div>
         </form>
-      </div>
-    </>
+    </DashboardContentPanel>
   )
 }

@@ -7,7 +7,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TableEmptyRow } from '@/components/ui/table-skeleton'
 import { TableShell } from '@/components/ui/table-shell'
@@ -33,6 +32,10 @@ import {
   type TicketOrderTabStatus,
 } from '@/features/ticket-purchases/api'
 import { DisplayPrice } from '@/components/currency/DisplayPrice'
+import {
+  DashboardContentPanel,
+  dashboardFilterBarBorderClass,
+} from '@/components/dashboard/dashboard-shared'
 import {
   DashboardFilterBar,
   DashboardScrollableTabs,
@@ -112,7 +115,7 @@ const Tickets = () => {
 
   React.useEffect(() => {
     if (isError) toastApiError(error, t('couldNotLoadTicketsToast'))
-  }, [isError, error])
+  }, [isError, error, t])
 
   const counts = useMemo(
     () => ({
@@ -154,10 +157,9 @@ const Tickets = () => {
   }
 
   return (
-    <Card className="mt-2 border-border bg-card sm:mt-5">
-      <CardContent className="p-4 sm:p-6 lg:p-10">
+    <DashboardContentPanel>
       <DashboardFilterBar
-        className="border-muted"
+        className={dashboardFilterBarBorderClass}
         action={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -169,7 +171,7 @@ const Tickets = () => {
 
             <DropdownMenuContent
               align="end"
-              className="w-44 bg-[#151515] border-[#242424]"
+              className="w-44 border-[#242424] bg-[#151515]"
             >
               <DropdownMenuItem onClick={() => setSortBy('newest')}>
                 {t('newestFirst')}
@@ -204,27 +206,25 @@ const Tickets = () => {
         </div>
       ) : isError ? (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-          <p className="text-muted-foreground text-sm">{t('couldNotLoadTickets')}</p>
+          <p className="text-sm text-muted-foreground">{t('couldNotLoadTickets')}</p>
           <Button variant="outline" onClick={() => refetch()}>
             {tCommon('tryAgain')}
           </Button>
         </div>
       ) : orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-6 text-center py-10">
-          <Image src="/svg/no-tickets.svg" alt={t('noTicketsYet')} width={250} height={250} />
+        <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <Image src="/svg/no-tickets.svg" alt={t('noTicketsYet')} width={200} height={200} />
           <h3 className="text-lg font-semibold">{t('noTicketsYet')}</h3>
-          <p className="text-muted-foreground max-w-sm">
-            {t('noTicketsDesc')}
-          </p>
+          <p className="max-w-sm text-muted-foreground">{t('noTicketsDesc')}</p>
           <Button asChild>
-            <Link href="/events" className="flex items-center gap-2">
+            <Link href="/events" className="inline-flex items-center gap-2">
               {t('browseEvents')} <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
         </div>
       ) : filteredTickets.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             {t('noTabTickets', { tab: activeTab })}
           </p>
           <Button variant="outline" onClick={() => setActiveTab('all')}>
@@ -238,7 +238,7 @@ const Tickets = () => {
             className="[&_td]:px-4 [&_td]:text-sm [&_th]:px-4 [&_th]:text-sm"
           >
             <TableHeader className="whitespace-nowrap">
-              <TableRow className="border-border hover:bg-transparent">
+              <TableRow className="border-[#242424] hover:bg-transparent">
                 <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">{tNav('events')}</TableHead>
                 <TableHead className="min-w-[120px] whitespace-nowrap text-muted-foreground">{t('order')}</TableHead>
                 <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">{t('orderDate')}</TableHead>
@@ -256,7 +256,7 @@ const Tickets = () => {
                 </TableEmptyRow>
               ) : (
                 filteredTickets.map((ticket) => (
-                  <TableRow key={ticket.orderGroupId} className="border-border">
+                  <TableRow key={ticket.orderGroupId} className="border-[#242424]">
                     <TableCell className="font-medium text-foreground">
                       {ticket.eventName}
                     </TableCell>
@@ -300,8 +300,7 @@ const Tickets = () => {
           </Table>
         </TableShell>
       )}
-      </CardContent>
-    </Card>
+    </DashboardContentPanel>
   )
 }
 

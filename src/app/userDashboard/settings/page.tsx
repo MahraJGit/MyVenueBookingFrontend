@@ -16,6 +16,10 @@ import {
 import { CountryFlag } from '@/components/i18n/CountryFlag'
 import { LOCALE_OPTIONS } from '@/i18n/locales'
 import {
+  DashboardContentPanel,
+  dashboardListItemClass,
+} from '@/components/dashboard/dashboard-shared'
+import {
   getNotificationPreferences,
   updateNotificationPreferences,
 } from '@/features/notifications/api'
@@ -55,14 +59,16 @@ export default function NotificationSettings() {
 
   if (isLoading || !settings) {
     return (
-      <div className="mt-2 flex justify-center rounded-xl bg-[#121212] p-8 sm:mt-5 sm:p-16">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <DashboardContentPanel>
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardContentPanel>
     )
   }
 
   return (
-    <div className="mt-2 rounded-xl bg-[#121212] p-4 sm:mt-5 sm:p-8">
+    <DashboardContentPanel>
       <h2 className="text-lg font-semibold mb-6">{t('settingsTitle')}</h2>
 
       <div className="space-y-4">
@@ -115,7 +121,7 @@ export default function NotificationSettings() {
             saveMutation.mutate({ language: value })
           }}
         >
-          <SelectTrigger className="w-full bg-[#151515] border-[#242424] sm:w-60">
+          <SelectTrigger className={`w-full border-[#242424] bg-[#151515] sm:w-60`}>
             <SelectValue placeholder={tCommon('selectLanguage')} />
           </SelectTrigger>
 
@@ -131,7 +137,7 @@ export default function NotificationSettings() {
           </SelectContent>
         </Select>
       </div>
-    </div>
+    </DashboardContentPanel>
   )
 }
 
@@ -147,7 +153,7 @@ function SettingItem({
   onChange: () => void
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-lg bg-[#151515] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <div className={`flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${dashboardListItemClass}`}>
       <div className="min-w-0 sm:max-w-[80%]">
         <h4 className="text-sm font-medium">{title}</h4>
         <p className="text-sm text-muted-foreground mt-1">{description}</p>

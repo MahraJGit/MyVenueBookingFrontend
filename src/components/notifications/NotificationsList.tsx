@@ -12,6 +12,11 @@ import {
   DashboardScrollableTabs,
 } from '@/components/userDashboard/DashboardScrollableTabs'
 import {
+  DashboardContentPanel,
+  dashboardFilterBarBorderClass,
+  dashboardListItemClass,
+} from '@/components/dashboard/dashboard-shared'
+import {
   ChevronDown,
   CheckCircle,
   XCircle,
@@ -106,9 +111,9 @@ export default function NotificationsList({ className }: NotificationsListProps)
   } as const
 
   return (
-    <div className={className ?? 'mt-2 rounded-xl bg-[#121212] p-4 sm:mt-5 sm:p-8'}>
+    <DashboardContentPanel className={className}>
       <DashboardFilterBar
-        className="border-[#242424]"
+        className={dashboardFilterBarBorderClass}
         action={
           <Button
             variant="ghost"
@@ -158,7 +163,7 @@ export default function NotificationsList({ className }: NotificationsListProps)
             const content = (
               <div
                 key={notification.id}
-                className="rounded-xl bg-[#151515] hover:bg-[#1a1a1a] transition"
+                className={dashboardListItemClass}
               >
                 <button
                   type="button"
@@ -215,6 +220,6 @@ export default function NotificationsList({ className }: NotificationsListProps)
           })}
         </div>
       )}
-    </div>
+    </DashboardContentPanel>
   )
 }

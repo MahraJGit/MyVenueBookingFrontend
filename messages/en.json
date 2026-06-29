@@ -224,6 +224,7 @@
     "allEvents": "All Events",
     "eventDetails": "Event Details",
     "buyTickets": "Buy Tickets",
+    "previewModeBanner": "Preview mode — this is how your event appears to customers.",
     "ticketTypes": "Ticket Types",
     "soldOut": "Sold Out",
     "available": "Available",
@@ -847,6 +848,11 @@
     "failedLoadEvents": "Failed to load events.",
     "noEventsYet": "No events yet. Create one with \"New event\" to see it here.",
     "viewEvent": "View event",
+    "previewEvent": "Preview: {name}",
+    "publicPreviewDesc": "Public page preview",
+    "openInNewTab": "Open in new tab",
+    "previewNotAvailable": "Public preview not available yet",
+    "previewNotAvailableDesc": "This event must be active on the site before customers can view it. Edit the event or wait for approval.",
     "editEvent": "Edit event",
     "deleteEvent": "Delete event",
     "deleteEventConfirm": "Delete \"{name}\"? This cannot be undone.",
@@ -1519,6 +1525,7 @@
     "pageOfWithCount": "Page {page} of {totalPages} · {total} {type}",
     "eventsCount": "events",
     "venuesCount": "venues",
+    "bookingsCount": "bookings",
     "couldNotLoad": "Could not load results."
   },
   "marketSegments": {

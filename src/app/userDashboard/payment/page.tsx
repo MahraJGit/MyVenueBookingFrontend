@@ -5,7 +5,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { Check, CreditCard, Loader2, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { Card } from "@/components/ui/card";
+import {
+  DashboardContentPanel,
+  dashboardListItemClass,
+  dashboardSurfaceBorderClass,
+} from "@/components/dashboard/dashboard-shared";
 import {
   Dialog,
   DialogContent,
@@ -44,7 +48,7 @@ function CardPreview({ method }: { method: SavedPaymentMethod | null }) {
 
   if (!method) {
     return (
-      <div className="relative flex h-52 w-full items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-800/50 p-6 text-muted-foreground">
+      <div className={`flex h-52 w-full items-center justify-center rounded-xl border border-dashed ${dashboardSurfaceBorderClass} bg-[#151515] p-6 text-muted-foreground`}>
         <div className="flex flex-col items-center gap-2 text-center">
           <CreditCard className="h-8 w-8 opacity-60" />
           <p className="text-sm">{t("noCardSaved")}</p>
@@ -121,16 +125,16 @@ export default function PaymentPage() {
 
   if (!stripeConfigured) {
     return (
-      <div className="rounded-2xl bg-[#121212] p-4 sm:p-8">
+      <DashboardContentPanel>
         <p className="text-sm text-muted-foreground">
           {t("stripeNotConfigured")}
         </p>
-      </div>
+      </DashboardContentPanel>
     );
   }
 
   return (
-    <div className="rounded-2xl bg-[#121212] p-4 sm:p-8">
+    <DashboardContentPanel>
       <div className="mb-6">
         <h1 className="text-xl font-semibold">{t("paymentMethods")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -141,13 +145,13 @@ export default function PaymentPage() {
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
         <div className="space-y-6">
           {isLoading ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {t("loadingCards")}
+            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm">{t("loadingCards")}</p>
             </div>
           ) : isError ? (
-            <div className="space-y-2">
-              <p className="text-sm text-destructive">
+            <div className="flex flex-col items-center gap-4 py-16 text-center">
+              <p className="text-sm text-muted-foreground">
                 {t("couldNotLoadCards")}
               </p>
               <Button variant="outline" size="sm" onClick={() => void refetch()}>
@@ -155,15 +159,16 @@ export default function PaymentPage() {
               </Button>
             </div>
           ) : methods.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("addCardHint")}
-            </p>
+            <div className="flex flex-col items-center gap-4 py-16 text-center">
+              <CreditCard className="h-12 w-12 text-primary" />
+              <p className="text-sm text-muted-foreground">{t("addCardHint")}</p>
+            </div>
           ) : (
             <ul className="space-y-3">
               {methods.map((method) => (
                 <li
                   key={method.id}
-                  className="flex flex-col gap-3 rounded-lg border border-zinc-700 bg-zinc-800/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between ${dashboardListItemClass}`}
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <CreditCard className="h-5 w-5 text-pink-400" />
@@ -185,7 +190,6 @@ export default function PaymentPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-zinc-600"
                         disabled={setDefaultMutation.isPending}
                         onClick={() =>
                           setDefaultMutation.mutate(method.id)
@@ -220,20 +224,20 @@ export default function PaymentPage() {
 
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Card
-                role="button"
-                className="flex h-40 cursor-pointer items-center justify-center border-dashed border-zinc-700 bg-zinc-800 transition hover:border-pink-500"
+              <button
+                type="button"
+                className={`flex h-40 w-full cursor-pointer items-center justify-center rounded-xl border border-dashed ${dashboardSurfaceBorderClass} bg-[#151515] transition-colors hover:bg-[#1a1a1a]`}
               >
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#242424]">
                     <Plus className="h-5 w-5" />
                   </div>
                   <span>{t("addPaymentMethod")}</span>
                 </div>
-              </Card>
+              </button>
             </DialogTrigger>
 
-            <DialogContent className="border-zinc-800 bg-zinc-900 sm:max-w-md">
+            <DialogContent className="border-[#242424] bg-[#151515] sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>{t("addNewCard")}</DialogTitle>
               </DialogHeader>
@@ -247,6 +251,6 @@ export default function PaymentPage() {
           </Dialog>
         </div>
       </div>
-    </div>
+    </DashboardContentPanel>
   );
 }

@@ -40,6 +40,10 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
+  dashboardListItemClass,
+  dashboardSurfaceBorderClass,
+} from "@/components/dashboard/dashboard-shared";
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -74,18 +78,18 @@ type BookingDetailPanelProps = {
 function DetailSkeleton({ variant }: { variant: "default" | "user" }) {
   if (variant === "user") {
     return (
-      <Card className="border-zinc-800 bg-zinc-950/40">
-        <Skeleton className="h-40 w-full rounded-none rounded-t-xl" />
-        <CardContent className="space-y-4 p-6">
-          <Skeleton className="h-6 w-2/3" />
-          <Skeleton className="h-4 w-1/2" />
+      <div className={`overflow-hidden ${dashboardListItemClass}`}>
+        <Skeleton className="h-40 w-full rounded-none" />
+        <div className="space-y-4 p-6">
+          <Skeleton className="h-6 w-2/3 bg-[#1a1a1a]" />
+          <Skeleton className="h-4 w-1/2 bg-[#1a1a1a]" />
           <div className="grid gap-3 sm:grid-cols-2">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full bg-[#1a1a1a]" />
+            <Skeleton className="h-16 w-full bg-[#1a1a1a]" />
           </div>
-          <Skeleton className="h-10 w-full" />
-        </CardContent>
-      </Card>
+          <Skeleton className="h-10 w-full bg-[#1a1a1a]" />
+        </div>
+      </div>
     );
   }
 
@@ -240,8 +244,8 @@ function UserBookingDetail({
     booking.status !== "COMPLETED";
 
   return (
-    <Card className="sticky top-6 overflow-hidden border-zinc-800 bg-zinc-950/40">
-      <div className="relative h-40 bg-zinc-800">
+    <div className={`sticky top-6 overflow-hidden ${dashboardListItemClass}`}>
+      <div className="relative h-40 bg-[#1a1a1a]">
         {booking.venue.coverImage ? (
           <Image
             src={booking.venue.coverImage}
@@ -250,15 +254,15 @@ function UserBookingDetail({
             className="object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-linear-to-br from-zinc-800 to-zinc-900">
-            <MapPin className="h-10 w-10 text-zinc-600" />
+          <div className="flex h-full items-center justify-center bg-[#151515]">
+            <MapPin className="h-10 w-10 text-muted-foreground" />
           </div>
         )}
-        <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-[#151515] via-[#151515]/20 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
           <div>
-            <h2 className="text-xl font-bold text-white">{booking.venue.name}</h2>
-            <p className="text-xs text-zinc-300">
+            <h2 className="text-xl font-bold text-foreground">{booking.venue.name}</h2>
+            <p className="text-xs text-muted-foreground">
               {t("bookingRef", { ref: booking.id.slice(0, 8).toUpperCase() })}
             </p>
           </div>
@@ -282,7 +286,7 @@ function UserBookingDetail({
         ) : null}
       </div>
 
-      <CardContent className="space-y-5 p-6">
+      <div className="space-y-5 p-6">
         {isHold && booking.expiresAt ? (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
             <p className="mb-2 text-sm font-medium text-amber-200">
@@ -329,7 +333,7 @@ function UserBookingDetail({
         </div>
 
         {booking.venue.address ? (
-          <div className="flex items-start gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 text-sm">
+          <div className={`flex items-start gap-2 rounded-xl border p-3 text-sm ${dashboardSurfaceBorderClass} bg-[#1a1a1a]`}>
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -341,7 +345,7 @@ function UserBookingDetail({
         ) : null}
 
         {booking.specialRequests ? (
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 text-sm">
+          <div className={`rounded-xl border p-3 text-sm ${dashboardSurfaceBorderClass} bg-[#1a1a1a]`}>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {t("specialRequests")}
             </p>
@@ -349,7 +353,7 @@ function UserBookingDetail({
           </div>
         ) : null}
 
-        <Separator className="bg-zinc-800" />
+        <Separator className="bg-[#242424]" />
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {isHold ? (
@@ -360,7 +364,7 @@ function UserBookingDetail({
               </Link>
             </Button>
           ) : null}
-          <Button asChild variant="outline" className="flex-1 border-zinc-700">
+          <Button asChild variant="outline" className="flex-1">
             <Link href={`/venues/${booking.venueId}`}>
               <ExternalLink className="mr-2 h-4 w-4" />
               {t("viewVenue")}
@@ -369,7 +373,7 @@ function UserBookingDetail({
           {allowReschedule && canModify ? (
             <Button
               variant="outline"
-              className="flex-1 border-zinc-700"
+              className="flex-1"
               onClick={() => setRescheduleOpen(true)}
             >
               {t("reschedule")}
@@ -389,7 +393,7 @@ function UserBookingDetail({
             </Button>
           ) : null}
         </div>
-      </CardContent>
+      </div>
 
       <RescheduleDialog
         open={rescheduleOpen}
@@ -403,7 +407,7 @@ function UserBookingDetail({
         t={t}
         tCommon={tCommon}
       />
-    </Card>
+    </div>
   );
 }
 
@@ -541,7 +545,7 @@ function DetailStat({
   highlight?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
+    <div className={`rounded-xl border p-3 ${dashboardSurfaceBorderClass} bg-[#1a1a1a]`}>
       <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         <Icon className="h-3.5 w-3.5" />
         {label}

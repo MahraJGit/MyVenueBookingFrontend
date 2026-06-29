@@ -4,12 +4,19 @@ import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { Heart, Loader2 } from "lucide-react";
+import { ArrowRight, Heart, Loader2 } from "lucide-react";
 import { EventCard } from "@/components/events/EventCard";
 import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
 import { VenueCard } from "@/components/venues/VenueCard";
 import { Button } from "@/components/ui/button";
-import { DashboardScrollableTabs } from "@/components/userDashboard/DashboardScrollableTabs";
+import {
+  DashboardContentPanel,
+  dashboardFilterBarBorderClass,
+} from "@/components/dashboard/dashboard-shared";
+import {
+  DashboardFilterBar,
+  DashboardScrollableTabs,
+} from "@/components/userDashboard/DashboardScrollableTabs";
 import { listFavorites } from "@/features/favorites/api";
 import { favoriteKeys } from "@/features/favorites/query-keys";
 import { toastApiError } from "@/lib/toasts";
@@ -35,63 +42,53 @@ export default function FavouritesPage() {
   const items = isEventsTab ? events : venues;
   const isEmpty = items.length === 0;
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[320px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="rounded-xl border border-white/10 bg-[#121212] p-8 text-center">
-        <p className="mb-4 text-muted-foreground">
-          {error instanceof Error ? error.message : t("couldNotLoadFavourites")}
-        </p>
-        <Button
-          onClick={() => {
-            refetch().catch((err) => toastApiError(err));
-          }}
-        >
-          {tCommon("tryAgain")}
-        </Button>
-      </div>
-    );
-  }
+  const tabLabels = {
+    events: `${tFav("events")} (${events.length})`,
+    venues: `${tFav("venues")} (${venues.length})`,
+  } as const;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t("favourites")}</h1>
-        <p className="text-sm text-muted-foreground">{t("favouritesSubtitle")}</p>
-      </div>
+    <DashboardContentPanel>
+      <DashboardFilterBar className={dashboardFilterBarBorderClass}>
+        <DashboardScrollableTabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          items={TAB_VALUES.map((value) => ({
+            value,
+            label: tabLabels[value],
+          }))}
+        />
+      </DashboardFilterBar>
 
-      <DashboardScrollableTabs
-        variant="pill"
-        value={activeTab}
-        onValueChange={setActiveTab}
-        listClassName="w-full justify-center"
-        items={TAB_VALUES.map((value) => ({
-          value,
-          label: value === "events" ? tFav("events") : tFav("venues"),
-        }))}
-      />
-
-      {isEmpty ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#121212] px-6 py-16 text-center">
-          <Heart className="mb-4 size-10 text-muted-foreground" />
-          <h2 className="text-lg font-semibold text-foreground">{t("noFavourites")}</h2>
-          <p className="mt-2 max-w-md text-sm text-muted-foreground">
-            {t("noFavouritesDesc")}
+      {isLoading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+          <p className="text-sm text-muted-foreground">
+            {error instanceof Error ? error.message : t("couldNotLoadFavourites")}
           </p>
-          <div className="mt-6">
-            <Button asChild>
-              <Link href={isEventsTab ? "/events" : "/venues"}>
-                {isEventsTab ? t("browseEvents") : t("browseVenues")}
-              </Link>
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              refetch().catch((err) => toastApiError(err));
+            }}
+          >
+            {tCommon("tryAgain")}
+          </Button>
+        </div>
+      ) : isEmpty ? (
+        <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <Heart className="h-12 w-12 text-primary" />
+          <h3 className="text-lg font-semibold">{t("noFavourites")}</h3>
+          <p className="max-w-sm text-muted-foreground">{t("noFavouritesDesc")}</p>
+          <Button asChild>
+            <Link href={isEventsTab ? "/events" : "/venues"} className="inline-flex items-center gap-2">
+              {isEventsTab ? t("browseEvents") : t("browseVenues")}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
         </div>
       ) : (
         <ResponsiveEventCardsGrid>
@@ -100,6 +97,6 @@ export default function FavouritesPage() {
             : venues.map((venue) => <VenueCard key={venue.id} venue={venue} />)}
         </ResponsiveEventCardsGrid>
       )}
-    </div>
+    </DashboardContentPanel>
   );
 }
