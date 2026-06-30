@@ -1545,6 +1545,14 @@
     "browseAllVenues": "Browse all venues",
     "corporateTypesNotConfigured": "Corporate venue types are not configured yet."
   },
+  "recommendations": {
+    "eventsTitle": "Recommended for you",
+    "venuesTitle": "Venues you might like",
+    "eventsSubtitle": "Based on your favourites and bookings",
+    "venuesSubtitle": "Based on your favourites and bookings",
+    "allEvents": "All events",
+    "allVenues": "All venues"
+  },
   "venuesListing": {
     "title": "Venue",
     "titleHighlight": "Booking",

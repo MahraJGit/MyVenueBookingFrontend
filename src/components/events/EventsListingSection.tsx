@@ -17,6 +17,8 @@ import {
 import { EventCard } from "@/components/events/EventCard";
 import { EventCategoryFilters } from "@/components/events/EventCategoryFilters";
 import { EventsPageHeader } from "@/components/events/EventsPageHeader";
+import { RecommendedEventsSlider, useRecommendedEventsVisible } from "@/components/recommendations/RecommendedEventsSlider";
+import { ListingGridDivider } from "@/components/recommendations/RecommendationsCarousel";
 import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
 import { listPublicEventCategories } from "@/features/event-categories/api";
 import { listPublicEvents } from "@/features/events/api";
@@ -150,6 +152,8 @@ export function EventsListingSection() {
   const events = data?.data ?? [];
   const totalPages = data?.meta.totalPages ?? 1;
   const showPagination = !isLoading && totalPages > 1;
+  const { showGridDivider } = useRecommendedEventsVisible();
+  const tRecommendations = useTranslations("recommendations");
 
   return (
     <section className="eventslist py-10 pt-24 sm:pt-28">
@@ -214,6 +218,12 @@ export function EventsListingSection() {
             )}
           </div>
         </div>
+
+        <RecommendedEventsSlider />
+
+        {showGridDivider ? (
+          <ListingGridDivider label={tRecommendations("allEvents")} />
+        ) : null}
 
         {isError ? (
           <p className="mb-8 py-8 text-sm text-red-400">

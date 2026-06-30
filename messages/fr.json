@@ -1544,6 +1544,14 @@
     "browseAllVenues": "Browse all venues",
     "corporateTypesNotConfigured": "Corporate venue types are not configured yet."
   },
+  "recommendations": {
+    "eventsTitle": "Recommandé pour vous",
+    "venuesTitle": "Lieux qui pourraient vous plaire",
+    "eventsSubtitle": "Basé sur vos favoris et réservations",
+    "venuesSubtitle": "Basé sur vos favoris et réservations",
+    "allEvents": "Tous les événements",
+    "allVenues": "Tous les lieux"
+  },
   "venuesListing": {
     "title": "Venue",
     "titleHighlight": "Booking",
