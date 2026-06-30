@@ -33,13 +33,14 @@ import {
 } from '@/features/ticket-purchases/api'
 import { DisplayPrice } from '@/components/currency/DisplayPrice'
 import {
-  DashboardContentPanel,
-  dashboardFilterBarBorderClass,
-} from '@/components/dashboard/dashboard-shared'
-import {
   DashboardFilterBar,
   DashboardScrollableTabs,
-} from '@/components/userDashboard/DashboardScrollableTabs'
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardSortButton,
+  dashboardDropdownContentClass,
+} from '@/components/dashboard/dashboard-ui'
+import { DashboardPageHeader } from '@/components/dashboard/dashboard-shared'
 import { toastApiError } from '@/lib/toasts'
 
 type SortOption = 'newest' | 'oldest' | 'amount-high' | 'amount-low'
@@ -115,7 +116,7 @@ const Tickets = () => {
 
   React.useEffect(() => {
     if (isError) toastApiError(error, t('couldNotLoadTicketsToast'))
-  }, [isError, error, t])
+  }, [isError, error])
 
   const counts = useMemo(
     () => ({
@@ -157,21 +158,22 @@ const Tickets = () => {
   }
 
   return (
-    <DashboardContentPanel>
+    <DashboardPageShell>
+      <DashboardPageHeader title={t('tickets')} />
+      <DashboardPanel className="space-y-0">
       <DashboardFilterBar
-        className={dashboardFilterBarBorderClass}
         action={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="w-full text-muted-foreground sm:w-auto">
+              <DashboardSortButton>
                 {sortLabel}
                 <ArrowUpDown className="h-4 w-4" />
-              </Button>
+              </DashboardSortButton>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent
               align="end"
-              className="w-44 border-[#242424] bg-[#151515]"
+              className={dashboardDropdownContentClass}
             >
               <DropdownMenuItem onClick={() => setSortBy('newest')}>
                 {t('newestFirst')}
@@ -206,25 +208,27 @@ const Tickets = () => {
         </div>
       ) : isError ? (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-          <p className="text-sm text-muted-foreground">{t('couldNotLoadTickets')}</p>
+          <p className="text-muted-foreground text-sm">{t('couldNotLoadTickets')}</p>
           <Button variant="outline" onClick={() => refetch()}>
             {tCommon('tryAgain')}
           </Button>
         </div>
       ) : orders.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <Image src="/svg/no-tickets.svg" alt={t('noTicketsYet')} width={200} height={200} />
+        <div className="flex flex-col items-center justify-center gap-6 text-center py-10">
+          <Image src="/svg/no-tickets.svg" alt={t('noTicketsYet')} width={250} height={250} />
           <h3 className="text-lg font-semibold">{t('noTicketsYet')}</h3>
-          <p className="max-w-sm text-muted-foreground">{t('noTicketsDesc')}</p>
+          <p className="text-muted-foreground max-w-sm">
+            {t('noTicketsDesc')}
+          </p>
           <Button asChild>
-            <Link href="/events" className="inline-flex items-center gap-2">
+            <Link href="/events" className="flex items-center gap-2">
               {t('browseEvents')} <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
         </div>
       ) : filteredTickets.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {t('noTabTickets', { tab: activeTab })}
           </p>
           <Button variant="outline" onClick={() => setActiveTab('all')}>
@@ -232,13 +236,13 @@ const Tickets = () => {
           </Button>
         </div>
       ) : (
-        <TableShell className="overflow-hidden border-0 bg-transparent shadow-none" contentClassName="p-0">
+        <TableShell variant="dashboard" contentClassName="p-0">
           <Table
             containerClassName="overscroll-x-contain"
             className="[&_td]:px-4 [&_td]:text-sm [&_th]:px-4 [&_th]:text-sm"
           >
             <TableHeader className="whitespace-nowrap">
-              <TableRow className="border-[#242424] hover:bg-transparent">
+              <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">{tNav('events')}</TableHead>
                 <TableHead className="min-w-[120px] whitespace-nowrap text-muted-foreground">{t('order')}</TableHead>
                 <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">{t('orderDate')}</TableHead>
@@ -256,7 +260,7 @@ const Tickets = () => {
                 </TableEmptyRow>
               ) : (
                 filteredTickets.map((ticket) => (
-                  <TableRow key={ticket.orderGroupId} className="border-[#242424]">
+                  <TableRow key={ticket.orderGroupId} className="border-border">
                     <TableCell className="font-medium text-foreground">
                       {ticket.eventName}
                     </TableCell>
@@ -300,7 +304,8 @@ const Tickets = () => {
           </Table>
         </TableShell>
       )}
-    </DashboardContentPanel>
+      </DashboardPanel>
+    </DashboardPageShell>
   )
 }
 

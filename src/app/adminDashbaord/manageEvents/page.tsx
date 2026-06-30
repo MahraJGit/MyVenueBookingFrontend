@@ -10,10 +10,9 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { CalendarDays, Eye, Pencil, Trash2, Plus, Search } from "lucide-react";
+import { CalendarDays, Eye, Pencil, Trash2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
 import {
@@ -27,10 +26,11 @@ import {
 import { StatusBadge } from "@/components/venues/StatusBadge";
 import { EventPublicPreviewDialog } from "@/components/events/EventPublicPreviewDialog";
 import {
-  DashboardContentPanel,
-  dashboardFilterBarBorderClass,
-} from "@/components/dashboard/dashboard-shared";
-import { DashboardFilterBar } from "@/components/userDashboard/DashboardScrollableTabs";
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardSearchInput,
+} from "@/components/dashboard/dashboard-ui";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import {
   deleteEvent,
   listManagedEvents,
@@ -83,31 +83,27 @@ export default function ManageEvents() {
   const showPagination = !isLoading && (meta?.total ?? 0) > 0;
 
   return (
-    <>
-      <DashboardContentPanel>
-        <h2 className="mb-2 text-xl font-semibold">{t("myEvents")}</h2>
-
-        <DashboardFilterBar
-          className={dashboardFilterBarBorderClass}
+    <DashboardPageShell>
+      <DashboardPanel>
+        <DashboardPageHeader
+          title={t("myEvents")}
           action={
-            <Button asChild className="w-full sm:w-auto">
+            <Button asChild>
               <Link href={paths.addEvent}>
                 <Plus className="mr-2 h-4 w-4" />
                 {t("newEvent")}
               </Link>
             </Button>
           }
-        >
-          <div className="relative w-full sm:max-w-sm">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder={t("searchEvents")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="border-[#242424] bg-[#151515] pl-10"
-            />
-          </div>
-        </DashboardFilterBar>
+        />
+
+        <div className="w-full sm:max-w-xs">
+          <DashboardSearchInput
+            placeholder={t("searchEvents")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
         {isError ? (
           <Alert variant="destructive" className="mb-4">
@@ -247,14 +243,14 @@ export default function ManageEvents() {
             </div>
           </div>
         ) : null}
-      </DashboardContentPanel>
+      </DashboardPanel>
 
       <EventPublicPreviewDialog
         event={viewEvent}
         onClose={() => setViewEvent(null)}
         editHref={viewEvent ? paths.editEvent(viewEvent.id) : undefined}
       />
-    </>
+    </DashboardPageShell>
   );
 }
 

@@ -27,7 +27,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DashboardContentPanel,
+  DashboardPanel,
+  DashboardPageShell,
+} from "@/components/dashboard/dashboard-ui";
+import {
+  DashboardPageHeader,
   dashboardFilterBarBorderClass,
 } from "@/components/dashboard/dashboard-shared";
 import { DashboardFilterBar } from "@/components/userDashboard/DashboardScrollableTabs";
@@ -94,13 +98,11 @@ export default function ManageVenuesPage() {
   const pageDesc = isAdmin ? t("manageVenuesDesc") : t("myVenuesDesc");
 
   return (
-    <DashboardContentPanel>
-      <h2 className="mb-1 text-xl font-semibold">{pageTitle}</h2>
-      {pageDesc ? (
-        <p className="mb-4 text-sm text-muted-foreground">{pageDesc}</p>
-      ) : null}
+    <DashboardPageShell>
+      <DashboardPanel>
+        <DashboardPageHeader title={pageTitle} description={pageDesc} />
 
-      <DashboardFilterBar
+        <DashboardFilterBar
         className={dashboardFilterBarBorderClass}
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -313,7 +315,8 @@ export default function ManageVenuesPage() {
           </div>
         </div>
       ) : null}
-    </DashboardContentPanel>
+      </DashboardPanel>
+    </DashboardPageShell>
   );
 }
 

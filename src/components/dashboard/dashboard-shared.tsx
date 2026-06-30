@@ -34,8 +34,6 @@ export const dashboardFilterBarBorderClass = 'border-[#242424]'
 export const dashboardListItemClass =
   'rounded-xl bg-[#151515] transition-colors hover:bg-[#1a1a1a]'
 
-export const dashboardSurfaceClass = 'bg-[#151515]'
-
 export const dashboardSurfaceBorderClass = 'border-[#242424]'
 
 export const dashboardPanelClass = dashboardContentPanelClass
@@ -51,6 +49,25 @@ export function DashboardContentPanel({
     <div className={cn(dashboardContentPanelClass, className)}>{children}</div>
   )
 }
+
+export {
+  DashboardPanel,
+  DashboardSurface,
+  DashboardPageShell,
+  DashboardSearchInput,
+  DashboardSortButton,
+  DashboardScrollableTabs,
+  DashboardFilterBar,
+  dashboardSurfaceClass,
+  dashboardInputClass,
+  dashboardSelectTriggerClass,
+  dashboardTextareaClass,
+  dashboardDropdownContentClass,
+  dashboardSortButtonClass,
+  dashboardTabCountClass,
+  dashboardEyebrowClass,
+  dashboardTabTriggerClass,
+} from './dashboard-ui'
 
 export const dashboardSidebarClass =
   'fixed top-0 left-0 z-50 flex h-full w-[280px] flex-col border-r border-white/10 bg-[#1B1B1B] p-4 text-white transition-transform duration-300 lg:static lg:m-4 lg:min-h-[calc(100vh-2rem)] lg:rounded-2xl lg:border-r-0'
@@ -101,9 +118,9 @@ export function DashboardPageHeader({
       )}
     >
       <div className="min-w-0 space-y-1">
-        <h1 className="text-xl font-bold text-white sm:text-2xl">{title}</h1>
+        <h1 className="text-xl font-bold tet-white ">{title}</h1>
         {description ? (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-smtext-xl font-bold text-foreground text-muted-foreground">{description}</p>
         ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}

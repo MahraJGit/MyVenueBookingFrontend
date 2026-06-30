@@ -32,10 +32,14 @@ import {
 import { formatTicketPrice } from "@/features/events/utils";
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
 import {
-  DashboardContentPanel,
+  DashboardPageHeader,
   dashboardFilterBarBorderClass,
   dashboardSurfaceBorderClass,
 } from "@/components/dashboard/dashboard-shared";
+import {
+  DashboardPanel,
+  DashboardPageShell,
+} from "@/components/dashboard/dashboard-ui";
 import {
   DashboardFilterBar,
   DashboardScrollableTabs,
@@ -160,15 +164,14 @@ export default function ManageTicketsPage() {
     activeTab === "sales-log" && !isLoading && (pagination?.total ?? 0) > 0;
 
   return (
-    <DashboardContentPanel>
-      <div className="mb-4 space-y-1">
-        <h2 className="text-xl font-semibold">{t("title")}</h2>
-        <p className="text-sm text-muted-foreground">
-          {isAdmin ? t("descriptionAdmin") : t("descriptionVendor")}
-        </p>
-      </div>
+    <DashboardPageShell>
+      <DashboardPanel>
+        <DashboardPageHeader
+          title={t("title")}
+          description={isAdmin ? t("descriptionAdmin") : t("descriptionVendor")}
+        />
 
-      <DashboardFilterBar
+        <DashboardFilterBar
         className={dashboardFilterBarBorderClass}
         action={
           <Button
@@ -309,7 +312,8 @@ export default function ManageTicketsPage() {
           </div>
         </div>
       ) : null}
-    </DashboardContentPanel>
+      </DashboardPanel>
+    </DashboardPageShell>
   );
 }
 

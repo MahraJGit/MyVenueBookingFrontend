@@ -6,10 +6,8 @@ import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import {
-  DashboardContentPanel,
-} from '@/components/dashboard/dashboard-shared'
 import {
   Calendar,
   MapPin,
@@ -23,6 +21,8 @@ import { getMyTicketOrder } from '@/features/ticket-purchases/api'
 import { getFallbackEventImage } from '@/features/events/utils'
 import { DisplayPrice } from '@/components/currency/DisplayPrice'
 import { toastApiError } from '@/lib/toasts'
+import { cn } from '@/lib/utils'
+import { dashboardSurfaceClass } from '@/components/dashboard/dashboard-ui'
 import React from 'react'
 
 function formatEventDateTime(iso: string) {
@@ -86,41 +86,35 @@ export default function ViewTicketContent() {
 
   if (!orderGroupId) {
     return (
-      <DashboardContentPanel>
-        <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <p className="text-sm text-muted-foreground">{t('noOrderSelected')}</p>
-          <Button asChild variant="outline">
-            <Link href="/userDashboard/tickets">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {t('backToTickets')}
-            </Link>
-          </Button>
-        </div>
-      </DashboardContentPanel>
+      <Card className={cn(dashboardSurfaceClass, "p-4 text-center text-white sm:p-8")}>
+        <p className="text-muted-foreground mb-4">{t('noOrderSelected')}</p>
+        <Button asChild variant="outline">
+          <Link href="/userDashboard/tickets">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t('backToTickets')}
+          </Link>
+        </Button>
+      </Card>
     )
   }
 
   if (isLoading) {
     return (
-      <DashboardContentPanel>
-        <div className="flex flex-col items-center gap-4 py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">{t('loadingOrder')}</p>
-        </div>
-      </DashboardContentPanel>
+      <Card className={cn(dashboardSurfaceClass, "flex flex-col items-center gap-4 p-4 py-16 text-white sm:p-8")}>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">{t('loadingOrder')}</p>
+      </Card>
     )
   }
 
   if (!order) {
     return (
-      <DashboardContentPanel>
-        <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <p className="text-sm text-muted-foreground">{t('orderNotFound')}</p>
-          <Button asChild variant="outline">
-            <Link href="/userDashboard/tickets">{t('backToTickets')}</Link>
-          </Button>
-        </div>
-      </DashboardContentPanel>
+      <Card className={cn(dashboardSurfaceClass, "p-4 text-center text-white sm:p-8")}>
+        <p className="text-muted-foreground mb-4">{t('orderNotFound')}</p>
+        <Button asChild variant="outline">
+          <Link href="/userDashboard/tickets">{t('backToTickets')}</Link>
+        </Button>
+      </Card>
     )
   }
 
@@ -128,7 +122,7 @@ export default function ViewTicketContent() {
     order.eventImage ?? getFallbackEventImage(order.eventId)
 
   return (
-    <DashboardContentPanel>
+    <Card className={cn(dashboardSurfaceClass, "p-4 text-white sm:p-8")}>
       <div className="mb-6">
         <Button asChild variant="ghost" size="sm" className="px-0 text-muted-foreground">
           <Link href="/userDashboard/tickets">
@@ -149,12 +143,12 @@ export default function ViewTicketContent() {
           />
 
           <div className="min-w-0">
-            <h3 className="font-semibold text-primary">{t('orderDetails')}</h3>
+            <h3 className="text-pink-500 font-semibold">{t('orderDetails')}</h3>
             <h2 className="mt-2 text-xl font-bold">{order.eventName}</h2>
 
             <div className="mt-4 text-sm text-muted-foreground">
               <p>{t('orderTrackingCode')}</p>
-              <p className="text-foreground">{order.orderCode}</p>
+              <p className="text-white">{order.orderCode}</p>
             </div>
           </div>
         </div>
@@ -173,13 +167,13 @@ export default function ViewTicketContent() {
 
       <div className="mt-8">
         <div className="flex items-center gap-1 mb-4">
-          <h4 className="font-semibold text-primary">{t('eventDetails')}</h4>
-          <Separator className="flex-1 bg-[#242424]" />
+          <h4 className="text-pink-500 font-semibold">{t('eventDetails')}</h4>
+          <Separator className="bg-zinc-800 flex-1" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
           <div className="flex gap-3">
-            <MapPin className="shrink-0 text-primary" />
+            <MapPin className="text-pink-500 shrink-0" />
             <div>
               <p className="font-medium">{t('location')}</p>
               <p className="text-muted-foreground whitespace-pre-line">
@@ -189,7 +183,7 @@ export default function ViewTicketContent() {
           </div>
 
           <div className="flex gap-3">
-            <Calendar className="shrink-0 text-primary" />
+            <Calendar className="text-pink-500 shrink-0" />
             <div>
               <p className="font-medium">{t('eventDate')}</p>
               <p className="text-muted-foreground">
@@ -199,7 +193,7 @@ export default function ViewTicketContent() {
           </div>
 
           <div className="flex gap-3">
-            <Ticket className="shrink-0 text-primary" />
+            <Ticket className="text-pink-500 shrink-0" />
             <div>
               <p className="font-medium">{t('tickets')}</p>
               <p className="text-muted-foreground">
@@ -212,8 +206,8 @@ export default function ViewTicketContent() {
 
       <div className="mt-10">
         <div className="flex items-center gap-1 mb-4">
-          <h4 className="font-semibold text-primary">{t('payment')}</h4>
-          <Separator className="flex-1 bg-[#242424]" />
+          <h4 className="text-pink-500 font-semibold">{t('payment')}</h4>
+          <Separator className="bg-zinc-800 flex-1" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-sm">
@@ -238,7 +232,7 @@ export default function ViewTicketContent() {
           </div>
 
           <div className="flex justify-start md:col-span-1 md:row-span-2 md:justify-end">
-            <div className="flex h-32 w-32 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 p-4 text-center text-xs text-muted-foreground">
+            <div className="flex h-32 w-32 items-center justify-center rounded-lg border border-pink-500/30 bg-pink-500/20 p-4 text-center text-xs text-muted-foreground">
               {t('qrComingSoon')}
             </div>
           </div>
@@ -261,6 +255,6 @@ export default function ViewTicketContent() {
           </div>
         </div>
       </div>
-    </DashboardContentPanel>
+    </Card>
   )
 }

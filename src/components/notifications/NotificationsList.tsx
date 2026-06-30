@@ -10,12 +10,8 @@ import { useTranslations } from 'next-intl'
 import {
   DashboardFilterBar,
   DashboardScrollableTabs,
-} from '@/components/userDashboard/DashboardScrollableTabs'
-import {
-  DashboardContentPanel,
-  dashboardFilterBarBorderClass,
-  dashboardListItemClass,
-} from '@/components/dashboard/dashboard-shared'
+  DashboardPanel,
+} from '@/components/dashboard/dashboard-ui'
 import {
   ChevronDown,
   CheckCircle,
@@ -111,12 +107,12 @@ export default function NotificationsList({ className }: NotificationsListProps)
   } as const
 
   return (
-    <DashboardContentPanel className={className}>
+    <DashboardPanel className={className}>
       <DashboardFilterBar
-        className={dashboardFilterBarBorderClass}
         action={
           <Button
-            variant="ghost"
+            variant="outline"
+            size="sm"
             className="w-full sm:w-auto"
             disabled={unreadCount === 0 || markAllMutation.isPending}
             onClick={() => markAllMutation.mutate()}
@@ -163,7 +159,7 @@ export default function NotificationsList({ className }: NotificationsListProps)
             const content = (
               <div
                 key={notification.id}
-                className={dashboardListItemClass}
+                className="rounded-xl bg-[#151515] hover:bg-[#1a1a1a] transition"
               >
                 <button
                   type="button"
@@ -220,6 +216,6 @@ export default function NotificationsList({ className }: NotificationsListProps)
           })}
         </div>
       )}
-    </DashboardContentPanel>
+    </DashboardPanel>
   )
 }

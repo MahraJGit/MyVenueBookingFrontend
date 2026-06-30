@@ -2,18 +2,20 @@
 
 import { useTranslations } from 'next-intl'
 import NotificationsList from '@/components/notifications/NotificationsList'
+import { DashboardPageShell } from '@/components/dashboard/dashboard-ui'
+import { DashboardPageHeader } from '@/components/dashboard/dashboard-shared'
 
 export default function AdminNotifications() {
   const t = useTranslations('notifications')
   const tAdmin = useTranslations('adminNotifications')
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold text-white mb-2">{t('title')}</h1>
-      <p className="text-sm text-muted-foreground mb-4">
-        {tAdmin('description')}
-      </p>
-      <NotificationsList className="rounded-xl bg-[#121212] p-8" />
-    </div>
+    <DashboardPageShell>
+      <DashboardPageHeader
+        title={t('title')}
+        description={tAdmin('description')}
+      />
+      <NotificationsList />
+    </DashboardPageShell>
   )
 }

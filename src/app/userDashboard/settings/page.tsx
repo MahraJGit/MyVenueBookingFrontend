@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -16,14 +17,16 @@ import {
 import { CountryFlag } from '@/components/i18n/CountryFlag'
 import { LOCALE_OPTIONS } from '@/i18n/locales'
 import {
-  DashboardContentPanel,
-  dashboardListItemClass,
-} from '@/components/dashboard/dashboard-shared'
-import {
   getNotificationPreferences,
   updateNotificationPreferences,
 } from '@/features/notifications/api'
 import type { NotificationPreferences } from '@/features/notifications/types'
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  dashboardSelectTriggerClass,
+} from '@/components/dashboard/dashboard-ui'
+import { DashboardPageHeader } from '@/components/dashboard/dashboard-shared'
 
 export default function NotificationSettings() {
   const t = useTranslations('notifications')
@@ -59,17 +62,16 @@ export default function NotificationSettings() {
 
   if (isLoading || !settings) {
     return (
-      <DashboardContentPanel>
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </DashboardContentPanel>
+      <DashboardPanel className="flex justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </DashboardPanel>
     )
   }
 
   return (
-    <DashboardContentPanel>
-      <h2 className="text-lg font-semibold mb-6">{t('settingsTitle')}</h2>
+    <DashboardPageShell>
+      <DashboardPageHeader title={t('settingsTitle')} />
+      <DashboardPanel>
 
       <div className="space-y-4">
         <SettingItem
@@ -121,7 +123,7 @@ export default function NotificationSettings() {
             saveMutation.mutate({ language: value })
           }}
         >
-          <SelectTrigger className={`w-full border-[#242424] bg-[#151515] sm:w-60`}>
+          <SelectTrigger className={cn(dashboardSelectTriggerClass, 'w-full sm:w-60')}>
             <SelectValue placeholder={tCommon('selectLanguage')} />
           </SelectTrigger>
 
@@ -137,7 +139,8 @@ export default function NotificationSettings() {
           </SelectContent>
         </Select>
       </div>
-    </DashboardContentPanel>
+      </DashboardPanel>
+    </DashboardPageShell>
   )
 }
 
@@ -153,7 +156,7 @@ function SettingItem({
   onChange: () => void
 }) {
   return (
-    <div className={`flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${dashboardListItemClass}`}>
+    <div className="flex flex-col gap-4 rounded-lg bg-[#151515] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
       <div className="min-w-0 sm:max-w-[80%]">
         <h4 className="text-sm font-medium">{title}</h4>
         <p className="text-sm text-muted-foreground mt-1">{description}</p>

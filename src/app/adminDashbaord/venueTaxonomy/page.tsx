@@ -142,7 +142,7 @@ export default function VenueTaxonomyPage() {
     <RoleGuard allowedRoles={["ADMIN"]}>
       <div className="mx-auto max-w-6xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">{t("venueTaxonomy")}</h1>
+          <h1 className="text-xl font-bold text-white">{t("venueTaxonomy")}</h1>
           <p className="text-sm text-muted-foreground">
             {t("venueTaxonomyDesc")}
           </p>

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { DashboardLogoutButton } from '@/components/dashboard/dashboard-shared'
+import { dashboardSidebarClass, DashboardLogoutButton } from '@/components/dashboard/dashboard-shared'
 
 type UserSidebarProps = {
   isOpen: boolean
@@ -64,9 +64,7 @@ export default function UserSidebar({ isOpen, onClose }: UserSidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed top-0 left-0 z-50 flex h-full w-[260px] flex-col',
-        'bg-[#1B1B1B] px-4 py-6 text-white',
-        'border-r border-white/10 lg:static lg:m-4 lg:min-h-[calc(100vh-2rem)] lg:rounded-2xl lg:border-r-0',
+        dashboardSidebarClass,
         'transform transition-transform duration-300',
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
       )}
