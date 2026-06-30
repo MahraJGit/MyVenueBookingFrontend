@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
@@ -83,6 +83,8 @@ export default function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEmbed = searchParams.get("embed") === "1";
   const queryClient = useQueryClient();
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
 
@@ -126,6 +128,11 @@ export default function EventDetailPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0e0e0e] text-white">
+      {isEmbed ? (
+        <div className="border-b border-primary/30 bg-primary/10 px-4 py-2 text-center text-xs text-primary sm:text-sm">
+          {t("previewModeBanner")}
+        </div>
+      ) : null}
       {/* Hero / Cover */}
       <section className="relative h-[42vh] min-h-[280px] max-h-[520px] overflow-hidden sm:min-h-[360px] md:h-[520px]">
         <Image
@@ -138,6 +145,7 @@ export default function EventDetailPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] via-[#0e0e0e]/50 to-transparent" />
 
         {/* Share button — top right */}
+        {!isEmbed ? (
         <button
           type="button"
           aria-label={tCommon('share')}
@@ -152,6 +160,7 @@ export default function EventDetailPage() {
         >
           <Share2 size={18} />
         </button>
+        ) : null}
 
         {/* Centered content */}
         <div className="absolute inset-0 flex flex-col items-center justify-end px-4 pb-8 text-center sm:justify-center sm:pb-0">
@@ -354,7 +363,7 @@ export default function EventDetailPage() {
             })}
           </div>
 
-          {/* Get Tickets CTA */}
+          {!isEmbed ? (
           <div className="bg-[#1B1B1B] border border-[#303030] rounded-2xl p-6 flex flex-col items-center gap-3">
             <div className="flex items-center gap-2">
               <Ticket size={18} className="text-primary" />
@@ -388,6 +397,7 @@ export default function EventDetailPage() {
               }}
             />
           </div>
+          ) : null}
         </section>
       )}
     </div>

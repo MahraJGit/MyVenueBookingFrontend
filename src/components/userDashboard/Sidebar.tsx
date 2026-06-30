@@ -11,6 +11,7 @@ import {
   Bell,
   CalendarDays,
   Settings,
+  Heart,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,11 @@ export default function UserSidebar({ isOpen, onClose }: UserSidebarProps) {
 
   const links = [
     {
+      labelKey: 'personalInfo' as const,
+      href: '/userDashboard/profile',
+      icon: User,
+    },
+    {
       labelKey: 'tickets' as const,
       href: '/userDashboard/tickets',
       icon: Ticket,
@@ -39,9 +45,9 @@ export default function UserSidebar({ isOpen, onClose }: UserSidebarProps) {
       icon: CalendarDays,
     },
     {
-      labelKey: 'personalInfo' as const,
-      href: '/userDashboard/profile',
-      icon: User,
+      labelKey: 'favourites' as const,
+      href: '/userDashboard/favourites',
+      icon: Heart,
     },
     {
       labelKey: 'payment' as const,

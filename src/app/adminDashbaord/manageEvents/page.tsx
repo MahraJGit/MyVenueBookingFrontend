@@ -4,26 +4,17 @@
  * Event management: data table + actions (previous card grid removed — use git history if needed).
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import {
-  Eye,
-  Pencil,
-  Trash2,
-  Plus,
-  Search,
-  Calendar as CalendarIcon,
-  MapPin,
-} from "lucide-react";
+import { CalendarDays, Eye, Pencil, Trash2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
-import { TableShell } from "@/components/ui/table-shell";
 import {
   Table,
   TableBody,
@@ -32,14 +23,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/venues/StatusBadge";
+import { EventPublicPreviewDialog } from "@/components/events/EventPublicPreviewDialog";
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardSearchInput,
+} from "@/components/dashboard/dashboard-ui";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import {
   deleteEvent,
   listManagedEvents,
@@ -48,28 +39,29 @@ import {
 import { toastApiError } from "@/lib/toasts";
 import { format } from "date-fns";
 import { useDashboardPaths } from "@/features/dashboard/paths";
-import {
-  DashboardPanel,
-  DashboardPageShell,
-  DashboardSearchInput,
-} from "@/components/dashboard/dashboard-ui";
-import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
+
+const PAGE_SIZE = 10;
 
 export default function ManageEvents() {
   const t = useTranslations("adminDashboard");
   const tCommon = useTranslations("common");
-  const tForms = useTranslations("forms");
+  const tListing = useTranslations("listing");
   const paths = useDashboardPaths();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [viewEvent, setViewEvent] = useState<ManagedEvent | null>(null);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["managed-events", search],
+    queryKey: ["managed-events", search, page],
     queryFn: () =>
       listManagedEvents({
-        page: 1,
-        limit: 100,
+        page,
+        limit: PAGE_SIZE,
         ...(search.trim() ? { search: search.trim() } : {}),
         sortBy: "createdAt",
         sortOrder: "desc",
@@ -85,13 +77,10 @@ export default function ManageEvents() {
     onError: (e) => toastApiError(e, t("couldNotDeleteEvent")),
   });
 
-  const openMediaMutation = {
-    mutate: (fileUrl: string) => {
-      window.open(fileUrl, "_blank", "noopener,noreferrer");
-    },
-  };
-
   const rows = data?.data ?? [];
+  const meta = data?.meta;
+  const totalPages = meta?.totalPages ?? 1;
+  const showPagination = !isLoading && (meta?.total ?? 0) > 0;
 
   return (
     <DashboardPageShell>
@@ -117,7 +106,7 @@ export default function ManageEvents() {
         </div>
 
         {isError ? (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="mb-4">
             <AlertDescription className="flex flex-wrap items-center gap-3">
               <span>{error instanceof Error ? error.message : t("failedLoadEvents")}</span>
               <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
@@ -127,11 +116,11 @@ export default function ManageEvents() {
           </Alert>
         ) : null}
 
-        <TableShell>
-          <Table>
+        <div className="overflow-x-auto rounded-xl border border-[#242424]">
+          <Table className="[&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3">
             <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground">{t("tableEvent")}</TableHead>
+              <TableRow className="border-[#242424] hover:bg-transparent">
+                <TableHead className="min-w-[220px] text-muted-foreground">{t("tableEvent")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("tableStarts")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("tableCity")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("tableStatus")}</TableHead>
@@ -149,15 +138,18 @@ export default function ManageEvents() {
                 rows.map((ev) => (
                   <TableRow
                     key={ev.id}
-                    className="border-border hover:bg-muted/50"
+                    className="border-[#242424] hover:bg-[#151515]/80"
                   >
-                    <TableCell className="max-w-[220px] font-medium">
-                      {ev.eventName}
+                    <TableCell>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <EventThumb event={ev} />
+                        <span className="truncate font-medium">{ev.eventName}</span>
+                      </div>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-zinc-300">
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                       {formatDateSafe(ev.startDateTime)}
                     </TableCell>
-                    <TableCell>{ev.city}</TableCell>
+                    <TableCell className="text-muted-foreground">{ev.city}</TableCell>
                     <TableCell>
                       {ev.status ? (
                         <StatusBadge status={ev.status} />
@@ -171,7 +163,7 @@ export default function ManageEvents() {
                           type="button"
                           size="icon"
                           variant="ghost"
-                          className="text-zinc-300 hover:text-white"
+                          className="text-muted-foreground hover:text-foreground"
                           aria-label={t("viewEvent")}
                           onClick={() => setViewEvent(ev)}
                         >
@@ -181,13 +173,11 @@ export default function ManageEvents() {
                           type="button"
                           size="icon"
                           variant="ghost"
-                          className="text-zinc-300 hover:text-white"
+                          className="text-muted-foreground hover:text-foreground"
                           aria-label={t("editEvent")}
                           asChild
                         >
-                          <Link
-                            href={paths.editEvent(ev.id)}
-                          >
+                          <Link href={paths.editEvent(ev.id)}>
                             <Pencil className="h-4 w-4" />
                           </Link>
                         </Button>
@@ -195,7 +185,7 @@ export default function ManageEvents() {
                           type="button"
                           size="icon"
                           variant="ghost"
-                          className="text-red-400 hover:text-red-300"
+                          className="text-muted-foreground hover:text-destructive"
                           aria-label={t("deleteEvent")}
                           disabled={deleteMutation.isPending}
                           onClick={() => {
@@ -217,240 +207,68 @@ export default function ManageEvents() {
               )}
             </TableBody>
           </Table>
-        </TableShell>
+        </div>
+
+        {showPagination ? (
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              {tListing("pageOfWithCount", {
+                page: meta?.page ?? page,
+                totalPages,
+                total: meta?.total ?? rows.length,
+                type: tListing("eventsCount"),
+              })}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-[#242424]"
+                disabled={page <= 1 || isLoading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                {tCommon("previous")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-[#242424]"
+                disabled={page >= totalPages || isLoading}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                {tCommon("next")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </DashboardPanel>
 
-      <Dialog open={Boolean(viewEvent)} onOpenChange={(o) => !o && setViewEvent(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto border-zinc-700 bg-[#111] text-white">
-          <DialogHeader>
-            <DialogTitle>{viewEvent?.eventName}</DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              {t("eventSummary")}
-            </DialogDescription>
-          </DialogHeader>
-          {viewEvent ? (
-            <div className="space-y-5 text-sm">
-              <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  {t("basic")}
-                </p>
-                <p>
-                  <span className="text-zinc-500">{t("categoryLabel")}</span>{" "}
-                  {viewEvent.category ?? tCommon("notAvailable")}
-                </p>
-                <p>
-                  <span className="text-zinc-500">{t("statusLabel")}</span>{" "}
-                  {viewEvent.status ? (
-                    <StatusBadge status={viewEvent.status} />
-                  ) : (
-                    tCommon("notAvailable")
-                  )}
-                </p>
-                <p>
-                  <span className="text-zinc-500">{t("slugLabel")}</span>{" "}
-                  <code className="rounded bg-zinc-900 px-1">{viewEvent.slug}</code>
-                </p>
-                <p className="text-zinc-400">
-                  {viewEvent.eventDescription || t("noDescriptionProvided")}
-                </p>
-              </section>
-
-              <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  {t("scheduleLabel")}
-                </p>
-                <p className="flex items-start gap-2 text-zinc-300">
-                  <CalendarIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>
-                    {formatDateSafe(viewEvent.startDateTime)} →{" "}
-                    {formatDateSafe(viewEvent.endDateTime)}
-                    <span className="text-zinc-500"> ({viewEvent.timezone})</span>
-                  </span>
-                </p>
-              </section>
-
-              <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  {t("venueAndLocation")}
-                </p>
-                <p>
-                  <span className="text-zinc-500">{t("venueNameLabel")}</span>{" "}
-                  {viewEvent.venueName ?? tCommon("notAvailable")}
-                </p>
-                <p>
-                  <span className="text-zinc-500">{t("venuePhoneLabel")}</span>{" "}
-                  {viewEvent.venuePhone ?? tCommon("notAvailable")}
-                </p>
-                <p>
-                  <span className="text-zinc-500">{t("venueWebsiteLabel")}</span>{" "}
-                  {viewEvent.venueWebsite ? (
-                    <a
-                      href={viewEvent.venueWebsite}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline underline-offset-2"
-                    >
-                      {viewEvent.venueWebsite}
-                    </a>
-                  ) : (
-                    tCommon("notAvailable")
-                  )}
-                </p>
-                <p className="flex items-start gap-2 text-zinc-300">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>
-                    {viewEvent.city}, {viewEvent.countryCode}
-                    {viewEvent.state ? `, ${viewEvent.state}` : ""}
-                    {viewEvent.address ? ` · ${viewEvent.address}` : ""}
-                    {viewEvent.zipCode ? ` (${viewEvent.zipCode})` : ""}
-                  </span>
-                </p>
-                <p className="text-zinc-400">
-                  {t("latLngLabel")} {String(viewEvent.latitude)}, {String(viewEvent.longitude)}
-                </p>
-                <p className="text-zinc-400">
-                  {t("locationSourceLabel")} {viewEvent.locationSource}
-                </p>
-              </section>
-
-              <EventMediaPreview
-                coverImage={viewEvent.coverImage}
-                thumbnail={viewEvent.thumbnail}
-                gallery={viewEvent.gallery}
-                onOpenFull={(url) => openMediaMutation.mutate(url)}
-              />
-
-              <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  {tForms("tags")}
-                </p>
-                {viewEvent.tags?.length ? (
-                  <div className="flex flex-wrap gap-2">
-                    {viewEvent.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-zinc-600 px-2 py-0.5 text-xs text-zinc-300"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-zinc-400">{t("noTags")}</p>
-                )}
-              </section>
-
-              <section className="space-y-2 rounded-lg border border-zinc-800 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  {t("ticketTypes")}
-                </p>
-                {viewEvent.ticketTypes.length ? (
-                  <ul className="list-inside list-disc space-y-1 text-zinc-300">
-                    {viewEvent.ticketTypes.map((ticket) => (
-                      <li key={ticket.id ?? ticket.name}>
-                        {ticket.name} — {ticket.currency} {String(ticket.price)} × {ticket.quantityTotal}{" "}
-                        {t("totalLabel")}
-                        {typeof ticket.quantitySold === "number"
-                          ? ` (${ticket.quantitySold} ${t("soldLabel")})`
-                          : ""}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-zinc-400">{t("noTicketTypes")}</p>
-                )}
-              </section>
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <EventPublicPreviewDialog
+        event={viewEvent}
+        onClose={() => setViewEvent(null)}
+        editHref={viewEvent ? paths.editEvent(viewEvent.id) : undefined}
+      />
     </DashboardPageShell>
   );
 }
 
-function EventMediaPreview({
-  coverImage,
-  thumbnail,
-  gallery,
-  onOpenFull,
-}: {
-  coverImage?: string | null;
-  thumbnail?: string | null;
-  gallery?: string[] | null;
-  onOpenFull: (fileUrl: string) => void;
-}) {
-  const t = useTranslations("adminDashboard");
-  const tForms = useTranslations("forms");
+function EventThumb({ event }: { event: ManagedEvent }) {
+  const src = event.thumbnail?.trim() || event.coverImage?.trim();
+
+  if (src) {
+    return (
+      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-[#1a1a1a]">
+        <Image src={src} alt="" fill className="object-cover" sizes="44px" />
+      </div>
+    );
+  }
 
   return (
-    <section className="space-y-4 rounded-lg border border-zinc-800 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-        {t("mediaLabel")}
-      </p>
-
-      {coverImage ? (
-        <div className="space-y-1.5">
-          <p className="text-xs text-zinc-500">{t("coverLabel")}</p>
-          <button
-            type="button"
-            onClick={() => onOpenFull(coverImage)}
-            className="group block overflow-hidden rounded-md border border-zinc-700 transition hover:border-primary"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={coverImage}
-              alt={tForms("coverImage")}
-              className="max-h-48 w-full object-cover transition group-hover:opacity-80"
-            />
-          </button>
-        </div>
-      ) : (
-        <p className="text-zinc-400 text-sm">{t("noCoverImage")}</p>
-      )}
-
-      {thumbnail ? (
-        <div className="space-y-1.5">
-          <p className="text-xs text-zinc-500">{t("thumbnailLabel")}</p>
-          <button
-            type="button"
-            onClick={() => onOpenFull(thumbnail)}
-            className="group block overflow-hidden rounded-md border border-zinc-700 transition hover:border-primary"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={thumbnail}
-              alt={tForms("thumbnail")}
-              className="h-24 w-32 object-cover transition group-hover:opacity-80"
-            />
-          </button>
-        </div>
-      ) : null}
-
-      {gallery?.length ? (
-        <div className="space-y-2">
-          <p className="text-xs text-zinc-500">{t("galleryCount", { count: gallery.length })}</p>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {gallery.map((g, idx) => (
-              <button
-                key={`${g}-${idx}`}
-                type="button"
-                onClick={() => onOpenFull(g)}
-                className="group relative aspect-square overflow-hidden rounded-md border border-zinc-700 transition hover:border-primary"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={g}
-                  alt={t("galleryImageAlt", { index: idx + 1 })}
-                  className="h-full w-full object-cover transition group-hover:opacity-80"
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <p className="text-zinc-400 text-sm">{t("noGalleryImages")}</p>
-      )}
-    </section>
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#151515] text-muted-foreground">
+      <CalendarDays className="h-4 w-4" />
+    </div>
   );
 }
 

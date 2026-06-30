@@ -7,6 +7,7 @@ export type AuthUser = {
   lastName?: string;
   phone?: string;
   phoneCountryCode?: string | null;
+  avatarUrl?: string | null;
 };
 
 export type RegisterRequestBody = {
