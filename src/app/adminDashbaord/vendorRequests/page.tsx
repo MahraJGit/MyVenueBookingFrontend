@@ -41,6 +41,12 @@ import { getPresignedViewUrl } from "@/features/uploads/api"
 import { TableSkeleton } from "@/components/ui/table-skeleton"
 import { TableShell } from "@/components/ui/table-shell"
 import { toastApiError } from "@/lib/toasts"
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardScrollableTabs,
+} from "@/components/dashboard/dashboard-ui"
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared"
 
 type StatusFilter = "ALL" | VendorVerificationStatus
 
@@ -135,50 +141,34 @@ export default function VendorRequests() {
   }
 
   return (
-    <div className="w-full max-w-full space-y-6 overflow-x-hidden rounded-2xl bg-[#0e0e0e] p-6 text-white">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-primary">{t("title")}</h2>
-          <p className="text-sm text-gray-300">{t("description")}</p>
-        </div>
+    <DashboardPageShell>
+      <DashboardPanel>
+        <DashboardPageHeader
+          title={t("title")}
+          description={t("description")}
+          action={
+            isFetching && !isLoading ? (
+              <span className="flex items-center gap-1 text-xs text-zinc-500">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {tCommon("refreshing")}
+              </span>
+            ) : null
+          }
+        />
 
-        <div className="flex flex-wrap items-center gap-2">
-          {isFetching && !isLoading ? (
-            <span className="flex items-center gap-1 text-xs text-zinc-500">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {tCommon("refreshing")}
-            </span>
-          ) : null}
-          <Button
-            variant={statusFilter === "ALL" ? "default" : "outline"}
-            onClick={() => setStatusFilter("ALL")}
-            disabled={isLoading}
-          >
-            {tCommon("all")}
-          </Button>
-          <Button
-            variant={statusFilter === "PENDING" ? "default" : "outline"}
-            onClick={() => setStatusFilter("PENDING")}
-            disabled={isLoading}
-          >
-            {tStatus("pending")}
-          </Button>
-          <Button
-            variant={statusFilter === "APPROVED" ? "default" : "outline"}
-            onClick={() => setStatusFilter("APPROVED")}
-            disabled={isLoading}
-          >
-            {tStatus("approved")}
-          </Button>
-          <Button
-            variant={statusFilter === "REJECTED" ? "default" : "outline"}
-            onClick={() => setStatusFilter("REJECTED")}
-            disabled={isLoading}
-          >
-            {tStatus("rejected")}
-          </Button>
-        </div>
-      </div>
+        <DashboardScrollableTabs
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+          items={(
+            ["ALL", "PENDING", "APPROVED", "REJECTED"] as const
+          ).map((value) => ({
+            value,
+            label:
+              value === "ALL"
+                ? tCommon("all")
+                : statusLabel(value as VendorVerificationStatus),
+          }))}
+        />
 
       {errorMessage ? (
         <div
@@ -301,6 +291,7 @@ export default function VendorRequests() {
           </TableBody>
         </Table>
       </TableShell>
+      </DashboardPanel>
 
       <Dialog
         open={Boolean(activeDetails)}
@@ -429,7 +420,7 @@ export default function VendorRequests() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </DashboardPageShell>
   )
 }
 

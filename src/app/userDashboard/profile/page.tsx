@@ -20,6 +20,12 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import {
+  dashboardInputClass,
+  dashboardSurfaceClass,
+  DashboardPageShell,
+} from "@/components/dashboard/dashboard-ui"
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared"
+import {
   getMyProfile,
   updateMyProfile,
   uploadUserAvatar,
@@ -184,14 +190,14 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="flex min-h-[320px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
   if (isError || !profile || !form) {
     return (
-      <div className="rounded-xl bg-[#121212] p-8 text-center">
+      <div className={cn(dashboardSurfaceClass, "p-8 text-center")}>
         <p className="text-muted-foreground mb-4">
           {error instanceof Error ? error.message : t("failedLoadProfile")}
         </p>
@@ -209,8 +215,9 @@ export default function ProfilePage() {
   )
 
   return (
-    <>
-      <div className="mb-6 flex flex-col gap-4 rounded-lg bg-[#121212] p-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <DashboardPageShell>
+      <DashboardPageHeader title={t("personalInfo")} />
+      <div className={cn(dashboardSurfaceClass, "mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between")}>
         <div className="flex items-center gap-4">
           <div className="relative">
             <Avatar className="h-20 w-20">
@@ -254,7 +261,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="rounded-xl bg-[#121212] p-4 sm:p-8">
+      <div className={dashboardSurfaceClass}>
         <form
           className="grid grid-cols-1 md:grid-cols-2 gap-6"
           onSubmit={(e) => {
@@ -268,7 +275,7 @@ export default function ProfilePage() {
               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="firstName"
-                className="pl-10"
+                className={cn(dashboardInputClass, "pl-10")}
                 value={form.firstName}
                 onChange={(e) => updateField("firstName")(e.target.value)}
                 required
@@ -284,7 +291,7 @@ export default function ProfilePage() {
               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="lastName"
-                className="pl-10"
+                className={cn(dashboardInputClass, "pl-10")}
                 value={form.lastName}
                 onChange={(e) => updateField("lastName")(e.target.value)}
                 required
@@ -300,7 +307,7 @@ export default function ProfilePage() {
               <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="email"
-                className="pl-10"
+                className={cn(dashboardInputClass, "pl-10")}
                 value={form.email}
                 readOnly
                 disabled
@@ -337,7 +344,7 @@ export default function ProfilePage() {
               <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="state"
-                className="pl-10"
+                className={cn(dashboardInputClass, "pl-10")}
                 placeholder={t("statePlaceholder")}
                 value={form.state}
                 onChange={(e) => updateField("state")(e.target.value)}
@@ -407,7 +414,7 @@ export default function ProfilePage() {
             </Button>
             <Button
               type="submit"
-              className="w-full bg-pink-500 hover:bg-pink-600 sm:w-auto"
+              className="w-full sm:w-auto"
               disabled={saveMutation.isPending || avatarMutation.isPending}
             >
               {saveMutation.isPending ? (
@@ -422,6 +429,6 @@ export default function ProfilePage() {
           </div>
         </form>
       </div>
-    </>
+    </DashboardPageShell>
   )
 }

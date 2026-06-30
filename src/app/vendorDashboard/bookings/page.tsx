@@ -8,16 +8,14 @@ import {
   BookingDetailPanel,
   BookingsTable,
 } from "@/components/bookings/BookingDetailPanel";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { listBookings } from "@/features/bookings/api";
 import type { BookingStatus } from "@/features/bookings/types";
 import { bookingKeys } from "@/features/venues/query-keys";
+import {
+  DashboardPageShell,
+  DashboardScrollableTabs,
+} from "@/components/dashboard/dashboard-ui";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 
 export default function VendorBookingsPage() {
   const t = useTranslations("vendorDashboard");
@@ -38,32 +36,25 @@ export default function VendorBookingsPage() {
 
   return (
     <RoleGuard allowedRoles={["VENDOR", "ADMIN"]}>
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{t("venueBookingsTitle")}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t("venueBookingsDesc")}
-            </p>
-          </div>
-          <Select
-            value={status}
-            onValueChange={(v) => setStatus(v as BookingStatus | "ALL")}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={t("filterStatus")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">{t("allStatuses")}</SelectItem>
-              <SelectItem value="HOLD">{t("hold")}</SelectItem>
-              <SelectItem value="CONFIRMED">{tBooking("confirmed")}</SelectItem>
-              <SelectItem value="CANCELLED">{tBooking("cancelled")}</SelectItem>
-              <SelectItem value="COMPLETED">{tBooking("completed")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <DashboardPageShell>
+        <DashboardPageHeader
+          title={t("venueBookingsTitle")}
+          description={t("venueBookingsDesc")}
+        />
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <DashboardScrollableTabs
+          value={status}
+          onValueChange={(v) => setStatus(v as BookingStatus | "ALL")}
+          items={[
+            { value: "ALL", label: t("allStatuses") },
+            { value: "HOLD", label: t("hold") },
+            { value: "CONFIRMED", label: tBooking("confirmed") },
+            { value: "CANCELLED", label: tBooking("cancelled") },
+            { value: "COMPLETED", label: tBooking("completed") },
+          ]}
+        />
+
+        <div className="grid gap-6 ">
           <BookingsTable
             bookings={bookings}
             selectedId={selectedId}
@@ -79,7 +70,7 @@ export default function VendorBookingsPage() {
             />
           )}
         </div>
-      </div>
+      </DashboardPageShell>
     </RoleGuard>
   );
 }

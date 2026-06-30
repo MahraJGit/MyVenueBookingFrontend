@@ -22,7 +22,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   DashboardFilterBar,
   DashboardScrollableTabs,
-} from "@/components/userDashboard/DashboardScrollableTabs";
+  DashboardPageShell,
+  DashboardPanel,
+  DashboardSortButton,
+  dashboardDropdownContentClass,
+  dashboardEyebrowClass,
+  dashboardTabCountClass,
+} from "@/components/dashboard/dashboard-ui";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,43 +91,35 @@ export default function UserBookingsPage() {
   }, [isError, error]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1 text-xs font-medium text-primary">
-            <CalendarDays className="h-3.5 w-3.5" />
-            {t("venueReservations")}
-          </div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">{t("myVenueBookings")}</h1>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            {t("bookingsSubtitle")}
-          </p>
-        </div>
-        <Button asChild className="w-full bg-primary hover:bg-primary/90 sm:w-auto">
-          <Link href="/venues" className="inline-flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            {t("bookAVenue")}
-          </Link>
-        </Button>
+    <DashboardPageShell>
+      <div className={dashboardEyebrowClass}>
+        <CalendarDays className="h-3.5 w-3.5" />
+        {t("venueReservations")}
       </div>
+      <DashboardPageHeader
+        title={t("myVenueBookings")}
+        description={t("bookingsSubtitle")}
+        action={
+          <Button asChild className="w-full sm:w-auto">
+            <Link href="/venues" className="inline-flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              {t("bookAVenue")}
+            </Link>
+          </Button>
+        }
+      />
 
-      <Card className="border-zinc-800 bg-zinc-950/40">
-        <CardContent className="p-6 sm:p-8">
+      <DashboardPanel className="space-y-0">
           <DashboardFilterBar
-            className="border-zinc-800"
             action={
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full shrink-0 border-zinc-700 bg-zinc-900/50 text-muted-foreground sm:w-auto"
-                  >
+                  <DashboardSortButton>
                     {sortLabel}
                     <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
+                  </DashboardSortButton>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="border-zinc-800 bg-zinc-900">
+                <DropdownMenuContent align="end" className={dashboardDropdownContentClass}>
                   <DropdownMenuItem onClick={() => setSortBy("newest")}>
                     {t("newestFirst")}
                   </DropdownMenuItem>
@@ -138,7 +137,6 @@ export default function UserBookingsPage() {
             }
           >
             <DashboardScrollableTabs
-              variant="pill"
               value={activeTab}
               onValueChange={(value) => {
                 setActiveTab(value);
@@ -149,7 +147,7 @@ export default function UserBookingsPage() {
                 label: (
                   <>
                     {tabLabel(value)}
-                    <span className="ml-1.5 rounded-full bg-zinc-800 px-1.5 py-0.5 text-xs tabular-nums">
+                    <span className={dashboardTabCountClass}>
                       {tabCount(value)}
                     </span>
                   </>
@@ -220,8 +218,7 @@ export default function UserBookingsPage() {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+      </DashboardPanel>
+    </DashboardPageShell>
   );
 }

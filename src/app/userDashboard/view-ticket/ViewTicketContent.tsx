@@ -21,6 +21,8 @@ import { getMyTicketOrder } from '@/features/ticket-purchases/api'
 import { getFallbackEventImage } from '@/features/events/utils'
 import { DisplayPrice } from '@/components/currency/DisplayPrice'
 import { toastApiError } from '@/lib/toasts'
+import { cn } from '@/lib/utils'
+import { dashboardSurfaceClass } from '@/components/dashboard/dashboard-ui'
 import React from 'react'
 
 function formatEventDateTime(iso: string) {
@@ -84,7 +86,7 @@ export default function ViewTicketContent() {
 
   if (!orderGroupId) {
     return (
-      <Card className="bg-[#121212] p-4 text-center text-white sm:p-8">
+      <Card className={cn(dashboardSurfaceClass, "p-4 text-center text-white sm:p-8")}>
         <p className="text-muted-foreground mb-4">{t('noOrderSelected')}</p>
         <Button asChild variant="outline">
           <Link href="/userDashboard/tickets">
@@ -98,7 +100,7 @@ export default function ViewTicketContent() {
 
   if (isLoading) {
     return (
-      <Card className="flex flex-col items-center gap-4 bg-[#121212] p-4 py-16 text-white sm:p-8">
+      <Card className={cn(dashboardSurfaceClass, "flex flex-col items-center gap-4 p-4 py-16 text-white sm:p-8")}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-sm text-muted-foreground">{t('loadingOrder')}</p>
       </Card>
@@ -107,7 +109,7 @@ export default function ViewTicketContent() {
 
   if (!order) {
     return (
-      <Card className="bg-[#121212] p-4 text-center text-white sm:p-8">
+      <Card className={cn(dashboardSurfaceClass, "p-4 text-center text-white sm:p-8")}>
         <p className="text-muted-foreground mb-4">{t('orderNotFound')}</p>
         <Button asChild variant="outline">
           <Link href="/userDashboard/tickets">{t('backToTickets')}</Link>
@@ -120,7 +122,7 @@ export default function ViewTicketContent() {
     order.eventImage ?? getFallbackEventImage(order.eventId)
 
   return (
-    <Card className="bg-[#121212] p-4 text-white sm:p-8">
+    <Card className={cn(dashboardSurfaceClass, "p-4 text-white sm:p-8")}>
       <div className="mb-6">
         <Button asChild variant="ghost" size="sm" className="px-0 text-muted-foreground">
           <Link href="/userDashboard/tickets">
@@ -156,7 +158,7 @@ export default function ViewTicketContent() {
             <RotateCcw className="mr-2 h-4 w-4" />
             {t('refundTicket')}
           </Button>
-          <Button size="sm" className="w-full bg-pink-500 hover:bg-pink-600 sm:w-auto" disabled>
+          <Button size="sm" className="w-full sm:w-auto" disabled>
             <Download className="mr-2 h-4 w-4" />
             {t('downloadTicket')}
           </Button>

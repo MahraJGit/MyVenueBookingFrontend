@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
-import { ExternalLink, Loader2, Search, Ticket } from "lucide-react"
+import { ExternalLink, Loader2, Ticket } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -33,7 +32,16 @@ import {
 import { formatTicketPrice } from "@/features/events/utils"
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton"
 import { TableShell } from "@/components/ui/table-shell"
-import { toastApiError } from "@/lib/toasts"
+import { toastApiError } from "@/lib/toasts";
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardSearchInput,
+  dashboardSelectTriggerClass,
+  dashboardTabTriggerClass,
+} from "@/components/dashboard/dashboard-ui";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
+import { cn } from "@/lib/utils";
 
 function formatDateTime(iso: string) {
   try {
@@ -136,26 +144,21 @@ export default function ManageTicketsPage() {
   }, [isError, error, t])
 
   return (
-    <div className="flex w-full flex-col gap-8">
-      <div className="w-full space-y-6 rounded-2xl bg-[#0e0e0e] p-6 text-white">
-        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-          <div>
-            <h2 className="text-xl font-bold text-primary">{t("title")}</h2>
-            <p className="mt-1 text-sm text-zinc-400">
-              {isAdmin ? t("descriptionAdmin") : t("descriptionVendor")}
-            </p>
-          </div>
+    <DashboardPageShell>
+      <DashboardPanel>
+        <DashboardPageHeader
+          title={t("title")}
+          description={isAdmin ? t("descriptionAdmin") : t("descriptionVendor")}
+        />
 
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-70" />
-              <Input
-                placeholder={t("searchPlaceholder")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="border-none bg-primary/20 pl-10 text-white placeholder:text-zinc-500"
-              />
-            </div>
+        <div className="flex w-full flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+          <div className="w-full sm:max-w-xs">
+            <DashboardSearchInput
+              placeholder={t("searchPlaceholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
             <Select
               value={statusFilter}
               onValueChange={(v) => {
@@ -163,7 +166,7 @@ export default function ManageTicketsPage() {
                 setPage(1)
               }}
             >
-              <SelectTrigger className="w-full border-zinc-700 bg-zinc-900 sm:w-[160px]">
+              <SelectTrigger className={cn(dashboardSelectTriggerClass, "w-full sm:w-[160px]")}>
                 <SelectValue placeholder={tCommon("status")} />
               </SelectTrigger>
               <SelectContent>
@@ -181,7 +184,7 @@ export default function ManageTicketsPage() {
                 setPage(1)
               }}
             >
-              <SelectTrigger className="w-full border-zinc-700 bg-zinc-900 sm:w-[200px]">
+              <SelectTrigger className={cn(dashboardSelectTriggerClass, "w-full sm:w-[200px]")}>
                 <SelectValue placeholder={tAdmin("tableEvent")} />
               </SelectTrigger>
               <SelectContent>
@@ -197,7 +200,6 @@ export default function ManageTicketsPage() {
               type="button"
               variant="outline"
               size="sm"
-              className="border-zinc-600"
               onClick={() => void refetch()}
               disabled={isFetching}
             >
@@ -208,7 +210,6 @@ export default function ManageTicketsPage() {
               )}
             </Button>
           </div>
-        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-zinc-800 bg-[#151515] p-5">
@@ -238,9 +239,13 @@ export default function ManageTicketsPage() {
         </div>
 
         <Tabs defaultValue="by-event" className="w-full">
-          <TabsList className="bg-zinc-900">
-            <TabsTrigger value="by-event">{t("byEvent")}</TabsTrigger>
-            <TabsTrigger value="sales-log">{t("salesLog")}</TabsTrigger>
+          <TabsList className="inline-flex h-auto w-max flex-nowrap gap-1.5 bg-transparent p-0">
+            <TabsTrigger value="by-event" className={dashboardTabTriggerClass}>
+              {t("byEvent")}
+            </TabsTrigger>
+            <TabsTrigger value="sales-log" className={dashboardTabTriggerClass}>
+              {t("salesLog")}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="by-event" className="mt-4">
@@ -478,7 +483,7 @@ export default function ManageTicketsPage() {
             ) : null}
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+      </DashboardPanel>
+    </DashboardPageShell>
   )
 }

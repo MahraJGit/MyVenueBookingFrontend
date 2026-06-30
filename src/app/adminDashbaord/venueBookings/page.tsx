@@ -41,7 +41,7 @@ export default function AdminVenueBookingsPage() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+            <h1 className="text-xl font-bold text-foreground">{t("title")}</h1>
             <p className="text-sm text-muted-foreground">{t("description")}</p>
           </div>
           <Select
@@ -61,7 +61,7 @@ export default function AdminVenueBookingsPage() {
           </Select>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 ">
           <BookingsTable
             bookings={bookings}
             selectedId={selectedId}

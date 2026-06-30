@@ -3,6 +3,8 @@
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
+import { dashboardSurfaceClass } from "@/components/dashboard/dashboard-ui";
+import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import ViewTicketContent from "./ViewTicketContent";
 
@@ -10,7 +12,7 @@ function ViewTicketFallback() {
   const t = useTranslations("viewTicket");
 
   return (
-    <Card className="bg-[#121212] p-8 text-white flex flex-col items-center gap-4 py-16">
+    <Card className={cn(dashboardSurfaceClass, "flex flex-col items-center gap-4 py-16")}>
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="text-sm text-muted-foreground">{t("loadingOrder")}</p>
     </Card>

@@ -34,7 +34,7 @@ export function TableShell({
     <Card
       className={cn(
         variant === "dashboard"
-          ? "border-[#303030] bg-[#1B1B1B] text-white"
+          ? "border-[#303030] bg-[#121212] text-white shadow-none"
           : "border-border bg-card",
         className,
       )}

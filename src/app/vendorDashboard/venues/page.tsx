@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/table";
 import { listManagedVenues } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
+import { DashboardPageShell } from "@/components/dashboard/dashboard-ui";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 
 export default function VendorVenuesPage() {
   const t = useTranslations("vendorDashboard");
@@ -34,22 +36,21 @@ export default function VendorVenuesPage() {
 
   return (
     <RoleGuard allowedRoles={["VENDOR", "ADMIN"]}>
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">{t("myVenuesTitle")}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t("myVenuesDesc")}
-            </p>
-          </div>
-          <Button asChild>
-            <Link href="/vendorDashboard/venues/new">
-              <Plus className="mr-2 h-4 w-4" /> {t("addVenue")}
-            </Link>
-          </Button>
-        </div>
+      <DashboardPageShell>
+        <DashboardPageHeader
+          title={t("myVenuesTitle")}
+          description={t("myVenuesDesc")}
+          action={
+            <Button asChild>
+              <Link href="/vendorDashboard/venues/new">
+                <Plus className="mr-2 h-4 w-4" /> {t("addVenue")}
+              </Link>
+            </Button>
+          }
+        />
 
         <TableShell
+          variant="dashboard"
           title={
             <CardTitle className="flex items-center gap-2 text-lg">
               <Building2 className="h-5 w-5 text-primary" />
@@ -116,7 +117,7 @@ export default function VendorVenuesPage() {
             </TableBody>
           </Table>
         </TableShell>
-      </div>
+      </DashboardPageShell>
     </RoleGuard>
   );
 }

@@ -48,6 +48,12 @@ import {
 import { toastApiError } from "@/lib/toasts";
 import { format } from "date-fns";
 import { useDashboardPaths } from "@/features/dashboard/paths";
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardSearchInput,
+} from "@/components/dashboard/dashboard-ui";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 
 export default function ManageEvents() {
   const t = useTranslations("adminDashboard");
@@ -88,35 +94,26 @@ export default function ManageEvents() {
   const rows = data?.data ?? [];
 
   return (
-    <div className="flex w-full flex-col gap-8">
-      <div className="w-full space-y-6 rounded-2xl border border-[#303030] bg-[#0e0e0e] p-4 text-white sm:p-6">
-        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-          <h2 className="w-full text-xl font-bold text-primary lg:w-auto">
-            {t("myEvents")}
-          </h2>
-
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
-            <div className="relative w-full sm:max-w-xs">
-              <Search
-                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-70"
-              />
-              <Input
-                placeholder={t("searchEvents")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="border-none bg-primary/20 pl-10 text-white placeholder:text-zinc-500"
-              />
-            </div>
-            <Button
-              asChild
-              className="bg-primary text-black hover:bg-primary/90"
-            >
+    <DashboardPageShell>
+      <DashboardPanel>
+        <DashboardPageHeader
+          title={t("myEvents")}
+          action={
+            <Button asChild>
               <Link href={paths.addEvent}>
                 <Plus className="mr-2 h-4 w-4" />
                 {t("newEvent")}
               </Link>
             </Button>
-          </div>
+          }
+        />
+
+        <div className="w-full sm:max-w-xs">
+          <DashboardSearchInput
+            placeholder={t("searchEvents")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
         {isError ? (
@@ -221,7 +218,7 @@ export default function ManageEvents() {
             </TableBody>
           </Table>
         </TableShell>
-      </div>
+      </DashboardPanel>
 
       <Dialog open={Boolean(viewEvent)} onOpenChange={(o) => !o && setViewEvent(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto border-zinc-700 bg-[#111] text-white">
@@ -367,7 +364,7 @@ export default function ManageEvents() {
           ) : null}
         </DialogContent>
       </Dialog>
-    </div>
+    </DashboardPageShell>
   );
 }
 

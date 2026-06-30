@@ -7,7 +7,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TableEmptyRow } from '@/components/ui/table-skeleton'
 import { TableShell } from '@/components/ui/table-shell'
@@ -36,7 +35,12 @@ import { DisplayPrice } from '@/components/currency/DisplayPrice'
 import {
   DashboardFilterBar,
   DashboardScrollableTabs,
-} from '@/components/userDashboard/DashboardScrollableTabs'
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardSortButton,
+  dashboardDropdownContentClass,
+} from '@/components/dashboard/dashboard-ui'
+import { DashboardPageHeader } from '@/components/dashboard/dashboard-shared'
 import { toastApiError } from '@/lib/toasts'
 
 type SortOption = 'newest' | 'oldest' | 'amount-high' | 'amount-low'
@@ -154,22 +158,22 @@ const Tickets = () => {
   }
 
   return (
-    <Card className="mt-2 border-border bg-card sm:mt-5">
-      <CardContent className="p-4 sm:p-6 lg:p-10">
+    <DashboardPageShell>
+      <DashboardPageHeader title={t('tickets')} />
+      <DashboardPanel className="space-y-0">
       <DashboardFilterBar
-        className="border-muted"
         action={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="w-full text-muted-foreground sm:w-auto">
+              <DashboardSortButton>
                 {sortLabel}
                 <ArrowUpDown className="h-4 w-4" />
-              </Button>
+              </DashboardSortButton>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent
               align="end"
-              className="w-44 bg-[#151515] border-[#242424]"
+              className={dashboardDropdownContentClass}
             >
               <DropdownMenuItem onClick={() => setSortBy('newest')}>
                 {t('newestFirst')}
@@ -232,7 +236,7 @@ const Tickets = () => {
           </Button>
         </div>
       ) : (
-        <TableShell className="overflow-hidden border-0 bg-transparent shadow-none" contentClassName="p-0">
+        <TableShell variant="dashboard" contentClassName="p-0">
           <Table
             containerClassName="overscroll-x-contain"
             className="[&_td]:px-4 [&_td]:text-sm [&_th]:px-4 [&_th]:text-sm"
@@ -300,8 +304,8 @@ const Tickets = () => {
           </Table>
         </TableShell>
       )}
-      </CardContent>
-    </Card>
+      </DashboardPanel>
+    </DashboardPageShell>
   )
 }
 

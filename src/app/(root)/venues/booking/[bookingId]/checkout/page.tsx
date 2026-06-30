@@ -170,7 +170,7 @@ export default function VenueBookingCheckoutPage({
                 <p className="text-xs font-medium uppercase tracking-wider text-primary">
                   {tVenueCheckout("secureCheckout")}
                 </p>
-                <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">
+                <h1 className="mt-1 text-xl font-bold text-white sm:text-3xl">
                   {tVenueCheckout("completeBooking")}
                 </h1>
                 <p className="mt-2 max-w-md text-sm text-muted-foreground">

@@ -74,7 +74,7 @@ export default function ManageVenuesPage() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{t("manageVenues")}</h1>
+            <h1 className="text-xl font-bold text-foreground">{t("manageVenues")}</h1>
             <p className="text-sm text-muted-foreground">
               {t("manageVenuesDesc")}
             </p>

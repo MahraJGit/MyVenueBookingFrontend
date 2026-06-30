@@ -24,6 +24,13 @@ import {
 import { getStripePublishableKey } from "@/lib/stripe";
 import { toastApiError } from "@/lib/toasts";
 import { toast } from "sonner";
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  dashboardSurfaceClass,
+} from "@/components/dashboard/dashboard-ui";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
+import { cn } from "@/lib/utils";
 
 const PAYMENT_METHODS_KEY = ["payment-methods"] as const;
 
@@ -121,23 +128,23 @@ export default function PaymentPage() {
 
   if (!stripeConfigured) {
     return (
-      <div className="rounded-2xl bg-[#121212] p-4 sm:p-8">
+      <DashboardPageShell>
+        <DashboardPanel>
         <p className="text-sm text-muted-foreground">
           {t("stripeNotConfigured")}
         </p>
-      </div>
+        </DashboardPanel>
+      </DashboardPageShell>
     );
   }
 
   return (
-    <div className="rounded-2xl bg-[#121212] p-4 sm:p-8">
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold">{t("paymentMethods")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t("paymentMethodsDesc")}
-        </p>
-      </div>
-
+    <DashboardPageShell>
+      <DashboardPageHeader
+        title={t("paymentMethods")}
+        description={t("paymentMethodsDesc")}
+      />
+      <DashboardPanel>
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
         <div className="space-y-6">
           {isLoading ? (
@@ -247,6 +254,7 @@ export default function PaymentPage() {
           </Dialog>
         </div>
       </div>
-    </div>
+      </DashboardPanel>
+    </DashboardPageShell>
   );
 }
