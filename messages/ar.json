@@ -1544,6 +1544,14 @@
     "browseAllVenues": "Browse all venues",
     "corporateTypesNotConfigured": "Corporate venue types are not configured yet."
   },
+  "recommendations": {
+    "eventsTitle": "موصى به لك",
+    "venuesTitle": "أماكن قد تعجبك",
+    "eventsSubtitle": "بناءً على مفضلاتك وحجوزاتك",
+    "venuesSubtitle": "بناءً على مفضلاتك وحجوزاتك",
+    "allEvents": "جميع الفعاليات",
+    "allVenues": "جميع الأماكن"
+  },
   "venuesListing": {
     "title": "Venue",
     "titleHighlight": "Booking",

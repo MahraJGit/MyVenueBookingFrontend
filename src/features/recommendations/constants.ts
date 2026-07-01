@@ -1,0 +1,1 @@
+export const RECOMMENDATION_SLIDER_LIMIT = 8;

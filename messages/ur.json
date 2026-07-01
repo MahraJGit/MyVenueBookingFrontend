@@ -1544,6 +1544,14 @@
     "browseAllVenues": "Browse all venues",
     "corporateTypesNotConfigured": "Corporate venue types are not configured yet."
   },
+  "recommendations": {
+    "eventsTitle": "آپ کے لیے تجویز کردہ",
+    "venuesTitle": "آپ کو پسند آنے والے مقامات",
+    "eventsSubtitle": "آپ کی پسندیدہ اور بکنگز کی بنیاد پر",
+    "venuesSubtitle": "آپ کی پسندیدہ اور بکنگز کی بنیاد پر",
+    "allEvents": "تمام ایونٹس",
+    "allVenues": "تمام مقامات"
+  },
   "venuesListing": {
     "title": "Venue",
     "titleHighlight": "Booking",
