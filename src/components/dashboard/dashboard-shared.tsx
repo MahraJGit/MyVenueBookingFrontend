@@ -73,6 +73,8 @@ export {
   dashboardStatCardClass,
   dashboardTableWrapperClass,
   dashboardTableClass,
+  dashboardTableContainerClass,
+  dashboardTableActionsClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
   dashboardOutlineButtonClass,

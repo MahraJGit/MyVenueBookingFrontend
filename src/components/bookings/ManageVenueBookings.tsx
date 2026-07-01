@@ -215,7 +215,7 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
               </div>
             ) : (
               <div className="hidden xl:flex xl:col-span-3">
-                <div className="flex w-full items-center justify-center rounded-xl border border-dashed border-[#303030] bg-[#151515]">
+                {/* <div className="flex w-full items-center justify-center rounded-xl border border-dashed border-[#303030] bg-[#151515]">
                   <div className="py-16 text-center">
                     <CalendarDays className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
                     <p className="text-sm font-medium text-foreground">
@@ -225,7 +225,7 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
                       {tUser("selectBookingHint")}
                     </p>
                   </div>
-                </div>
+                </div> */}
               </div>
             )}
           </div>

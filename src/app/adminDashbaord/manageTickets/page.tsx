@@ -41,6 +41,7 @@ import {
   DashboardSearchInput,
   DashboardStatCard,
   dashboardTableClass,
+  dashboardTableContainerClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
   dashboardSelectTriggerClass,
@@ -326,23 +327,36 @@ function ByEventTable({
   const colSpan = isAdmin ? 8 : 7;
 
   return (
-    <Table className={dashboardTableClass} containerClassName="overflow-visible">
+    <Table
+      className={cn(dashboardTableClass, "min-w-[1000px]")}
+      containerClassName={dashboardTableContainerClass}
+    >
       <TableHeader>
         <TableRow className={dashboardTableHeaderRowClass}>
-          <TableHead className="text-muted-foreground">{tAdmin("tableEvent")}</TableHead>
+          <TableHead className="min-w-[180px] whitespace-nowrap text-muted-foreground">
+            {tAdmin("tableEvent")}
+          </TableHead>
           {isAdmin ? (
-            <TableHead className="text-muted-foreground">{tCommon("vendor")}</TableHead>
+            <TableHead className="min-w-[140px] whitespace-nowrap text-muted-foreground">
+              {tCommon("vendor")}
+            </TableHead>
           ) : null}
-          <TableHead className="text-muted-foreground">{tCommon("date")}</TableHead>
-          <TableHead className="text-muted-foreground">{t("ticketType")}</TableHead>
-          <TableHead className="text-right text-muted-foreground">{tCommon("sold")}</TableHead>
-          <TableHead className="text-right text-muted-foreground">
+          <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
+            {tCommon("date")}
+          </TableHead>
+          <TableHead className="min-w-[140px] whitespace-nowrap text-muted-foreground">
+            {t("ticketType")}
+          </TableHead>
+          <TableHead className="min-w-[80px] whitespace-nowrap text-right text-muted-foreground">
+            {tCommon("sold")}
+          </TableHead>
+          <TableHead className="min-w-[110px] whitespace-nowrap text-right text-muted-foreground">
             {tCommon("inventory")}
           </TableHead>
-          <TableHead className="text-right text-muted-foreground">
+          <TableHead className="min-w-[110px] whitespace-nowrap text-right text-muted-foreground">
             {tCommon("revenue")}
           </TableHead>
-          <TableHead className="text-muted-foreground" />
+          <TableHead className="min-w-[56px] whitespace-nowrap text-muted-foreground" />
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -446,20 +460,41 @@ function SalesLogTable({
   const colSpan = isAdmin ? 9 : 8;
 
   return (
-    <Table className={dashboardTableClass} containerClassName="overflow-visible">
+    <Table
+      className={cn(dashboardTableClass, "min-w-[1100px]")}
+      containerClassName={dashboardTableContainerClass}
+    >
       <TableHeader>
         <TableRow className={dashboardTableHeaderRowClass}>
-          <TableHead className="text-muted-foreground">{tCommon("order")}</TableHead>
-          <TableHead className="text-muted-foreground">{tAdmin("tableEvent")}</TableHead>
-          <TableHead className="text-muted-foreground">{t("ticketType")}</TableHead>
-          <TableHead className="text-muted-foreground">{t("buyer")}</TableHead>
+          <TableHead className="min-w-[120px] whitespace-nowrap text-muted-foreground">
+            {tCommon("order")}
+          </TableHead>
+          <TableHead className="min-w-[180px] whitespace-nowrap text-muted-foreground">
+            {tAdmin("tableEvent")}
+          </TableHead>
+          <TableHead className="min-w-[140px] whitespace-nowrap text-muted-foreground">
+            {t("ticketType")}
+          </TableHead>
+          <TableHead className="min-w-[180px] whitespace-nowrap text-muted-foreground">
+            {t("buyer")}
+          </TableHead>
           {isAdmin ? (
-            <TableHead className="text-muted-foreground">{tCommon("vendor")}</TableHead>
+            <TableHead className="min-w-[140px] whitespace-nowrap text-muted-foreground">
+              {tCommon("vendor")}
+            </TableHead>
           ) : null}
-          <TableHead className="text-right text-muted-foreground">{tCommon("qty")}</TableHead>
-          <TableHead className="text-right text-muted-foreground">{tCommon("amount")}</TableHead>
-          <TableHead className="text-muted-foreground">{tCommon("status")}</TableHead>
-          <TableHead className="text-muted-foreground">{tCommon("purchased")}</TableHead>
+          <TableHead className="min-w-[70px] whitespace-nowrap text-right text-muted-foreground">
+            {tCommon("qty")}
+          </TableHead>
+          <TableHead className="min-w-[100px] whitespace-nowrap text-right text-muted-foreground">
+            {tCommon("amount")}
+          </TableHead>
+          <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
+            {tCommon("status")}
+          </TableHead>
+          <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
+            {tCommon("purchased")}
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -490,12 +525,12 @@ function SalesLogTable({
               <TableCell className="text-right">
                 {formatTicketPrice(row.totalAmount, row.currency)}
               </TableCell>
-              <TableCell>
+              <TableCell className="whitespace-nowrap">
                 <Badge variant={statusBadgeVariant(row.status)}>
                   {statusLabel(row.status)}
                 </Badge>
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="whitespace-nowrap text-muted-foreground">
                 {formatDateTime(row.purchasedAt)}
               </TableCell>
             </TableRow>

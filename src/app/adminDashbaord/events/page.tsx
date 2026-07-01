@@ -43,6 +43,8 @@ import {
   DashboardSearchInput,
   DashboardErrorAlert,
   dashboardTableClass,
+  dashboardTableContainerClass,
+  dashboardTableActionsClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
   dashboardInputClass,
@@ -266,14 +268,27 @@ export default function EventCategoriesPage() {
           isLoading,
         }}
       >
-        <Table className={dashboardTableClass} containerClassName="overflow-visible">
+        <Table
+          className={cn(dashboardTableClass, "min-w-[1000px]")}
+          containerClassName={dashboardTableContainerClass}
+        >
           <TableHeader>
             <TableRow className={dashboardTableHeaderRowClass}>
-              <TableHead className="w-[18%] text-muted-foreground">{tCommon("name")}</TableHead>
-              <TableHead className="w-[34%] text-muted-foreground">{tCommon("description")}</TableHead>
-              <TableHead className="w-[12%] text-muted-foreground">{tCommon("status")}</TableHead>
-              <TableHead className="w-[18%] text-muted-foreground">{tCommon("created")}</TableHead>
-              <TableHead className="w-[18%] text-right text-muted-foreground">{tCommon("actions")}</TableHead>
+              <TableHead className="min-w-[140px] whitespace-nowrap text-muted-foreground">
+                {tCommon("name")}
+              </TableHead>
+              <TableHead className="min-w-[240px] whitespace-nowrap text-muted-foreground">
+                {tCommon("description")}
+              </TableHead>
+              <TableHead className="min-w-[100px] whitespace-nowrap text-muted-foreground">
+                {tCommon("status")}
+              </TableHead>
+              <TableHead className="min-w-[170px] whitespace-nowrap text-muted-foreground">
+                {tCommon("created")}
+              </TableHead>
+              <TableHead className="min-w-[300px] whitespace-nowrap text-right text-muted-foreground">
+                {tCommon("actions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -286,28 +301,28 @@ export default function EventCategoriesPage() {
                     key={row.id}
                     className={dashboardTableRowClass}
                   >
-                    <TableCell className="whitespace-normal break-words font-medium">
+                    <TableCell className="max-w-[200px] whitespace-normal break-words font-medium">
                       {row.name}
                     </TableCell>
-                    <TableCell className="whitespace-normal break-words text-muted-foreground">
+                    <TableCell className="max-w-[320px] whitespace-normal break-words text-muted-foreground">
                       {row.description?.trim()
                         ? row.description
                         : "—"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <Badge variant={row.isActive ? "default" : "secondary"}>
                         {row.isActive ? tStatus("active") : tStatus("inactive")}
                       </Badge>
                     </TableCell>
-                    <TableCell className="whitespace-normal text-muted-foreground">
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
                       {formatDate(row.createdAt)}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-wrap items-center justify-end gap-2">
+                    <TableCell className="whitespace-nowrap text-right">
+                      <div className={dashboardTableActionsClass}>
                         <Button
                           size="sm"
                           variant="outline"
-                          className={dashboardOutlineButtonClass}
+                          className={cn("shrink-0", dashboardOutlineButtonClass)}
                           onClick={() => setViewTarget(row)}
                         >
                           <Eye className="h-4 w-4" />
@@ -316,7 +331,7 @@ export default function EventCategoriesPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className={dashboardOutlineButtonClass}
+                          className={cn("shrink-0", dashboardOutlineButtonClass)}
                           onClick={() => openEdit(row)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -325,6 +340,7 @@ export default function EventCategoriesPage() {
                         <Button
                           size="sm"
                           variant="destructive"
+                          className="shrink-0"
                           onClick={() => setDeleteTarget(row)}
                         >
                           <Trash2 className="h-4 w-4" />

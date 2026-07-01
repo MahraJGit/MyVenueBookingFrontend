@@ -30,6 +30,8 @@ import {
   DashboardSearchInput,
   DashboardErrorAlert,
   dashboardTableClass,
+  dashboardTableContainerClass,
+  dashboardTableActionsClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
   dashboardSelectTriggerClass,
@@ -43,6 +45,7 @@ import {
   type ManagedEvent,
 } from "@/features/events/api";
 import { toastApiError } from "@/lib/toasts";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useDashboardPaths } from "@/features/dashboard/paths";
 
@@ -140,14 +143,27 @@ export default function ManageEvents() {
               : undefined
           }
         >
-          <Table className={dashboardTableClass} containerClassName="overflow-visible">
+          <Table
+            className={cn(dashboardTableClass, "min-w-[900px]")}
+            containerClassName={dashboardTableContainerClass}
+          >
             <TableHeader>
               <TableRow className={dashboardTableHeaderRowClass}>
-                <TableHead className="min-w-[220px] text-muted-foreground">{t("tableEvent")}</TableHead>
-                <TableHead className="text-muted-foreground">{t("tableStarts")}</TableHead>
-                <TableHead className="text-muted-foreground">{t("tableCity")}</TableHead>
-                <TableHead className="text-muted-foreground">{t("tableStatus")}</TableHead>
-                <TableHead className="text-right text-muted-foreground">{t("tableActions")}</TableHead>
+                <TableHead className="min-w-[220px] whitespace-nowrap text-muted-foreground">
+                  {t("tableEvent")}
+                </TableHead>
+                <TableHead className="min-w-[170px] whitespace-nowrap text-muted-foreground">
+                  {t("tableStarts")}
+                </TableHead>
+                <TableHead className="min-w-[120px] whitespace-nowrap text-muted-foreground">
+                  {t("tableCity")}
+                </TableHead>
+                <TableHead className="min-w-[120px] whitespace-nowrap text-muted-foreground">
+                  {t("tableStatus")}
+                </TableHead>
+                <TableHead className="min-w-[140px] whitespace-nowrap text-right text-muted-foreground">
+                  {t("tableActions")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -173,15 +189,15 @@ export default function ManageEvents() {
                       {formatDateSafe(ev.startDateTime)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{ev.city}</TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       {ev.status ? (
                         <StatusBadge status={ev.status} />
                       ) : (
                         tCommon("notAvailable")
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
+                    <TableCell className="whitespace-nowrap text-right">
+                      <div className={dashboardTableActionsClass}>
                         <Button
                           type="button"
                           size="icon"

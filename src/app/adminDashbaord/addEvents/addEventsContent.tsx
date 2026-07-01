@@ -5,13 +5,21 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
-import { CalendarIcon, Loader2, Plus, Trash2, Upload } from "lucide-react"
+import { CalendarIcon, ImagePlus, Loader2, Plus, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { VenueGalleryUpload } from "@/components/venues/VenueGalleryUpload"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
@@ -34,8 +42,21 @@ import Link from "next/link"
 import dynamic from "next/dynamic"
 import type { AddressHint } from "@/components/maps/location-picker-map"
 import { useDashboardPaths } from "@/features/dashboard/paths"
-import { DashboardPanel, DashboardPageShell } from "@/components/dashboard/dashboard-ui"
-import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared"
+import { DashboardPageShell } from "@/components/dashboard/dashboard-ui"
+import { cn } from "@/lib/utils"
+
+const inputClass = "bg-input/50 border-border"
+const selectTriggerClass = cn(inputClass, "w-full")
+
+const TIMEZONES = [
+    "Asia/Dubai",
+    "Asia/Karachi",
+    "Asia/Riyadh",
+    "Asia/Qatar",
+    "Europe/London",
+    "America/New_York",
+    "UTC",
+]
 
 const LocationPickerMap = dynamic(
     () =>
@@ -151,6 +172,9 @@ export default function AddEventsContentPage() {
     const [endLocal, setEndLocal] = React.useState(() => defaultSchedule().end)
     const [tickets, setTickets] = React.useState<TicketForm[]>([defaultTicket(t("generalTicket"))])
 
+    const coverInputRef = React.useRef<HTMLInputElement>(null)
+    const thumbnailInputRef = React.useRef<HTMLInputElement>(null)
+
     const { data: existing, isLoading: loadingEvent } = useQuery({
         queryKey: ["managed-event", editId],
         queryFn: () => getManagedEvent(editId!),
@@ -166,16 +190,13 @@ export default function AddEventsContentPage() {
         queryFn: () => listEventCategories({ isActive: true }),
     })
 
-    const coverPreviewUrl = coverImage?.trim() || null;
-    const loadingCoverPreview = false;
-
-    const thumbnailPreviewUrl = thumbnail?.trim() || null;
-    const loadingThumbnailPreview = false;
-
-    const galleryPreviewQueries = galleryUrls.map((url) => ({
-        data: url,
-        isLoading: false,
-    }));
+    const timezoneOptions = React.useMemo(() => {
+        const base = [...TIMEZONES]
+        if (timezone && !base.includes(timezone)) {
+            base.unshift(timezone)
+        }
+        return base
+    }, [timezone])
 
     const legacyCategoryName = React.useMemo(() => {
         const cat = category.trim()
@@ -389,69 +410,78 @@ export default function AddEventsContentPage() {
 
     if (editId && loadingEvent) {
         return (
-            <div className="flex min-h-[40vh] items-center justify-center text-white">
+            <div className="flex justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         )
     }
 
+    const formActions = (
+        <div className="flex gap-2">
+            <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push(paths.events)}
+            >
+                {tCommon("cancel")}
+            </Button>
+            <Button type="submit" disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t("saving")}
+                    </>
+                ) : editId ? (
+                    t("updateEvent")
+                ) : (
+                    t("createEventBtn")
+                )}
+            </Button>
+        </div>
+    )
+
     return (
         <DashboardPageShell>
-            <DashboardPanel>
-            <form onSubmit={handleSubmit} className="w-full space-y-6">
-                <DashboardPageHeader
-                    title={editId ? t("editEventTitle") : t("createEventTitle")}
-                    description={t("eventFormDesc")}
-                    action={
-                    <div className="flex gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => router.push(paths.events)}
-                        >
-                            {tCommon("cancel")}
-                        </Button>
-                        <Button type="submit" disabled={saveMutation.isPending}>
-                            {saveMutation.isPending ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    {t("saving")}
-                                </>
-                            ) : editId ? (
-                                t("updateEvent")
-                            ) : (
-                                t("createEventBtn")
-                            )}
-                        </Button>
+            <div className="w-full min-w-0 space-y-6">
+            <form onSubmit={handleSubmit} className="w-full space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="space-y-1">
+                        <h1 className="text-xl font-bold text-white">
+                            {editId ? t("editEventTitle") : t("createEventTitle")}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            {t("eventFormDesc")}
+                        </p>
                     </div>
-                    }
-                />
+                </div>
 
-                <Card className="border-zinc-800 bg-[#0e0e0e]">
+                <Card className="border-border bg-card">
                     <CardHeader>
-                        <CardTitle className="text-base text-primary">{t("basics")}</CardTitle>
+                        <CardTitle>{t("basics")}</CardTitle>
+                        <CardDescription>{t("eventFormDesc")}</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2 md:col-span-2">
-                            <Label>{tForms("eventName")}</Label>
+                    <CardContent className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="event-name">{tForms("eventName")}</Label>
                             <Input
+                                id="event-name"
                                 required
                                 value={eventName}
                                 onChange={(e) => setEventName(e.target.value)}
-                                className="border-zinc-700"
+                                className={inputClass}
                             />
                         </div>
-                        <div className="space-y-2 md:col-span-2">
-                            <Label>{tCommon("description")}</Label>
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="event-description">{tCommon("description")}</Label>
                             <Textarea
+                                id="event-description"
                                 required
-                                rows={4}
                                 value={eventDescription}
                                 onChange={(e) => setEventDescription(e.target.value)}
-                                className="border-zinc-700"
+                                className={cn(inputClass, "min-h-24")}
                             />
                         </div>
-                        <div className="space-y-2 w-full">
+                        <div className="space-y-2">
                             <Label>{t("categoryLabel").replace(":", "")}</Label>
                             <Select
                                 value={category || undefined}
@@ -461,7 +491,7 @@ export default function AddEventsContentPage() {
                                     (eventCategories.length === 0 && !legacyCategoryName)
                                 }
                             >
-                                <SelectTrigger className="border-zinc-700 w-full">
+                                <SelectTrigger className={selectTriggerClass}>
                                     <SelectValue
                                         placeholder={
                                             loadingEventCategories
@@ -478,7 +508,7 @@ export default function AddEventsContentPage() {
                                     {legacyCategoryName ? (
                                         <SelectItem value={legacyCategoryName}>
                                             {legacyCategoryName}{" "}
-                                            <span className="text-zinc-500">{t("currentValue")}</span>
+                                            <span className="text-muted-foreground">{t("currentValue")}</span>
                                         </SelectItem>
                                     ) : null}
                                     {eventCategories.map((c) => (
@@ -489,7 +519,7 @@ export default function AddEventsContentPage() {
                                 </SelectContent>
                             </Select>
                             {eventCategoriesError ? (
-                                <p className="text-xs text-red-400">
+                                <p className="text-xs text-destructive">
                                     {t("refreshConnectionHint")}
                                 </p>
                             ) : null}
@@ -497,7 +527,7 @@ export default function AddEventsContentPage() {
                                 !loadingEventCategories &&
                                 eventCategories.length === 0 &&
                                 !legacyCategoryName ? (
-                                <p className="text-xs text-zinc-400">
+                                <p className="text-xs text-muted-foreground">
                                     {paths.scope === "vendor"
                                         ? t("noCategoriesContactAdmin")
                                         : (
@@ -513,18 +543,22 @@ export default function AddEventsContentPage() {
                                             </>
                                         )}
                                 </p>
-
                             ) : null}
                         </div>
                         <div className="space-y-2">
-                            <Label>{tForms("timezone")}</Label>
-                            <Input
-                                required
-                                value={timezone}
-                                onChange={(e) => setTimezone(e.target.value)}
-                                placeholder="Asia/Dubai"
-                                className="border-zinc-700"
-                            />
+                            <Label htmlFor="event-timezone">{tForms("timezone")}</Label>
+                            <Select value={timezone} onValueChange={setTimezone}>
+                                <SelectTrigger id="event-timezone" className={selectTriggerClass}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {timezoneOptions.map((tz) => (
+                                        <SelectItem key={tz} value={tz}>
+                                            {tz}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <Label>{tForms("startDate")}</Label>
@@ -544,406 +578,278 @@ export default function AddEventsContentPage() {
                                 prettyLabel={prettyDateTime(endLocal)}
                             />
                         </div>
-                    </CardContent>
-                </Card>
 
-                <Card className="border-zinc-800 bg-[#0e0e0e]">
-                    <CardHeader>
-                        <CardTitle className="text-base text-primary">{tForms("media")}</CardTitle>
-                        <p className="text-sm text-zinc-400">
-                            {t("mediaUploadDesc")}
-                        </p>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-3">
+                        <div className="space-y-2 sm:col-span-2">
                             <Label>{tForms("coverImage")}</Label>
-                            <p className="text-xs text-zinc-500">
-                                {t("coverRequired")}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-zinc-600"
-                                    disabled={coverUploading}
-                                    onClick={() =>
-                                        document.getElementById("cover-upload")?.click()
-                                    }
-                                >
-                                    {coverUploading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            {tCommon("uploading")}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="mr-2 h-4 w-4" />
-                                            {tForms("uploadCover")}
-                                        </>
-                                    )}
-                                </Button>
-                                <input
-                                    id="cover-upload"
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        void onCoverFile(e.target.files?.[0] ?? null)
-                                        e.target.value = ""
-                                    }}
-                                />
-                            </div>
-                            {coverImage ? (
-                                <div className="space-y-2 rounded-lg border border-zinc-800 bg-black/40 p-3">
-                                    {coverPreviewUrl ? (
-                                        <>
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={coverPreviewUrl}
-                                                alt={tForms("coverImage")}
-                                                className="max-h-48 w-full max-w-md rounded-md object-cover"
-                                            />
-                                        </>
-                                    ) : (
-                                        <div className="flex h-24 items-center gap-2 rounded-md border border-zinc-700 px-3 text-sm text-zinc-400">
-                                            {loadingCoverPreview ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    {t("loadingPreview")}
-                                                </>
-                                            ) : (
-                                                t("previewUnavailable")
-                                            )}
-                                        </div>
-                                    )}
-                                    <p className="break-all font-mono text-xs text-zinc-500">
-                                        {coverImage}
-                                    </p>
+                            <p className="text-xs text-muted-foreground">{t("coverRequired")}</p>
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                                {coverImage ? (
+                                    <div className="relative h-32 w-48 shrink-0 overflow-hidden rounded-lg border border-border">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={coverImage}
+                                            alt={tForms("coverImage")}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="flex h-32 w-48 shrink-0 items-center justify-center rounded-lg border border-dashed border-border bg-muted/30">
+                                        <ImagePlus className="h-8 w-8 text-muted-foreground" />
+                                    </div>
+                                )}
+                                <div className="flex flex-wrap gap-2">
+                                    <input
+                                        ref={coverInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            void onCoverFile(e.target.files?.[0] ?? null)
+                                            e.target.value = ""
+                                        }}
+                                    />
                                     <Button
                                         type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-zinc-400 hover:text-white"
-                                        onClick={() => setCoverImage("")}
+                                        variant="outline"
+                                        disabled={coverUploading}
+                                        onClick={() => coverInputRef.current?.click()}
                                     >
-                                        {tForms("removeCover")}
+                                        {coverUploading ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                {tCommon("uploading")}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ImagePlus className="mr-2 h-4 w-4" />
+                                                {tForms("uploadCover")}
+                                            </>
+                                        )}
                                     </Button>
-                                </div>
-                            ) : (
-                                <p className="text-sm text-amber-200/90">
-                                    {tForms("noCoverYet")}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="space-y-3 border-t border-zinc-800 pt-6">
-                            <Label>{tForms("thumbnail")}</Label>
-                            <p className="text-xs text-zinc-500">
-                                {t("thumbnailOptional")}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-zinc-600"
-                                    disabled={thumbnailUploading}
-                                    onClick={() =>
-                                        document.getElementById("thumbnail-upload")?.click()
-                                    }
-                                >
-                                    {thumbnailUploading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            {tCommon("uploading")}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="mr-2 h-4 w-4" />
-                                            {tForms("uploadThumbnail")}
-                                        </>
-                                    )}
-                                </Button>
-                                <input
-                                    id="thumbnail-upload"
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        void onThumbnailFile(e.target.files?.[0] ?? null)
-                                        e.target.value = ""
-                                    }}
-                                />
-                            </div>
-                            {thumbnail ? (
-                                <div className="space-y-2 rounded-lg border border-zinc-800 bg-black/40 p-3">
-                                    {thumbnailPreviewUrl ? (
-                                        <>
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={thumbnailPreviewUrl}
-                                                alt={tForms("thumbnail")}
-                                                className="max-h-32 w-full max-w-xs rounded-md object-cover"
-                                            />
-                                        </>
-                                    ) : (
-                                        <div className="flex h-20 items-center gap-2 rounded-md border border-zinc-700 px-3 text-sm text-zinc-400">
-                                            {loadingThumbnailPreview ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    {t("loadingPreview")}
-                                                </>
-                                            ) : (
-                                                t("previewUnavailable")
-                                            )}
-                                        </div>
-                                    )}
-                                    <p className="break-all font-mono text-xs text-zinc-500">
-                                        {thumbnail}
-                                    </p>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-zinc-400 hover:text-white"
-                                        onClick={() => setThumbnail("")}
-                                    >
-                                        {tForms("removeThumbnail")}
-                                    </Button>
-                                </div>
-                            ) : (
-                                <p className="text-sm text-zinc-500">
-                                    {tForms("noThumbnailYet")}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="space-y-3 border-t border-zinc-800 pt-6">
-                            <Label>{tEvents("gallery")}</Label>
-                            <p className="text-xs text-zinc-500">
-                                {t("galleryOptional")}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-zinc-600"
-                                    disabled={galleryUploading}
-                                    onClick={() =>
-                                        document.getElementById("gallery-upload")?.click()
-                                    }
-                                >
-                                    {galleryUploading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            {tCommon("uploading")}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="mr-2 h-4 w-4" />
-                                            {t("addGalleryImages")}
-                                        </>
-                                    )}
-                                </Button>
-                                <input
-                                    id="gallery-upload"
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp"
-                                    multiple
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        void onGalleryFiles(e.target.files)
-                                        e.target.value = ""
-                                    }}
-                                />
-                            </div>
-                            {galleryUrls.length > 0 ? (
-                                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                    {galleryUrls.map((url, index) => (
-                                        <li
-                                            key={`${url}-${index}`}
-                                            className="relative overflow-hidden rounded-lg border border-zinc-800 bg-black/30"
+                                    {coverImage ? (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="text-destructive"
+                                            onClick={() => setCoverImage("")}
                                         >
-                                            {galleryPreviewQueries[index]?.data ? (
-                                                <>
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={galleryPreviewQueries[index].data}
-                                                        alt=""
-                                                        className="aspect-video w-full object-cover"
-                                                    />
-                                                </>
-                                            ) : (
-                                                <div className="flex aspect-video items-center justify-center bg-zinc-900 text-xs text-zinc-400">
-                                                    {galleryPreviewQueries[index]?.isLoading
-                                                        ? t("loadingPreview")
-                                                        : t("previewUnavailable")}
-                                                </div>
-                                            )}
-                                            <div className="flex items-center justify-between gap-2 border-t border-zinc-800 p-2">
-                                                <span className="truncate font-mono text-[10px] text-zinc-500">
-                                                    {url.slice(-40)}
-                                                </span>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 shrink-0 text-red-400"
-                                                    aria-label={t("removeImage")}
-                                                    onClick={() => removeGalleryAt(index)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="text-sm text-zinc-500">{t("noGalleryYet")}</p>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-zinc-800 bg-[#0e0e0e]">
-                    <CardHeader>
-                        <CardTitle className="text-base text-primary">
-                            {t("venueAndLocation")}
-                        </CardTitle>
-                        <p className="text-sm text-zinc-400">
-                            {t("venueLocationDesc")}
-                        </p>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="rounded-xl border border-zinc-800 bg-black/30 p-4 md:p-5">
-                            <h3 className="mb-4 text-sm font-semibold tracking-wide text-primary">
-                                {tEvents("venue")}
-                            </h3>
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2 md:col-span-2">
-                                    <Label>{tForms("venueName")}</Label>
-                                    <Input
-                                        required
-                                        value={venueName}
-                                        onChange={(e) => setVenueName(e.target.value)}
-                                        className="border-zinc-700"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{t("venuePhoneLabel").replace(":", "")}</Label>
-                                    <Input
-                                        required
-                                        value={venuePhone}
-                                        onChange={(e) => setVenuePhone(e.target.value)}
-                                        className="border-zinc-700"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{tForms("website")}</Label>
-                                    <Input
-                                        required
-                                        type="url"
-                                        value={venueWebsite}
-                                        onChange={(e) => setVenueWebsite(e.target.value)}
-                                        className="border-zinc-700"
-                                    />
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            {tForms("removeCover")}
+                                        </Button>
+                                    ) : null}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="rounded-xl border border-zinc-800 bg-black/30 p-4 md:p-5">
-                            <h3 className="mb-4 text-sm font-semibold tracking-wide text-primary">
-                                {tForms("location")}
-                            </h3>
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="md:col-span-2">
-                                    <LocationPickerMap
-                                        latitude={latitude}
-                                        longitude={longitude}
-                                        onPositionChange={applyMapPosition}
-                                        onAddressHint={applyAddressHint}
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label>{tForms("thumbnail")}</Label>
+                            <p className="text-xs text-muted-foreground">{t("thumbnailOptional")}</p>
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                                {thumbnail ? (
+                                    <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-lg border border-border">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={thumbnail}
+                                            alt={tForms("thumbnail")}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="flex h-24 w-36 shrink-0 items-center justify-center rounded-lg border border-dashed border-border bg-muted/30">
+                                        <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                                    </div>
+                                )}
+                                <div className="flex flex-wrap gap-2">
+                                    <input
+                                        ref={thumbnailInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            void onThumbnailFile(e.target.files?.[0] ?? null)
+                                            e.target.value = ""
+                                        }}
                                     />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>{t("countryCode")}</Label>
-                                    <Input
-                                        required
-                                        value={countryCode}
-                                        onChange={(e) => setCountryCode(e.target.value)}
-                                        className="border-zinc-700"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{tForms("city")}</Label>
-                                    <Input
-                                        required
-                                        value={city}
-                                        onChange={(e) => setCity(e.target.value)}
-                                        className="border-zinc-700"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{t("stateRegion")}</Label>
-                                    <Input
-                                        required
-                                        value={state}
-                                        onChange={(e) => setState(e.target.value)}
-                                        className="border-zinc-700"
-                                    />
-                                </div>
-                                <div className="space-y-2 md:col-span-2">
-                                    <Label>{tForms("address")}</Label>
-                                    <Input
-                                        required
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                        className="border-zinc-700"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{t("zipPostal")}</Label>
-                                    <Input
-                                        required
-                                        value={zipCode}
-                                        onChange={(e) => setZipCode(e.target.value)}
-                                        className="border-zinc-700"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{t("latitude")}</Label>
-                                    <Input
-                                        required
-                                        type="number"
-                                        step="any"
-                                        value={latitude}
-                                        onChange={(e) => setLatitude(e.target.value)}
-                                        className="border-zinc-700"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{t("longitude")}</Label>
-                                    <Input
-                                        required
-                                        type="number"
-                                        step="any"
-                                        value={longitude}
-                                        onChange={(e) => setLongitude(e.target.value)}
-                                        className="border-zinc-700"
-                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={thumbnailUploading}
+                                        onClick={() => thumbnailInputRef.current?.click()}
+                                    >
+                                        {thumbnailUploading ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                {tCommon("uploading")}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ImagePlus className="mr-2 h-4 w-4" />
+                                                {tForms("uploadThumbnail")}
+                                            </>
+                                        )}
+                                    </Button>
+                                    {thumbnail ? (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="text-destructive"
+                                            onClick={() => setThumbnail("")}
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            {tForms("removeThumbnail")}
+                                        </Button>
+                                    ) : null}
                                 </div>
                             </div>
+                        </div>
+
+                        <VenueGalleryUpload
+                            urls={galleryUrls}
+                            uploading={galleryUploading}
+                            onUpload={onGalleryFiles}
+                            onRemove={removeGalleryAt}
+                            inputId="event-gallery-upload"
+                        />
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border bg-card">
+                    <CardHeader>
+                        <CardTitle>{tEvents("venue")}</CardTitle>
+                        <CardDescription>{t("venueLocationDesc")}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="venue-name">{tForms("venueName")}</Label>
+                            <Input
+                                id="venue-name"
+                                required
+                                value={venueName}
+                                onChange={(e) => setVenueName(e.target.value)}
+                                className={inputClass}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="venue-phone">{t("venuePhoneLabel").replace(":", "")}</Label>
+                            <Input
+                                id="venue-phone"
+                                required
+                                value={venuePhone}
+                                onChange={(e) => setVenuePhone(e.target.value)}
+                                className={inputClass}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="venue-website">{tForms("website")}</Label>
+                            <Input
+                                id="venue-website"
+                                required
+                                type="url"
+                                value={venueWebsite}
+                                onChange={(e) => setVenueWebsite(e.target.value)}
+                                className={inputClass}
+                            />
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-800 bg-[#0e0e0e]">
+                <Card className="border-border bg-card">
                     <CardHeader>
-                        <CardTitle className="text-base text-primary">{tForms("tags")}</CardTitle>
+                        <CardTitle>{tForms("location")}</CardTitle>
+                        <CardDescription>{t("venueLocationDesc")}</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-2">
+                    <CardContent className="grid gap-4 sm:grid-cols-2">
+                        <div className="sm:col-span-2">
+                            <LocationPickerMap
+                                latitude={latitude}
+                                longitude={longitude}
+                                onPositionChange={applyMapPosition}
+                                onAddressHint={applyAddressHint}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="country-code">{t("countryCode")}</Label>
+                            <Input
+                                id="country-code"
+                                required
+                                value={countryCode}
+                                onChange={(e) => setCountryCode(e.target.value)}
+                                className={inputClass}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="event-city">{tForms("city")}</Label>
+                            <Input
+                                id="event-city"
+                                required
+                                value={city}
+                                onChange={(e) => setCity(e.target.value)}
+                                className={inputClass}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="event-state">{t("stateRegion")}</Label>
+                            <Input
+                                id="event-state"
+                                required
+                                value={state}
+                                onChange={(e) => setState(e.target.value)}
+                                className={inputClass}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="event-zip">{t("zipPostal")}</Label>
+                            <Input
+                                id="event-zip"
+                                required
+                                value={zipCode}
+                                onChange={(e) => setZipCode(e.target.value)}
+                                className={inputClass}
+                            />
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="event-address">{tForms("address")}</Label>
+                            <Input
+                                id="event-address"
+                                required
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                                className={inputClass}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="event-latitude">{t("latitude")}</Label>
+                            <Input
+                                id="event-latitude"
+                                required
+                                type="number"
+                                step="any"
+                                value={latitude}
+                                onChange={(e) => setLatitude(e.target.value)}
+                                className={inputClass}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="event-longitude">{t("longitude")}</Label>
+                            <Input
+                                id="event-longitude"
+                                required
+                                type="number"
+                                step="any"
+                                value={longitude}
+                                onChange={(e) => setLongitude(e.target.value)}
+                                className={inputClass}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border bg-card">
+                    <CardHeader>
+                        <CardTitle>{tForms("tags")}</CardTitle>
+                        <CardDescription>{t("tagsHint")}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
                         <div className="flex flex-col gap-2 sm:flex-row">
                             <Input
                                 value={tagInput}
@@ -955,7 +861,7 @@ export default function AddEventsContentPage() {
                                     }
                                 }}
                                 placeholder={t("typeTag")}
-                                className="border-zinc-700 sm:flex-1"
+                                className={cn(inputClass, "sm:flex-1")}
                             />
                             <Button
                                 type="button"
@@ -967,15 +873,12 @@ export default function AddEventsContentPage() {
                                 {tCommon("add")}
                             </Button>
                         </div>
-                        <p className="text-xs text-zinc-500">
-                            {t("tagsHint")}
-                        </p>
                         <div className="flex flex-wrap gap-2">
                             {tags.map((tag) => (
                                 <button
                                     key={tag}
                                     type="button"
-                                    className="rounded-full border border-zinc-600 px-2 py-0.5 text-xs"
+                                    className="rounded-full border border-border bg-muted/20 px-2.5 py-0.5 text-xs text-foreground"
                                     onClick={() => setTags((p) => p.filter((item) => item !== tag))}
                                 >
                                     #{tag} ×
@@ -985,28 +888,29 @@ export default function AddEventsContentPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-800 bg-[#0e0e0e]">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-base text-primary">{t("ticketTypes")}</CardTitle>
+                <Card className="border-border bg-card">
+                    <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+                        <div className="space-y-1">
+                            <CardTitle>{t("ticketTypes")}</CardTitle>
+                        </div>
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="border-zinc-600"
                             onClick={() => setTickets((rows) => [...rows, defaultTicket(t("generalTicket"))])}
                         >
                             <Plus className="mr-1 h-4 w-4" />
                             {t("addType")}
                         </Button>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-4">
                         {tickets.map((ticket, i) => (
                             <div
                                 key={i}
-                                className="grid gap-3 rounded-lg border border-zinc-800 p-4 md:grid-cols-2"
+                                className="grid gap-4 rounded-lg border border-border bg-muted/20 p-4 sm:grid-cols-2"
                             >
-                                <div className="space-y-2 md:col-span-2 flex items-center justify-between">
-                                    <span className="text-sm font-medium text-zinc-300">
+                                <div className="flex items-center justify-between sm:col-span-2">
+                                    <span className="text-sm font-medium text-foreground">
                                         {t("ticketN", { n: i + 1 })}
                                     </span>
                                     {tickets.length > 1 ? (
@@ -1014,7 +918,7 @@ export default function AddEventsContentPage() {
                                             type="button"
                                             variant="ghost"
                                             size="sm"
-                                            className="text-red-400"
+                                            className="text-destructive"
                                             onClick={() =>
                                                 setTickets((rows) => rows.filter((_, j) => j !== i))
                                             }
@@ -1035,7 +939,7 @@ export default function AddEventsContentPage() {
                                                 ),
                                             )
                                         }
-                                        className="border-zinc-700"
+                                        className={inputClass}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -1053,7 +957,7 @@ export default function AddEventsContentPage() {
                                                 ),
                                             )
                                         }
-                                        className="border-zinc-700"
+                                        className={inputClass}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -1068,7 +972,7 @@ export default function AddEventsContentPage() {
                                             )
                                         }
                                     >
-                                        <SelectTrigger className="border-zinc-700">
+                                        <SelectTrigger className={selectTriggerClass}>
                                             <SelectValue placeholder={tCurrency("displayCurrency")} />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -1094,15 +998,18 @@ export default function AddEventsContentPage() {
                                                 ),
                                             )
                                         }
-                                        className="border-zinc-700"
+                                        className={inputClass}
                                     />
                                 </div>
                             </div>
                         ))}
                     </CardContent>
+                    <CardFooter className="border-t justify-end">
+                        {formActions}
+                    </CardFooter>
                 </Card>
             </form>
-            </DashboardPanel>
+            </div>
         </DashboardPageShell>
     )
 }
@@ -1152,26 +1059,26 @@ function DateTimePicker({
                     <Button
                         type="button"
                         variant="outline"
-                        className="w-full justify-start border-zinc-700 text-left font-normal"
+                        className="w-full justify-start border-border text-left font-normal"
                     >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {prettyLabel}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto border-zinc-700 bg-[#0e0e0e] p-2" align="start">
+                <PopoverContent className="w-auto border-border bg-card p-2" align="start">
                     <Calendar
                         mode="single"
                         selected={selected ?? undefined}
                         onSelect={onDateSelect}
-                        className="rounded-md border border-zinc-800"
+                        className="rounded-md border border-border"
                     />
-                    <div className="mt-2 border-t border-zinc-800 pt-2">
-                        <Label className="mb-1 block text-xs text-zinc-400">{tCommon("time")}</Label>
+                    <div className="mt-2 border-t border-border pt-2">
+                        <Label className="mb-1 block text-xs text-muted-foreground">{tCommon("time")}</Label>
                         <Input
                             type="time"
                             value={toTimeValue(selected)}
                             onChange={(e) => onTimeChange(e.target.value)}
-                            className="border-zinc-700"
+                            className={inputClass}
                         />
                     </div>
                 </PopoverContent>

@@ -12,11 +12,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { SecureAvatar } from "@/components/users/SecureAvatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -119,14 +115,13 @@ export function HeaderAuthActions({
           className={`rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${className}`}
           aria-label={tCommon("openAccountMenu")}
         >
-          <Avatar className="h-9 w-9 border border-border">
-            {avatarSrc ? (
-              <AvatarImage src={avatarSrc} alt={displayName} />
-            ) : null}
-            <AvatarFallback className="bg-primary/15 text-primary text-sm font-medium">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <SecureAvatar
+            avatarUrl={avatarSrc}
+            className="h-9 w-9 border border-border"
+            fallbackClassName="bg-primary/15 text-primary text-sm font-medium"
+            alt={displayName}
+            fallback={initials}
+          />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

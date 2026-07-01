@@ -47,9 +47,11 @@ import {
   DashboardPageShell,
   DashboardScrollableTabs,
   DashboardErrorAlert,
-  dashboardTableClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
+  dashboardTableClass,
+  dashboardTableContainerClass,
+  dashboardTableActionsClass,
   dashboardDialogContentClass,
   dashboardSelectTriggerClass,
   dashboardOutlineButtonClass,
@@ -220,17 +222,36 @@ export default function VendorRequests() {
           isLoading,
         }}
       >
-        <Table className={dashboardTableClass} containerClassName="overflow-visible">
+        <Table
+          className={cn(dashboardTableClass, "min-w-[1180px]")}
+          containerClassName={dashboardTableContainerClass}
+        >
           <TableHeader>
             <TableRow className={dashboardTableHeaderRowClass}>
-              <TableHead className="w-[14%] text-muted-foreground">{tCommon("vendor")}</TableHead>
-              <TableHead className="w-[10%] text-muted-foreground">{tCommon("businessType")}</TableHead>
-              <TableHead className="w-[12%] text-muted-foreground">{tCommon("owner")}</TableHead>
-              <TableHead className="w-[22%] text-muted-foreground">{tCommon("email")}</TableHead>
-              <TableHead className="w-[12%] text-muted-foreground">{tCommon("phone")}</TableHead>
-              <TableHead className="w-[10%] text-muted-foreground">{tCommon("status")}</TableHead>
-              <TableHead className="w-[10%] text-muted-foreground">{tCommon("submitted")}</TableHead>
-              <TableHead className="w-[10%] text-right text-muted-foreground">{tCommon("actions")}</TableHead>
+              <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
+                {tCommon("vendor")}
+              </TableHead>
+              <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
+                {tCommon("businessType")}
+              </TableHead>
+              <TableHead className="min-w-[130px] whitespace-nowrap text-muted-foreground">
+                {tCommon("owner")}
+              </TableHead>
+              <TableHead className="min-w-[200px] whitespace-nowrap text-muted-foreground">
+                {tCommon("email")}
+              </TableHead>
+              <TableHead className="min-w-[150px] whitespace-nowrap text-muted-foreground">
+                {tCommon("phone")}
+              </TableHead>
+              <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
+                {tCommon("status")}
+              </TableHead>
+              <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
+                {tCommon("submitted")}
+              </TableHead>
+              <TableHead className="min-w-[240px] whitespace-nowrap text-right text-muted-foreground">
+                {tCommon("actions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -243,27 +264,33 @@ export default function VendorRequests() {
                     key={request.id}
                     className={dashboardTableRowClass}
                   >
-                    <TableCell className="whitespace-normal break-words font-medium">
+                    <TableCell className="max-w-[200px] whitespace-normal break-words font-medium">
                       {request.vendorName}
                     </TableCell>
-                    <TableCell className="whitespace-normal">{request.businessType}</TableCell>
-                    <TableCell className="whitespace-normal">{request.ownerName}</TableCell>
-                    <TableCell className="whitespace-normal break-all">
+                    <TableCell className="whitespace-nowrap">{request.businessType}</TableCell>
+                    <TableCell className="max-w-[160px] whitespace-normal break-words">
+                      {request.ownerName}
+                    </TableCell>
+                    <TableCell className="max-w-[240px] truncate text-muted-foreground" title={request.email}>
                       {request.email}
                     </TableCell>
-                    <TableCell className="whitespace-normal">{request.phone}</TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {request.phone}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <Badge variant={statusBadgeVariant(request.verificationStatus)}>
                         {statusLabel(request.verificationStatus)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatDate(request.createdAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-wrap items-center justify-end gap-2">
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {formatDate(request.createdAt)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right">
+                      <div className={dashboardTableActionsClass}>
                         <Button
                           size="sm"
                           variant="outline"
-                          className={dashboardOutlineButtonClass}
+                          className={cn("shrink-0", dashboardOutlineButtonClass)}
                           onClick={() => setActiveDetails(request)}
                         >
                           <Eye className="h-4 w-4" />
@@ -287,7 +314,7 @@ export default function VendorRequests() {
                         >
                           <SelectTrigger
                             size="sm"
-                            className={cn("h-8 min-w-[130px]", dashboardSelectTriggerClass)}
+                            className={cn("h-8 w-[130px] shrink-0", dashboardSelectTriggerClass)}
                           >
                             <span className="flex w-full items-center gap-2">
                               {pendingRowId === request.id ? (

@@ -45,12 +45,15 @@ import {
   DashboardPanel,
   DashboardPageShell,
   DashboardErrorAlert,
-  dashboardTableClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
+  dashboardTableClass,
+  dashboardTableContainerClass,
+  dashboardTableActionsClass,
   dashboardDialogContentClass,
   dashboardOutlineButtonClass,
   dashboardSelectTriggerClass,
+  dashboardDropdownContentClass,
   dashboardTextareaClass,
 } from "@/components/dashboard/dashboard-ui"
 import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table"
@@ -260,16 +263,33 @@ export default function EventReviewsPage() {
             : undefined
         }
       >
-        <Table className={dashboardTableClass} containerClassName="overflow-visible">
+        <Table
+          className={cn(dashboardTableClass, "min-w-[1100px]")}
+          containerClassName={dashboardTableContainerClass}
+        >
           <TableHeader>
             <TableRow className={dashboardTableHeaderRowClass}>
-              <TableHead className="w-[18%] text-muted-foreground">{tAdmin("tableEvent")}</TableHead>
-              <TableHead className="w-[14%] text-muted-foreground">{tCommon("vendor")}</TableHead>
-              <TableHead className="w-[10%] text-muted-foreground">{tAdmin("tableCity")}</TableHead>
-              <TableHead className="w-[16%] text-muted-foreground">{t("starts")}</TableHead>
-              <TableHead className="w-[10%] text-muted-foreground">{tCommon("status")}</TableHead>
-              <TableHead className="w-[12%] text-muted-foreground">{tCommon("submitted")}</TableHead>
-              <TableHead className="w-[20%] text-right text-muted-foreground">{tCommon("actions")}</TableHead>
+              <TableHead className="min-w-[200px] whitespace-nowrap text-muted-foreground">
+                {tAdmin("tableEvent")}
+              </TableHead>
+              <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
+                {tCommon("vendor")}
+              </TableHead>
+              <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
+                {tAdmin("tableCity")}
+              </TableHead>
+              <TableHead className="min-w-[170px] whitespace-nowrap text-muted-foreground">
+                {t("starts")}
+              </TableHead>
+              <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
+                {tCommon("status")}
+              </TableHead>
+              <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
+                {tCommon("submitted")}
+              </TableHead>
+              <TableHead className="min-w-[240px] whitespace-nowrap text-right text-muted-foreground">
+                {tCommon("actions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -285,30 +305,35 @@ export default function EventReviewsPage() {
                       key={ev.id}
                       className={dashboardTableRowClass}
                     >
-                      <TableCell className="whitespace-normal break-words font-medium">
+                      <TableCell className="max-w-[240px] whitespace-normal break-words font-medium">
                         {ev.eventName}
                       </TableCell>
-                      <TableCell className="whitespace-normal break-words">
+                      <TableCell
+                        className="max-w-[200px] truncate text-muted-foreground"
+                        title={ev.vendorProfile?.vendorName ?? undefined}
+                      >
                         {ev.vendorProfile?.vendorName ?? "—"}
                       </TableCell>
-                      <TableCell className="whitespace-normal">{ev.city}</TableCell>
-                      <TableCell className="whitespace-normal text-sm text-muted-foreground">
+                      <TableCell className="whitespace-nowrap text-muted-foreground">
+                        {ev.city}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                         {formatDateTime(ev.startDateTime)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">
                         <Badge variant={statusBadgeVariant(ev.status)}>
                           {statusLabel(ev.status)}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">
                         {ev.createdAt ? formatDate(ev.createdAt) : "—"}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex flex-wrap items-center justify-end gap-2">
+                      <TableCell className="whitespace-nowrap text-right">
+                        <div className={dashboardTableActionsClass}>
                           <Button
                             size="sm"
                             variant="outline"
-                            className={dashboardOutlineButtonClass}
+                            className={cn("shrink-0", dashboardOutlineButtonClass)}
                             onClick={() => setActiveDetails(ev)}
                           >
                             <Eye className="h-4 w-4" />
@@ -331,7 +356,7 @@ export default function EventReviewsPage() {
                           >
                             <SelectTrigger
                               size="sm"
-                              className={cn("h-8 min-w-[130px]", dashboardSelectTriggerClass)}
+                              className={cn("h-8 w-[130px] shrink-0", dashboardSelectTriggerClass)}
                             >
                               <span className="flex w-full items-center gap-2">
                                 {pendingRowId === ev.id ? (
@@ -340,7 +365,7 @@ export default function EventReviewsPage() {
                                 <SelectValue placeholder={t("setStatus")} />
                               </span>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className={dashboardDropdownContentClass}>
                               <SelectItem value="PENDING" disabled>
                                 {tStatus("pending")}
                               </SelectItem>

@@ -4,11 +4,7 @@ import * as React from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import { SecureAvatar } from "@/components/users/SecureAvatar"
 import { CalendarIcon, Globe, Loader2, Mail, User } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -207,7 +203,6 @@ export default function ProfilePage() {
   }
 
   const initials = profileInitials(form.firstName, form.lastName)
-  const avatarSrc = form.avatarUrl
   const greetingName = displayName(
     form.firstName,
     form.lastName,
@@ -220,14 +215,13 @@ export default function ProfilePage() {
       <div className={cn(dashboardSurfaceClass, "mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between")}>
         <div className="flex items-center gap-4">
           <div className="relative">
-            <Avatar className="h-20 w-20">
-              {avatarSrc ? (
-                <AvatarImage src={avatarSrc} alt={t("profilePhotoAlt")} />
-              ) : null}
-              <AvatarFallback className="text-lg bg-[#2a2a2a] text-white">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            <SecureAvatar
+              avatarUrl={form.avatarUrl}
+              className="h-20 w-20"
+              fallbackClassName="text-lg bg-[#2a2a2a] text-white"
+              alt={t("profilePhotoAlt")}
+              fallback={initials}
+            />
             {avatarMutation.isPending && (
               <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/60">
                 <Loader2 className="h-6 w-6 animate-spin text-white" />

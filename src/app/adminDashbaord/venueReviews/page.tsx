@@ -51,6 +51,8 @@ import {
   DashboardTableWrapper,
   dashboardCardClass,
   dashboardTableClass,
+  dashboardTableContainerClass,
+  dashboardTableActionsClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
   dashboardDialogContentClass,
@@ -150,14 +152,27 @@ export default function VenueReviewsPage() {
 
           <CardContent className="p-0">
             <DashboardTableWrapper className="rounded-none border-0 border-t border-[#303030]">
-            <Table className={dashboardTableClass} containerClassName="overflow-visible">
+            <Table
+              className={cn(dashboardTableClass, "min-w-[1000px]")}
+              containerClassName={dashboardTableContainerClass}
+            >
               <TableHeader>
                 <TableRow className={dashboardTableHeaderRowClass}>
-                  <TableHead className="text-muted-foreground">{tForms("venueName")}</TableHead>
-                  <TableHead className="text-muted-foreground">{tCommon("vendor")}</TableHead>
-                  <TableHead className="text-muted-foreground">{t("pricing")}</TableHead>
-                  <TableHead className="text-muted-foreground">{t("schedule")}</TableHead>
-                  <TableHead className="text-right text-muted-foreground">{tCommon("actions")}</TableHead>
+                  <TableHead className="min-w-[240px] whitespace-nowrap text-muted-foreground">
+                    {tForms("venueName")}
+                  </TableHead>
+                  <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
+                    {tCommon("vendor")}
+                  </TableHead>
+                  <TableHead className="min-w-[130px] whitespace-nowrap text-muted-foreground">
+                    {t("pricing")}
+                  </TableHead>
+                  <TableHead className="min-w-[130px] whitespace-nowrap text-muted-foreground">
+                    {t("schedule")}
+                  </TableHead>
+                  <TableHead className="min-w-[300px] whitespace-nowrap text-right text-muted-foreground">
+                    {tCommon("actions")}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -198,7 +213,7 @@ export default function VenueReviewsPage() {
                         <TableCell className="text-muted-foreground">
                           {venue.vendor?.vendorName ?? "—"}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           {venue.pricing ? (
                             <Badge variant="secondary" className="gap-1 font-normal">
                               <DollarSign className="h-3 w-3" />
@@ -208,18 +223,18 @@ export default function VenueReviewsPage() {
                             "—"
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <Badge variant="outline" className="gap-1 font-normal">
                             <Clock className="h-3 w-3" />
                             {t("openDays", { count: openDays })}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex flex-wrap justify-end gap-2">
+                        <TableCell className="whitespace-nowrap text-right">
+                          <div className={dashboardTableActionsClass}>
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-border"
+                              className={cn("shrink-0 border-border")}
                               onClick={() => setViewVenue(venue)}
                             >
                               <Eye className="mr-1 h-3 w-3" />
@@ -227,7 +242,7 @@ export default function VenueReviewsPage() {
                             </Button>
                             <Button
                               size="sm"
-                              className="bg-primary"
+                              className="shrink-0 bg-primary"
                               disabled={isApproving || isRejecting}
                               onClick={() =>
                                 statusMut.mutate({ id: venue.id, status: "ACTIVE" })
@@ -245,6 +260,7 @@ export default function VenueReviewsPage() {
                             <Button
                               size="sm"
                               variant="destructive"
+                              className="shrink-0"
                               disabled={isApproving || isRejecting}
                               onClick={() => setRejectVenue(venue)}
                             >

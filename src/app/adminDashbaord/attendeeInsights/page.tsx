@@ -8,6 +8,8 @@ import {
   dashboardCardClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
+  dashboardTableClass,
+  dashboardTableContainerClass,
 } from "@/components/dashboard/dashboard-ui";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -157,11 +159,18 @@ export default function AttendeeInsights() {
             <CardTitle>{t("attendeeLocations")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table className="w-full">
+            <Table
+              className={cn(dashboardTableClass, "min-w-[400px]")}
+              containerClassName={dashboardTableContainerClass}
+            >
               <TableHeader>
                 <TableRow className={dashboardTableHeaderRowClass}>
-                  <TableHead className="text-muted-foreground">{tCommon("location")}</TableHead>
-                  <TableHead className="text-right text-muted-foreground">{tCommon("count")}</TableHead>
+                  <TableHead className="min-w-[200px] whitespace-nowrap text-muted-foreground">
+                    {tCommon("location")}
+                  </TableHead>
+                  <TableHead className="min-w-[100px] whitespace-nowrap text-right text-muted-foreground">
+                    {tCommon("count")}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

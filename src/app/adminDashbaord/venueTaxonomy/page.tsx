@@ -56,6 +56,8 @@ import {
   dashboardTabsListClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
+  dashboardTableClass,
+  dashboardTableContainerClass,
   dashboardDialogContentClass,
 } from "@/components/dashboard/dashboard-ui";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
@@ -238,17 +240,20 @@ export default function VenueTaxonomyPage() {
                     {t("noVenueTypesYet")}
                   </p>
                 ) : (
-                  <div className="overflow-hidden rounded-b-xl border-t border-[#303030] px-4 sm:px-6 [&_[data-slot=table-container]]:overflow-x-visible">
-                    <Table className="w-full table-fixed">
+                  <div className="overflow-hidden rounded-b-xl border-t border-[#303030] px-4 sm:px-6">
+                    <Table
+                      className={cn(dashboardTableClass, "min-w-[700px]")}
+                      containerClassName={dashboardTableContainerClass}
+                    >
                       <TableHeader>
                         <TableRow className={dashboardTableHeaderRowClass}>
-                          <TableHead className="w-[30%] whitespace-normal text-muted-foreground">
+                          <TableHead className="min-w-[180px] whitespace-nowrap text-muted-foreground">
                             {tCommon("name")}
                           </TableHead>
-                          <TableHead className="whitespace-normal text-muted-foreground">
+                          <TableHead className="min-w-[280px] whitespace-nowrap text-muted-foreground">
                             {tCommon("description")}
                           </TableHead>
-                          <TableHead className="w-14 shrink-0 whitespace-normal text-right text-muted-foreground">
+                          <TableHead className="min-w-[80px] whitespace-nowrap text-right text-muted-foreground">
                             {tCommon("actions")}
                           </TableHead>
                         </TableRow>
@@ -351,17 +356,20 @@ export default function VenueTaxonomyPage() {
                     {t("noAmenitiesYet")}
                   </p>
                 ) : (
-                  <div className="overflow-hidden rounded-b-xl border-t border-[#303030] px-4 sm:px-6 [&_[data-slot=table-container]]:overflow-x-visible">
-                    <Table className="w-full table-fixed">
+                  <div className="overflow-hidden rounded-b-xl border-t border-[#303030] px-4 sm:px-6">
+                    <Table
+                      className={cn(dashboardTableClass, "min-w-[700px]")}
+                      containerClassName={dashboardTableContainerClass}
+                    >
                       <TableHeader>
                         <TableRow className={dashboardTableHeaderRowClass}>
-                          <TableHead className="w-[35%] whitespace-normal text-muted-foreground">
+                          <TableHead className="min-w-[180px] whitespace-nowrap text-muted-foreground">
                             {tCommon("name")}
                           </TableHead>
-                          <TableHead className="whitespace-normal text-muted-foreground">
+                          <TableHead className="min-w-[280px] whitespace-nowrap text-muted-foreground">
                             {tCommon("description")}
                           </TableHead>
-                          <TableHead className="w-14 shrink-0 whitespace-normal text-right text-muted-foreground">
+                          <TableHead className="min-w-[80px] whitespace-nowrap text-right text-muted-foreground">
                             {tCommon("actions")}
                           </TableHead>
                         </TableRow>

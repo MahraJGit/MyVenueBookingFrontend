@@ -8,6 +8,7 @@ import { Building2, Eye, Loader2, Pencil, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/venues/StatusBadge";
+import { VenuePublicPreviewDialog } from "@/components/venues/VenuePublicPreviewDialog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -30,6 +31,8 @@ import {
   DashboardPageShell,
   DashboardSearchInput,
   dashboardTableClass,
+  dashboardTableContainerClass,
+  dashboardTableActionsClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
   dashboardSelectTriggerClass,
@@ -56,6 +59,7 @@ export default function ManageVenuesPage() {
   const paths = useDashboardPaths();
   const isAdmin = paths.scope === "admin";
   const t = useTranslations(isAdmin ? "adminDashboard" : "vendorDashboard");
+  const tPreview = useTranslations("adminDashboard");
   const tStatus = useTranslations("entityStatus");
   const tCommon = useTranslations("common");
   const tForms = useTranslations("forms");
@@ -65,6 +69,7 @@ export default function ManageVenuesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<EntityStatus | "ALL">("ALL");
+  const [viewVenue, setViewVenue] = useState<ManagedVenue | null>(null);
 
   useEffect(() => {
     setPage(1);
@@ -179,18 +184,27 @@ export default function ManageVenuesPage() {
             : undefined
         }
       >
-        <Table className={dashboardTableClass} containerClassName="overflow-visible">
+        <Table
+          className={cn(dashboardTableClass, "min-w-[900px]")}
+          containerClassName={dashboardTableContainerClass}
+        >
           <TableHeader>
             <TableRow className={dashboardTableHeaderRowClass}>
-              <TableHead className="min-w-[220px] text-muted-foreground">
+              <TableHead className="min-w-[220px] whitespace-nowrap text-muted-foreground">
                 {tCommon("name")}
               </TableHead>
               {isAdmin ? (
-                <TableHead className="text-muted-foreground">{t("vendorCol")}</TableHead>
+                <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
+                  {t("vendorCol")}
+                </TableHead>
               ) : null}
-              <TableHead className="text-muted-foreground">{tForms("city")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("status")}</TableHead>
-              <TableHead className="text-right text-muted-foreground">
+              <TableHead className="min-w-[120px] whitespace-nowrap text-muted-foreground">
+                {tForms("city")}
+              </TableHead>
+              <TableHead className="min-w-[140px] whitespace-nowrap text-muted-foreground">
+                {tCommon("status")}
+              </TableHead>
+              <TableHead className="min-w-[160px] whitespace-nowrap text-right text-muted-foreground">
                 {tCommon("actions")}
               </TableHead>
             </TableRow>
@@ -219,10 +233,10 @@ export default function ManageVenuesPage() {
                       {venue.vendor?.vendorName ?? "—"}
                     </TableCell>
                   ) : null}
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
                     {venue.city ?? "—"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     <div className="space-y-1">
                       {venue.status ? <StatusBadge status={venue.status} /> : null}
                       {!isAdmin && venue.status === "DRAFT" && venue.readiness ? (
@@ -238,26 +252,18 @@ export default function ManageVenuesPage() {
                       ) : null}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      {venue.status === "ACTIVE" ? (
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="text-muted-foreground hover:text-foreground"
-                          aria-label={tCommon("view")}
-                          asChild
-                        >
-                          <Link
-                            href={`/venues/${venue.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                      ) : null}
+                  <TableCell className="whitespace-nowrap text-right">
+                    <div className={dashboardTableActionsClass}>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label={tPreview("viewVenue")}
+                        onClick={() => setViewVenue(venue)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button
                         type="button"
                         size="icon"
@@ -307,6 +313,12 @@ export default function ManageVenuesPage() {
         </Table>
       </DashboardDataTable>
       </DashboardPanel>
+
+      <VenuePublicPreviewDialog
+        venue={viewVenue}
+        onClose={() => setViewVenue(null)}
+        editHref={viewVenue ? paths.editVenue(viewVenue.id) : undefined}
+      />
     </DashboardPageShell>
   );
 }

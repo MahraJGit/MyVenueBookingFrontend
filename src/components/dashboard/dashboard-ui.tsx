@@ -68,7 +68,12 @@ export const dashboardTableWrapperClass =
   'w-full min-w-0 overflow-x-auto rounded-xl border border-[#303030]'
 
 export const dashboardTableClass =
-  'w-full table-fixed [&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3'
+  'w-full table-auto [&_td]:px-5 [&_td]:py-3.5 [&_th]:px-5 [&_th]:py-3.5'
+
+export const dashboardTableContainerClass = 'overscroll-x-contain'
+
+export const dashboardTableActionsClass =
+  'flex shrink-0 items-center justify-end gap-2'
 
 export const dashboardTableHeaderRowClass =
   'border-[#303030] hover:bg-transparent'

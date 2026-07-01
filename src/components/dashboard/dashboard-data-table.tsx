@@ -23,7 +23,7 @@ type DashboardDataTableProps = {
 
 /**
  * Standard admin table shell: full-width wrapper + shadcn pagination.
- * Always pair with `Table` using `dashboardTableClass` (includes table-fixed).
+ * Always pair with `Table` using `dashboardTableClass` and `dashboardTableContainerClass`.
  */
 export function DashboardDataTable({
   children,
