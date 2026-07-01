@@ -52,6 +52,14 @@ export type CreateVendorReviewInput = {
   comment?: string;
 };
 
+export type CreateVenueReviewResult = {
+  id: string;
+  venueId: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+};
+
 export type CreateVenueReviewInput = {
   venueId: string;
   bookingId: string;
@@ -82,7 +90,7 @@ export async function createVendorReview(
 
 export async function createVenueReview(
   input: CreateVenueReviewInput,
-): Promise<VenueReview> {
+): Promise<CreateVenueReviewResult> {
   const res = await authFetch("/api/reviews/venue", {
     method: "POST",
     headers: {
@@ -98,7 +106,7 @@ export async function createVenueReview(
     throw ApiError.fromUnknown(res.status, data);
   }
 
-  return (data as ApiEnvelope<{ id: string; venueId: string; rating: number; comment: string | null; createdAt: string }>).data as VenueReview;
+  return (data as ApiEnvelope<CreateVenueReviewResult>).data;
 }
 
 export async function getVenueReviewSummary(
