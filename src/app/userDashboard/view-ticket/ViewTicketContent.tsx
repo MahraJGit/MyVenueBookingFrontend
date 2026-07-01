@@ -3,8 +3,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -16,8 +17,11 @@ import {
   RotateCcw,
   Loader2,
   ArrowLeft,
+  Star,
 } from 'lucide-react'
-import { getMyTicketOrder } from '@/features/ticket-purchases/api'
+import { getMyTicketOrder, type MyTicketOrder } from '@/features/ticket-purchases/api'
+import { getTicketStatusLabel } from '@/features/ticket-purchases/order-display'
+import { VendorReviewDialog } from '@/components/reviews/VendorReviewDialog'
 import { getFallbackEventImage } from '@/features/events/utils'
 import { DisplayPrice } from '@/components/currency/DisplayPrice'
 import { toastApiError } from '@/lib/toasts'
@@ -64,8 +68,10 @@ function ticketTypesSummary(
 export default function ViewTicketContent() {
   const searchParams = useSearchParams()
   const t = useTranslations('viewTicket')
-  const tEntity = useTranslations('entityStatus')
+  const tDashboard = useTranslations('userDashboard')
+  const queryClient = useQueryClient()
   const orderGroupId = searchParams.get('orderGroupId')
+  const [reviewOpen, setReviewOpen] = useState(false)
 
   const { data: order, isLoading, isError, error } = useQuery({
     queryKey: ['my-ticket-order', orderGroupId],
@@ -77,12 +83,8 @@ export default function ViewTicketContent() {
     if (isError) toastApiError(error, t('loadError'))
   }, [isError, error, t])
 
-  const statusLabel = (status: string) => {
-    if (status === 'pending') return tEntity('pending')
-    if (status === 'completed') return tEntity('completed')
-    if (status === 'canceled') return tEntity('canceled')
-    return status
-  }
+  const statusLabel = (ticketOrder: Pick<MyTicketOrder, 'attendancePhase' | 'paymentStatus'>) =>
+    getTicketStatusLabel(ticketOrder, (key) => tDashboard(key))
 
   if (!orderGroupId) {
     return (
@@ -154,6 +156,17 @@ export default function ViewTicketContent() {
         </div>
 
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          {order.canReviewOrganizer && order.vendorId ? (
+            <Button
+              type="button"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={() => setReviewOpen(true)}
+            >
+              <Star className="mr-2 h-4 w-4" />
+              {tDashboard('reviewOrganizer')}
+            </Button>
+          ) : null}
           <Button variant="outline" size="sm" className="w-full sm:w-auto" disabled>
             <RotateCcw className="mr-2 h-4 w-4" />
             {t('refundTicket')}
@@ -221,7 +234,7 @@ export default function ViewTicketContent() {
 
           <div>
             <p className="text-muted-foreground">{t('orderStatus')}</p>
-            <p className="font-medium capitalize">{statusLabel(order.status)}</p>
+            <p className="font-medium">{statusLabel(order)}</p>
           </div>
 
           <div>
@@ -255,6 +268,19 @@ export default function ViewTicketContent() {
           </div>
         </div>
       </div>
+      {order.canReviewOrganizer && order.vendorId ? (
+        <VendorReviewDialog
+          open={reviewOpen}
+          onOpenChange={setReviewOpen}
+          eventId={order.eventId}
+          eventName={order.eventName}
+          vendorId={order.vendorId}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: ['my-ticket-order', orderGroupId] })
+            void queryClient.invalidateQueries({ queryKey: ['my-ticket-orders'] })
+          }}
+        />
+      ) : null}
     </Card>
   )
 }

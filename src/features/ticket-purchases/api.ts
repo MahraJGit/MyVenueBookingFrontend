@@ -66,7 +66,9 @@ export function getApiErrorCode(body: unknown): string | undefined {
   return undefined;
 }
 
-export type TicketOrderTabStatus = "pending" | "canceled" | "completed";
+export type TicketAttendancePhase = "upcoming" | "attended" | "canceled";
+export type TicketPaymentStatus = "pending" | "confirmed" | "canceled";
+export type TicketOrderTabValue = "all" | TicketAttendancePhase;
 
 export type MyTicketOrder = {
   orderGroupId: string;
@@ -75,14 +77,19 @@ export type MyTicketOrder = {
   eventName: string;
   eventSlug: string;
   eventStartDateTime: string;
+  eventEndDateTime: string;
   eventImage: string | null;
   venueName: string | null;
   city: string;
+  vendorId: string | null;
   orderDate: string;
   totalAmount: number;
   currency: string;
   ticketCount: number;
-  status: TicketOrderTabStatus;
+  attendancePhase: TicketAttendancePhase;
+  paymentStatus: TicketPaymentStatus;
+  canReviewOrganizer: boolean;
+  hasReviewedOrganizer: boolean;
   items: Array<{
     id: string;
     ticketTypeId: string;

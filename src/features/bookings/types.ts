@@ -61,6 +61,8 @@ export type Booking = {
   buyer?: BookingBuyer;
   bookingAmenities?: BookingAmenityLine[];
   payments?: BookingPayment[];
+  canReviewVenue?: boolean;
+  hasReviewedVenue?: boolean;
 };
 
 export type PaginatedMeta = {

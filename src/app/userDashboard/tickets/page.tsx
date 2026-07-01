@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
@@ -25,12 +25,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-import { ArrowRight, ArrowUpDown, ChevronRight, Loader2, Ticket } from 'lucide-react'
+import { ArrowRight, ArrowUpDown, ChevronRight, Loader2, Star, Ticket } from 'lucide-react'
 import {
   getMyTicketOrders,
   type MyTicketOrder,
-  type TicketOrderTabStatus,
+  type TicketOrderTabValue,
 } from '@/features/ticket-purchases/api'
+import {
+  countOrdersByTab,
+  filterOrdersByTab,
+  getTicketStatusLabel,
+  ticketStatusBadgeClass,
+} from '@/features/ticket-purchases/order-display'
 import { DisplayPrice } from '@/components/currency/DisplayPrice'
 import {
   DashboardFilterBar,
@@ -41,10 +47,18 @@ import {
   dashboardDropdownContentClass,
 } from '@/components/dashboard/dashboard-ui'
 import { DashboardPageHeader } from '@/components/dashboard/dashboard-shared'
+import { VendorReviewDialog } from '@/components/reviews/VendorReviewDialog'
 import { toastApiError } from '@/lib/toasts'
 
 type SortOption = 'newest' | 'oldest' | 'amount-high' | 'amount-low'
-type TabValue = 'all' | TicketOrderTabStatus
+
+const TAB_ORDER: TicketOrderTabValue[] = ['upcoming', 'attended', 'all', 'canceled']
+
+type ReviewTarget = {
+  eventId: string
+  eventName: string
+  vendorId: string
+}
 
 function formatOrderDateTime(iso: string) {
   const d = new Date(iso)
@@ -95,19 +109,14 @@ function sortOrders(orders: MyTicketOrder[], sort: SortOption) {
   }
 }
 
-function statusBadgeClass(status: TicketOrderTabStatus) {
-  if (status === 'completed') return 'border-green-500 text-green-500'
-  if (status === 'pending') return 'border-yellow-500 text-yellow-500'
-  return 'border-red-500 text-red-500'
-}
-
 const Tickets = () => {
   const t = useTranslations('userDashboard')
   const tCommon = useTranslations('common')
   const tNav = useTranslations('nav')
-  const tEntity = useTranslations('entityStatus')
-  const [activeTab, setActiveTab] = useState<TabValue>('all')
+  const queryClient = useQueryClient()
+  const [activeTab, setActiveTab] = useState<TicketOrderTabValue>('upcoming')
   const [sortBy, setSortBy] = useState<SortOption>('newest')
+  const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null)
 
   const { data: orders = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ['my-ticket-orders'],
@@ -116,21 +125,12 @@ const Tickets = () => {
 
   React.useEffect(() => {
     if (isError) toastApiError(error, t('couldNotLoadTicketsToast'))
-  }, [isError, error])
+  }, [isError, error, t])
 
-  const counts = useMemo(
-    () => ({
-      all: orders.length,
-      pending: orders.filter((o) => o.status === 'pending').length,
-      canceled: orders.filter((o) => o.status === 'canceled').length,
-      completed: orders.filter((o) => o.status === 'completed').length,
-    }),
-    [orders],
-  )
+  const counts = useMemo(() => countOrdersByTab(orders), [orders])
 
   const filteredTickets = useMemo(() => {
-    const byTab =
-      activeTab === 'all' ? orders : orders.filter((order) => order.status === activeTab)
+    const byTab = filterOrdersByTab(orders, activeTab)
     return sortOrders(byTab, sortBy)
   }, [orders, activeTab, sortBy])
 
@@ -143,18 +143,32 @@ const Tickets = () => {
           ? t('highestAmount')
           : t('lowestAmount')
 
-  const tabLabels: Record<TabValue, string> = {
+  const tabLabels: Record<TicketOrderTabValue, string> = {
     all: t('tabAll', { count: counts.all }),
-    pending: t('tabPending', { count: counts.pending }),
+    upcoming: t('tabUpcoming', { count: counts.upcoming }),
+    attended: t('tabAttended', { count: counts.attended }),
     canceled: t('tabCanceled', { count: counts.canceled }),
-    completed: t('tabCompleted', { count: counts.completed }),
   }
 
-  const statusLabel = (status: TicketOrderTabStatus) => {
-    if (status === 'pending') return tEntity('pending')
-    if (status === 'completed') return tEntity('completed')
-    if (status === 'canceled') return tEntity('canceled')
-    return status
+  const emptyTabLabel =
+    activeTab === 'upcoming'
+      ? t('tabUpcomingLabel')
+      : activeTab === 'attended'
+        ? t('tabAttendedLabel')
+        : activeTab === 'canceled'
+          ? t('tabCanceledLabel')
+          : t('tabAllLabel')
+
+  const statusLabel = (order: MyTicketOrder) =>
+    getTicketStatusLabel(order, (key) => t(key))
+
+  const openReview = (ticket: MyTicketOrder) => {
+    if (!ticket.vendorId) return
+    setReviewTarget({
+      eventId: ticket.eventId,
+      eventName: ticket.eventName,
+      vendorId: ticket.vendorId,
+    })
   }
 
   return (
@@ -193,8 +207,8 @@ const Tickets = () => {
       >
         <DashboardScrollableTabs
           value={activeTab}
-          onValueChange={setActiveTab}
-          items={(['all', 'pending', 'canceled', 'completed'] as const).map((value) => ({
+          onValueChange={(value) => setActiveTab(value as TicketOrderTabValue)}
+          items={TAB_ORDER.map((value) => ({
             value,
             label: tabLabels[value],
           }))}
@@ -229,7 +243,7 @@ const Tickets = () => {
       ) : filteredTickets.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
           <p className="text-muted-foreground text-sm">
-            {t('noTabTickets', { tab: activeTab })}
+            {t('noTabTickets', { tab: emptyTabLabel })}
           </p>
           <Button variant="outline" onClick={() => setActiveTab('all')}>
             {t('showAllTickets')}
@@ -250,13 +264,13 @@ const Tickets = () => {
                 <TableHead className="min-w-[100px] whitespace-nowrap text-muted-foreground">{tCommon('total')}</TableHead>
                 <TableHead className="min-w-[90px] whitespace-nowrap text-muted-foreground">{t('ticketsCol')}</TableHead>
                 <TableHead className="min-w-[100px] whitespace-nowrap text-muted-foreground">{tCommon('status')}</TableHead>
-                <TableHead className="min-w-[100px] whitespace-nowrap text-right text-muted-foreground">{tCommon('actions')}</TableHead>
+                <TableHead className="min-w-[140px] whitespace-nowrap text-right text-muted-foreground">{tCommon('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredTickets.length === 0 ? (
                 <TableEmptyRow colSpan={8}>
-                  {t('noTabTickets', { tab: tabLabels[activeTab] })}
+                  {t('noTabTickets', { tab: emptyTabLabel })}
                 </TableEmptyRow>
               ) : (
                 filteredTickets.map((ticket) => (
@@ -283,19 +297,43 @@ const Tickets = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={statusBadgeClass(ticket.status)}>
-                        {statusLabel(ticket.status)}
+                      <Badge
+                        variant="outline"
+                        className={ticketStatusBadgeClass(
+                          ticket.attendancePhase,
+                          ticket.paymentStatus,
+                        )}
+                      >
+                        {statusLabel(ticket)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button asChild variant="link" size="sm" className="h-auto p-0">
-                        <Link
-                          href={`/userDashboard/view-ticket?orderGroupId=${encodeURIComponent(ticket.orderGroupId)}`}
-                        >
-                          {t('details')}
-                          <ChevronRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                      <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end sm:gap-2">
+                        {ticket.canReviewOrganizer ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 gap-1"
+                            onClick={() => openReview(ticket)}
+                          >
+                            <Star className="h-3.5 w-3.5" />
+                            {t('reviewOrganizer')}
+                          </Button>
+                        ) : ticket.hasReviewedOrganizer ? (
+                          <span className="text-xs text-muted-foreground">
+                            {t('reviewedOrganizer')}
+                          </span>
+                        ) : null}
+                        <Button asChild variant="link" size="sm" className="h-auto p-0">
+                          <Link
+                            href={`/userDashboard/view-ticket?orderGroupId=${encodeURIComponent(ticket.orderGroupId)}`}
+                          >
+                            {t('details')}
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -305,6 +343,21 @@ const Tickets = () => {
         </TableShell>
       )}
       </DashboardPanel>
+
+      {reviewTarget ? (
+        <VendorReviewDialog
+          open={Boolean(reviewTarget)}
+          onOpenChange={(open) => {
+            if (!open) setReviewTarget(null)
+          }}
+          eventId={reviewTarget.eventId}
+          eventName={reviewTarget.eventName}
+          vendorId={reviewTarget.vendorId}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: ['my-ticket-orders'] })
+          }}
+        />
+      ) : null}
     </DashboardPageShell>
   )
 }

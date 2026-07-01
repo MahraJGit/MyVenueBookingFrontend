@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Loader2,
   MapPin,
+  Star,
   Users,
   X,
 } from "lucide-react";
@@ -66,6 +67,7 @@ import { bookingKeys } from "@/features/venues/query-keys";
 import type { Booking } from "@/features/bookings/types";
 import { formatInVenueTimezone } from "@/features/venues/timezone";
 import { toastApiError } from "@/lib/toasts";
+import { VenueReviewDialog } from "@/components/reviews/VenueReviewDialog";
 
 type BookingDetailPanelProps = {
   bookingId: string;
@@ -226,6 +228,9 @@ function UserBookingDetail({
   t,
   tCommon,
 }: DetailBodyProps) {
+  const tDashboard = useTranslations("userDashboard");
+  const queryClient = useQueryClient();
+  const [reviewOpen, setReviewOpen] = useState(false);
   const tz = booking.venue.timezone;
   const statusKey = {
     DRAFT: "draft",
@@ -356,6 +361,18 @@ function UserBookingDetail({
         <Separator className="bg-[#242424]" />
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          {booking.canReviewVenue ? (
+            <Button
+              type="button"
+              className="flex-1"
+              onClick={() => setReviewOpen(true)}
+            >
+              <Star className="mr-2 h-4 w-4" />
+              {tDashboard("reviewVenue")}
+            </Button>
+          ) : booking.hasReviewedVenue ? (
+            <p className="w-full text-sm text-muted-foreground">{tDashboard("reviewedVenue")}</p>
+          ) : null}
           {isHold ? (
             <Button asChild className="flex-1 bg-primary hover:bg-primary/90">
               <Link href={`/venues/booking/${booking.id}/checkout`}>
@@ -406,6 +423,19 @@ function UserBookingDetail({
         isPending={rescheduleMut.isPending}
         t={t}
         tCommon={tCommon}
+      />
+
+      <VenueReviewDialog
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        venueId={booking.venueId}
+        venueName={booking.venue.name}
+        bookingId={booking.id}
+        onSuccess={() => {
+          void queryClient.invalidateQueries({ queryKey: bookingKeys.all });
+          void queryClient.invalidateQueries({ queryKey: ["venue-review-summary", booking.venueId] });
+          void queryClient.invalidateQueries({ queryKey: ["venue-reviews", booking.venueId] });
+        }}
       />
     </div>
   );

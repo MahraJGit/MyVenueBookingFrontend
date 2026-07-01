@@ -28,6 +28,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { AvailabilityCalendar } from "@/components/venues/AvailabilityCalendar";
+import { VenueReviewsSection } from "@/components/reviews/VenueReviewsSection";
 import { SlotPicker } from "@/components/venues/SlotPicker";
 import { VenueBookingDialog } from "@/components/bookings/VenueBookingDialog";
 import { DisplayPrice, DisplayPriceWithSuffix } from "@/components/currency/DisplayPrice";
@@ -484,6 +485,8 @@ export default function VenueDetailPage({
                 </ul>
               </div>
             )}
+
+            <VenueReviewsSection venueId={venue.id} />
 
             {/* Map */}
             <div>

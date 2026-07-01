@@ -1,7 +1,9 @@
 "use client";
 
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import {
   ArrowRight,
@@ -10,6 +12,7 @@ import {
   Clock,
   CreditCard,
   MapPin,
+  Star,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,10 +20,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { Booking, BookingStatus } from "@/features/bookings/types";
 import { formatInVenueTimezone } from "@/features/venues/timezone";
+import { bookingKeys } from "@/features/venues/query-keys";
 import {
   bookingStatusBadgeClass,
 } from "@/components/bookings/user-booking-utils";
 import { BookingTotalPrice } from "@/components/currency/BookingTotalPrice";
+import { VenueReviewDialog } from "@/components/reviews/VenueReviewDialog";
 
 type UserBookingsListProps = {
   bookings: Booking[];
@@ -63,12 +68,15 @@ function UserBookingCard({
   booking,
   selected,
   onSelect,
+  onReview,
 }: {
   booking: Booking;
   selected: boolean;
   onSelect: () => void;
+  onReview: () => void;
 }) {
   const t = useTranslations("booking");
+  const tDashboard = useTranslations("userDashboard");
   const bookingStatusLabel = useBookingStatusLabel();
   const tz = booking.venue.timezone;
   const isHold = booking.status === "HOLD";
@@ -145,6 +153,22 @@ function UserBookingCard({
                   {t("completePayment")}
                 </Link>
               </Button>
+            ) : booking.canReviewVenue ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReview();
+                }}
+              >
+                <Star className="h-3.5 w-3.5" />
+                {tDashboard("reviewVenue")}
+              </Button>
+            ) : booking.hasReviewedVenue ? (
+              <span className="text-xs text-muted-foreground">{tDashboard("reviewedVenue")}</span>
             ) : (
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
@@ -168,6 +192,9 @@ export function UserBookingsList({
   onSelect,
   isLoading,
 }: UserBookingsListProps) {
+  const queryClient = useQueryClient();
+  const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -183,16 +210,41 @@ export function UserBookingsList({
   }
 
   return (
-    <div className="space-y-3">
-      {bookings.map((booking) => (
-        <UserBookingCard
-          key={booking.id}
-          booking={booking}
-          selected={selectedId === booking.id}
-          onSelect={() => onSelect(booking.id)}
+    <>
+      <div className="space-y-3">
+        {bookings.map((booking) => (
+          <UserBookingCard
+            key={booking.id}
+            booking={booking}
+            selected={selectedId === booking.id}
+            onSelect={() => onSelect(booking.id)}
+            onReview={() => setReviewBooking(booking)}
+          />
+        ))}
+      </div>
+
+      {reviewBooking ? (
+        <VenueReviewDialog
+          open={Boolean(reviewBooking)}
+          onOpenChange={(open) => {
+            if (!open) setReviewBooking(null);
+          }}
+          venueId={reviewBooking.venueId}
+          venueName={reviewBooking.venue.name}
+          bookingId={reviewBooking.id}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: bookingKeys.all });
+            void queryClient.invalidateQueries({
+              queryKey: ["venue-review-summary", reviewBooking.venueId],
+            });
+            void queryClient.invalidateQueries({
+              queryKey: ["venue-reviews", reviewBooking.venueId],
+            });
+            setReviewBooking(null);
+          }}
         />
-      ))}
-    </div>
+      ) : null}
+    </>
   );
 }
 
