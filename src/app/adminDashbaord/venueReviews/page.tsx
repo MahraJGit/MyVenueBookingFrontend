@@ -45,6 +45,19 @@ import {
 } from "@/features/venues/utils";
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
 import { toastApiError } from "@/lib/toasts";
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardTableWrapper,
+  dashboardCardClass,
+  dashboardTableClass,
+  dashboardTableHeaderRowClass,
+  dashboardTableRowClass,
+  dashboardDialogContentClass,
+  dashboardTextareaClass,
+} from "@/components/dashboard/dashboard-ui";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
+import { cn } from "@/lib/utils";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -110,13 +123,14 @@ export default function VenueReviewsPage() {
 
   return (
     <RoleGuard allowedRoles={["ADMIN"]}>
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div>
-          <h1 className="text-xl font-bold text-white">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("description")}</p>
-        </div>
+      <DashboardPageShell>
+        <DashboardPanel>
+          <DashboardPageHeader
+            title={t("title")}
+            description={t("description")}
+          />
 
-        <Card className="border-border bg-card">
+        <Card className={dashboardCardClass}>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0 pb-4">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -135,9 +149,10 @@ export default function VenueReviewsPage() {
           </CardHeader>
 
           <CardContent className="p-0">
-            <Table>
+            <DashboardTableWrapper className="rounded-none border-0 border-t border-[#303030]">
+            <Table className={dashboardTableClass} containerClassName="overflow-visible">
               <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
+                <TableRow className={dashboardTableHeaderRowClass}>
                   <TableHead className="text-muted-foreground">{tForms("venueName")}</TableHead>
                   <TableHead className="text-muted-foreground">{tCommon("vendor")}</TableHead>
                   <TableHead className="text-muted-foreground">{t("pricing")}</TableHead>
@@ -162,7 +177,7 @@ export default function VenueReviewsPage() {
                       pendingVenueId === venue.id && pendingStatus === "REJECTED";
 
                     return (
-                      <TableRow key={venue.id} className="border-border">
+                      <TableRow key={venue.id} className={dashboardTableRowClass}>
                         <TableCell>
                           <div className="space-y-1.5">
                             <p className="font-medium text-foreground">{venue.name}</p>
@@ -243,9 +258,11 @@ export default function VenueReviewsPage() {
                 )}
               </TableBody>
             </Table>
+            </DashboardTableWrapper>
           </CardContent>
         </Card>
-      </div>
+        </DashboardPanel>
+      </DashboardPageShell>
 
       <Dialog
         open={!!viewVenue}
@@ -253,7 +270,7 @@ export default function VenueReviewsPage() {
           if (!open) setViewVenue(null);
         }}
       >
-        <DialogContent className="max-h-[85vh] overflow-y-auto border-border bg-card text-foreground sm:max-w-2xl">
+        <DialogContent className={cn("max-h-[85vh] overflow-y-auto sm:max-w-2xl", dashboardDialogContentClass)}>
           <DialogHeader>
             <DialogTitle>{detail?.name ?? t("venueDetails")}</DialogTitle>
             <DialogDescription>{t("detailsDesc")}</DialogDescription>
@@ -406,7 +423,7 @@ export default function VenueReviewsPage() {
           }
         }}
       >
-        <DialogContent className="border-border bg-card text-foreground">
+        <DialogContent className={dashboardDialogContentClass}>
           <DialogHeader>
             <DialogTitle>{t("rejectTitle")}</DialogTitle>
             <DialogDescription>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Eye, ExternalLink, Loader2 } from "lucide-react"
@@ -39,9 +39,25 @@ import {
   type EventApprovalStatus,
   type ManagedEvent,
 } from "@/features/events/api"
-import { TableSkeleton } from "@/components/ui/table-skeleton"
-import { TableShell } from "@/components/ui/table-shell"
+import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton"
 import { toastApiError } from "@/lib/toasts"
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardErrorAlert,
+  dashboardTableClass,
+  dashboardTableHeaderRowClass,
+  dashboardTableRowClass,
+  dashboardDialogContentClass,
+  dashboardOutlineButtonClass,
+  dashboardSelectTriggerClass,
+  dashboardTextareaClass,
+} from "@/components/dashboard/dashboard-ui"
+import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table"
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared"
+import { cn } from "@/lib/utils"
+
+const PAGE_SIZE = 10
 
 type StatusFilter = "ALL" | EventApprovalStatus
 
@@ -89,11 +105,17 @@ export default function EventReviewsPage() {
   const tStatus = useTranslations("entityStatus")
   const tAdmin = useTranslations("adminDashboard")
   const tForms = useTranslations("forms")
+  const tListing = useTranslations("listing")
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL")
+  const [page, setPage] = useState(1)
   const [activeDetails, setActiveDetails] = useState<ManagedEvent | null>(null)
   const [rejectTarget, setRejectTarget] = useState<ManagedEvent | null>(null)
   const [rejectReason, setRejectReason] = useState("")
+
+  useEffect(() => {
+    setPage(1)
+  }, [statusFilter])
 
   const statusLabel = (status: EventApprovalStatus | undefined) => {
     if (!status) return tStatus("unknown")
@@ -112,11 +134,11 @@ export default function EventReviewsPage() {
     refetch,
     isFetching,
   } = useQuery({
-    queryKey: ["admin-event-reviews", statusFilter],
+    queryKey: ["admin-event-reviews", statusFilter, page],
     queryFn: () =>
       listManagedEvents({
-        page: 1,
-        limit: 100,
+        page,
+        limit: PAGE_SIZE,
         vendorOnly: true,
         ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
         sortBy: "createdAt",
@@ -125,6 +147,9 @@ export default function EventReviewsPage() {
   })
 
   const events = listResult?.data ?? []
+  const meta = listResult?.meta
+  const totalPages = meta?.totalPages ?? 1
+  const showPagination = !isLoading && (meta?.total ?? 0) > 0
 
   const updateMutation = useMutation({
     mutationFn: (vars: {
@@ -172,91 +197,102 @@ export default function EventReviewsPage() {
   }
 
   return (
-    <div className="w-full max-w-full space-y-6 overflow-x-hidden rounded-2xl bg-[#0e0e0e] p-6 text-white">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-primary">{t("title")}</h2>
-          <p className="text-sm text-gray-300">{t("description")}</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {isFetching && !isLoading ? (
-            <span className="flex items-center gap-1 text-xs text-zinc-500">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {tCommon("refreshing")}
-            </span>
-          ) : null}
-          <Button
-            variant={statusFilter === "ALL" ? "default" : "outline"}
-            onClick={() => setStatusFilter("ALL")}
-            disabled={isLoading}
-          >
-            {tCommon("all")}
-          </Button>
-          {REVIEW_STATUSES.map((s) => (
-            <Button
-              key={s}
-              variant={statusFilter === s ? "default" : "outline"}
-              onClick={() => setStatusFilter(s)}
-              disabled={isLoading}
-            >
-              {statusLabel(s)}
-            </Button>
-          ))}
-        </div>
-      </div>
+    <DashboardPageShell>
+      <DashboardPanel>
+        <DashboardPageHeader
+          title={t("title")}
+          description={t("description")}
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              {isFetching && !isLoading ? (
+                <span className="flex items-center gap-1 text-xs text-zinc-500">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {tCommon("refreshing")}
+                </span>
+              ) : null}
+              <Button
+                variant={statusFilter === "ALL" ? "default" : "outline"}
+                onClick={() => setStatusFilter("ALL")}
+                disabled={isLoading}
+              >
+                {tCommon("all")}
+              </Button>
+              {REVIEW_STATUSES.map((s) => (
+                <Button
+                  key={s}
+                  variant={statusFilter === s ? "default" : "outline"}
+                  onClick={() => setStatusFilter(s)}
+                  disabled={isLoading}
+                >
+                  {statusLabel(s)}
+                </Button>
+              ))}
+            </div>
+          }
+        />
 
       {errorMessage ? (
-        <div
-          className="flex flex-col gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100 sm:flex-row sm:items-center sm:justify-between"
-          role="alert"
-        >
-          <p>{errorMessage}</p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="border-red-400/50 text-red-100 hover:bg-red-500/20"
-            onClick={() => void refetch()}
-          >
-            {tCommon("retry")}
-          </Button>
-        </div>
+        <DashboardErrorAlert
+          message={errorMessage}
+          onRetry={() => void refetch()}
+          retryLabel={tCommon("retry")}
+        />
       ) : null}
 
-      <TableShell className="max-w-full">
-        <Table className="min-w-[960px]">
+      <DashboardDataTable
+        pagination={
+          showPagination
+            ? {
+                label: tListing("pageOfWithCount", {
+                  page: meta?.page ?? page,
+                  totalPages,
+                  total: meta?.total ?? events.length,
+                  type: tListing("eventsCount"),
+                }),
+                page,
+                totalPages,
+                total: meta?.total ?? events.length,
+                onPageChange: setPage,
+                previousLabel: tCommon("previous"),
+                nextLabel: tCommon("next"),
+                isLoading,
+              }
+            : undefined
+        }
+      >
+        <Table className={dashboardTableClass} containerClassName="overflow-visible">
           <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground">{tAdmin("tableEvent")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("vendor")}</TableHead>
-              <TableHead className="text-muted-foreground">{tAdmin("tableCity")}</TableHead>
-              <TableHead className="text-muted-foreground">{t("starts")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("status")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("submitted")}</TableHead>
-              <TableHead className="text-right text-muted-foreground">{tCommon("actions")}</TableHead>
+            <TableRow className={dashboardTableHeaderRowClass}>
+              <TableHead className="w-[18%] text-muted-foreground">{tAdmin("tableEvent")}</TableHead>
+              <TableHead className="w-[14%] text-muted-foreground">{tCommon("vendor")}</TableHead>
+              <TableHead className="w-[10%] text-muted-foreground">{tAdmin("tableCity")}</TableHead>
+              <TableHead className="w-[16%] text-muted-foreground">{t("starts")}</TableHead>
+              <TableHead className="w-[10%] text-muted-foreground">{tCommon("status")}</TableHead>
+              <TableHead className="w-[12%] text-muted-foreground">{tCommon("submitted")}</TableHead>
+              <TableHead className="w-[20%] text-right text-muted-foreground">{tCommon("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableSkeleton cols={7} />
+            ) : events.length === 0 ? (
+              <TableEmptyRow colSpan={7}>{t("noEvents")}</TableEmptyRow>
             ) : (
-              <>
-                {events.map((ev) => {
+              events.map((ev) => {
                   const selectValue = reviewableStatus(ev.status)
                   return (
                     <TableRow
                       key={ev.id}
-                      className="border-border transition-colors hover:bg-muted/50"
+                      className={dashboardTableRowClass}
                     >
-                      <TableCell className="max-w-[200px] font-medium whitespace-normal wrap-break-word">
+                      <TableCell className="whitespace-normal break-words font-medium">
                         {ev.eventName}
                       </TableCell>
-                      <TableCell className="max-w-[180px] whitespace-normal wrap-break-word">
+                      <TableCell className="whitespace-normal break-words">
                         {ev.vendorProfile?.vendorName ?? "—"}
                       </TableCell>
-                      <TableCell>{ev.city}</TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-zinc-300">
+                      <TableCell className="whitespace-normal">{ev.city}</TableCell>
+                      <TableCell className="whitespace-normal text-sm text-muted-foreground">
                         {formatDateTime(ev.startDateTime)}
                       </TableCell>
                       <TableCell>
@@ -267,12 +303,12 @@ export default function EventReviewsPage() {
                       <TableCell>
                         {ev.createdAt ? formatDate(ev.createdAt) : "—"}
                       </TableCell>
-                      <TableCell className="min-w-[220px] text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <TableCell className="text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-zinc-700"
+                            className={dashboardOutlineButtonClass}
                             onClick={() => setActiveDetails(ev)}
                           >
                             <Eye className="h-4 w-4" />
@@ -295,7 +331,7 @@ export default function EventReviewsPage() {
                           >
                             <SelectTrigger
                               size="sm"
-                              className="h-8 min-w-[130px] border-zinc-700"
+                              className={cn("h-8 min-w-[130px]", dashboardSelectTriggerClass)}
                             >
                               <span className="flex w-full items-center gap-2">
                                 {pendingRowId === ev.id ? (
@@ -316,29 +352,17 @@ export default function EventReviewsPage() {
                       </TableCell>
                     </TableRow>
                   )
-                })}
-
-                {!isLoading && events.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="py-12 text-center text-gray-400"
-                    >
-                      {t("noEvents")}
-                    </TableCell>
-                  </TableRow>
-                ) : null}
-              </>
+                })
             )}
           </TableBody>
         </Table>
-      </TableShell>
+      </DashboardDataTable>
 
       <Dialog
         open={Boolean(activeDetails)}
         onOpenChange={(open) => !open && setActiveDetails(null)}
       >
-        <DialogContent className="max-h-[85vh] overflow-y-auto border-zinc-700 bg-[#111111] text-white">
+        <DialogContent className={cn("max-h-[85vh] overflow-y-auto", dashboardDialogContentClass)}>
           <DialogHeader>
             <DialogTitle>{activeDetails?.eventName}</DialogTitle>
             <DialogDescription>{t("detailsDesc")}</DialogDescription>
@@ -351,7 +375,7 @@ export default function EventReviewsPage() {
                   {statusLabel(activeDetails.status)}
                 </Badge>
                 {activeDetails.status === "APPROVED" ? (
-                  <Button size="sm" variant="outline" className="border-zinc-700" asChild>
+                  <Button size="sm" variant="outline" className={dashboardOutlineButtonClass} asChild>
                     <Link
                       href={`/events/${activeDetails.slug}`}
                       target="_blank"
@@ -438,7 +462,7 @@ export default function EventReviewsPage() {
                 >
                   {tAdmin("reject")}
                 </Button>
-                <Button variant="outline" className="border-zinc-700" asChild>
+                <Button variant="outline" className={dashboardOutlineButtonClass} asChild>
                   <Link
                     href={`/adminDashbaord/addEvents?id=${encodeURIComponent(activeDetails.id)}`}
                   >
@@ -460,7 +484,7 @@ export default function EventReviewsPage() {
           }
         }}
       >
-        <DialogContent className="border-zinc-700 bg-[#111111] text-white">
+        <DialogContent className={dashboardDialogContentClass}>
           <DialogHeader>
             <DialogTitle>{t("rejectTitle")}</DialogTitle>
             <DialogDescription>{t("rejectDesc")}</DialogDescription>
@@ -474,7 +498,7 @@ export default function EventReviewsPage() {
               placeholder={t("rejectPlaceholder")}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              className="min-h-[100px] border-zinc-700 bg-zinc-900 text-white"
+              className={dashboardTextareaClass}
             />
           </div>
           <DialogFooter>
@@ -505,7 +529,8 @@ export default function EventReviewsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </DashboardPanel>
+    </DashboardPageShell>
   )
 }
 

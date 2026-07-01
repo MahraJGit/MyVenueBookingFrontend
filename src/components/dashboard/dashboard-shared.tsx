@@ -27,14 +27,14 @@ export const dashboardOverlayClass =
 
 /** Primary content panel — matches notifications / list pages */
 export const dashboardContentPanelClass =
-  'mt-2 rounded-xl bg-[#121212] p-4 sm:mt-5 sm:p-8'
+  'w-full min-w-0 space-y-6 rounded-2xl border border-[#303030] bg-[#0e0e0e] p-4 text-white sm:p-6'
 
-export const dashboardFilterBarBorderClass = 'border-[#242424]'
+export const dashboardFilterBarBorderClass = 'border-[#303030]'
 
 export const dashboardListItemClass =
   'rounded-xl bg-[#151515] transition-colors hover:bg-[#1a1a1a]'
 
-export const dashboardSurfaceBorderClass = 'border-[#242424]'
+export const dashboardSurfaceBorderClass = 'border-[#303030]'
 
 export const dashboardPanelClass = dashboardContentPanelClass
 
@@ -67,7 +67,24 @@ export {
   dashboardTabCountClass,
   dashboardEyebrowClass,
   dashboardTabTriggerClass,
+  dashboardBorderClass,
+  dashboardCardClass,
+  dashboardTopbarClass,
+  dashboardStatCardClass,
+  dashboardTableWrapperClass,
+  dashboardTableClass,
+  dashboardTableHeaderRowClass,
+  dashboardTableRowClass,
+  dashboardOutlineButtonClass,
+  dashboardDialogContentClass,
+  dashboardTabsListClass,
+  DashboardTableWrapper,
+  DashboardStatCard,
+  DashboardErrorAlert,
+  DashboardPagination,
 } from './dashboard-ui'
+
+export { DashboardDataTable } from './dashboard-data-table'
 
 export const dashboardSidebarClass =
   'fixed top-0 left-0 z-50 flex h-full w-[280px] flex-col border-r border-white/10 bg-[#1B1B1B] p-4 text-white transition-transform duration-300 lg:static lg:m-4 lg:min-h-[calc(100vh-2rem)] lg:rounded-2xl lg:border-r-0'
@@ -118,9 +135,9 @@ export function DashboardPageHeader({
       )}
     >
       <div className="min-w-0 space-y-1">
-        <h1 className="text-xl font-bold tet-white ">{title}</h1>
+        <h1 className="text-xl font-bold text-white">{title}</h1>
         {description ? (
-          <p className="text-smtext-xl font-bold text-foreground text-muted-foreground">{description}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
         ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}

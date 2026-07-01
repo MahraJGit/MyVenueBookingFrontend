@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import NotificationsList from '@/components/notifications/NotificationsList'
-import { DashboardPageShell } from '@/components/dashboard/dashboard-ui'
+import { DashboardPageShell, DashboardPanel } from '@/components/dashboard/dashboard-ui'
 import { DashboardPageHeader } from '@/components/dashboard/dashboard-shared'
 
 export default function AdminNotifications() {
@@ -11,11 +11,13 @@ export default function AdminNotifications() {
 
   return (
     <DashboardPageShell>
-      <DashboardPageHeader
-        title={t('title')}
-        description={tAdmin('description')}
-      />
-      <NotificationsList />
+      <DashboardPanel>
+        <DashboardPageHeader
+          title={t('title')}
+          description={tAdmin('description')}
+        />
+        <NotificationsList embedded />
+      </DashboardPanel>
     </DashboardPageShell>
   )
 }

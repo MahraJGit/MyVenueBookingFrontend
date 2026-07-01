@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Card,
   CardContent,
@@ -26,7 +25,6 @@ import {
 } from "recharts"
 import {
   CalendarRange,
-  Search,
   SlidersHorizontal,
   TrendingUp,
   Users,
@@ -35,7 +33,16 @@ import {
   Activity,
   type LucideIcon,
 } from "lucide-react"
-import React from "react"
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardSearchInput,
+  dashboardTopbarClass,
+  dashboardStatCardClass,
+  dashboardCardClass,
+} from "@/components/dashboard/dashboard-ui"
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared"
+import { cn } from "@/lib/utils"
 import { useTranslations } from "next-intl"
 
 const cardKeys = [
@@ -92,11 +99,11 @@ export default function AnalyticsPage() {
   } satisfies ChartConfig
 
   return (
-    <>
-      <div className="topbar bg-[#0D0D0D] rounded-2xl p-4
-                flex flex-col gap-4
-                lg:flex-row lg:items-center lg:justify-between">
+    <DashboardPageShell>
+      <DashboardPanel>
+        <DashboardPageHeader title={t("title")} />
 
+      <div className={dashboardTopbarClass}>
         <div className="flex items-center gap-3 shrink-0">
           <Users />
           <h2 className="text-white font-semibold text-sm sm:text-base">
@@ -104,22 +111,10 @@ export default function AnalyticsPage() {
           </h2>
         </div>
 
-        <div className="relative w-full sm:max-w-xs lg:max-w-sm">
-          <Search
-            size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70"
-          />
-          <Input
+        <div className="w-full max-w-sm">
+          <DashboardSearchInput
             type="text"
             placeholder={tCommon("search") + "..."}
-            className="
-        w-full h-10 rounded-full
-        pl-10 pr-4
-        bg-[#D7498E75] text-white
-        placeholder:text-white/70
-        border-none
-        focus-visible:ring-2 focus-visible:ring-pink-500
-      "
           />
         </div>
 
@@ -145,7 +140,7 @@ export default function AnalyticsPage() {
             return (
               <div
                 key={key}
-                className="bg-[#1E1E1E] p-6 rounded-3xl text-white shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                className={dashboardStatCardClass}
               >
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-sm text-gray-400">{t(key)}</h3>
@@ -166,7 +161,7 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="w-full lg:w-4/6 flex flex-col gap-4">
-          <Card>
+          <Card className={dashboardCardClass}>
             <CardHeader>
               <CardTitle>{t("barChartTitle")}</CardTitle>
               <CardDescription>{t("barChartPeriod")}</CardDescription>
@@ -202,7 +197,7 @@ export default function AnalyticsPage() {
           </Card>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <Card className="flex-1 flex flex-col">
+            <Card className={cn("flex flex-1 flex-col", dashboardCardClass)}>
               <CardHeader className="items-center pb-0">
                 <CardTitle>{t("pieChartDonut")}</CardTitle>
                 <CardDescription>{t("barChartPeriod")}</CardDescription>
@@ -228,7 +223,7 @@ export default function AnalyticsPage() {
               </CardFooter>
             </Card>
 
-            <Card className="flex-1 flex flex-col">
+            <Card className={cn("flex flex-1 flex-col", dashboardCardClass)}>
               <CardHeader className="items-center pb-0">
                 <CardTitle>{t("pieChartLabel")}</CardTitle>
                 <CardDescription>{t("barChartPeriod")}</CardDescription>
@@ -256,6 +251,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
-    </>
+      </DashboardPanel>
+    </DashboardPageShell>
   )
 }

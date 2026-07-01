@@ -1,13 +1,22 @@
 "use client";
 
-import React from "react";
-import { useTranslations } from "next-intl";
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardSearchInput,
+  dashboardTopbarClass,
+  dashboardCardClass,
+  dashboardTableHeaderRowClass,
+  dashboardTableRowClass,
+} from "@/components/dashboard/dashboard-ui";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, Users, Filter, TrendingUp } from "lucide-react";
+import { Users, Filter, TrendingUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { PieChart, Pie } from "recharts";
+import { cn } from "@/lib/utils";
 import { ChartContainer, ChartConfig, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import "@/styles/attendeeinsights.css";
 
@@ -56,8 +65,11 @@ export default function AttendeeInsights() {
   } satisfies ChartConfig;
 
   return (
-    <>
-      <div className="topbar flex flex-col lg:flex-row lg:items-center lg:justify-between p-4 bg-[#0D0D0D] rounded-2xl gap-6 mb-6">
+    <DashboardPageShell>
+      <DashboardPanel>
+        <DashboardPageHeader title={t("title", { eventName: "PRAUDA THE 2ND EDITION" })} />
+
+      <div className={dashboardTopbarClass}>
         <div className="flex-1">
           <h2 className="text-base lg:text-lg font-bold text-primary">
             {t("title", { eventName: "PRAUDA THE 2ND EDITION" })}
@@ -70,15 +82,8 @@ export default function AttendeeInsights() {
         </div>
 
         <div className="flex flex-col gap-4 w-full lg:w-auto">
-          <div className="relative w-full lg:w-[280px]">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 opacity-70"
-              size={18}
-            />
-            <Input
-              placeholder={tCommon("search") + "..."}
-              className="pl-10 bg-primary/20 text-white rounded-full border-none w-full"
-            />
+          <div className="w-full max-w-sm">
+            <DashboardSearchInput placeholder={tCommon("search") + "..."} />
           </div>
 
           <div className="flex gap-2 lg:gap-4 mt-2 lg:mt-0">
@@ -95,7 +100,7 @@ export default function AttendeeInsights() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
-        <Card className="flex flex-col">
+        <Card className={dashboardCardClass}>
           <CardHeader className="items-center pb-0">
             <CardTitle>{t("pieChartDonut")}</CardTitle>
             <CardDescription>{t("chartPeriod")}</CardDescription>
@@ -129,7 +134,7 @@ export default function AttendeeInsights() {
           </CardFooter>
         </Card>
 
-        <Card className="bg-transparent shadow-none border-0">
+        <Card className={cn(dashboardCardClass, "border-0 bg-transparent shadow-none")}>
           <CardHeader>
             <CardTitle>{t("engagementTitle")}</CardTitle>
             <p className="text-sm text-muted-foreground">{t("engagementDesc")}</p>
@@ -147,21 +152,21 @@ export default function AttendeeInsights() {
           </CardContent>
         </Card>
 
-        <Card className="bg-transparent shadow-none border-0">
+        <Card className={cn(dashboardCardClass, "border-0 bg-transparent shadow-none")}>
           <CardHeader>
             <CardTitle>{t("attendeeLocations")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Table className="w-full">
               <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
+                <TableRow className={dashboardTableHeaderRowClass}>
                   <TableHead className="text-muted-foreground">{tCommon("location")}</TableHead>
                   <TableHead className="text-right text-muted-foreground">{tCommon("count")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {locations.map((loc) => (
-                  <TableRow key={loc.location} className="border-border">
+                  <TableRow key={loc.location} className={dashboardTableRowClass}>
                     <TableCell className="font-medium">{loc.location}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-3">
@@ -176,6 +181,7 @@ export default function AttendeeInsights() {
           </CardContent>
         </Card>
       </div>
-    </>
+      </DashboardPanel>
+    </DashboardPageShell>
   );
 }

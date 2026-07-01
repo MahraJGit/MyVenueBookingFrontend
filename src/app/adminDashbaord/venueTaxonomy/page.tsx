@@ -47,8 +47,21 @@ import { venueKeys } from "@/features/venues/query-keys";
 import type { AmenityCatalogItem, VenueType } from "@/features/venues/types";
 import { fieldClassName, isBlank } from "@/lib/form-validation";
 import { toastApiError } from "@/lib/toasts";
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  dashboardCardClass,
+  dashboardInputClass,
+  dashboardTextareaClass,
+  dashboardTabsListClass,
+  dashboardTableHeaderRowClass,
+  dashboardTableRowClass,
+  dashboardDialogContentClass,
+} from "@/components/dashboard/dashboard-ui";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
+import { cn } from "@/lib/utils";
 
-const inputClass = "bg-input/50 border-border w-full";
+const inputClass = dashboardInputClass;
 
 export default function VenueTaxonomyPage() {
   const t = useTranslations("adminDashboard");
@@ -140,16 +153,15 @@ export default function VenueTaxonomyPage() {
 
   return (
     <RoleGuard allowedRoles={["ADMIN"]}>
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div>
-          <h1 className="text-xl font-bold text-white">{t("venueTaxonomy")}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t("venueTaxonomyDesc")}
-          </p>
-        </div>
+      <DashboardPageShell>
+        <DashboardPanel>
+          <DashboardPageHeader
+            title={t("venueTaxonomy")}
+            description={t("venueTaxonomyDesc")}
+          />
 
         <Tabs defaultValue="types" className="space-y-4">
-          <TabsList className="flex h-auto w-full flex-wrap gap-1 bg-muted/50 p-1">
+          <TabsList className={dashboardTabsListClass}>
             <TabsTrigger value="types" className="gap-1.5">
               <Building2 className="h-4 w-4" />
               {t("venueTypes")}
@@ -161,7 +173,7 @@ export default function VenueTaxonomyPage() {
           </TabsList>
 
           <TabsContent value="types" className="space-y-4">
-            <Card className="border-border bg-card">
+            <Card className={dashboardCardClass}>
               <CardHeader>
                 <CardTitle>{t("addVenueType")}</CardTitle>
                 <CardDescription>
@@ -211,7 +223,7 @@ export default function VenueTaxonomyPage() {
               </CardFooter>
             </Card>
 
-            <Card className="border-border bg-card">
+            <Card className={dashboardCardClass}>
               <CardHeader>
                 <CardTitle className="text-base">{t("allVenueTypes")}</CardTitle>
                 <CardDescription>{t("typeCount", { count: types.length })}</CardDescription>
@@ -226,10 +238,10 @@ export default function VenueTaxonomyPage() {
                     {t("noVenueTypesYet")}
                   </p>
                 ) : (
-                  <div className="overflow-hidden rounded-b-xl border-t border-border px-4 sm:px-6 [&_[data-slot=table-container]]:overflow-x-visible">
-                    <Table className="table-fixed w-full">
+                  <div className="overflow-hidden rounded-b-xl border-t border-[#303030] px-4 sm:px-6 [&_[data-slot=table-container]]:overflow-x-visible">
+                    <Table className="w-full table-fixed">
                       <TableHeader>
-                        <TableRow className="hover:bg-transparent">
+                        <TableRow className={dashboardTableHeaderRowClass}>
                           <TableHead className="w-[30%] whitespace-normal text-muted-foreground">
                             {tCommon("name")}
                           </TableHead>
@@ -243,7 +255,7 @@ export default function VenueTaxonomyPage() {
                       </TableHeader>
                       <TableBody>
                         {types.map((venueType) => (
-                          <TableRow key={venueType.id}>
+                          <TableRow key={venueType.id} className={dashboardTableRowClass}>
                             <TableCell className="whitespace-normal break-words font-medium text-foreground align-top">
                               {venueType.name}
                             </TableCell>
@@ -273,7 +285,7 @@ export default function VenueTaxonomyPage() {
           </TabsContent>
 
           <TabsContent value="amenities" className="space-y-4">
-            <Card className="border-border bg-card">
+            <Card className={dashboardCardClass}>
               <CardHeader>
                 <CardTitle>{t("addAmenity")}</CardTitle>
                 <CardDescription>
@@ -322,7 +334,7 @@ export default function VenueTaxonomyPage() {
               </CardFooter>
             </Card>
 
-            <Card className="border-border bg-card">
+            <Card className={dashboardCardClass}>
               <CardHeader>
                 <CardTitle className="text-base">{t("amenityCatalog")}</CardTitle>
                 <CardDescription>
@@ -339,10 +351,10 @@ export default function VenueTaxonomyPage() {
                     {t("noAmenitiesYet")}
                   </p>
                 ) : (
-                  <div className="overflow-hidden rounded-b-xl border-t border-border px-4 sm:px-6 [&_[data-slot=table-container]]:overflow-x-visible">
-                    <Table className="table-fixed w-full">
+                  <div className="overflow-hidden rounded-b-xl border-t border-[#303030] px-4 sm:px-6 [&_[data-slot=table-container]]:overflow-x-visible">
+                    <Table className="w-full table-fixed">
                       <TableHeader>
-                        <TableRow className="hover:bg-transparent">
+                        <TableRow className={dashboardTableHeaderRowClass}>
                           <TableHead className="w-[35%] whitespace-normal text-muted-foreground">
                             {tCommon("name")}
                           </TableHead>
@@ -356,7 +368,7 @@ export default function VenueTaxonomyPage() {
                       </TableHeader>
                       <TableBody>
                         {catalog.map((item) => (
-                          <TableRow key={item.id}>
+                          <TableRow key={item.id} className={dashboardTableRowClass}>
                             <TableCell className="whitespace-normal break-words font-medium text-foreground align-top">
                               {item.name}
                             </TableCell>
@@ -385,13 +397,14 @@ export default function VenueTaxonomyPage() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
+        </DashboardPanel>
+      </DashboardPageShell>
 
       <Dialog
         open={Boolean(deleteTypeTarget)}
         onOpenChange={(open) => !open && setDeleteTypeTarget(null)}
       >
-        <DialogContent className="border-border bg-card text-foreground">
+        <DialogContent className={dashboardDialogContentClass}>
           <DialogHeader>
             <DialogTitle>{t("deleteVenueType")}</DialogTitle>
             <DialogDescription>
@@ -446,7 +459,7 @@ export default function VenueTaxonomyPage() {
         open={Boolean(deleteAmenityTarget)}
         onOpenChange={(open) => !open && setDeleteAmenityTarget(null)}
       >
-        <DialogContent className="border-border bg-card text-foreground">
+        <DialogContent className={dashboardDialogContentClass}>
           <DialogHeader>
             <DialogTitle>{t("deleteAmenity")}</DialogTitle>
             <DialogDescription>

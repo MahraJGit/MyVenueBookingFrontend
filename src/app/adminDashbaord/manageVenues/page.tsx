@@ -4,12 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Eye, Loader2, Pencil, Plus, Search } from "lucide-react";
+import { Building2, Eye, Loader2, Pencil, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/venues/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -29,7 +28,15 @@ import {
 import {
   DashboardPanel,
   DashboardPageShell,
+  DashboardSearchInput,
+  dashboardTableClass,
+  dashboardTableHeaderRowClass,
+  dashboardTableRowClass,
+  dashboardSelectTriggerClass,
+  dashboardDropdownContentClass,
+  dashboardOutlineButtonClass,
 } from "@/components/dashboard/dashboard-ui";
+import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
 import {
   DashboardPageHeader,
   dashboardFilterBarBorderClass,
@@ -40,9 +47,10 @@ import { listManagedVenues, updateVenueStatus } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
 import type { EntityStatus, ManagedVenue } from "@/features/venues/types";
 import { toastApiError } from "@/lib/toasts";
+import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
-const selectTriggerClass = "w-full border-[#242424] bg-[#151515] sm:w-[180px]";
+const selectTriggerClass = cn("w-full sm:w-[180px]", dashboardSelectTriggerClass);
 
 export default function ManageVenuesPage() {
   const paths = useDashboardPaths();
@@ -113,7 +121,7 @@ export default function ManageVenuesPage() {
               <SelectTrigger className={selectTriggerClass}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="border-[#242424] bg-[#151515]">
+              <SelectContent className={dashboardDropdownContentClass}>
                 <SelectItem value="ALL">{t("allStatuses")}</SelectItem>
                 <SelectItem value="DRAFT">{tStatus("draft")}</SelectItem>
                 <SelectItem value="PENDING">{tStatus("pendingReview")}</SelectItem>
@@ -134,13 +142,11 @@ export default function ManageVenuesPage() {
           </div>
         }
       >
-        <div className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
+        <div className="w-full max-w-sm">
+          <DashboardSearchInput
             placeholder={tListing("searchVenues")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border-[#242424] bg-[#151515] pl-10"
           />
         </div>
       </DashboardFilterBar>
@@ -152,10 +158,30 @@ export default function ManageVenuesPage() {
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-[#242424]">
-        <Table className="[&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3">
+      <DashboardDataTable
+        pagination={
+          showPagination
+            ? {
+                label: tListing("pageOfWithCount", {
+                  page: meta?.page ?? page,
+                  totalPages,
+                  total: meta?.total ?? venues.length,
+                  type: tListing("venuesCount"),
+                }),
+                page,
+                totalPages,
+                total: meta?.total ?? venues.length,
+                onPageChange: setPage,
+                previousLabel: tCommon("previous"),
+                nextLabel: tCommon("next"),
+                isLoading,
+              }
+            : undefined
+        }
+      >
+        <Table className={dashboardTableClass} containerClassName="overflow-visible">
           <TableHeader>
-            <TableRow className="border-[#242424] hover:bg-transparent">
+            <TableRow className={dashboardTableHeaderRowClass}>
               <TableHead className="min-w-[220px] text-muted-foreground">
                 {tCommon("name")}
               </TableHead>
@@ -180,7 +206,7 @@ export default function ManageVenuesPage() {
               venues.map((venue) => (
                 <TableRow
                   key={venue.id}
-                  className="border-[#242424] hover:bg-[#151515]/80"
+                  className={dashboardTableRowClass}
                 >
                   <TableCell>
                     <div className="flex min-w-0 items-center gap-3">
@@ -249,7 +275,7 @@ export default function ManageVenuesPage() {
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="border-[#242424]"
+                          className={dashboardOutlineButtonClass}
                           disabled={statusMut.isPending}
                           onClick={() =>
                             statusMut.mutate({ id: venue.id, status: "ACTIVE" })
@@ -263,7 +289,7 @@ export default function ManageVenuesPage() {
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="border-[#242424]"
+                          className={dashboardOutlineButtonClass}
                           disabled={statusMut.isPending}
                           onClick={() =>
                             statusMut.mutate({ id: venue.id, status: "INACTIVE" })
@@ -279,42 +305,7 @@ export default function ManageVenuesPage() {
             )}
           </TableBody>
         </Table>
-      </div>
-
-      {showPagination ? (
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            {tListing("pageOfWithCount", {
-              page: meta?.page ?? page,
-              totalPages,
-              total: meta?.total ?? venues.length,
-              type: tListing("venuesCount"),
-            })}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-[#242424]"
-              disabled={page <= 1 || isLoading}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              {tCommon("previous")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-[#242424]"
-              disabled={page >= totalPages || isLoading}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              {tCommon("next")}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      </DashboardDataTable>
       </DashboardPanel>
     </DashboardPageShell>
   );

@@ -5,14 +5,17 @@ import {
   DashboardComingSoon,
   DashboardPageHeader,
 } from "@/components/dashboard/dashboard-shared"
+import { DashboardPanel, DashboardPageShell } from "@/components/dashboard/dashboard-ui"
 
 export default function SettingsPage() {
   const t = useTranslations("adminSettings")
 
   return (
-    <div className="space-y-6">
-      <DashboardPageHeader title={t("title")} />
-      <DashboardComingSoon title={t("title")} description={t("comingSoon")} />
-    </div>
+    <DashboardPageShell>
+      <DashboardPanel>
+        <DashboardPageHeader title={t("title")} />
+        <DashboardComingSoon title={t("title")} description={t("comingSoon")} />
+      </DashboardPanel>
+    </DashboardPageShell>
   )
 }

@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Banknote, ExternalLink, Loader2, Search, Ticket } from "lucide-react";
+import { Banknote, ExternalLink, Loader2, Ticket } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -39,7 +38,16 @@ import {
 import {
   DashboardPanel,
   DashboardPageShell,
+  DashboardSearchInput,
+  DashboardStatCard,
+  dashboardTableClass,
+  dashboardTableHeaderRowClass,
+  dashboardTableRowClass,
+  dashboardSelectTriggerClass,
+  dashboardDropdownContentClass,
+  dashboardOutlineButtonClass,
 } from "@/components/dashboard/dashboard-ui";
+import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
 import {
   DashboardFilterBar,
   DashboardScrollableTabs,
@@ -48,8 +56,8 @@ import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
-const selectTriggerClass = "border-[#242424] bg-[#151515]";
-const selectContentClass = "border-[#242424] bg-[#151515]";
+const selectTriggerClass = dashboardSelectTriggerClass;
+const selectContentClass = dashboardDropdownContentClass;
 
 type TicketsTab = "by-event" | "sales-log";
 
@@ -191,13 +199,11 @@ export default function ManageTicketsPage() {
         }
       >
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <div className="relative min-w-0 flex-1 sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
+          <div className="w-full max-w-sm">
+            <DashboardSearchInput
               placeholder={t("searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="border-[#242424] bg-[#151515] pl-10"
             />
           </div>
           <Select
@@ -232,12 +238,12 @@ export default function ManageTicketsPage() {
       </DashboardFilterBar>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <StatCard
+        <DashboardStatCard
           icon={<Ticket className="h-5 w-5 text-primary" />}
           label={t("ticketsSold")}
           value={String(totals.tickets)}
         />
-        <StatCard
+        <DashboardStatCard
           icon={<Banknote className="h-5 w-5 text-primary" />}
           label={t("revenueFiltered")}
           value={formatTicketPrice(totals.revenue, currency)}
@@ -255,7 +261,27 @@ export default function ManageTicketsPage() {
         />
       </DashboardFilterBar>
 
-      <div className="overflow-x-auto rounded-xl border border-[#242424]">
+      <DashboardDataTable
+        pagination={
+          showSalesPagination
+            ? {
+                label: tListing("pageOfWithCount", {
+                  page: pagination?.page ?? page,
+                  totalPages,
+                  total: pagination?.total ?? filteredRecords.length,
+                  type: t("salesLog").toLowerCase(),
+                }),
+                page,
+                totalPages,
+                total: pagination?.total ?? filteredRecords.length,
+                onPageChange: setPage,
+                previousLabel: tCommon("previous"),
+                nextLabel: tCommon("next"),
+                isLoading,
+              }
+            : undefined
+        }
+      >
         {activeTab === "by-event" ? (
           <ByEventTable
             isAdmin={isAdmin}
@@ -276,68 +302,9 @@ export default function ManageTicketsPage() {
             tCommon={tCommon}
           />
         )}
-      </div>
-
-      {showSalesPagination ? (
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            {tListing("pageOfWithCount", {
-              page: pagination?.page ?? page,
-              totalPages,
-              total: pagination?.total ?? filteredRecords.length,
-              type: t("salesLog").toLowerCase(),
-            })}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-[#242424]"
-              disabled={page <= 1 || isLoading}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              {tCommon("previous")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-[#242424]"
-              disabled={page >= totalPages || isLoading}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              {tCommon("next")}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      </DashboardDataTable>
       </DashboardPanel>
     </DashboardPageShell>
-  );
-}
-
-function StatCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl border border-[#242424] bg-[#151515] p-4 sm:p-5">
-      <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="truncate text-2xl font-semibold">{value}</p>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -359,9 +326,9 @@ function ByEventTable({
   const colSpan = isAdmin ? 8 : 7;
 
   return (
-    <Table className="[&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3">
+    <Table className={dashboardTableClass} containerClassName="overflow-visible">
       <TableHeader>
-        <TableRow className="border-[#242424] hover:bg-transparent">
+        <TableRow className={dashboardTableHeaderRowClass}>
           <TableHead className="text-muted-foreground">{tAdmin("tableEvent")}</TableHead>
           {isAdmin ? (
             <TableHead className="text-muted-foreground">{tCommon("vendor")}</TableHead>
@@ -389,7 +356,7 @@ function ByEventTable({
               ? event.ticketTypes.map((tt, idx) => (
                   <TableRow
                     key={`${event.eventId}-${tt.ticketTypeId}`}
-                    className="border-[#242424] hover:bg-[#151515]/80"
+                    className={dashboardTableRowClass}
                   >
                     <TableCell className="font-medium">{idx === 0 ? event.eventName : ""}</TableCell>
                     {isAdmin ? (
@@ -425,7 +392,7 @@ function ByEventTable({
                   </TableRow>
                 ))
               : [
-                  <TableRow key={event.eventId} className="border-[#242424] hover:bg-[#151515]/80">
+                  <TableRow key={event.eventId} className={dashboardTableRowClass}>
                     <TableCell className="font-medium">{event.eventName}</TableCell>
                     {isAdmin ? (
                       <TableCell className="text-muted-foreground">
@@ -479,9 +446,9 @@ function SalesLogTable({
   const colSpan = isAdmin ? 9 : 8;
 
   return (
-    <Table className="[&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3">
+    <Table className={dashboardTableClass} containerClassName="overflow-visible">
       <TableHeader>
-        <TableRow className="border-[#242424] hover:bg-transparent">
+        <TableRow className={dashboardTableHeaderRowClass}>
           <TableHead className="text-muted-foreground">{tCommon("order")}</TableHead>
           <TableHead className="text-muted-foreground">{tAdmin("tableEvent")}</TableHead>
           <TableHead className="text-muted-foreground">{t("ticketType")}</TableHead>
@@ -502,7 +469,7 @@ function SalesLogTable({
           <TableEmptyRow colSpan={colSpan}>{t("noSalesRecords")}</TableEmptyRow>
         ) : (
           rows.map((row) => (
-            <TableRow key={row.id} className="border-[#242424] hover:bg-[#151515]/80">
+            <TableRow key={row.id} className={dashboardTableRowClass}>
               <TableCell className="font-mono text-sm text-muted-foreground">
                 {row.orderCode ?? "—"}
               </TableCell>

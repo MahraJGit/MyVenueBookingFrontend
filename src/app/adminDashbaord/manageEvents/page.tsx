@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { CalendarDays, Eye, Pencil, Trash2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
 import {
   Table,
@@ -29,7 +28,14 @@ import {
   DashboardPanel,
   DashboardPageShell,
   DashboardSearchInput,
+  DashboardErrorAlert,
+  dashboardTableClass,
+  dashboardTableHeaderRowClass,
+  dashboardTableRowClass,
+  dashboardSelectTriggerClass,
+  dashboardDropdownContentClass,
 } from "@/components/dashboard/dashboard-ui";
+import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import {
   deleteEvent,
@@ -97,7 +103,7 @@ export default function ManageEvents() {
           }
         />
 
-        <div className="w-full sm:max-w-xs">
+        <div className="w-full max-w-sm">
           <DashboardSearchInput
             placeholder={t("searchEvents")}
             value={search}
@@ -106,20 +112,37 @@ export default function ManageEvents() {
         </div>
 
         {isError ? (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription className="flex flex-wrap items-center gap-3">
-              <span>{error instanceof Error ? error.message : t("failedLoadEvents")}</span>
-              <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
-                {tCommon("retry")}
-              </Button>
-            </AlertDescription>
-          </Alert>
+          <DashboardErrorAlert
+            message={error instanceof Error ? error.message : t("failedLoadEvents")}
+            onRetry={() => void refetch()}
+            retryLabel={tCommon("retry")}
+          />
         ) : null}
 
-        <div className="overflow-x-auto rounded-xl border border-[#242424]">
-          <Table className="[&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3">
+        <DashboardDataTable
+          pagination={
+            showPagination
+              ? {
+                  label: tListing("pageOfWithCount", {
+                    page: meta?.page ?? page,
+                    totalPages,
+                    total: meta?.total ?? rows.length,
+                    type: tListing("eventsCount"),
+                  }),
+                  page,
+                  totalPages,
+                  total: meta?.total ?? rows.length,
+                  onPageChange: setPage,
+                  previousLabel: tCommon("previous"),
+                  nextLabel: tCommon("next"),
+                  isLoading,
+                }
+              : undefined
+          }
+        >
+          <Table className={dashboardTableClass} containerClassName="overflow-visible">
             <TableHeader>
-              <TableRow className="border-[#242424] hover:bg-transparent">
+              <TableRow className={dashboardTableHeaderRowClass}>
                 <TableHead className="min-w-[220px] text-muted-foreground">{t("tableEvent")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("tableStarts")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("tableCity")}</TableHead>
@@ -138,7 +161,7 @@ export default function ManageEvents() {
                 rows.map((ev) => (
                   <TableRow
                     key={ev.id}
-                    className="border-[#242424] hover:bg-[#151515]/80"
+                    className={dashboardTableRowClass}
                   >
                     <TableCell>
                       <div className="flex min-w-0 items-center gap-3">
@@ -207,42 +230,7 @@ export default function ManageEvents() {
               )}
             </TableBody>
           </Table>
-        </div>
-
-        {showPagination ? (
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              {tListing("pageOfWithCount", {
-                page: meta?.page ?? page,
-                totalPages,
-                total: meta?.total ?? rows.length,
-                type: tListing("eventsCount"),
-              })}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="border-[#242424]"
-                disabled={page <= 1 || isLoading}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                {tCommon("previous")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="border-[#242424]"
-                disabled={page >= totalPages || isLoading}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                {tCommon("next")}
-              </Button>
-            </div>
-          </div>
-        ) : null}
+        </DashboardDataTable>
       </DashboardPanel>
 
       <EventPublicPreviewDialog

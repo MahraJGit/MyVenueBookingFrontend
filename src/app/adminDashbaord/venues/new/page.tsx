@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { VenueSetupWizard } from "@/components/venues/VenueSetupWizard";
+import { DashboardPageShell } from "@/components/dashboard/dashboard-ui";
 import { Loader2 } from "lucide-react";
 
 function NewVenueContent() {
@@ -16,15 +17,17 @@ function NewVenueContent() {
 export default function AdminNewVenuePage() {
   return (
     <RoleGuard allowedRoles={["ADMIN"]}>
-      <Suspense
-        fallback={
-          <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        }
-      >
-        <NewVenueContent />
-      </Suspense>
+      <DashboardPageShell>
+        <Suspense
+          fallback={
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          }
+        >
+          <NewVenueContent />
+        </Suspense>
+      </DashboardPageShell>
     </RoleGuard>
   );
 }

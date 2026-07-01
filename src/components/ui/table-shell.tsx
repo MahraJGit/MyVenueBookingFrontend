@@ -33,6 +33,7 @@ export function TableShell({
   return (
     <Card
       className={cn(
+        "w-full min-w-0",
         variant === "dashboard"
           ? "border-[#303030] bg-[#121212] text-white shadow-none"
           : "border-border bg-card",

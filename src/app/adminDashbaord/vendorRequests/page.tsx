@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useCallback } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ExternalLink, Eye, Loader2 } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -39,13 +39,24 @@ import {
 } from "@/features/vendor/api"
 import { getPresignedViewUrl } from "@/features/uploads/api"
 import { TableSkeleton } from "@/components/ui/table-skeleton"
-import { TableShell } from "@/components/ui/table-shell"
 import { toastApiError } from "@/lib/toasts"
+import { cn } from "@/lib/utils"
+import { useClientPagination } from "@/hooks/use-client-pagination"
 import {
   DashboardPanel,
   DashboardPageShell,
   DashboardScrollableTabs,
+  DashboardErrorAlert,
+  dashboardTableClass,
+  dashboardTableHeaderRowClass,
+  dashboardTableRowClass,
+  dashboardDialogContentClass,
+  dashboardSelectTriggerClass,
+  dashboardOutlineButtonClass,
+  dashboardDropdownContentClass,
+  dashboardTextareaClass,
 } from "@/components/dashboard/dashboard-ui"
+import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table"
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared"
 
 type StatusFilter = "ALL" | VendorVerificationStatus
@@ -68,6 +79,7 @@ export default function VendorRequests() {
   const tStatus = useTranslations("entityStatus")
   const tAdmin = useTranslations("adminDashboard")
   const tForms = useTranslations("forms")
+  const tListing = useTranslations("listing")
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL")
   const [activeDetails, setActiveDetails] = useState<AdminVendorProfile | null>(null)
@@ -123,6 +135,19 @@ export default function VendorRequests() {
     return error instanceof Error ? error.message : t("failedLoad")
   }, [isError, error, t])
 
+  const {
+    page,
+    setPage,
+    resetPage,
+    total,
+    totalPages,
+    paginatedItems: paginatedRequests,
+  } = useClientPagination(requests)
+
+  useEffect(() => {
+    resetPage()
+  }, [statusFilter, resetPage])
+
   const handleRejectSubmit = () => {
     if (!rejectTarget || !rejectReason.trim()) return
     updateMutation.mutate(
@@ -171,35 +196,41 @@ export default function VendorRequests() {
         />
 
       {errorMessage ? (
-        <div
-          className="flex flex-col gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100 sm:flex-row sm:items-center sm:justify-between"
-          role="alert"
-        >
-          <p>{errorMessage}</p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="border-red-400/50 text-red-100 hover:bg-red-500/20"
-            onClick={() => void refetch()}
-          >
-            {tCommon("retry")}
-          </Button>
-        </div>
+        <DashboardErrorAlert
+          message={errorMessage}
+          onRetry={() => void refetch()}
+          retryLabel={tCommon("retry")}
+        />
       ) : null}
 
-      <TableShell className="max-w-full">
-        <Table className="min-w-[900px]">
+      <DashboardDataTable
+        pagination={{
+          label: tListing("pageOfWithCount", {
+            page,
+            totalPages,
+            total,
+            type: t("title").toLowerCase(),
+          }),
+          page,
+          totalPages,
+          total,
+          onPageChange: setPage,
+          previousLabel: tCommon("previous"),
+          nextLabel: tCommon("next"),
+          isLoading,
+        }}
+      >
+        <Table className={dashboardTableClass} containerClassName="overflow-visible">
           <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground">{tCommon("vendor")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("businessType")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("owner")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("email")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("phone")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("status")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("submitted")}</TableHead>
-              <TableHead className="text-right text-muted-foreground">{tCommon("actions")}</TableHead>
+            <TableRow className={dashboardTableHeaderRowClass}>
+              <TableHead className="w-[14%] text-muted-foreground">{tCommon("vendor")}</TableHead>
+              <TableHead className="w-[10%] text-muted-foreground">{tCommon("businessType")}</TableHead>
+              <TableHead className="w-[12%] text-muted-foreground">{tCommon("owner")}</TableHead>
+              <TableHead className="w-[22%] text-muted-foreground">{tCommon("email")}</TableHead>
+              <TableHead className="w-[12%] text-muted-foreground">{tCommon("phone")}</TableHead>
+              <TableHead className="w-[10%] text-muted-foreground">{tCommon("status")}</TableHead>
+              <TableHead className="w-[10%] text-muted-foreground">{tCommon("submitted")}</TableHead>
+              <TableHead className="w-[10%] text-right text-muted-foreground">{tCommon("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -207,32 +238,32 @@ export default function VendorRequests() {
               <TableSkeleton cols={8} />
             ) : (
               <>
-                {requests.map((request) => (
+                {paginatedRequests.map((request) => (
                   <TableRow
                     key={request.id}
-                    className="border-border transition-colors hover:bg-muted/50"
+                    className={dashboardTableRowClass}
                   >
-                    <TableCell className="max-w-[190px] whitespace-normal wrap-break-word font-medium">
+                    <TableCell className="whitespace-normal break-words font-medium">
                       {request.vendorName}
                     </TableCell>
-                    <TableCell>{request.businessType}</TableCell>
-                    <TableCell>{request.ownerName}</TableCell>
-                    <TableCell className="max-w-[220px] whitespace-normal break-all">
+                    <TableCell className="whitespace-normal">{request.businessType}</TableCell>
+                    <TableCell className="whitespace-normal">{request.ownerName}</TableCell>
+                    <TableCell className="whitespace-normal break-all">
                       {request.email}
                     </TableCell>
-                    <TableCell>{request.phone}</TableCell>
+                    <TableCell className="whitespace-normal">{request.phone}</TableCell>
                     <TableCell>
                       <Badge variant={statusBadgeVariant(request.verificationStatus)}>
                         {statusLabel(request.verificationStatus)}
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDate(request.createdAt)}</TableCell>
-                    <TableCell className="min-w-[220px] text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <TableCell className="text-right">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-zinc-700"
+                          className={dashboardOutlineButtonClass}
                           onClick={() => setActiveDetails(request)}
                         >
                           <Eye className="h-4 w-4" />
@@ -256,7 +287,7 @@ export default function VendorRequests() {
                         >
                           <SelectTrigger
                             size="sm"
-                            className="h-8 min-w-[130px] border-zinc-700"
+                            className={cn("h-8 min-w-[130px]", dashboardSelectTriggerClass)}
                           >
                             <span className="flex w-full items-center gap-2">
                               {pendingRowId === request.id ? (
@@ -265,7 +296,7 @@ export default function VendorRequests() {
                               <SelectValue placeholder={t("setStatus")} />
                             </span>
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className={dashboardDropdownContentClass}>
                             <SelectItem value="PENDING">{tStatus("pending")}</SelectItem>
                             <SelectItem value="APPROVED">{tAdmin("approve")}</SelectItem>
                             <SelectItem value="REJECTED">{tAdmin("reject")}</SelectItem>
@@ -290,14 +321,14 @@ export default function VendorRequests() {
             )}
           </TableBody>
         </Table>
-      </TableShell>
+      </DashboardDataTable>
       </DashboardPanel>
 
       <Dialog
         open={Boolean(activeDetails)}
         onOpenChange={(open) => !open && setActiveDetails(null)}
       >
-        <DialogContent className="max-h-[85vh] overflow-y-auto border-zinc-700 bg-[#111111] text-white">
+        <DialogContent className={cn("max-h-[85vh] overflow-y-auto", dashboardDialogContentClass)}>
           <DialogHeader>
             <DialogTitle>{t("detailsTitle")}</DialogTitle>
             <DialogDescription>{t("detailsDesc")}</DialogDescription>
@@ -372,7 +403,7 @@ export default function VendorRequests() {
           }
         }}
       >
-        <DialogContent className="border-zinc-700 bg-[#111111] text-white">
+        <DialogContent className={cn("border", dashboardDialogContentClass)}>
           <DialogHeader>
             <DialogTitle>{t("rejectTitle")}</DialogTitle>
             <DialogDescription>{t("rejectDesc")}</DialogDescription>
@@ -387,7 +418,7 @@ export default function VendorRequests() {
               placeholder={t("rejectPlaceholder")}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              className="min-h-28 border-zinc-700"
+              className={dashboardTextareaClass}
               disabled={updateMutation.isPending}
             />
           </div>

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ChevronDown, CircleArrowRight, Search } from 'lucide-react'
 import Image from 'next/image'
-import React from 'react'
+import { cn } from '@/lib/utils'
 import NotificationBell from '@/components/notifications/NotificationBell'
 import { useQuery } from '@tanstack/react-query'
 import { listNotifications } from '@/features/notifications/api'
@@ -28,6 +28,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  DashboardPageShell,
+  dashboardTopbarClass,
+  dashboardStatCardClass,
+} from '@/components/dashboard/dashboard-ui'
 import {
   ChartConfig,
   ChartContainer,
@@ -118,8 +123,8 @@ const Dashboard = () => {
   })
 
   return (
-    <>
-      <div className="topbar flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center p-4 bg-[#0D0D0D] rounded-2xl">
+    <DashboardPageShell>
+      <div className={dashboardTopbarClass}>
 
         {/* Left Section */}
         <div className="flex items-center gap-3">
@@ -150,14 +155,11 @@ const Dashboard = () => {
             <Input
               type="text"
               placeholder={t('searchPlaceholder')}
-              className="
-          pl-10 pr-4 h-10 rounded-full
-          bg-[#D7498E75] text-white
-          placeholder:text-white/70
-          border-none
-          w-full
-          focus-visible:ring-2 focus-visible:ring-pink-500
-        "
+              className={cn(
+                'h-10 w-full rounded-full border-none pl-10 pr-4',
+                'bg-[#D7498E75] text-white placeholder:text-white/70',
+                'focus-visible:ring-2 focus-visible:ring-pink-500',
+              )}
             />
           </div>
 
@@ -188,7 +190,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
 
             {/* Card 1 */}
-            <div className="bg-[#151515] p-5 rounded-2xl text-white">
+            <div className={dashboardStatCardClass}>
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 flex items-center justify-center rounded-full bg-[#D7498E]">
                   <Image src="/svg/booking.svg" alt={t('totalEvents')} width={28} height={28} />
@@ -201,7 +203,7 @@ const Dashboard = () => {
             </div>
 
             {/* Card 2 */}
-            <div className="bg-[#151515] p-5 rounded-2xl text-white">
+            <div className={dashboardStatCardClass}>
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 flex items-center justify-center rounded-full bg-[#D7498E]">
                   <Image src="/svg/tickets.svg" alt={t('totalTickets')} width={28} height={28} />
@@ -214,7 +216,7 @@ const Dashboard = () => {
             </div>
 
             {/* Card 3 */}
-            <div className="bg-[#151515] p-5 rounded-2xl text-white">
+            <div className={dashboardStatCardClass}>
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 flex items-center justify-center rounded-full bg-[#D7498E]">
                   <Image src="/svg/carbon_currency.svg" alt={t('totalRevenue')} width={28} height={28} />
@@ -232,7 +234,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
             {/* LINE CHART */}
-            <Card className="bg-[#151515] lg:col-span-2">
+            <Card className={cn(dashboardStatCardClass, 'lg:col-span-2')}>
               <CardHeader>
                 <div className="flex flex-wrap gap-2 justify-between items-center">
                   <CardTitle className="flex items-center gap-2 text-primary">
@@ -277,7 +279,7 @@ const Dashboard = () => {
             </Card>
 
             {/* PIE CHART */}
-            <Card className="bg-[#151515]">
+            <Card className={dashboardStatCardClass}>
               <CardHeader>
                 <CardTitle>{t('customerActivities')}</CardTitle>
               </CardHeader>
@@ -335,7 +337,7 @@ const Dashboard = () => {
           </div>
 
           {/* ===== LATEST EVENT ===== */}
-          <div className="bg-[#151515] p-6 rounded-2xl mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={cn(dashboardStatCardClass, 'mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2')}>
             {/* LEFT */}
             <div>
               <h2 className="text-lg text-primary">{t('latestEvent')}</h2>
@@ -368,7 +370,7 @@ const Dashboard = () => {
         <div className="xl:col-span-3 space-y-4 mt-4">
 
           {/* UPCOMING EVENTS */}
-          <div className="bg-[#0D0D0D] rounded-2xl p-4">
+          <div className={cn(dashboardTopbarClass, 'mt-4')}>
             <div className="flex justify-between mb-4">
               <h3 className="text-sm font-semibold">{t('upcomingEvents')}</h3>
               <CircleArrowRight className="text-primary" />
@@ -421,8 +423,7 @@ const Dashboard = () => {
 
         </div>
       </div>
-
-    </>
+    </DashboardPageShell>
   )
 }
 

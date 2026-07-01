@@ -35,8 +35,24 @@ import {
   type EventCategory,
 } from "@/features/event-categories/api";
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
-import { TableShell } from "@/components/ui/table-shell";
 import { toastApiError } from "@/lib/toasts";
+import { useClientPagination } from "@/hooks/use-client-pagination";
+import {
+  DashboardPanel,
+  DashboardPageShell,
+  DashboardSearchInput,
+  DashboardErrorAlert,
+  dashboardTableClass,
+  dashboardTableHeaderRowClass,
+  dashboardTableRowClass,
+  dashboardInputClass,
+  dashboardTextareaClass,
+  dashboardDialogContentClass,
+  dashboardOutlineButtonClass,
+} from "@/components/dashboard/dashboard-ui";
+import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
+import { cn } from "@/lib/utils";
 
 function formatDate(dateString: string) {
   const d = new Date(dateString);
@@ -61,6 +77,7 @@ export default function EventCategoriesPage() {
   const tCommon = useTranslations("common");
   const tStatus = useTranslations("entityStatus");
   const tAdmin = useTranslations("adminDashboard");
+  const tListing = useTranslations("listing");
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -93,6 +110,19 @@ export default function EventCategoriesPage() {
         search: debouncedSearch || undefined,
       }),
   });
+
+  const {
+    page,
+    setPage,
+    resetPage,
+    total,
+    totalPages,
+    paginatedItems: paginatedCategories,
+  } = useClientPagination(categories);
+
+  useEffect(() => {
+    resetPage();
+  }, [debouncedSearch, resetPage]);
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -161,83 +191,89 @@ export default function EventCategoriesPage() {
     form.name.trim().length >= 2 && form.name.trim().length <= 80;
 
   return (
-    <div className="w-full max-w-full space-y-6 overflow-x-hidden rounded-2xl bg-[#0e0e0e] p-6 text-white">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-primary">{t("title")}</h2>
-          <p className="text-sm text-gray-300">{t("description")}</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {isFetching && !isLoading ? (
-            <span className="flex items-center gap-1 text-xs text-zinc-500">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {tCommon("refreshing")}
-            </span>
-          ) : null}
-          <Button type="button" onClick={openCreate} className="gap-2">
-            <Plus className="h-4 w-4" />
-            {t("addCategory")}
-          </Button>
-        </div>
-      </div>
+    <DashboardPageShell>
+      <DashboardPanel>
+        <DashboardPageHeader
+          title={t("title")}
+          description={t("description")}
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              {isFetching && !isLoading ? (
+                <span className="flex items-center gap-1 text-xs text-zinc-500">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {tCommon("refreshing")}
+                </span>
+              ) : null}
+              <Button type="button" onClick={openCreate} className="gap-2">
+                <Plus className="h-4 w-4" />
+                {t("addCategory")}
+              </Button>
+            </div>
+          }
+        />
 
       <div className="space-y-2">
-        <Label htmlFor="category-search" className="text-zinc-300">
+        <Label htmlFor="category-search" className="text-muted-foreground">
           {tCommon("search")}
         </Label>
         <div className="flex flex-row items-end gap-2">
-          <Input
+          <DashboardSearchInput
             id="category-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("searchPlaceholder")}
-            className="border-zinc-700 bg-[#111111] text-white"
             autoComplete="off"
+            className="flex-1"
           />
           <Button
             type="button"
             variant="outline"
-            className="shrink-0 border-zinc-700"
+            className={cn("shrink-0", dashboardOutlineButtonClass)}
             onClick={() => setSearch("")}
             disabled={!search}
           >
             {tCommon("clear")}
           </Button>
         </div>
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-muted-foreground">
           {t("searchHint")}
         </p>
       </div>
 
 
       {errorMessage ? (
-        <div
-          className="flex flex-col gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100 sm:flex-row sm:items-center sm:justify-between"
-          role="alert"
-        >
-          <p>{errorMessage}</p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="border-red-400/50 text-red-100 hover:bg-red-500/20"
-            onClick={() => void refetch()}
-          >
-            {tCommon("retry")}
-          </Button>
-        </div>
+        <DashboardErrorAlert
+          message={errorMessage}
+          onRetry={() => void refetch()}
+          retryLabel={tCommon("retry")}
+        />
       ) : null}
 
-      <TableShell>
-        <Table className="min-w-[720px]">
+      <DashboardDataTable
+        pagination={{
+          label: tListing("pageOfWithCount", {
+            page,
+            totalPages,
+            total,
+            type: t("title").toLowerCase(),
+          }),
+          page,
+          totalPages,
+          total,
+          onPageChange: setPage,
+          previousLabel: tCommon("previous"),
+          nextLabel: tCommon("next"),
+          isLoading,
+        }}
+      >
+        <Table className={dashboardTableClass} containerClassName="overflow-visible">
           <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground">{tCommon("name")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("description")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("status")}</TableHead>
-              <TableHead className="text-muted-foreground">{tCommon("created")}</TableHead>
-              <TableHead className="text-right text-muted-foreground">{tCommon("actions")}</TableHead>
+            <TableRow className={dashboardTableHeaderRowClass}>
+              <TableHead className="w-[18%] text-muted-foreground">{tCommon("name")}</TableHead>
+              <TableHead className="w-[34%] text-muted-foreground">{tCommon("description")}</TableHead>
+              <TableHead className="w-[12%] text-muted-foreground">{tCommon("status")}</TableHead>
+              <TableHead className="w-[18%] text-muted-foreground">{tCommon("created")}</TableHead>
+              <TableHead className="w-[18%] text-right text-muted-foreground">{tCommon("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -245,15 +281,15 @@ export default function EventCategoriesPage() {
               <TableSkeleton cols={5} />
             ) : (
               <>
-                {categories.map((row) => (
+                {paginatedCategories.map((row) => (
                   <TableRow
                     key={row.id}
-                    className="border-border transition-colors hover:bg-muted/50"
+                    className={dashboardTableRowClass}
                   >
-                    <TableCell className="max-w-[220px] whitespace-normal font-medium wrap-break-word">
+                    <TableCell className="whitespace-normal break-words font-medium">
                       {row.name}
                     </TableCell>
-                    <TableCell className="max-w-[320px] whitespace-normal text-zinc-300">
+                    <TableCell className="whitespace-normal break-words text-muted-foreground">
                       {row.description?.trim()
                         ? row.description
                         : "—"}
@@ -263,15 +299,15 @@ export default function EventCategoriesPage() {
                         {row.isActive ? tStatus("active") : tStatus("inactive")}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-zinc-400">
+                    <TableCell className="whitespace-normal text-muted-foreground">
                       {formatDate(row.createdAt)}
                     </TableCell>
-                    <TableCell className="min-w-[220px] text-right">
+                    <TableCell className="text-right">
                       <div className="flex flex-wrap items-center justify-end gap-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-zinc-700"
+                          className={dashboardOutlineButtonClass}
                           onClick={() => setViewTarget(row)}
                         >
                           <Eye className="h-4 w-4" />
@@ -280,7 +316,7 @@ export default function EventCategoriesPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-zinc-700"
+                          className={dashboardOutlineButtonClass}
                           onClick={() => openEdit(row)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -300,20 +336,13 @@ export default function EventCategoriesPage() {
                 ))}
 
                 {!isLoading && categories.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="py-12 text-center text-gray-400"
-                    >
-                      {t("noCategories")}
-                    </TableCell>
-                  </TableRow>
+                  <TableEmptyRow colSpan={5}>{t("noCategories")}</TableEmptyRow>
                 ) : null}
               </>
             )}
           </TableBody>
         </Table>
-      </TableShell>
+      </DashboardDataTable>
 
       <Dialog
         open={createOpen}
@@ -324,7 +353,7 @@ export default function EventCategoriesPage() {
           }
         }}
       >
-        <DialogContent className="border-zinc-700 bg-[#111111] text-white">
+        <DialogContent className={cn(dashboardDialogContentClass)}>
           <DialogHeader>
             <DialogTitle>{t("addTitle")}</DialogTitle>
             <DialogDescription>{t("addDesc")}</DialogDescription>
@@ -339,7 +368,7 @@ export default function EventCategoriesPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, name: e.target.value }))
                 }
-                className="border-zinc-700"
+                className={dashboardInputClass}
                 disabled={createMutation.isPending}
                 maxLength={80}
               />
@@ -355,7 +384,7 @@ export default function EventCategoriesPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, description: e.target.value }))
                 }
-                className="min-h-24 border-zinc-700"
+                className={cn("min-h-24", dashboardTextareaClass)}
                 disabled={createMutation.isPending}
                 maxLength={500}
               />
@@ -414,7 +443,7 @@ export default function EventCategoriesPage() {
           }
         }}
       >
-        <DialogContent className="border-zinc-700 bg-[#111111] text-white">
+        <DialogContent className={cn(dashboardDialogContentClass)}>
           <DialogHeader>
             <DialogTitle>{t("editTitle")}</DialogTitle>
             <DialogDescription>{t("editDesc")}</DialogDescription>
@@ -429,7 +458,7 @@ export default function EventCategoriesPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, name: e.target.value }))
                 }
-                className="border-zinc-700"
+                className={dashboardInputClass}
                 disabled={updateMutation.isPending}
                 maxLength={80}
               />
@@ -442,7 +471,7 @@ export default function EventCategoriesPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, description: e.target.value }))
                 }
-                className="min-h-24 border-zinc-700"
+                className={cn("min-h-24", dashboardTextareaClass)}
                 disabled={updateMutation.isPending}
                 maxLength={500}
               />
@@ -495,7 +524,7 @@ export default function EventCategoriesPage() {
         open={Boolean(viewTarget)}
         onOpenChange={(open) => !open && setViewTarget(null)}
       >
-        <DialogContent className="border-zinc-700 bg-[#111111] text-white">
+        <DialogContent className={cn(dashboardDialogContentClass)}>
           <DialogHeader>
             <DialogTitle>{t("detailsTitle")}</DialogTitle>
             <DialogDescription>{t("detailsDesc")}</DialogDescription>
@@ -523,7 +552,7 @@ export default function EventCategoriesPage() {
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
       >
-        <DialogContent className="border-zinc-700 bg-[#111111] text-white">
+        <DialogContent className={cn(dashboardDialogContentClass)}>
           <DialogHeader>
             <DialogTitle>{t("deleteTitle")}</DialogTitle>
             <DialogDescription>{t("deleteDesc")}</DialogDescription>
@@ -573,7 +602,8 @@ export default function EventCategoriesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </DashboardPanel>
+    </DashboardPageShell>
   );
 }
 

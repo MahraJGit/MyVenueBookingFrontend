@@ -17,7 +17,12 @@ import {
 } from "@/components/bookings/user-booking-utils";
 import { Button } from "@/components/ui/button";
 import {
-  DashboardContentPanel,
+  DashboardPanel,
+  DashboardPagination,
+  dashboardDropdownContentClass,
+} from "@/components/dashboard/dashboard-ui";
+import {
+  DashboardPageHeader,
   dashboardFilterBarBorderClass,
 } from "@/components/dashboard/dashboard-shared";
 import {
@@ -34,6 +39,7 @@ import type { DashboardScope } from "@/features/dashboard/paths";
 import { listBookings } from "@/features/bookings/api";
 import { bookingKeys } from "@/features/venues/query-keys";
 import { toastApiError } from "@/lib/toasts";
+import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 const TAB_VALUES: BookingTabValue[] = ["all", "HOLD", "CONFIRMED", "CANCELLED", "COMPLETED"];
@@ -116,11 +122,8 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
   }, [isError, error, tUser]);
 
   return (
-    <DashboardContentPanel>
-      <h2 className="mb-1 text-xl font-semibold">{pageTitle}</h2>
-      {pageDesc ? (
-        <p className="mb-4 text-sm text-muted-foreground">{pageDesc}</p>
-      ) : null}
+    <DashboardPanel>
+      <DashboardPageHeader title={pageTitle} description={pageDesc} />
 
       <DashboardFilterBar
         className={dashboardFilterBarBorderClass}
@@ -132,7 +135,7 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
                 <ArrowUpDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 border-[#242424] bg-[#151515]">
+            <DropdownMenuContent align="end" className={cn("w-44", dashboardDropdownContentClass)}>
               <DropdownMenuItem onClick={() => setSortBy("newest")}>
                 {tUser("newestFirst")}
               </DropdownMenuItem>
@@ -212,7 +215,7 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
               </div>
             ) : (
               <div className="hidden xl:flex xl:col-span-3">
-                <div className="flex w-full items-center justify-center rounded-xl border border-dashed border-[#242424] bg-[#151515]">
+                <div className="flex w-full items-center justify-center rounded-xl border border-dashed border-[#303030] bg-[#151515]">
                   <div className="py-16 text-center">
                     <CalendarDays className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
                     <p className="text-sm font-medium text-foreground">
@@ -228,41 +231,24 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
           </div>
 
           {(meta?.total ?? 0) > 0 ? (
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
-                {tListing("pageOfWithCount", {
-                  page: meta?.page ?? page,
-                  totalPages,
-                  total: meta?.total ?? sortedBookings.length,
-                  type: tListing("bookingsCount"),
-                })}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="border-[#242424]"
-                  disabled={page <= 1 || isLoading}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  {tCommon("previous")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="border-[#242424]"
-                  disabled={page >= totalPages || isLoading}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  {tCommon("next")}
-                </Button>
-              </div>
-            </div>
+            <DashboardPagination
+              className="mt-4"
+              label={tListing("pageOfWithCount", {
+                page: meta?.page ?? page,
+                totalPages,
+                total: meta?.total ?? sortedBookings.length,
+                type: tListing("bookingsCount"),
+              })}
+              page={page}
+              totalPages={totalPages}
+              isLoading={isLoading}
+              previousLabel={tCommon("previous")}
+              nextLabel={tCommon("next")}
+              onPageChange={setPage}
+            />
           ) : null}
         </>
       )}
-    </DashboardContentPanel>
+    </DashboardPanel>
   );
 }

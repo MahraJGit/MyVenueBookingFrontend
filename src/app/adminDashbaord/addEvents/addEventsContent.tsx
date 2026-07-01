@@ -34,6 +34,8 @@ import Link from "next/link"
 import dynamic from "next/dynamic"
 import type { AddressHint } from "@/components/maps/location-picker-map"
 import { useDashboardPaths } from "@/features/dashboard/paths"
+import { DashboardPanel, DashboardPageShell } from "@/components/dashboard/dashboard-ui"
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared"
 
 const LocationPickerMap = dynamic(
     () =>
@@ -394,17 +396,13 @@ export default function AddEventsContentPage() {
     }
 
     return (
-        <div className="min-h-screen rounded-md bg-[#121212] p-4 text-white md:p-8">
-            <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold text-primary">
-                            {editId ? t("editEventTitle") : t("createEventTitle")}
-                        </h2>
-                        <p className="text-sm text-zinc-400">
-                            {t("eventFormDesc")}
-                        </p>
-                    </div>
+        <DashboardPageShell>
+            <DashboardPanel>
+            <form onSubmit={handleSubmit} className="w-full space-y-6">
+                <DashboardPageHeader
+                    title={editId ? t("editEventTitle") : t("createEventTitle")}
+                    description={t("eventFormDesc")}
+                    action={
                     <div className="flex gap-2">
                         <Button
                             type="button"
@@ -426,7 +424,8 @@ export default function AddEventsContentPage() {
                             )}
                         </Button>
                     </div>
-                </div>
+                    }
+                />
 
                 <Card className="border-zinc-800 bg-[#0e0e0e]">
                     <CardHeader>
@@ -1103,7 +1102,8 @@ export default function AddEventsContentPage() {
                     </CardContent>
                 </Card>
             </form>
-        </div>
+            </DashboardPanel>
+        </DashboardPageShell>
     )
 }
 

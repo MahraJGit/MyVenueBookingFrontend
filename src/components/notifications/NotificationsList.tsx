@@ -29,6 +29,7 @@ import {
   markNotificationRead,
 } from '@/features/notifications/api'
 import type { NotificationItem, NotificationType } from '@/features/notifications/types'
+import { cn } from '@/lib/utils'
 
 function getIcon(type: NotificationType) {
   switch (type) {
@@ -55,9 +56,10 @@ function formatNotificationTime(createdAt: string) {
 
 type NotificationsListProps = {
   className?: string
+  embedded?: boolean
 }
 
-export default function NotificationsList({ className }: NotificationsListProps) {
+export default function NotificationsList({ className, embedded }: NotificationsListProps) {
   const t = useTranslations('notifications')
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<'all' | 'read' | 'unread'>('all')
@@ -106,8 +108,8 @@ export default function NotificationsList({ className }: NotificationsListProps)
     read: t('tabRead', { count: readCount }),
   } as const
 
-  return (
-    <DashboardPanel className={className}>
+  const listContent = (
+    <>
       <DashboardFilterBar
         action={
           <Button
@@ -216,6 +218,12 @@ export default function NotificationsList({ className }: NotificationsListProps)
           })}
         </div>
       )}
-    </DashboardPanel>
+    </>
   )
+
+  if (embedded) {
+    return <div className={cn('space-y-6', className)}>{listContent}</div>
+  }
+
+  return <DashboardPanel className={className}>{listContent}</DashboardPanel>
 }
