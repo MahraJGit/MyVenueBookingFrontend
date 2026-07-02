@@ -20,6 +20,8 @@ import {
   Star,
 } from 'lucide-react'
 import { getMyTicketOrder, type MyTicketOrder } from '@/features/ticket-purchases/api'
+import { myTicketOrderQueryKey, myTicketOrdersQueryKey } from '@/features/auth/auth-cache'
+import { useAuth } from '@/features/auth/auth-context'
 import { getTicketStatusLabel } from '@/features/ticket-purchases/order-display'
 import { VendorReviewDialog } from '@/components/reviews/VendorReviewDialog'
 import { getFallbackEventImage } from '@/features/events/utils'
@@ -69,14 +71,15 @@ export default function ViewTicketContent() {
   const searchParams = useSearchParams()
   const t = useTranslations('viewTicket')
   const tDashboard = useTranslations('userDashboard')
+  const { user, isAuthenticated, isReady } = useAuth()
   const queryClient = useQueryClient()
   const orderGroupId = searchParams.get('orderGroupId')
   const [reviewOpen, setReviewOpen] = useState(false)
 
   const { data: order, isLoading, isError, error } = useQuery({
-    queryKey: ['my-ticket-order', orderGroupId],
+    queryKey: myTicketOrderQueryKey(user?.id, orderGroupId ?? ''),
     queryFn: () => getMyTicketOrder(orderGroupId!),
-    enabled: Boolean(orderGroupId),
+    enabled: Boolean(orderGroupId) && isAuthenticated && isReady && !!user?.id,
   })
 
   React.useEffect(() => {
@@ -276,8 +279,8 @@ export default function ViewTicketContent() {
           eventName={order.eventName}
           vendorId={order.vendorId}
           onSuccess={() => {
-            void queryClient.invalidateQueries({ queryKey: ['my-ticket-order', orderGroupId] })
-            void queryClient.invalidateQueries({ queryKey: ['my-ticket-orders'] })
+            void queryClient.invalidateQueries({ queryKey: myTicketOrderQueryKey(user?.id, orderGroupId ?? '') })
+            void queryClient.invalidateQueries({ queryKey: myTicketOrdersQueryKey(user?.id) })
           }}
         />
       ) : null}

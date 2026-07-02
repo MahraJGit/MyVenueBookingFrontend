@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ApiError } from "@/lib/api/errors";
+import { restoreAuthSession } from "@/features/auth/restore-session";
 import { getAccessToken } from "@/features/auth/session-storage";
 import {
   createVendorProfile,
@@ -173,8 +174,8 @@ const JoinAffiliateFormPage = () => {
     let isMounted = true;
 
     const checkAuthAndStatus = async () => {
-      const token = getAccessToken();
-      if (!token) {
+      await restoreAuthSession();
+      if (!getAccessToken()) {
         router.replace("/login?redirect=/affiliate/join");
         if (isMounted) {
           setIsAuthenticated(false);

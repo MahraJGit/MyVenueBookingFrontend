@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useAuth } from '@/features/auth/auth-context'
+import { notificationsQueryKey } from '@/features/auth/auth-cache'
 import { getUnreadNotificationCount } from '@/features/notifications/api'
 
 type NotificationBellProps = {
@@ -18,12 +19,12 @@ export default function NotificationBell({
   variant = 'user',
 }: NotificationBellProps) {
   const t = useTranslations('notifications')
-  const { isAuthenticated, isReady } = useAuth()
+  const { isAuthenticated, isReady, user } = useAuth()
 
   const { data: unreadCount = 0 } = useQuery({
-    queryKey: ['notifications', 'unread-count'],
+    queryKey: notificationsQueryKey(user?.id, 'unread-count'),
     queryFn: getUnreadNotificationCount,
-    enabled: isReady && isAuthenticated,
+    enabled: isReady && isAuthenticated && !!user?.id,
     refetchInterval: 60_000,
   })
 

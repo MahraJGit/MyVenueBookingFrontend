@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { DashboardContentPanel } from "@/components/dashboard/dashboard-shared";
 import { getBooking } from "@/features/bookings/api";
 import { bookingKeys } from "@/features/venues/query-keys";
+import { useAuth } from "@/features/auth/auth-context";
 
 export default function UserBookingDetailPage({
   params,
@@ -18,10 +19,12 @@ export default function UserBookingDetailPage({
 }) {
   const { id } = use(params);
   const t = useTranslations("userDashboard");
+  const { user, isAuthenticated, isReady } = useAuth();
 
   const { data: booking, isLoading } = useQuery({
-    queryKey: bookingKeys.detail(id),
+    queryKey: bookingKeys.detail(user?.id, id),
     queryFn: () => getBooking(id),
+    enabled: isAuthenticated && isReady && !!user?.id,
   });
 
   return (

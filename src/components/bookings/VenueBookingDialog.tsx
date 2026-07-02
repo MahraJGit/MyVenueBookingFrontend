@@ -24,7 +24,7 @@ import {
 import { createHold } from "@/features/bookings/api";
 import type { PublicVenue } from "@/features/venues/types";
 import { slotRangeToUtc } from "@/features/venues/timezone";
-import { getAccessToken } from "@/features/auth/session-storage";
+import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
 
 type VenueBookingDialogProps = {
@@ -45,6 +45,7 @@ export function VenueBookingDialog({
   const router = useRouter();
   const t = useTranslations("booking");
   const tCommon = useTranslations("common");
+  const { isAuthenticated, isReady } = useAuth();
 
   const [numGuests, setNumGuests] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
@@ -76,7 +77,7 @@ export function VenueBookingDialog({
   });
 
   const handleSubmit = () => {
-    if (!getAccessToken()) {
+    if (!isReady || !isAuthenticated) {
       toast.error(t("loginToBook"));
       router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;

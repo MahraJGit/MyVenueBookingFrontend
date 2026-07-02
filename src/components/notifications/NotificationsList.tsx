@@ -28,6 +28,8 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from '@/features/notifications/api'
+import { notificationsQueryKey } from '@/features/auth/auth-cache'
+import { useAuth } from '@/features/auth/auth-context'
 import type { NotificationItem, NotificationType } from '@/features/notifications/types'
 import { cn } from '@/lib/utils'
 
@@ -61,13 +63,15 @@ type NotificationsListProps = {
 
 export default function NotificationsList({ className, embedded }: NotificationsListProps) {
   const t = useTranslations('notifications')
+  const { user, isAuthenticated, isReady } = useAuth()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<'all' | 'read' | 'unread'>('all')
   const [openId, setOpenId] = useState<string | null>(null)
 
   const { data: allNotifications = [], isLoading, isError } = useQuery({
-    queryKey: ['notifications', 'all'],
+    queryKey: notificationsQueryKey(user?.id, 'all'),
     queryFn: () => listNotifications('all'),
+    enabled: isAuthenticated && isReady && !!user?.id,
   })
 
   const filteredNotifications =

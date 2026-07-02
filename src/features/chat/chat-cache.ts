@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { getAuthUser } from "@/features/auth/session-storage";
 import { chatKeys } from "./query-keys";
 import type { ChatMessage, ConversationSummary } from "./types";
 
@@ -7,14 +8,19 @@ type ConversationsPage = {
   nextCursor?: string;
 };
 
+function scopedUserId() {
+  return getAuthUser()?.id;
+}
+
 export function applyConversationReadLocally(
   queryClient: QueryClient,
   conversationId: string,
 ) {
+  const userId = scopedUserId();
   let clearedUnread = 0;
 
   queryClient.setQueryData<ConversationsPage>(
-    chatKeys.conversations(),
+    chatKeys.conversations(userId),
     (old) => {
       if (!old) return old;
       return {
@@ -29,7 +35,7 @@ export function applyConversationReadLocally(
   );
 
   if (clearedUnread > 0) {
-    queryClient.setQueryData<number>(chatKeys.unreadCount(), (old) =>
+    queryClient.setQueryData<number>(chatKeys.unreadCount(userId), (old) =>
       Math.max(0, (old ?? 0) - clearedUnread),
     );
   }
@@ -40,12 +46,13 @@ export function applyIncomingMessageToCache(
   message: ChatMessage,
   options: { currentUserId?: string; activeConversationId?: string | null },
 ) {
+  const userId = scopedUserId();
   const { currentUserId, activeConversationId } = options;
   const isActiveConversation = activeConversationId === message.conversationId;
   const isFromOther = Boolean(currentUserId && message.senderId !== currentUserId);
 
   queryClient.setQueryData<{ items: ChatMessage[]; nextCursor?: string }>(
-    chatKeys.messages(message.conversationId),
+    chatKeys.messages(userId, message.conversationId),
     (old) => {
       if (!old) return { items: [message] };
       if (old.items.some((item) => item.id === message.id)) return old;
@@ -54,7 +61,7 @@ export function applyIncomingMessageToCache(
   );
 
   queryClient.setQueryData<ConversationsPage>(
-    chatKeys.conversations(),
+    chatKeys.conversations(userId),
     (old) => {
       if (!old) return old;
 
@@ -85,6 +92,8 @@ export function applyIncomingMessageToCache(
   );
 
   if (isFromOther && !isActiveConversation) {
-    queryClient.setQueryData<number>(chatKeys.unreadCount(), (old) => (old ?? 0) + 1);
+    queryClient.setQueryData<number>(chatKeys.unreadCount(userId), (old) =>
+      (old ?? 0) + 1,
+    );
   }
 }

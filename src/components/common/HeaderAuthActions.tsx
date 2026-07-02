@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/features/auth/auth-context";
+import { userProfileQueryKey } from "@/features/auth/auth-cache";
 import { getMyProfile } from "@/features/users/api";
 import { resolveAvatarSrc } from "@/features/users/profile-display";
 
@@ -51,9 +52,9 @@ export function HeaderAuthActions({
     useAuth();
 
   const { data: profile } = useQuery({
-    queryKey: ["user-profile"],
+    queryKey: userProfileQueryKey(user?.id),
     queryFn: getMyProfile,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !!user?.id,
   });
 
   const avatarSrc = resolveAvatarSrc(profile?.avatarUrl ?? user?.avatarUrl);

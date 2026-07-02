@@ -64,6 +64,7 @@ import {
   rescheduleBooking,
 } from "@/features/bookings/api";
 import { bookingKeys } from "@/features/venues/query-keys";
+import { useAuth } from "@/features/auth/auth-context";
 import type { Booking } from "@/features/bookings/types";
 import { formatInVenueTimezone } from "@/features/venues/timezone";
 import { toastApiError } from "@/lib/toasts";
@@ -111,6 +112,7 @@ export function BookingDetailPanel({
   variant = "default",
 }: BookingDetailPanelProps) {
   const queryClient = useQueryClient();
+  const { user, isAuthenticated, isReady } = useAuth();
   const t = useTranslations("booking");
   const tCommon = useTranslations("common");
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
@@ -118,8 +120,9 @@ export function BookingDetailPanel({
   const [endLocal, setEndLocal] = useState("");
 
   const { data: booking, isLoading, refetch } = useQuery({
-    queryKey: bookingKeys.detail(bookingId),
+    queryKey: bookingKeys.detail(user?.id, bookingId),
     queryFn: () => getBooking(bookingId),
+    enabled: isAuthenticated && isReady && !!user?.id,
   });
 
   const cancelMut = useMutation({

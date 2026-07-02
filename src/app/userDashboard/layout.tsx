@@ -10,6 +10,7 @@ import {
   dashboardShellClass,
 } from '@/components/dashboard/dashboard-shared'
 import { ChatSocketProvider } from '@/components/chat/ChatSocketProvider'
+import { DashboardRoleGuard } from '@/components/auth/DashboardRoleGuard'
 
 export default function DashboardLayout({
   children,
@@ -19,6 +20,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
+    <DashboardRoleGuard allowedRoles={["BUYER", "VENDOR", "ADMIN"]}>
     <ChatSocketProvider>
     <div className={dashboardShellClass}>
       {sidebarOpen ? (
@@ -42,5 +44,6 @@ export default function DashboardLayout({
       </div>
     </div>
     </ChatSocketProvider>
+    </DashboardRoleGuard>
   )
 }

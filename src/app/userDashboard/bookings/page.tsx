@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { listBookings } from "@/features/bookings/api";
 import { bookingKeys } from "@/features/venues/query-keys";
+import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
 
 const TAB_VALUES: BookingTabValue[] = ["all", "HOLD", "CONFIRMED", "CANCELLED", "COMPLETED"];
@@ -46,13 +47,15 @@ export default function UserBookingsPage() {
   const t = useTranslations("userDashboard");
   const tBooking = useTranslations("booking");
   const tCommon = useTranslations("common");
+  const { user, isAuthenticated, isReady } = useAuth();
   const [activeTab, setActiveTab] = useState<BookingTabValue>("all");
   const [sortBy, setSortBy] = useState<BookingSortOption>("newest");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: bookingKeys.list({ scope: "buyer" }),
+    queryKey: bookingKeys.list(user?.id, { scope: "buyer" }),
     queryFn: () => listBookings({ limit: 50 }),
+    enabled: isAuthenticated && isReady && !!user?.id,
   });
 
   const bookings = data?.data ?? [];

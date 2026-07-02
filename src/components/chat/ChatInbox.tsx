@@ -20,6 +20,7 @@ import { useChatConversationJoin } from "@/features/chat/use-chat-socket";
 import type { ConversationSummary } from "@/features/chat/types";
 import { toastApiError } from "@/lib/toasts";
 import { getAuthUser } from "@/features/auth/session-storage";
+import { useAuth } from "@/features/auth/auth-context";
 import {
   getConversationTitle,
   getConversationTypeLabel,
@@ -34,6 +35,7 @@ export function ChatInbox({ basePath }: ChatInboxProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const { user, isAuthenticated, isReady } = useAuth();
   const selectedId = searchParams.get("c");
   const [draft, setDraft] = useState("");
   const messagesScrollRef = useRef<HTMLDivElement>(null);
@@ -43,8 +45,9 @@ export function ChatInbox({ basePath }: ChatInboxProps) {
   useChatConversationJoin(selectedId);
 
   const conversationsQuery = useQuery({
-    queryKey: chatKeys.conversations(),
+    queryKey: chatKeys.conversations(user?.id),
     queryFn: () => listConversations(),
+    enabled: isAuthenticated && isReady && !!user?.id,
   });
 
   const conversations = conversationsQuery.data?.items ?? [];
@@ -55,9 +58,9 @@ export function ChatInbox({ basePath }: ChatInboxProps) {
   }, [selectedId, conversations, conversationsQuery.isSuccess]);
 
   const messagesQuery = useQuery({
-    queryKey: chatKeys.messages(selectedId ?? "none"),
+    queryKey: chatKeys.messages(user?.id, selectedId ?? "none"),
     queryFn: () => listMessages(selectedId!),
-    enabled: selectedIsAccessible,
+    enabled: selectedIsAccessible && isAuthenticated && isReady && !!user?.id,
     retry: (failureCount, error) => {
       if (error && typeof error === "object" && "statusCode" in error) {
         const statusCode = (error as { statusCode: number }).statusCode;
@@ -75,14 +78,14 @@ export function ChatInbox({ basePath }: ChatInboxProps) {
     onSuccess: (message) => {
       if (!message || !selectedId) return;
       queryClient.setQueryData(
-        chatKeys.messages(selectedId),
+        chatKeys.messages(user?.id, selectedId),
         (old: { items: (typeof message)[]; nextCursor?: string } | undefined) => {
           if (!old) return { items: [message] };
           if (old.items.some((m) => m.id === message.id)) return old;
           return { ...old, items: [...old.items, message] };
         },
       );
-      void queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
+      void queryClient.invalidateQueries({ queryKey: chatKeys.conversations(user?.id) });
       setDraft("");
     },
     onError: (err) => toastApiError(err),

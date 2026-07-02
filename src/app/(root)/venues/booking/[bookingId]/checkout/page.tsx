@@ -33,6 +33,7 @@ import {
 } from "@/features/bookings/api";
 import { listPaymentMethods, type SavedPaymentMethod } from "@/features/payments/api";
 import { bookingKeys } from "@/features/venues/query-keys";
+import { useAuth } from "@/features/auth/auth-context";
 import { formatInVenueTimezone } from "@/features/venues/timezone";
 import { decimalToNumber } from "@/features/venues/utils";
 import { CheckoutPrice } from "@/components/currency/CheckoutPrice";
@@ -64,10 +65,12 @@ export default function VenueBookingCheckoutPage({
   const tCheckout = useTranslations("checkout");
   const tUserDashboard = useTranslations("userDashboard");
   const tCommon = useTranslations("common");
+  const { user, isAuthenticated, isReady } = useAuth();
 
   const { data: booking, isLoading, refetch } = useQuery({
-    queryKey: bookingKeys.detail(bookingId),
+    queryKey: bookingKeys.detail(user?.id, bookingId),
     queryFn: () => getBooking(bookingId),
+    enabled: isAuthenticated && isReady && !!user?.id,
   });
 
   const {

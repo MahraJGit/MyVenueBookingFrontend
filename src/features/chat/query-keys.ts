@@ -1,10 +1,15 @@
 export const chatKeys = {
   all: ["chat"] as const,
-  conversations: () => [...chatKeys.all, "conversations"] as const,
-  conversation: (id: string) => [...chatKeys.all, "conversation", id] as const,
-  messages: (id: string) => [...chatKeys.all, "messages", id] as const,
-  unreadCount: () => [...chatKeys.all, "unread-count"] as const,
-  byBooking: (bookingId: string) => [...chatKeys.all, "booking", bookingId] as const,
-  byOrderGroup: (orderGroupId: string) =>
-    [...chatKeys.all, "order", orderGroupId] as const,
+  conversations: (userId?: string | null) =>
+    [...chatKeys.all, userId ?? "anonymous", "conversations"] as const,
+  conversation: (userId: string | null | undefined, id: string) =>
+    [...chatKeys.all, userId ?? "anonymous", "conversation", id] as const,
+  messages: (userId: string | null | undefined, id: string) =>
+    [...chatKeys.all, userId ?? "anonymous", "messages", id] as const,
+  unreadCount: (userId?: string | null) =>
+    [...chatKeys.all, userId ?? "anonymous", "unread-count"] as const,
+  byBooking: (userId: string | null | undefined, bookingId: string) =>
+    [...chatKeys.all, userId ?? "anonymous", "booking", bookingId] as const,
+  byOrderGroup: (userId: string | null | undefined, orderGroupId: string) =>
+    [...chatKeys.all, userId ?? "anonymous", "order", orderGroupId] as const,
 };

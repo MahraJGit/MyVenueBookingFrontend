@@ -9,16 +9,23 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { logoutAccount } from "@/features/auth/api";
+import { postAuthBroadcast, subscribeAuthBroadcast } from "@/features/auth/auth-broadcast";
+import { resetAuthQueryCache } from "@/features/auth/auth-cache";
+import { restoreAuthSession } from "@/features/auth/restore-session";
+import { teardownClientAuth } from "@/features/auth/teardown-client-auth";
 import type { AuthUser } from "@/features/auth/types";
 import {
   AUTH_CHANGED_EVENT,
+  AUTH_SESSION_EXPIRED_EVENT,
   clearAuthSession,
   getAccessToken,
   getAuthUser,
 } from "@/features/auth/session-storage";
+import { disconnectChatSocket } from "@/features/chat/use-chat-socket";
 
 export type DashboardLinkLabelKey =
   | "customerDashboard"
@@ -96,6 +103,7 @@ function buildInitials(user: AuthUser): string {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const tAuth = useTranslations("auth");
   const [session, setSession] = useState(() => readSession());
   const [isReady, setIsReady] = useState(false);
@@ -105,18 +113,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    syncFromStorage();
-    setIsReady(true);
+    let cancelled = false;
+
+    void (async () => {
+      await restoreAuthSession();
+      if (cancelled) return;
+      syncFromStorage();
+      setIsReady(true);
+    })();
 
     const onAuthChanged = () => syncFromStorage();
+    const onSessionExpired = () => {
+      resetAuthQueryCache(queryClient);
+      disconnectChatSocket();
+      syncFromStorage();
+    };
+
     window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, onSessionExpired);
     window.addEventListener("storage", onAuthChanged);
 
+    const unsubscribeBroadcast = subscribeAuthBroadcast((message) => {
+      if (message.type === "logout") {
+        teardownClientAuth(queryClient);
+        syncFromStorage();
+        return;
+      }
+
+      void (async () => {
+        clearAuthSession();
+        await restoreAuthSession();
+        resetAuthQueryCache(queryClient);
+        syncFromStorage();
+      })();
+    });
+
     return () => {
+      cancelled = true;
       window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+      window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, onSessionExpired);
       window.removeEventListener("storage", onAuthChanged);
+      unsubscribeBroadcast();
     };
-  }, [syncFromStorage]);
+  }, [queryClient, syncFromStorage]);
 
   const logout = useCallback(async () => {
     try {
@@ -124,11 +163,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Clear local session even if the server logout call fails.
     } finally {
-      clearAuthSession();
+      postAuthBroadcast({ type: "logout" });
+      teardownClientAuth(queryClient);
       syncFromStorage();
       router.replace("/");
     }
-  }, [router, syncFromStorage]);
+  }, [queryClient, router, syncFromStorage]);
 
   const value = useMemo<AuthContextValue>(() => {
     const user = session.user;

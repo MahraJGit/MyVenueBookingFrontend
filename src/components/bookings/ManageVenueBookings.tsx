@@ -38,6 +38,7 @@ import {
 import type { DashboardScope } from "@/features/dashboard/paths";
 import { listBookings } from "@/features/bookings/api";
 import { bookingKeys } from "@/features/venues/query-keys";
+import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +56,7 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
   const tBooking = useTranslations("booking");
   const tCommon = useTranslations("common");
   const tListing = useTranslations("listing");
+  const { user, isAuthenticated, isReady } = useAuth();
 
   const [activeTab, setActiveTab] = useState<BookingTabValue>("all");
   const [sortBy, setSortBy] = useState<BookingSortOption>("newest");
@@ -69,19 +71,21 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
   const statusFilter = activeTab === "all" ? undefined : activeTab;
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
-    queryKey: bookingKeys.list({ status: statusFilter, page, scope }),
+    queryKey: bookingKeys.list(user?.id, { status: statusFilter, page, scope }),
     queryFn: () =>
       listBookings({
         page,
         limit: PAGE_SIZE,
         status: statusFilter,
       }),
+    enabled: isAuthenticated && isReady && !!user?.id,
   });
 
   const { data: countData } = useQuery({
-    queryKey: bookingKeys.list({ scope, forCounts: true }),
+    queryKey: bookingKeys.list(user?.id, { scope, forCounts: true }),
     queryFn: () => listBookings({ limit: 100 }),
     staleTime: 30_000,
+    enabled: isAuthenticated && isReady && !!user?.id,
   });
 
   const bookings = data?.data ?? [];

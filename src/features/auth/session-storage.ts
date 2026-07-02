@@ -6,10 +6,16 @@ const ACCESS = "mvb_access_token";
 const USER = "mvb_user_json";
 
 export const AUTH_CHANGED_EVENT = "mvb-auth-changed";
+export const AUTH_SESSION_EXPIRED_EVENT = "mvb-auth-session-expired";
 
 export function notifyAuthChanged() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+}
+
+export function notifyAuthSessionExpired() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
 }
 
 /** Persist access token + user snapshot (sessionStorage). Refresh token stays HttpOnly cookie only. */

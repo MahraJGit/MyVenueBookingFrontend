@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -15,11 +15,14 @@ import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
 import { resendOtp, verifyOtp } from "@/features/auth/api";
 import { persistAuthSession } from "@/features/auth/session-storage";
+import { resetAuthQueryCache } from "@/features/auth/auth-cache";
+import { postAuthBroadcast } from "@/features/auth/auth-broadcast";
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
 export function VerifyOtpForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
   const redirect = searchParams.get("redirect") || "/";
@@ -56,10 +59,12 @@ export function VerifyOtpForm() {
   const verifyMutation = useMutation({
     mutationFn: verifyOtp,
     onSuccess: (data) => {
+      resetAuthQueryCache(queryClient);
       persistAuthSession({
         accessToken: data.accessToken,
         user: data.user,
       });
+      postAuthBroadcast({ type: "login" });
       toast.success(data.message || t("verifiedSuccess"), {
         description: t("signedInAs", { email: data.user.email }),
       });

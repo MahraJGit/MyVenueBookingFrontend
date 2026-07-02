@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode, useState } from 'react'
+import { DashboardRoleGuard } from "@/components/auth/DashboardRoleGuard"
 import VendorSidebar from '@/components/dashboard/vendor-sidebar'
 import {
   dashboardContentClass,
@@ -19,6 +20,7 @@ export default function VendorDashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
+    <DashboardRoleGuard allowedRoles={["VENDOR", "ADMIN"]}>
     <ChatSocketProvider>
     <div className={dashboardShellClass}>
       {sidebarOpen ? (
@@ -37,5 +39,6 @@ export default function VendorDashboardLayout({
       </div>
     </div>
     </ChatSocketProvider>
+    </DashboardRoleGuard>
   )
 }

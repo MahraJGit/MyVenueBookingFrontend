@@ -24,6 +24,7 @@ export type UserProfile = {
   state: string | null;
   zipCode: string | null;
   avatarUrl: string | null;
+  role?: string;
 };
 
 export type UpdateUserProfileBody = {

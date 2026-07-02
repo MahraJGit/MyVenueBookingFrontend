@@ -14,6 +14,18 @@ function buildAuthCookieOptions(maxAge = AUTH_COOKIE_MAX_AGE_SECONDS): string {
   return `path=/;max-age=${maxAge};SameSite=Lax${secure}`;
 }
 
+/** Client-side: read mirrored role cookie (hint only — not a security boundary). */
+export function getAuthRoleFromDocument(): AppRole | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${AUTH_ROLE_COOKIE}=`));
+  if (!match) return null;
+  const raw = decodeURIComponent(match.slice(AUTH_ROLE_COOKIE.length + 1));
+  return isAppRole(raw) ? raw : null;
+}
+
 /** Client-side: mirror session role into a cookie the proxy can read. */
 export function setAuthRoleCookie(role: AppRole) {
   if (typeof document === "undefined") return;

@@ -1,6 +1,7 @@
 export const favoriteKeys = {
   all: ["favorites"] as const,
-  ids: () => [...favoriteKeys.all, "ids"] as const,
-  list: (type: "all" | "event" | "venue" = "all") =>
-    [...favoriteKeys.all, "list", type] as const,
+  ids: (userId?: string | null) =>
+    [...favoriteKeys.all, userId ?? "anonymous", "ids"] as const,
+  list: (userId: string | null | undefined, type: "all" | "event" | "venue" = "all") =>
+    [...favoriteKeys.all, userId ?? "anonymous", "list", type] as const,
 };
