@@ -29,6 +29,22 @@ export type VendorReview = {
   createdAt: string;
 };
 
+export type PublicVendorReview = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  reviewer: {
+    id: string;
+    name: string;
+  };
+};
+
+export type VendorReviewSummary = {
+  averageRating: number | null;
+  count: number;
+};
+
 export type VenueReview = {
   id: string;
   rating: number;
@@ -109,6 +125,25 @@ export async function createVenueReview(
   return (data as ApiEnvelope<CreateVenueReviewResult>).data;
 }
 
+export async function getVendorReviewSummary(
+  vendorId: string,
+): Promise<VendorReviewSummary> {
+  const json = await apiGet<unknown>(
+    `/api/reviews/vendors/${encodeURIComponent(vendorId)}/summary`,
+  );
+  return unwrapApiGet<VendorReviewSummary>(json);
+}
+
+export async function getVendorReviews(vendorId: string, page = 1, limit = 10) {
+  const json = await apiGet<unknown>(
+    `/api/reviews/vendors/${encodeURIComponent(vendorId)}?page=${page}&limit=${limit}`,
+  );
+  return unwrapApiGet<{
+    data: PublicVendorReview[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+  }>(json);
+}
+
 export async function getVenueReviewSummary(
   venueId: string,
 ): Promise<VenueReviewSummary> {
@@ -118,9 +153,9 @@ export async function getVenueReviewSummary(
   return unwrapApiGet<VenueReviewSummary>(json);
 }
 
-export async function getVenueReviews(venueId: string, page = 1) {
+export async function getVenueReviews(venueId: string, page = 1, limit = 10) {
   const json = await apiGet<unknown>(
-    `/api/reviews/venues/${encodeURIComponent(venueId)}?page=${page}&limit=10`,
+    `/api/reviews/venues/${encodeURIComponent(venueId)}?page=${page}&limit=${limit}`,
   );
   return unwrapApiGet<{
     data: VenueReview[];

@@ -1,4 +1,4 @@
-import type { PublicEvent, TicketTypeRow } from "@/features/events/api";
+import type { PublicEvent, SalePhase, TicketTypeRow } from "@/features/events/api";
 
 const FALLBACK_IMAGES = [
   "/images/card-img-2.jpg",
@@ -32,11 +32,81 @@ export function formatEventDate(iso: string): string {
   });
 }
 
+export function formatEventDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function toDate(value?: string | null): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function computeTicketSalePhase(
+  ticket: TicketTypeRow,
+  now: Date = new Date(),
+  eventEnd?: string,
+): SalePhase {
+  if (ticket.salePhase) return ticket.salePhase;
+
+  const available = ticket.quantityTotal - (ticket.quantitySold ?? 0);
+  if (available <= 0) return "sold_out";
+
+  const salesStart = toDate(ticket.salesStart);
+  const salesEnd = toDate(ticket.salesEnd) ?? toDate(eventEnd);
+
+  if (salesStart && now < salesStart) return "not_started";
+  if (salesEnd && now > salesEnd) return "ended";
+  return "open";
+}
+
+export function computeEventSalePhase(
+  event: Pick<PublicEvent, "endDateTime" | "ticketTypes" | "salePhase">,
+  now: Date = new Date(),
+): SalePhase {
+  if (event.salePhase) return event.salePhase;
+
+  const eventEnd = toDate(event.endDateTime);
+  if (eventEnd && now > eventEnd) return "ended";
+
+  const tickets = event.ticketTypes ?? [];
+  if (tickets.length === 0) return "ended";
+
+  const phases = tickets.map((ticket) =>
+    computeTicketSalePhase(ticket, now, event.endDateTime),
+  );
+  if (phases.includes("open")) return "open";
+  if (phases.includes("not_started")) return "not_started";
+  if (phases.every((phase) => phase === "sold_out")) return "sold_out";
+  return "ended";
+}
+
+export function isTicketPurchasable(
+  ticket: TicketTypeRow,
+  eventEnd?: string,
+  now: Date = new Date(),
+): boolean {
+  return computeTicketSalePhase(ticket, now, eventEnd) === "open";
+}
+
 export function getEventCountdownTargetIso(
   event: Pick<PublicEvent, "endDateTime" | "ticketTypes">,
   nowMs = Date.now(),
 ): string {
-  const futureSalesEnds = (event.ticketTypes ?? [])
+  const now = new Date(nowMs);
+  const openTickets = (event.ticketTypes ?? []).filter(
+    (ticket) => computeTicketSalePhase(ticket, now, event.endDateTime) === "open",
+  );
+
+  const futureSalesEnds = openTickets
     .map((ticket) => ticket.salesEnd)
     .filter((value): value is string => typeof value === "string" && value.length > 0)
     .map((value) => new Date(value).getTime())
@@ -44,6 +114,16 @@ export function getEventCountdownTargetIso(
 
   if (futureSalesEnds.length > 0) {
     return new Date(Math.min(...futureSalesEnds)).toISOString();
+  }
+
+  const upcomingSalesStarts = (event.ticketTypes ?? [])
+    .map((ticket) => ticket.salesStart)
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .map((value) => new Date(value).getTime())
+    .filter((ms) => !Number.isNaN(ms) && ms > nowMs);
+
+  if (upcomingSalesStarts.length > 0) {
+    return new Date(Math.min(...upcomingSalesStarts)).toISOString();
   }
 
   return event.endDateTime;
@@ -68,18 +148,32 @@ function ticketPrice(t: TicketTypeRow): number {
   return typeof t.price === "number" ? t.price : Number(t.price);
 }
 
-export function getMinTicketPrice(event: PublicEvent): {
+export function getMinTicketPrice(
+  event: PublicEvent,
+): {
   price: number;
   currency: string;
 } | null {
-  const active = event.ticketTypes?.filter((t) => t.name);
-  if (!active?.length) return null;
-  const sorted = [...active].sort((a, b) => ticketPrice(a) - ticketPrice(b));
+  const openTickets = (event.ticketTypes ?? []).filter((ticket) =>
+    isTicketPurchasable(ticket, event.endDateTime),
+  );
+  if (!openTickets.length) return null;
+
+  const sorted = [...openTickets].sort((a, b) => ticketPrice(a) - ticketPrice(b));
   const cheapest = sorted[0];
   return {
     price: ticketPrice(cheapest),
     currency: cheapest.currency || "PKR",
   };
+}
+
+export function getPurchasableTicketTypes(event: PublicEvent): TicketTypeRow[] {
+  return (event.ticketTypes ?? []).filter(
+    (ticket) =>
+      ticket.id &&
+      isTicketPurchasable(ticket, event.endDateTime) &&
+      ticket.quantityTotal - (ticket.quantitySold ?? 0) > 0,
+  );
 }
 
 import { formatMoney } from "@/features/currency/format";
@@ -104,4 +198,30 @@ export function buildEventsPageHref(
   if (extra?.city?.trim()) sp.set("city", extra.city.trim());
   const qs = sp.toString();
   return qs ? `/events?${qs}` : "/events";
+}
+
+export function getSalePhaseMessageKey(phase: SalePhase): string {
+  switch (phase) {
+    case "open":
+      return "saleOpen";
+    case "not_started":
+      return "saleNotStarted";
+    case "sold_out":
+      return "soldOut";
+    default:
+      return "saleEnded";
+  }
+}
+
+export function getEarliestSalesStart(
+  event: Pick<PublicEvent, "ticketTypes">,
+): string | null {
+  const starts = (event.ticketTypes ?? [])
+    .map((ticket) => ticket.salesStart)
+    .filter((value): value is string => Boolean(value))
+    .map((value) => new Date(value).getTime())
+    .filter((ms) => !Number.isNaN(ms));
+
+  if (starts.length === 0) return null;
+  return new Date(Math.min(...starts)).toISOString();
 }

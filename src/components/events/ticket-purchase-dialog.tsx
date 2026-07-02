@@ -21,6 +21,7 @@ import {
   confirmCardPaymentIfNeeded,
 } from "@/features/ticket-purchases/api";
 import type { PublicEvent, TicketTypeRow } from "@/features/events/api";
+import { getPurchasableTicketTypes } from "@/features/events/utils";
 import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
 import { toast } from "sonner";
@@ -66,8 +67,8 @@ export function TicketPurchaseDialog({
   const [defaultCardLabel, setDefaultCardLabel] = React.useState<string | null>(null);
 
   const ticketTypes = React.useMemo(
-    () => (event.ticketTypes ?? []).filter((t) => t.id && availableCount(t) > 0),
-    [event.ticketTypes],
+    () => getPurchasableTicketTypes(event),
+    [event],
   );
 
   React.useEffect(() => {
@@ -189,6 +190,14 @@ export function TicketPurchaseDialog({
         if (code === "PAYMENT_METHOD_REQUIRED") {
           setPaymentBlocked(true);
           toast.error(tTicket("addPaymentInDashboard"));
+          return;
+        }
+        if (code === "SALES_NOT_STARTED") {
+          toast.error(tTicket("salesNotStarted"));
+          return;
+        }
+        if (code === "SALES_ENDED") {
+          toast.error(tTicket("salesEnded"));
           return;
         }
       }

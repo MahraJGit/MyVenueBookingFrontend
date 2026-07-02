@@ -486,8 +486,6 @@ export default function VenueDetailPage({
               </div>
             )}
 
-            <VenueReviewsSection venueId={venue.id} />
-
             {/* Map */}
             <div>
               <h2 className="mb-3 text-lg font-bold text-primary sm:mb-4 sm:text-xl">{t("location")}</h2>
@@ -639,6 +637,10 @@ export default function VenueDetailPage({
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="container mx-auto border-t border-[#303030] px-4 py-12 sm:px-6">
+        <VenueReviewsSection venueId={venue.id} />
       </section>
 
       {selectedSlot && selectedDate && (

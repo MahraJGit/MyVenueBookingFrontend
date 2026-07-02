@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PublicEvent } from "@/features/events/api";
 import { EventCoverImage } from "@/components/events/EventCoverImage";
+import { EventSaleBadge } from "@/components/events/EventSaleBadge";
 import {
+  computeEventSalePhase,
   formatCountdownToEnd,
   formatEventDate,
   getEventCountdownTargetIso,
@@ -22,6 +24,7 @@ export function EventCard({ event }: EventCardProps) {
   const tEvents = useTranslations("events");
   const tCommon = useTranslations("common");
   const [countdown, setCountdown] = useState<string | null>(null);
+  const salePhase = computeEventSalePhase(event);
   const minTicket = getMinTicketPrice(event);
   const location = [event.city, event.state].filter(Boolean).join(", ");
 
@@ -52,11 +55,14 @@ export function EventCard({ event }: EventCardProps) {
       />
       <div className="card-body relative z-0 -mt-10 flex w-full max-w-[92%] flex-1 flex-col rounded-2xl border border-[#303030] bg-[#1B1B1B] transition-all duration-300 ease-in-out group-hover:rounded-t-none">
         <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-          <span>{tEvents("timeToEnd")}</span>
+          <span>{salePhase === "not_started" ? tEvents("saleStartsIn") : tEvents("timeToEnd")}</span>
           <span>{countdown ?? "--:--:--"}</span>
         </div>
         <div className="flex h-full flex-col gap-4 p-4">
-          <h4 className="line-clamp-1">{event.eventName}</h4>
+          <div className="flex items-start justify-between gap-2">
+            <h4 className="line-clamp-1 flex-1">{event.eventName}</h4>
+            <EventSaleBadge phase={salePhase} />
+          </div>
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs">{formatEventDate(event.startDateTime)}</span>
             <span className="line-clamp-1 text-right text-xs">{location || "—"}</span>
@@ -70,7 +76,9 @@ export function EventCard({ event }: EventCardProps) {
                 </span>
               </>
             ) : (
-              <span>{tEvents("ticketsComingSoon")}</span>
+              <span className="text-sm font-medium text-zinc-400">
+                {tEvents(getSalePhaseLabelKey(salePhase))}
+              </span>
             )}
           </div>
         </div>
@@ -78,4 +86,17 @@ export function EventCard({ event }: EventCardProps) {
       </Link>
     </div>
   );
+}
+
+function getSalePhaseLabelKey(phase: ReturnType<typeof computeEventSalePhase>) {
+  switch (phase) {
+    case "open":
+      return "saleOpen";
+    case "not_started":
+      return "saleNotStarted";
+    case "sold_out":
+      return "soldOut";
+    default:
+      return "saleEnded";
+  }
 }

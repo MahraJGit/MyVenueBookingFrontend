@@ -22,7 +22,7 @@ type EventPublicPreviewDialogProps = {
 };
 
 function canPreviewOnSite(status: ManagedEvent["status"]) {
-  return status === "ACTIVE";
+  return status === "APPROVED" || status === "ACTIVE";
 }
 
 export function EventPublicPreviewDialog({

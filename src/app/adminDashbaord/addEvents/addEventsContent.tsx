@@ -1001,6 +1001,34 @@ export default function AddEventsContentPage() {
                                         className={inputClass}
                                     />
                                 </div>
+                                <div className="space-y-2 sm:col-span-2">
+                                    <Label>{t("salesStart")}</Label>
+                                    <DateTimePicker
+                                        value={ticket.salesStart}
+                                        onChange={(value) =>
+                                            setTickets((rows) =>
+                                                rows.map((r, j) =>
+                                                    j === i ? { ...r, salesStart: value } : r,
+                                                ),
+                                            )
+                                        }
+                                        prettyLabel={t("salesStart")}
+                                    />
+                                </div>
+                                <div className="space-y-2 sm:col-span-2">
+                                    <Label>{t("salesEnd")}</Label>
+                                    <DateTimePicker
+                                        value={ticket.salesEnd}
+                                        onChange={(value) =>
+                                            setTickets((rows) =>
+                                                rows.map((r, j) =>
+                                                    j === i ? { ...r, salesEnd: value } : r,
+                                                ),
+                                            )
+                                        }
+                                        prettyLabel={t("salesEnd")}
+                                    />
+                                </div>
                             </div>
                         ))}
                     </CardContent>

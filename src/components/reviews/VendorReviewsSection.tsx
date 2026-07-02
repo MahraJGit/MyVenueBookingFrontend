@@ -2,21 +2,21 @@
 
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { getVenueReviews, getVenueReviewSummary } from "@/features/reviews/api";
+import { getVendorReviews, getVendorReviewSummary } from "@/features/reviews/api";
 import { ReviewsList, StarsDisplay } from "@/components/reviews/ReviewsList";
 
 const REVIEWS_PAGE_SIZE = 10;
 
-type VenueReviewsSectionProps = {
-  venueId: string;
+type VendorReviewsSectionProps = {
+  vendorId: string;
 };
 
-export function VenueReviewsSection({ venueId }: VenueReviewsSectionProps) {
+export function VendorReviewsSection({ vendorId }: VendorReviewsSectionProps) {
   const t = useTranslations("reviews");
 
   const { data: summary } = useQuery({
-    queryKey: ["venue-review-summary", venueId],
-    queryFn: () => getVenueReviewSummary(venueId),
+    queryKey: ["vendor-review-summary", vendorId],
+    queryFn: () => getVendorReviewSummary(vendorId),
   });
 
   const {
@@ -26,8 +26,8 @@ export function VenueReviewsSection({ venueId }: VenueReviewsSectionProps) {
     isFetchingNextPage,
     isLoading,
   } = useInfiniteQuery({
-    queryKey: ["venue-reviews", venueId],
-    queryFn: ({ pageParam }) => getVenueReviews(venueId, pageParam, REVIEWS_PAGE_SIZE),
+    queryKey: ["vendor-reviews", vendorId],
+    queryFn: ({ pageParam }) => getVendorReviews(vendorId, pageParam, REVIEWS_PAGE_SIZE),
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.meta.page < lastPage.meta.totalPages
@@ -40,7 +40,7 @@ export function VenueReviewsSection({ venueId }: VenueReviewsSectionProps) {
     return (
       <div>
         <h2 className="mb-6 text-xl font-bold text-primary sm:text-2xl">
-          {t("venueSectionTitle")}
+          {t("vendorSectionTitle")}
         </h2>
         <p className="text-sm text-zinc-500">{t("loadingReviews")}</p>
       </div>
@@ -53,7 +53,7 @@ export function VenueReviewsSection({ venueId }: VenueReviewsSectionProps) {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <h2 className="text-xl font-bold text-primary sm:text-2xl">{t("venueSectionTitle")}</h2>
+        <h2 className="text-xl font-bold text-primary sm:text-2xl">{t("vendorSectionTitle")}</h2>
         {summary.count > 0 && summary.averageRating != null ? (
           <div className="flex items-center gap-2 text-sm text-zinc-300">
             <StarsDisplay rating={summary.averageRating} />

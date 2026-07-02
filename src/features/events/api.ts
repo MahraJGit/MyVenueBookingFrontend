@@ -22,6 +22,8 @@ function unwrapEnvelope<T>(json: SuccessEnvelope<T>): T {
   return json.data;
 }
 
+export type SalePhase = "not_started" | "open" | "ended" | "sold_out";
+
 export type TicketTypeRow = {
   id?: string;
   name: string;
@@ -31,6 +33,7 @@ export type TicketTypeRow = {
   quantitySold?: number;
   salesStart?: string | null;
   salesEnd?: string | null;
+  salePhase?: SalePhase;
 };
 
 export type EventApprovalStatus =
@@ -89,6 +92,16 @@ export type ListManagedResult = {
   };
 };
 
+export type PublicVendorProfile = {
+  id: string;
+  vendorName: string;
+  businessType: string;
+  ownerName: string;
+  phone: string;
+  email: string;
+  address: string;
+};
+
 export type PublicEvent = {
   id: string;
   eventName: string;
@@ -113,6 +126,8 @@ export type PublicEvent = {
   zipCode: string | null;
   latitude: string | number;
   longitude: string | number;
+  vendorProfile: PublicVendorProfile | null;
+  salePhase?: SalePhase;
   ticketTypes: TicketTypeRow[];
 };
 

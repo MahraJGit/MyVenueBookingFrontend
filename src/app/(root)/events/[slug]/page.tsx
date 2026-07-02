@@ -15,13 +15,23 @@ import {
   CarouselNext,
 } from "@/components/ui/carousel";
 import { getPublicEventBySlug, type PublicEvent } from "@/features/events/api";
-import { formatEventDate } from "@/features/events/utils";
+import {
+  formatEventDate,
+  computeEventSalePhase,
+  computeTicketSalePhase,
+  formatEventDateTime,
+  getEarliestSalesStart,
+  getPurchasableTicketTypes,
+} from "@/features/events/utils";
+import { EventSaleBadge } from "@/components/events/EventSaleBadge";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { CurrencyBrowseNotice } from "@/components/currency/CheckoutPrice";
 import {
   TicketPurchaseDialog,
   openTicketPurchaseFlow,
 } from "@/components/events/ticket-purchase-dialog";
+import { EventOrganizerSection } from "@/components/events/EventOrganizerSection";
+import { VendorReviewsSection } from "@/components/reviews/VendorReviewsSection";
 import { getAccessToken } from "@/features/auth/session-storage";
 
 function formatTime(iso: string): string {
@@ -125,6 +135,10 @@ export default function EventDetailPage() {
     const n = typeof price === "number" ? price : Number(price);
     return Number.isFinite(n) ? n : 0;
   };
+  const salePhase = computeEventSalePhase(event);
+  const purchasableTickets = getPurchasableTicketTypes(event);
+  const canBuyTickets = purchasableTickets.length > 0;
+  const earliestSalesStart = getEarliestSalesStart(event);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0e0e0e] text-white">
@@ -222,6 +236,10 @@ export default function EventDetailPage() {
           {event.eventDescription || t("noDescriptionProvided")}
         </div>
       </section>
+
+      {event.vendorProfile ? (
+        <EventOrganizerSection vendor={event.vendorProfile} />
+      ) : null}
 
       {/* Venue Information */}
       <section className="container mx-auto px-4 py-12 sm:px-6">
@@ -337,26 +355,40 @@ export default function EventDetailPage() {
           <h2 className="text-xl font-bold text-primary mb-8">{tTickets("title")}</h2>
           <CurrencyBrowseNotice className="mb-6" chargeLabel="event" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {event.ticketTypes.map((t) => {
-              const sold = t.quantitySold ?? 0;
-              const total = t.quantityTotal;
+            {event.ticketTypes.map((ticketType) => {
+              const sold = ticketType.quantitySold ?? 0;
+              const total = ticketType.quantityTotal;
+              const ticketPhase = computeTicketSalePhase(ticketType, new Date(), event.endDateTime);
               return (
                 <div
-                  key={t.id ?? t.name}
+                  key={ticketType.id ?? ticketType.name}
                   className="bg-[#1B1B1B] border border-[#303030] rounded-2xl p-6 flex flex-col gap-4"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Ticket size={18} className="text-primary" />
-                      <h4 className="font-semibold text-white">{t.name}</h4>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Ticket size={18} className="text-primary shrink-0" />
+                      <h4 className="font-semibold text-white truncate">{ticketType.name}</h4>
                     </div>
-                    <span className="text-sm font-bold text-primary border border-primary rounded-full px-3 py-0.5">
-                      <DisplayPrice
-                        amount={ticketAmount(t.price)}
-                        currency={t.currency || "PKR"}
-                      />
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <EventSaleBadge phase={ticketPhase} />
+                      <span className="text-sm font-bold text-primary border border-primary rounded-full px-3 py-0.5">
+                        <DisplayPrice
+                          amount={ticketAmount(ticketType.price)}
+                          currency={ticketType.currency || "PKR"}
+                        />
+                      </span>
+                    </div>
                   </div>
+                  {(ticketType.salesStart || ticketType.salesEnd) && (
+                    <div className="text-xs text-zinc-500 space-y-1">
+                      {ticketType.salesStart ? (
+                        <p>{t("saleStartsAt", { date: formatEventDateTime(ticketType.salesStart) })}</p>
+                      ) : null}
+                      {ticketType.salesEnd ? (
+                        <p>{t("saleEndsAt", { date: formatEventDateTime(ticketType.salesEnd) })}</p>
+                      ) : null}
+                    </div>
+                  )}
                   <TicketProgress sold={sold} total={total} />
                 </div>
               );
@@ -365,17 +397,29 @@ export default function EventDetailPage() {
 
           {!isEmbed ? (
           <div className="bg-[#1B1B1B] border border-[#303030] rounded-2xl p-6 flex flex-col items-center gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <Ticket size={18} className="text-primary" />
               <h4 className="font-semibold text-white">{tTickets("title")}</h4>
+              <EventSaleBadge phase={salePhase} />
             </div>
-            <p className="text-sm text-zinc-400">
-              {t("ticketsComingSoon")}
+            <p className="text-sm text-zinc-400 text-center">
+              {canBuyTickets
+                ? tTickets("selectTicketsPrompt")
+                : salePhase === "not_started" && earliestSalesStart
+                  ? t("saleStartsAt", { date: formatEventDateTime(earliestSalesStart) })
+                  : t(
+                      salePhase === "not_started"
+                        ? "saleNotStarted"
+                        : salePhase === "sold_out"
+                          ? "soldOut"
+                          : "saleEnded",
+                    )}
             </p>
             <Button
               variant="outline"
               size="lg"
               className="mt-2 border-primary text-primary hover:bg-primary hover:text-white rounded-full px-10"
+              disabled={!canBuyTickets}
               onClick={() =>
                 openTicketPurchaseFlow({
                   isAuthenticated: Boolean(getAccessToken()),
@@ -386,7 +430,7 @@ export default function EventDetailPage() {
                 })
               }
             >
-              {t("buyTickets")}
+              {canBuyTickets ? t("buyTickets") : t("buyTicketsUnavailable")}
             </Button>
             <TicketPurchaseDialog
               open={ticketDialogOpen}
@@ -400,6 +444,12 @@ export default function EventDetailPage() {
           ) : null}
         </section>
       )}
+
+      {event.vendorProfile ? (
+        <section className="container mx-auto border-t border-[#303030] px-4 py-12 sm:px-6">
+          <VendorReviewsSection vendorId={event.vendorProfile.id} />
+        </section>
+      ) : null}
     </div>
   );
 }
