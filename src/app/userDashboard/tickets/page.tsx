@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+import { OpenChatButton } from '@/components/chat/OpenChatButton'
 import { ArrowRight, ArrowUpDown, ChevronRight, Loader2, Star, Ticket } from 'lucide-react'
 import {
   getMyTicketOrders,
@@ -324,6 +325,13 @@ const Tickets = () => {
                           <span className="text-xs text-muted-foreground">
                             {t('reviewedOrganizer')}
                           </span>
+                        ) : null}
+                        {ticket.paymentStatus === 'confirmed' ? (
+                          <OpenChatButton
+                            kind="ticket"
+                            referenceId={ticket.orderGroupId}
+                            messagesPath="/userDashboard/messages"
+                          />
                         ) : null}
                         <Button asChild variant="link" size="sm" className="h-auto p-0">
                           <Link

@@ -9,6 +9,7 @@ import {
   dashboardShellClass,
   DashboardMobileHeader,
 } from '@/components/dashboard/dashboard-shared'
+import { ChatSocketProvider } from '@/components/chat/ChatSocketProvider'
 
 export default function VendorDashboardLayout({
   children,
@@ -18,6 +19,7 @@ export default function VendorDashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
+    <ChatSocketProvider>
     <div className={dashboardShellClass}>
       {sidebarOpen ? (
         <div
@@ -34,5 +36,6 @@ export default function VendorDashboardLayout({
         <main className={dashboardContentClass}>{children}</main>
       </div>
     </div>
+    </ChatSocketProvider>
   )
 }

@@ -10,6 +10,7 @@ import {
   dashboardShellClass,
   DashboardMobileHeader,
 } from '@/components/dashboard/dashboard-shared'
+import { ChatSocketProvider } from '@/components/chat/ChatSocketProvider'
 
 export default function DashboardLayout({
   children,
@@ -21,6 +22,7 @@ export default function DashboardLayout({
   return (
     <Suspense fallback={null}>
       <VendorAdminRedirect>
+        <ChatSocketProvider>
         <div className={dashboardShellClass}>
           {sidebarOpen ? (
             <div
@@ -37,6 +39,7 @@ export default function DashboardLayout({
             <main className={dashboardContentClass}>{children}</main>
           </div>
         </div>
+        </ChatSocketProvider>
       </VendorAdminRedirect>
     </Suspense>
   )

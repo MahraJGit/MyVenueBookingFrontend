@@ -14,6 +14,7 @@ import {
   Clapperboard,
   LayoutDashboard,
   TrendingUp,
+  MessageCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -100,6 +101,7 @@ export default function VendorSidebar({
           </SidebarSection>
 
           <SidebarSection title={t('account')} value="account">
+            <SidebarLink icon={MessageCircle} label={t('messages')} href={`${paths.root}/messages`} onClose={onClose} />
             <SidebarLink icon={Calendar} label={tNav('customerDashboard')} href="/userDashboard/tickets" onClose={onClose} />
           </SidebarSection>
         </Accordion>

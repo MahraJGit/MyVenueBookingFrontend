@@ -671,6 +671,7 @@
     "personalInfo": "Informations personnelles",
     "payment": "Paiement",
     "notification": "Notification",
+    "messages": "Messages",
     "settings": "Paramètres",
     "profile": "Profil",
     "savedCards": "Cartes enregistrées",
@@ -784,6 +785,7 @@
     "ticketSales": "Ventes de billets",
     "myVenues": "Mes lieux",
     "venueBookings": "Réservations de lieux",
+    "messages": "Messages",
     "account": "Compte",
     "welcome": "Bienvenue sur votre tableau de bord fournisseur",
     "totalEvents": "Total des événements",
@@ -823,6 +825,7 @@
     "users": "Utilisateurs",
     "manageUsers": "Gérer les utilisateurs",
     "vendorRequests": "Demandes de fournisseurs",
+    "vendorMessages": "Vendor Messages",
     "venues": "Lieux",
     "venueReviews": "Avis sur les lieux",
     "manageVenues": "Gérer les lieux",
@@ -1950,5 +1953,23 @@
     "thursday": "Thursday",
     "friday": "Friday",
     "saturday": "Saturday"
+  },
+  "chat": {
+    "eyebrow": "Messaging",
+    "title": "Messages",
+    "subtitle": "Chat with vendors, buyers, or platform support after a confirmed booking or ticket purchase.",
+    "inbox": "Inbox",
+    "conversation": "Conversation",
+    "selectConversation": "Select a conversation to start chatting.",
+    "noConversations": "No conversations yet. Messages appear here after you book a venue or buy event tickets.",
+    "messagePlaceholder": "Type a message…",
+    "messageVendor": "Message vendor",
+    "contactAdmin": "Contact admin",
+    "typeBooking": "Venue booking",
+    "typeTicket": "Event tickets",
+    "typeSupport": "Vendor support",
+    "typeAdminSupport": "Platform support",
+    "adminSupportTitle": "Admin support",
+    "unknownVendor": "Vendor"
   }
 }

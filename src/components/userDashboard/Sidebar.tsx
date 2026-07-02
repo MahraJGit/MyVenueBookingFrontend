@@ -13,6 +13,7 @@ import {
   Settings,
   Heart,
   X,
+  MessageCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -58,6 +59,11 @@ export default function UserSidebar({ isOpen, onClose }: UserSidebarProps) {
       labelKey: 'notification' as const,
       href: '/userDashboard/notifications',
       icon: Bell,
+    },
+    {
+      labelKey: 'messages' as const,
+      href: '/userDashboard/messages',
+      icon: MessageCircle,
     },
   ]
 

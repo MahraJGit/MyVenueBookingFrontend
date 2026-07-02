@@ -671,6 +671,7 @@
     "personalInfo": "المعلومات الشخصية",
     "payment": "الدفع",
     "notification": "الإشعارات",
+    "messages": "Messages",
     "settings": "الإعدادات",
     "profile": "الملف الشخصي",
     "savedCards": "البطاقات المحفوظة",
@@ -784,6 +785,7 @@
     "ticketSales": "مبيعات التذاكر",
     "myVenues": "أماكني",
     "venueBookings": "حجوزات الأماكن",
+    "messages": "Messages",
     "account": "الحساب",
     "welcome": "مرحباً بك في لوحة تحكم المزود",
     "totalEvents": "إجمالي الفعاليات",
@@ -823,6 +825,7 @@
     "users": "المستخدمون",
     "manageUsers": "إدارة المستخدمين",
     "vendorRequests": "طلبات المزودين",
+    "vendorMessages": "Vendor Messages",
     "venues": "الأماكن",
     "venueReviews": "مراجعات الأماكن",
     "manageVenues": "إدارة الأماكن",
@@ -1948,5 +1951,23 @@
     "thursday": "Thursday",
     "friday": "Friday",
     "saturday": "Saturday"
+  },
+  "chat": {
+    "eyebrow": "Messaging",
+    "title": "Messages",
+    "subtitle": "Chat with vendors, buyers, or platform support after a confirmed booking or ticket purchase.",
+    "inbox": "Inbox",
+    "conversation": "Conversation",
+    "selectConversation": "Select a conversation to start chatting.",
+    "noConversations": "No conversations yet. Messages appear here after you book a venue or buy event tickets.",
+    "messagePlaceholder": "Type a message…",
+    "messageVendor": "Message vendor",
+    "contactAdmin": "Contact admin",
+    "typeBooking": "Venue booking",
+    "typeTicket": "Event tickets",
+    "typeSupport": "Vendor support",
+    "typeAdminSupport": "Platform support",
+    "adminSupportTitle": "Admin support",
+    "unknownVendor": "Vendor"
   }
 }

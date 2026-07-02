@@ -671,6 +671,7 @@
     "personalInfo": "ذاتی معلومات",
     "payment": "ادائیگی",
     "notification": "اطلاع",
+    "messages": "Messages",
     "settings": "ترتیبات",
     "profile": "پروفائل",
     "savedCards": "محفوظ کارڈز",
@@ -784,6 +785,7 @@
     "ticketSales": "ٹکٹ فروخت",
     "myVenues": "میرے وینوز",
     "venueBookings": "وینو بکنگز",
+    "messages": "Messages",
     "account": "اکاؤنٹ",
     "welcome": "اپنے وینڈر ڈیش بورڈ میں خوش آمدید",
     "totalEvents": "کل تقریبات",
@@ -823,6 +825,7 @@
     "users": "صارفین",
     "manageUsers": "صارفین کا انتظام",
     "vendorRequests": "وینڈر کی درخواستیں",
+    "vendorMessages": "Vendor Messages",
     "venues": "وینوز",
     "venueReviews": "وینو جائزے",
     "manageVenues": "وینوز کا انتظام",
@@ -1948,5 +1951,23 @@
     "thursday": "Thursday",
     "friday": "Friday",
     "saturday": "Saturday"
+  },
+  "chat": {
+    "eyebrow": "Messaging",
+    "title": "Messages",
+    "subtitle": "Chat with vendors, buyers, or platform support after a confirmed booking or ticket purchase.",
+    "inbox": "Inbox",
+    "conversation": "Conversation",
+    "selectConversation": "Select a conversation to start chatting.",
+    "noConversations": "No conversations yet. Messages appear here after you book a venue or buy event tickets.",
+    "messagePlaceholder": "Type a message…",
+    "messageVendor": "Message vendor",
+    "contactAdmin": "Contact admin",
+    "typeBooking": "Venue booking",
+    "typeTicket": "Event tickets",
+    "typeSupport": "Vendor support",
+    "typeAdminSupport": "Platform support",
+    "adminSupportTitle": "Admin support",
+    "unknownVendor": "Vendor"
   }
 }

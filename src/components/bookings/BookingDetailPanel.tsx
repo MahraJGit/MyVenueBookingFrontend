@@ -67,6 +67,7 @@ import { bookingKeys } from "@/features/venues/query-keys";
 import type { Booking } from "@/features/bookings/types";
 import { formatInVenueTimezone } from "@/features/venues/timezone";
 import { toastApiError } from "@/lib/toasts";
+import { OpenChatButton } from "@/components/chat/OpenChatButton";
 import { VenueReviewDialog } from "@/components/reviews/VenueReviewDialog";
 
 type BookingDetailPanelProps = {
@@ -373,6 +374,14 @@ function UserBookingDetail({
           ) : booking.hasReviewedVenue ? (
             <p className="w-full text-sm text-muted-foreground">{tDashboard("reviewedVenue")}</p>
           ) : null}
+          {(booking.status === "CONFIRMED" || booking.status === "COMPLETED") ? (
+            <OpenChatButton
+              kind="booking"
+              referenceId={booking.id}
+              messagesPath="/userDashboard/messages"
+              variant="outline"
+            />
+          ) : null}
           {isHold ? (
             <Button asChild className="flex-1 bg-primary hover:bg-primary/90">
               <Link href={`/venues/booking/${booking.id}/checkout`}>
@@ -518,6 +527,13 @@ function DefaultBookingDetail({
         </dl>
 
         <div className="flex flex-wrap gap-2">
+          {(booking.status === "CONFIRMED" || booking.status === "COMPLETED") ? (
+            <OpenChatButton
+              kind="booking"
+              referenceId={booking.id}
+              messagesPath="/vendorDashboard/messages"
+            />
+          ) : null}
           {allowReschedule &&
             (booking.status === "HOLD" || booking.status === "CONFIRMED") && (
               <Button

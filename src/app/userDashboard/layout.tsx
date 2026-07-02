@@ -9,6 +9,7 @@ import {
   dashboardOverlayClass,
   dashboardShellClass,
 } from '@/components/dashboard/dashboard-shared'
+import { ChatSocketProvider } from '@/components/chat/ChatSocketProvider'
 
 export default function DashboardLayout({
   children,
@@ -18,6 +19,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
+    <ChatSocketProvider>
     <div className={dashboardShellClass}>
       {sidebarOpen ? (
         <div
@@ -39,5 +41,6 @@ export default function DashboardLayout({
         </main>
       </div>
     </div>
+    </ChatSocketProvider>
   )
 }
