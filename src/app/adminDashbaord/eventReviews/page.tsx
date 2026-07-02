@@ -39,6 +39,8 @@ import {
   type EventApprovalStatus,
   type ManagedEvent,
 } from "@/features/events/api"
+import { EventPublicPreviewDialog } from "@/components/events/EventPublicPreviewDialog"
+import { useDashboardPaths } from "@/features/dashboard/paths"
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton"
 import { toastApiError } from "@/lib/toasts"
 import {
@@ -110,8 +112,10 @@ export default function EventReviewsPage() {
   const tForms = useTranslations("forms")
   const tListing = useTranslations("listing")
   const queryClient = useQueryClient()
+  const paths = useDashboardPaths()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL")
   const [page, setPage] = useState(1)
+  const [viewEvent, setViewEvent] = useState<ManagedEvent | null>(null)
   const [activeDetails, setActiveDetails] = useState<ManagedEvent | null>(null)
   const [rejectTarget, setRejectTarget] = useState<ManagedEvent | null>(null)
   const [rejectReason, setRejectReason] = useState("")
@@ -306,7 +310,13 @@ export default function EventReviewsPage() {
                       className={dashboardTableRowClass}
                     >
                       <TableCell className="max-w-[240px] whitespace-normal break-words font-medium">
-                        {ev.eventName}
+                        <button
+                          type="button"
+                          className="text-left hover:text-primary hover:underline"
+                          onClick={() => setActiveDetails(ev)}
+                        >
+                          {ev.eventName}
+                        </button>
                       </TableCell>
                       <TableCell
                         className="max-w-[200px] truncate text-muted-foreground"
@@ -334,7 +344,7 @@ export default function EventReviewsPage() {
                             size="sm"
                             variant="outline"
                             className={cn("shrink-0", dashboardOutlineButtonClass)}
-                            onClick={() => setActiveDetails(ev)}
+                            onClick={() => setViewEvent(ev)}
                           >
                             <Eye className="h-4 w-4" />
                             {tCommon("view")}
@@ -488,9 +498,7 @@ export default function EventReviewsPage() {
                   {tAdmin("reject")}
                 </Button>
                 <Button variant="outline" className={dashboardOutlineButtonClass} asChild>
-                  <Link
-                    href={`/adminDashbaord/addEvents?id=${encodeURIComponent(activeDetails.id)}`}
-                  >
+                  <Link href={paths.editEvent(activeDetails.id)}>
                     {t("editInDashboard")}
                   </Link>
                 </Button>
@@ -555,6 +563,12 @@ export default function EventReviewsPage() {
         </DialogContent>
       </Dialog>
       </DashboardPanel>
+
+      <EventPublicPreviewDialog
+        event={viewEvent}
+        onClose={() => setViewEvent(null)}
+        editHref={viewEvent ? paths.editEvent(viewEvent.id) : undefined}
+      />
     </DashboardPageShell>
   )
 }
