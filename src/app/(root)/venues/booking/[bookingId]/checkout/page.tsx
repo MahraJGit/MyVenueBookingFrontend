@@ -37,6 +37,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { formatInVenueTimezone } from "@/features/venues/timezone";
 import { decimalToNumber } from "@/features/venues/utils";
 import { CheckoutPrice } from "@/components/currency/CheckoutPrice";
+import { BookingLineItems } from "@/components/bookings/BookingLineItems";
 import { useDisplayPrice } from "@/features/currency/currency-context";
 import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
@@ -243,6 +244,11 @@ export default function VenueBookingCheckoutPage({
                   ) : null}
                 </div>
               </div>
+
+              <BookingLineItems
+                booking={booking}
+                className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950/40 p-4"
+              />
             </section>
 
             <section className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">

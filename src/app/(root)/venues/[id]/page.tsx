@@ -52,6 +52,11 @@ import {
   unavailabilityMessage,
 } from "@/features/venues/utils";
 import type { AvailabilitySlot } from "@/features/venues/types";
+import {
+  combinedSlotRange,
+  selectedSlotsTotalPrice,
+  toggleSlotSelection,
+} from "@/features/venues/slot-selection";
 
 function VenueDetailSkeleton() {
   return (
@@ -166,7 +171,7 @@ export default function VenueDetailPage({
   const t = useTranslations("venues");
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
+  const [selectedSlots, setSelectedSlots] = useState<AvailabilitySlot[]>([]);
   const [bookingOpen, setBookingOpen] = useState(false);
 
   const handleShare = useCallback(async (venueName: string) => {
@@ -214,11 +219,12 @@ export default function VenueDetailPage({
     [venue],
   );
 
-  const isDailyPricing =
-    dayAvailability?.modelType === "DAILY_BLOCK" ||
-    dayAvailability?.modelType === "FLAT_RATE";
+  const isDailyPricing = dayAvailability?.modelType === "DAILY_BLOCK";
   const bookableDaySlots =
     dayAvailability?.slots?.filter((slot) => slot.available) ?? [];
+  const combinedRange = combinedSlotRange(selectedSlots);
+  const canContinueBooking =
+    selectedSlots.length > 0 && selectedSlots.every((s) => s.available);
 
   if (isLoading) return <VenueDetailSkeleton />;
 
@@ -550,7 +556,7 @@ export default function VenueDetailPage({
                     selected={selectedDate}
                     onSelect={(d) => {
                       setSelectedDate(d);
-                      setSelectedSlot(null);
+                      setSelectedSlots([]);
                     }}
                     className="border-0 bg-transparent p-0"
                   />
@@ -585,7 +591,7 @@ export default function VenueDetailPage({
                           <Button
                             className="h-auto min-h-11 w-full whitespace-normal rounded-full bg-primary px-4 py-2.5 text-sm shadow-lg shadow-primary/20 hover:bg-primary/90"
                             onClick={() => {
-                              setSelectedSlot(daySlot);
+                              setSelectedSlots([daySlot]);
                               setBookingOpen(true);
                             }}
                           >
@@ -599,24 +605,37 @@ export default function VenueDetailPage({
                         <SlotPicker
                           slots={dayAvailability?.slots ?? []}
                           currency={currency}
-                          selected={
-                            selectedSlot
-                              ? {
-                                  startTime: selectedSlot.startTime,
-                                  endTime: selectedSlot.endTime,
-                                }
-                              : null
+                          selectedSlots={selectedSlots}
+                          onToggleSlot={(slot) =>
+                            setSelectedSlots((prev) =>
+                              toggleSlotSelection(
+                                dayAvailability?.slots ?? [],
+                                prev,
+                                slot,
+                              ),
+                            )
                           }
-                          onSelect={(slot) => setSelectedSlot(slot)}
                         />
-                        {selectedSlot?.available && (
-                          <Button
-                            className="h-11 w-full rounded-full bg-primary shadow-lg shadow-primary/20 hover:bg-primary/90"
-                            onClick={() => setBookingOpen(true)}
-                          >
-                            {t("continueToBook")}
-                          </Button>
-                        )}
+                        {canContinueBooking && combinedRange ? (
+                          <div className="space-y-2">
+                            <p className="text-center text-xs text-zinc-400">
+                              {combinedRange.startTime} – {combinedRange.endTime}
+                              {selectedSlots.length > 1
+                                ? ` · ${t("slotsSelected", { count: selectedSlots.length })}`
+                                : ""}
+                            </p>
+                            <Button
+                              className="h-11 w-full rounded-full bg-primary shadow-lg shadow-primary/20 hover:bg-primary/90"
+                              onClick={() => setBookingOpen(true)}
+                            >
+                              {t("continueToBook")} —{" "}
+                              <DisplayPrice
+                                amount={selectedSlotsTotalPrice(selectedSlots)}
+                                currency={currency}
+                              />
+                            </Button>
+                          </div>
+                        ) : null}
                         {(dayAvailability?.slots?.length ?? 0) > 0 &&
                           !dayAvailability.slots.some((slot) => slot.available) && (
                             <p className="text-center text-sm text-zinc-500">
@@ -643,15 +662,15 @@ export default function VenueDetailPage({
         <VenueReviewsSection venueId={venue.id} />
       </section>
 
-      {selectedSlot && selectedDate && (
+      {combinedRange && selectedDate && (
         <VenueBookingDialog
           open={bookingOpen}
           onOpenChange={setBookingOpen}
           venue={venue}
           dateStr={formatDateKey(selectedDate)}
           slot={{
-            startTime: selectedSlot.startTime,
-            endTime: selectedSlot.endTime,
+            startTime: combinedRange.startTime,
+            endTime: combinedRange.endTime,
           }}
         />
       )}

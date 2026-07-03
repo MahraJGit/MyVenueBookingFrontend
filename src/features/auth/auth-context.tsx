@@ -18,12 +18,14 @@ import { resetAuthQueryCache } from "@/features/auth/auth-cache";
 import { restoreAuthSession } from "@/features/auth/restore-session";
 import { teardownClientAuth } from "@/features/auth/teardown-client-auth";
 import type { AuthUser } from "@/features/auth/types";
+import { buildDisplayName, buildInitials } from "@/features/auth/auth-display";
 import {
   AUTH_CHANGED_EVENT,
   AUTH_SESSION_EXPIRED_EVENT,
   clearAuthSession,
   getAccessToken,
   getAuthUser,
+  persistAuthSession,
 } from "@/features/auth/session-storage";
 import { disconnectChatSocket } from "@/features/chat/use-chat-socket";
 
@@ -42,17 +44,24 @@ type AuthContextValue = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isReady: boolean;
+  /** True while checking HttpOnly refresh cookie (no local session yet). */
+  isRestoring: boolean;
   isVendor: boolean;
   isAdmin: boolean;
   dashboardLinks: DashboardLink[];
   displayName: string;
   initials: string;
+  establishSession: (session: { accessToken: string; user: AuthUser }) => void;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function readSession() {
+type AuthSession =
+  | { user: null; isAuthenticated: false }
+  | { user: AuthUser; isAuthenticated: true };
+
+function readSession(): AuthSession {
   const token = getAccessToken();
   const user = getAuthUser();
   if (!token || !user) {
@@ -84,45 +93,52 @@ export function getDashboardLinksForRole(role: string): DashboardLink[] {
   return [{ labelKey: "dashboard", href: customerDashboard.href }];
 }
 
-function buildDisplayName(user: AuthUser): string {
-  const fullName = [user.firstName, user.lastName]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(" ");
-  return fullName || user.email?.trim() || "";
-}
-
-function buildInitials(user: AuthUser): string {
-  const first = user.firstName?.trim().charAt(0) ?? "";
-  const last = user.lastName?.trim().charAt(0) ?? "";
-  const fromName = `${first}${last}`.toUpperCase();
-  if (fromName) return fromName;
-  const emailInitial = user.email?.trim().charAt(0).toUpperCase();
-  return emailInitial || "?";
-}
+const EMPTY_SESSION: AuthSession = { user: null, isAuthenticated: false };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const tAuth = useTranslations("auth");
-  const [session, setSession] = useState(() => readSession());
+  // Never read sessionStorage in initial state — it breaks SSR hydration.
+  const [session, setSession] = useState<AuthSession>(EMPTY_SESSION);
   const [isReady, setIsReady] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const syncFromStorage = useCallback(() => {
     setSession(readSession());
   }, []);
 
+  const establishSession = useCallback(
+    (next: { accessToken: string; user: AuthUser }) => {
+      persistAuthSession(next);
+      setSession({ user: next.user, isAuthenticated: true });
+      setIsReady(true);
+      setIsRestoring(false);
+    },
+    [],
+  );
+
   useEffect(() => {
     let cancelled = false;
+
+    syncFromStorage();
+    setIsReady(true);
+
+    if (!readSession().isAuthenticated) {
+      setIsRestoring(true);
+    }
 
     void (async () => {
       await restoreAuthSession();
       if (cancelled) return;
       syncFromStorage();
-      setIsReady(true);
+      setIsRestoring(false);
     })();
 
-    const onAuthChanged = () => syncFromStorage();
+    const onAuthChanged = () => {
+      syncFromStorage();
+      setIsReady(true);
+    };
     const onSessionExpired = () => {
       resetAuthQueryCache(queryClient);
       disconnectChatSocket();
@@ -177,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: session.isAuthenticated,
       isReady,
+      isRestoring,
       isVendor: role === "VENDOR",
       isAdmin: role === "ADMIN",
       dashboardLinks: user ? getDashboardLinksForRole(role) : [],
@@ -184,9 +201,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? buildDisplayName(user) || tAuth("account")
         : "",
       initials: user ? buildInitials(user) : "?",
+      establishSession,
       logout,
     };
-  }, [session, isReady, logout, tAuth]);
+  }, [session, isReady, isRestoring, establishSession, logout, tAuth]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

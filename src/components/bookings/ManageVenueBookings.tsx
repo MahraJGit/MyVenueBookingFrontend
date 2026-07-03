@@ -214,7 +214,7 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
                   onClose={() => setSelectedId(null)}
                   allowReschedule
                   allowCancel
-                  variant="user"
+                  variant="vendor"
                 />
               </div>
             ) : (

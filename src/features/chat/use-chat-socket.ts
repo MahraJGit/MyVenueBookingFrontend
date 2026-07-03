@@ -9,16 +9,21 @@ import {
   getAuthUser,
 } from "@/features/auth/session-storage";
 import { assertApiConfigured } from "@/lib/env";
+import { toastApiError } from "@/lib/toasts";
+import { markConversationRead } from "./api";
 import {
   applyConversationReadLocally,
   applyIncomingMessageToCache,
 } from "./chat-cache";
+import type { ChatInboxContext } from "./inbox-context";
+import { chatKeys } from "./query-keys";
 import type { ChatMessage } from "./types";
 
 let sharedSocket: Socket | null = null;
 let socketToken: string | null = null;
 let queryClientRef: QueryClient | null = null;
 let activeConversationIdRef: string | null = null;
+let activeChatContextRef: ChatInboxContext | null = null;
 let listenersBound = false;
 
 function disconnectSocket() {
@@ -48,20 +53,45 @@ function applyIncomingMessage(queryClient: QueryClient, message: ChatMessage) {
   applyIncomingMessageToCache(queryClient, normalized, {
     currentUserId: getAuthUser()?.id,
     activeConversationId: activeConversationIdRef,
+    activeContext: activeChatContextRef,
   });
 }
 
-function joinConversation(socket: Socket, conversationId: string) {
-  socket.emit("conversation:join", { conversationId });
-  socket.emit("conversation:read", { conversationId });
-  if (queryClientRef) {
-    applyConversationReadLocally(queryClientRef, conversationId);
-  }
+function markConversationReadEverywhere(
+  conversationId: string,
+  context: ChatInboxContext,
+) {
+  if (!queryClientRef) return;
+
+  applyConversationReadLocally(queryClientRef, conversationId, context);
+
+  const userId = getAuthUser()?.id;
+  void markConversationRead(conversationId, context)
+    .then(() => {
+      if (userId) {
+        void queryClientRef?.invalidateQueries({
+          queryKey: chatKeys.unreadCount(userId, context),
+        });
+      }
+    })
+    .catch(() => {
+      // Socket read may still succeed; inbox will resync on next fetch.
+    });
+}
+
+function joinConversation(
+  socket: Socket,
+  conversationId: string,
+  context: ChatInboxContext,
+) {
+  socket.emit("conversation:join", { conversationId, context });
+  socket.emit("conversation:read", { conversationId, context });
+  markConversationReadEverywhere(conversationId, context);
 }
 
 function rejoinActiveConversation(socket: Socket) {
-  if (activeConversationIdRef) {
-    joinConversation(socket, activeConversationIdRef);
+  if (activeConversationIdRef && activeChatContextRef) {
+    joinConversation(socket, activeConversationIdRef, activeChatContextRef);
   }
 }
 
@@ -83,15 +113,10 @@ function bindSocketListeners(socket: Socket) {
   });
 
   socket.on(
-    "conversation:updated",
-    (payload: { conversationId?: string; lastMessage?: ChatMessage }) => {
-      if (!queryClientRef || !payload?.conversationId || !payload.lastMessage) {
-        return;
-      }
-      applyIncomingMessage(queryClientRef, {
-        ...payload.lastMessage,
-        conversationId: payload.conversationId,
-      });
+    "message:error",
+    (payload: { conversationId?: string; message?: string }) => {
+      if (!payload?.message) return;
+      toastApiError(new Error(payload.message));
     },
   );
 }
@@ -152,17 +177,21 @@ export function useChatSocketConnection(queryClient: QueryClient) {
 }
 
 /** Call from ChatInbox when the active conversation changes. */
-export function useChatConversationJoin(activeConversationId?: string | null) {
+export function useChatConversationJoin(
+  activeConversationId?: string | null,
+  context?: ChatInboxContext | null,
+) {
   const joinedRef = useRef<string | null>(null);
 
   useEffect(() => {
     activeConversationIdRef = activeConversationId ?? null;
+    activeChatContextRef = context ?? null;
 
     const socket = getSocket();
-    if (!socket || !activeConversationId) return;
+    if (!socket || !activeConversationId || !context) return;
 
     const doJoin = () => {
-      joinConversation(socket, activeConversationId);
+      joinConversation(socket, activeConversationId, context);
       joinedRef.current = activeConversationId;
     };
 
@@ -175,7 +204,7 @@ export function useChatConversationJoin(activeConversationId?: string | null) {
     return () => {
       socket.off("connect", doJoin);
     };
-  }, [activeConversationId]);
+  }, [activeConversationId, context]);
 }
 
 export function disconnectChatSocket() {

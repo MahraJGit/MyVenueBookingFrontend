@@ -35,6 +35,38 @@ type VenueBookingDialogProps = {
   slot: { startTime: string; endTime: string };
 };
 
+function validateGuestCount(
+  raw: string,
+  messages: {
+    required: string;
+    min: string;
+    max: string;
+    invalid: string;
+  },
+  capacityMin?: number | null,
+  capacityMax?: number | null,
+): string | null {
+  const hasConstraint =
+    (capacityMin != null && capacityMin > 0) ||
+    (capacityMax != null && capacityMax > 0);
+
+  if (!raw.trim()) {
+    return hasConstraint ? messages.required : null;
+  }
+
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 1 || !Number.isInteger(n)) {
+    return messages.invalid;
+  }
+  if (capacityMin != null && n < capacityMin) {
+    return messages.min;
+  }
+  if (capacityMax != null && n > capacityMax) {
+    return messages.max;
+  }
+  return null;
+}
+
 export function VenueBookingDialog({
   open,
   onOpenChange,
@@ -48,8 +80,20 @@ export function VenueBookingDialog({
   const { isAuthenticated, isReady } = useAuth();
 
   const [numGuests, setNumGuests] = useState("");
+  const [guestError, setGuestError] = useState<string | null>(null);
   const [specialRequests, setSpecialRequests] = useState("");
   const [amenitySelections, setAmenitySelections] = useState<AmenitySelection[]>([]);
+
+  const guestMessages = {
+    required: t("guestsRequired"),
+    min: t("guestsMin", { min: venue.capacityMin ?? 1 }),
+    max: t("guestsMax", { max: venue.capacityMax ?? 0 }),
+    invalid: t("guestsInvalid"),
+  };
+
+  const guestsRequired =
+    (venue.capacityMin != null && venue.capacityMin > 0) ||
+    (venue.capacityMax != null && venue.capacityMax > 0);
 
   const holdMut = useMutation({
     mutationFn: async () => {
@@ -82,6 +126,16 @@ export function VenueBookingDialog({
       router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
+
+    const err = validateGuestCount(
+      numGuests,
+      guestMessages,
+      venue.capacityMin,
+      venue.capacityMax,
+    );
+    setGuestError(err);
+    if (err) return;
+
     holdMut.mutate();
   };
 
@@ -97,19 +151,39 @@ export function VenueBookingDialog({
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>{t("numberOfGuests")}</Label>
+            <Label>
+              {t("numberOfGuests")}
+              {guestsRequired ? (
+                <span className="ml-1 text-destructive">*</span>
+              ) : null}
+            </Label>
             <Input
               type="number"
-              min={1}
+              min={venue.capacityMin ?? 1}
+              max={venue.capacityMax ?? undefined}
               value={numGuests}
-              onChange={(e) => setNumGuests(e.target.value)}
+              onChange={(e) => {
+                setNumGuests(e.target.value);
+                if (guestError) setGuestError(null);
+              }}
+              aria-invalid={!!guestError}
               className="border-[#303030] bg-black"
               placeholder={
-                venue.capacityMax
-                  ? t("maxGuests", { max: venue.capacityMax })
-                  : tCommon("optional")
+                venue.capacityMin && venue.capacityMax
+                  ? t("guestsRangePlaceholder", {
+                      min: venue.capacityMin,
+                      max: venue.capacityMax,
+                    })
+                  : venue.capacityMax
+                    ? t("maxGuests", { max: venue.capacityMax })
+                    : venue.capacityMin
+                      ? t("minGuestsPlaceholder", { min: venue.capacityMin })
+                      : tCommon("optional")
               }
             />
+            {guestError ? (
+              <p className="text-xs text-destructive">{guestError}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label>{t("specialRequests")}</Label>

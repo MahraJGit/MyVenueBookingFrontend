@@ -188,8 +188,8 @@ export function VenueAmenityEditor({
       >
         <p className="text-sm text-muted-foreground">
           {t.rich("editorIntro", {
-            venue: () => (
-              <strong className="text-foreground">{t("thisVenue")}</strong>
+            venue: (chunks) => (
+              <strong className="text-foreground">{chunks}</strong>
             ),
           })}
         </p>

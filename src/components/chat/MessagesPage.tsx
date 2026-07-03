@@ -5,21 +5,34 @@ import { useTranslations } from "next-intl";
 import { ChatInbox } from "@/components/chat/ChatInbox";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-ui";
+import type { ChatInboxContext } from "@/features/chat/inbox-context";
 
-function MessagesPageContent({ basePath }: { basePath: string }) {
+function MessagesPageContent({
+  basePath,
+  context,
+}: {
+  basePath: string;
+  context: ChatInboxContext;
+}) {
   const t = useTranslations("chat");
   return (
     <DashboardPageShell>
       <DashboardPageHeader title={t("title")} description={t("subtitle")} />
-      <ChatInbox basePath={basePath} />
+      <ChatInbox basePath={basePath} context={context} />
     </DashboardPageShell>
   );
 }
 
-export function MessagesPage({ basePath }: { basePath: string }) {
+export function MessagesPage({
+  basePath,
+  context,
+}: {
+  basePath: string;
+  context: ChatInboxContext;
+}) {
   return (
     <Suspense fallback={null}>
-      <MessagesPageContent basePath={basePath} />
+      <MessagesPageContent basePath={basePath} context={context} />
     </Suspense>
   );
 }

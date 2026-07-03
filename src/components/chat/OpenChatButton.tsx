@@ -9,12 +9,17 @@ import {
   getConversationByBooking,
   getConversationByOrderGroup,
 } from "@/features/chat/api";
+import {
+  inboxContextFromBasePath,
+  type ChatInboxContext,
+} from "@/features/chat/inbox-context";
 import { toastApiError } from "@/lib/toasts";
 
 type OpenChatButtonProps = {
   kind: "booking" | "ticket";
   referenceId: string;
   messagesPath: string;
+  chatContext?: ChatInboxContext;
   disabled?: boolean;
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg";
@@ -24,18 +29,20 @@ export function OpenChatButton({
   kind,
   referenceId,
   messagesPath,
+  chatContext,
   disabled,
   variant = "outline",
   size = "sm",
 }: OpenChatButtonProps) {
   const t = useTranslations("chat");
   const router = useRouter();
+  const context = chatContext ?? inboxContextFromBasePath(messagesPath);
 
   const mutation = useMutation({
     mutationFn: () =>
       kind === "booking"
-        ? getConversationByBooking(referenceId)
-        : getConversationByOrderGroup(referenceId),
+        ? getConversationByBooking(referenceId, context)
+        : getConversationByOrderGroup(referenceId, context),
     onSuccess: (conversation) => {
       router.push(`${messagesPath}?c=${conversation.id}`);
     },

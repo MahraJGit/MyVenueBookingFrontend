@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Loader2, MessageCircle, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -11,13 +17,19 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
+  getConversation,
   listConversations,
   listMessages,
   sendMessage,
 } from "@/features/chat/api";
+import type { ChatInboxContext } from "@/features/chat/inbox-context";
 import { chatKeys } from "@/features/chat/query-keys";
 import { useChatConversationJoin } from "@/features/chat/use-chat-socket";
-import type { ConversationSummary } from "@/features/chat/types";
+import type {
+  ChatMessage,
+  ConversationDetail,
+  ConversationSummary,
+} from "@/features/chat/types";
 import { toastApiError } from "@/lib/toasts";
 import { getAuthUser } from "@/features/auth/session-storage";
 import { useAuth } from "@/features/auth/auth-context";
@@ -28,9 +40,31 @@ import {
 
 type ChatInboxProps = {
   basePath: string;
+  context: ChatInboxContext;
 };
 
-export function ChatInbox({ basePath }: ChatInboxProps) {
+type MessagesPage = {
+  items: ChatMessage[];
+  nextCursor?: string;
+};
+
+function detailToSummary(detail: ConversationDetail): ConversationSummary {
+  return {
+    id: detail.id,
+    type: detail.type,
+    title: detail.title,
+    status: detail.status,
+    lastMessageAt: detail.lastMessageAt,
+    unreadCount: 0,
+    lastMessage: null,
+    participants: detail.participants,
+    bookingId: detail.bookingId,
+    orderGroupId: detail.orderGroupId,
+    vendorId: detail.vendorId,
+  };
+}
+
+export function ChatInbox({ basePath, context }: ChatInboxProps) {
   const t = useTranslations("chat");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -39,28 +73,48 @@ export function ChatInbox({ basePath }: ChatInboxProps) {
   const selectedId = searchParams.get("c");
   const [draft, setDraft] = useState("");
   const messagesScrollRef = useRef<HTMLDivElement>(null);
+  const prevMessageCountRef = useRef(0);
+  const loadingOlderRef = useRef(false);
   const currentUserId = getAuthUser()?.id;
   const viewerRole = getAuthUser()?.role;
 
-  useChatConversationJoin(selectedId);
+  useChatConversationJoin(selectedId, context);
 
   const conversationsQuery = useQuery({
-    queryKey: chatKeys.conversations(user?.id),
-    queryFn: () => listConversations(),
+    queryKey: chatKeys.conversations(user?.id, context),
+    queryFn: () => listConversations(context),
     enabled: isAuthenticated && isReady && !!user?.id,
   });
 
   const conversations = conversationsQuery.data?.items ?? [];
-  const selectedIsAccessible = useMemo(() => {
-    if (!selectedId) return false;
-    if (!conversationsQuery.isSuccess) return true;
-    return conversations.some((conversation) => conversation.id === selectedId);
-  }, [selectedId, conversations, conversationsQuery.isSuccess]);
+  const inList = Boolean(
+    selectedId && conversations.some((conversation) => conversation.id === selectedId),
+  );
 
-  const messagesQuery = useQuery({
-    queryKey: chatKeys.messages(user?.id, selectedId ?? "none"),
-    queryFn: () => listMessages(selectedId!),
-    enabled: selectedIsAccessible && isAuthenticated && isReady && !!user?.id,
+  const selectedConversationQuery = useQuery({
+    queryKey: chatKeys.conversation(user?.id, selectedId ?? "", context),
+    queryFn: () => getConversation(selectedId!, context),
+    enabled:
+      !!selectedId && !inList && isAuthenticated && isReady && !!user?.id,
+    retry: (failureCount, error) => {
+      if (error && typeof error === "object" && "statusCode" in error) {
+        const statusCode = (error as { statusCode: number }).statusCode;
+        if (statusCode === 403 || statusCode === 404) return false;
+      }
+      return failureCount < 1;
+    },
+  });
+
+  const selectedIsAccessible =
+    !selectedId || inList || selectedConversationQuery.isSuccess;
+
+  const messagesQuery = useInfiniteQuery({
+    queryKey: chatKeys.messages(user?.id, selectedId ?? "none", context),
+    queryFn: ({ pageParam }) => listMessages(selectedId!, context, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    enabled:
+      selectedIsAccessible && isAuthenticated && isReady && !!user?.id && !!selectedId,
     retry: (failureCount, error) => {
       if (error && typeof error === "object" && "statusCode" in error) {
         const statusCode = (error as { statusCode: number }).statusCode;
@@ -70,54 +124,99 @@ export function ChatInbox({ basePath }: ChatInboxProps) {
     },
   });
 
+  const messages = useMemo(() => {
+    const pages = messagesQuery.data?.pages;
+    if (!pages) return [];
+    return [...pages].reverse().flatMap((page) => page.items);
+  }, [messagesQuery.data?.pages]);
+
+  const hasOlderMessages = Boolean(messagesQuery.hasNextPage);
+
+  const displayConversations = useMemo(() => {
+    if (!selectedId || inList) return conversations;
+    if (selectedConversationQuery.data) {
+      return [detailToSummary(selectedConversationQuery.data), ...conversations];
+    }
+    return conversations;
+  }, [conversations, inList, selectedConversationQuery.data, selectedId]);
+
   const sendMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!selectedId) return;
-      return sendMessage(selectedId, content);
+      return sendMessage(selectedId, content, context);
     },
     onSuccess: (message) => {
       if (!message || !selectedId) return;
-      queryClient.setQueryData(
-        chatKeys.messages(user?.id, selectedId),
-        (old: { items: (typeof message)[]; nextCursor?: string } | undefined) => {
-          if (!old) return { items: [message] };
-          if (old.items.some((m) => m.id === message.id)) return old;
-          return { ...old, items: [...old.items, message] };
+      queryClient.setQueryData<InfiniteData<MessagesPage>>(
+        chatKeys.messages(user?.id, selectedId, context),
+        (old) => {
+          if (!old?.pages.length) {
+            return { pages: [{ items: [message] }], pageParams: [undefined] };
+          }
+          const pages = [...old.pages];
+          const firstPage = pages[0];
+          if (firstPage.items.some((m) => m.id === message.id)) return old;
+          pages[0] = { ...firstPage, items: [...firstPage.items, message] };
+          return { ...old, pages };
         },
       );
-      void queryClient.invalidateQueries({ queryKey: chatKeys.conversations(user?.id) });
+      void queryClient.invalidateQueries({
+        queryKey: chatKeys.conversations(user?.id, context),
+      });
       setDraft("");
     },
     onError: (err) => toastApiError(err),
   });
 
   useEffect(() => {
-    if (!selectedId || conversationsQuery.isLoading) return;
-    if (!conversationsQuery.isSuccess) return;
-    if (conversations.length === 0) return;
-    if (conversations.some((conversation) => conversation.id === selectedId)) {
-      return;
+    if (!selectedId) return;
+    if (inList) return;
+    if (selectedConversationQuery.isLoading) return;
+    if (selectedConversationQuery.isSuccess) return;
+    if (selectedConversationQuery.isError) {
+      router.replace(basePath);
     }
-    router.replace(basePath);
   }, [
     basePath,
-    conversations,
-    conversationsQuery.isLoading,
-    conversationsQuery.isSuccess,
+    inList,
     router,
+    selectedConversationQuery.isError,
+    selectedConversationQuery.isLoading,
+    selectedConversationQuery.isSuccess,
     selectedId,
   ]);
 
   useEffect(() => {
+    prevMessageCountRef.current = 0;
+    loadingOlderRef.current = false;
+  }, [selectedId]);
+
+  useEffect(() => {
+    const count = messages.length;
     const el = messagesScrollRef.current;
     if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }, [messagesQuery.data?.items.length, selectedId]);
 
-  const selected = useMemo(
-    () => conversations.find((c) => c.id === selectedId),
-    [conversations, selectedId],
-  );
+    if (loadingOlderRef.current) {
+      loadingOlderRef.current = false;
+      prevMessageCountRef.current = count;
+      return;
+    }
+
+    if (count > prevMessageCountRef.current) {
+      el.scrollTop = el.scrollHeight;
+    }
+    prevMessageCountRef.current = count;
+  }, [messages.length, selectedId]);
+
+  const selected = useMemo(() => {
+    const fromList = displayConversations.find((c) => c.id === selectedId);
+    if (fromList) return fromList;
+    if (selectedConversationQuery.data) {
+      return detailToSummary(selectedConversationQuery.data);
+    }
+    return undefined;
+  }, [displayConversations, selectedConversationQuery.data, selectedId]);
+
   const selectedTypeLabel = selected
     ? getConversationTypeLabel(selected.type, viewerRole, t)
     : null;
@@ -133,6 +232,19 @@ export function ChatInbox({ basePath }: ChatInboxProps) {
     sendMutation.mutate(content);
   };
 
+  const handleLoadOlder = async () => {
+    if (!messagesScrollRef.current || !messagesQuery.hasNextPage) return;
+    const el = messagesScrollRef.current;
+    const previousHeight = el.scrollHeight;
+    loadingOlderRef.current = true;
+    await messagesQuery.fetchNextPage();
+    requestAnimationFrame(() => {
+      if (!messagesScrollRef.current) return;
+      messagesScrollRef.current.scrollTop =
+        messagesScrollRef.current.scrollHeight - previousHeight;
+    });
+  };
+
   return (
     <div className="grid h-[min(70vh,calc(100dvh-11rem))] min-h-[420px] gap-4 overflow-hidden lg:grid-cols-[320px_1fr]">
       <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
@@ -145,10 +257,12 @@ export function ChatInbox({ basePath }: ChatInboxProps) {
             <div className="flex justify-center p-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : conversations.length === 0 ? (
+          ) : conversationsQuery.isError ? (
+            <p className="p-6 text-sm text-destructive">{t("inboxError")}</p>
+          ) : displayConversations.length === 0 ? (
             <p className="p-6 text-sm text-muted-foreground">{t("noConversations")}</p>
           ) : (
-            conversations.map((conversation) => (
+            displayConversations.map((conversation) => (
               <ConversationRow
                 key={conversation.id}
                 conversation={conversation}
@@ -184,35 +298,62 @@ export function ChatInbox({ basePath }: ChatInboxProps) {
               ref={messagesScrollRef}
               className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4"
             >
+              {hasOlderMessages ? (
+                <div className="flex justify-center pb-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void handleLoadOlder()}
+                    disabled={messagesQuery.isFetchingNextPage}
+                  >
+                    {messagesQuery.isFetchingNextPage ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    {t("loadOlder")}
+                  </Button>
+                </div>
+              ) : null}
+
               {messagesQuery.isLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
+              ) : messagesQuery.isError ? (
+                <p className="py-8 text-center text-sm text-destructive">
+                  {t("messagesError")}
+                </p>
+              ) : messages.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  {t("noMessages")}
+                </p>
               ) : (
-                messagesQuery.data?.items.map((message) => {
+                messages.map((message) => {
                   const isOwn = message.senderId === currentUserId;
                   return (
-                  <div
-                    key={message.id}
-                    className={cn("flex", isOwn ? "justify-end" : "justify-start")}
-                  >
                     <div
-                      className={cn(
-                        "max-w-[85%] rounded-lg px-3 py-2 text-sm",
-                        isOwn
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted",
-                      )}
+                      key={message.id}
+                      className={cn("flex", isOwn ? "justify-end" : "justify-start")}
                     >
-                    <p className="mb-1 text-xs font-medium opacity-80">
-                      {message.sender.firstName} {message.sender.lastName}
-                    </p>
-                    <p className="whitespace-pre-wrap break-words">{message.content}</p>
-                    <p className="mt-1 text-[10px] opacity-70">
-                      {format(new Date(message.createdAt), "MMM d, h:mm a")}
-                    </p>
+                      <div
+                        className={cn(
+                          "max-w-[85%] rounded-lg px-3 py-2 text-sm",
+                          isOwn
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted",
+                        )}
+                      >
+                        <p className="mb-1 text-xs font-medium opacity-80">
+                          {message.sender.firstName} {message.sender.lastName}
+                        </p>
+                        <p className="whitespace-pre-wrap break-words">
+                          {message.content}
+                        </p>
+                        <p className="mt-1 text-[10px] opacity-70">
+                          {format(new Date(message.createdAt), "MMM d, h:mm a")}
+                        </p>
+                      </div>
                     </div>
-                  </div>
                   );
                 })
               )}
@@ -224,9 +365,12 @@ export function ChatInbox({ basePath }: ChatInboxProps) {
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={t("messagePlaceholder")}
                 maxLength={2000}
-                disabled={sendMutation.isPending}
+                disabled={sendMutation.isPending || messagesQuery.isError}
               />
-              <Button type="submit" disabled={!draft.trim() || sendMutation.isPending}>
+              <Button
+                type="submit"
+                disabled={!draft.trim() || sendMutation.isPending || messagesQuery.isError}
+              >
                 {sendMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -268,7 +412,7 @@ function ConversationRow({
         <span className="truncate text-sm font-medium">{displayTitle}</span>
         {conversation.unreadCount > 0 ? (
           <Badge variant="default" className="shrink-0">
-            {conversation.unreadCount}
+            {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
           </Badge>
         ) : null}
       </div>

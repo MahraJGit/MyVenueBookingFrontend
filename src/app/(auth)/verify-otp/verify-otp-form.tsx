@@ -14,7 +14,7 @@ import { getPublicApiBaseUrl } from "@/lib/env";
 import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
 import { resendOtp, verifyOtp } from "@/features/auth/api";
-import { persistAuthSession } from "@/features/auth/session-storage";
+import { useAuth } from "@/features/auth/auth-context";
 import { resetAuthQueryCache } from "@/features/auth/auth-cache";
 import { postAuthBroadcast } from "@/features/auth/auth-broadcast";
 
@@ -23,6 +23,7 @@ const RESEND_COOLDOWN_SECONDS = 30;
 export function VerifyOtpForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { establishSession } = useAuth();
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
   const redirect = searchParams.get("redirect") || "/";
@@ -60,7 +61,7 @@ export function VerifyOtpForm() {
     mutationFn: verifyOtp,
     onSuccess: (data) => {
       resetAuthQueryCache(queryClient);
-      persistAuthSession({
+      establishSession({
         accessToken: data.accessToken,
         user: data.user,
       });

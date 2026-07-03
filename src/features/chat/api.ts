@@ -1,5 +1,6 @@
 import { ApiError } from "@/lib/api/errors";
 import { authFetch } from "@/lib/api/auth-fetch";
+import type { ChatInboxContext } from "./inbox-context";
 import type {
   ChatMessage,
   ConversationDetail,
@@ -18,8 +19,16 @@ async function parseJson<T>(res: Response): Promise<T> {
 
 type SuccessEnvelope<T> = { success: boolean; data: T };
 
-export async function listConversations(cursor?: string) {
-  const params = new URLSearchParams({ limit: "30" });
+function withContext(params: URLSearchParams, context: ChatInboxContext) {
+  params.set("context", context);
+  return params;
+}
+
+export async function listConversations(
+  context: ChatInboxContext,
+  cursor?: string,
+) {
+  const params = withContext(new URLSearchParams({ limit: "30" }), context);
   if (cursor) params.set("cursor", cursor);
 
   const res = await authFetch(`/api/conversations?${params}`, {
@@ -37,12 +46,16 @@ export async function listConversations(cursor?: string) {
   }>).data;
 }
 
-export async function getConversation(id: string) {
-  const res = await authFetch(`/api/conversations/${encodeURIComponent(id)}`, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-    networkErrorMessage: "Network error while loading conversation.",
-  });
+export async function getConversation(id: string, context: ChatInboxContext) {
+  const params = withContext(new URLSearchParams(), context);
+  const res = await authFetch(
+    `/api/conversations/${encodeURIComponent(id)}?${params}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while loading conversation.",
+    },
+  );
 
   const data = await parseJson<unknown>(res);
   if (!res.ok) throw ApiError.fromUnknown(res.status, data);
@@ -50,8 +63,12 @@ export async function getConversation(id: string) {
   return (data as SuccessEnvelope<ConversationDetail>).data;
 }
 
-export async function listMessages(conversationId: string, cursor?: string) {
-  const params = new URLSearchParams({ limit: "50" });
+export async function listMessages(
+  conversationId: string,
+  context: ChatInboxContext,
+  cursor?: string,
+) {
+  const params = withContext(new URLSearchParams({ limit: "50" }), context);
   if (cursor) params.set("cursor", cursor);
 
   const res = await authFetch(
@@ -72,9 +89,14 @@ export async function listMessages(conversationId: string, cursor?: string) {
   }>).data;
 }
 
-export async function sendMessage(conversationId: string, content: string) {
+export async function sendMessage(
+  conversationId: string,
+  content: string,
+  context: ChatInboxContext,
+) {
+  const params = withContext(new URLSearchParams(), context);
   const res = await authFetch(
-    `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
+    `/api/conversations/${encodeURIComponent(conversationId)}/messages?${params}`,
     {
       method: "POST",
       headers: {
@@ -92,9 +114,13 @@ export async function sendMessage(conversationId: string, content: string) {
   return (data as SuccessEnvelope<ChatMessage>).data;
 }
 
-export async function markConversationRead(conversationId: string) {
+export async function markConversationRead(
+  conversationId: string,
+  context: ChatInboxContext,
+) {
+  const params = withContext(new URLSearchParams(), context);
   const res = await authFetch(
-    `/api/conversations/${encodeURIComponent(conversationId)}/read`,
+    `/api/conversations/${encodeURIComponent(conversationId)}/read?${params}`,
     {
       method: "PATCH",
       headers: { Accept: "application/json" },
@@ -106,8 +132,9 @@ export async function markConversationRead(conversationId: string) {
   if (!res.ok) throw ApiError.fromUnknown(res.status, data);
 }
 
-export async function getUnreadChatCount() {
-  const res = await authFetch("/api/conversations/unread-count", {
+export async function getUnreadChatCount(context: ChatInboxContext) {
+  const params = withContext(new URLSearchParams(), context);
+  const res = await authFetch(`/api/conversations/unread-count?${params}`, {
     method: "GET",
     headers: { Accept: "application/json" },
     networkErrorMessage: "Network error while loading unread count.",
@@ -119,9 +146,13 @@ export async function getUnreadChatCount() {
   return (data as SuccessEnvelope<{ count: number }>).data.count;
 }
 
-export async function getConversationByBooking(bookingId: string) {
+export async function getConversationByBooking(
+  bookingId: string,
+  context: ChatInboxContext,
+) {
+  const params = withContext(new URLSearchParams(), context);
   const res = await authFetch(
-    `/api/conversations/booking/${encodeURIComponent(bookingId)}`,
+    `/api/conversations/booking/${encodeURIComponent(bookingId)}?${params}`,
     {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -135,9 +166,13 @@ export async function getConversationByBooking(bookingId: string) {
   return (data as SuccessEnvelope<ConversationDetail>).data;
 }
 
-export async function getConversationByOrderGroup(orderGroupId: string) {
+export async function getConversationByOrderGroup(
+  orderGroupId: string,
+  context: ChatInboxContext,
+) {
+  const params = withContext(new URLSearchParams(), context);
   const res = await authFetch(
-    `/api/conversations/ticket-order/${encodeURIComponent(orderGroupId)}`,
+    `/api/conversations/ticket-order/${encodeURIComponent(orderGroupId)}?${params}`,
     {
       method: "GET",
       headers: { Accept: "application/json" },

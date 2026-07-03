@@ -1,8 +1,12 @@
 import { refreshAuthTokens } from "@/features/auth/api";
 import type { RefreshTokensResponse } from "@/features/auth/types";
-import { decodeAccessTokenPayload } from "@/features/auth/decode-access-token";
+import {
+  decodeAccessTokenPayload,
+  isAccessTokenStillValid,
+} from "@/features/auth/decode-access-token";
 import {
   clearAuthSession,
+  getAccessToken,
   getAuthUser,
   notifyAuthSessionExpired,
   patchAuthUser,
@@ -55,9 +59,17 @@ export function applyRefreshedAccessToken(accessToken: string): boolean {
   return true;
 }
 
+function hasUsableLocalSession(): boolean {
+  const accessToken = getAccessToken();
+  return Boolean(accessToken && getAuthUser() && isAccessTokenStillValid(accessToken));
+}
+
 export async function refreshAndApplySession(): Promise<boolean> {
   const data = await coordinatedRefreshTokens();
   if (!data) {
+    if (hasUsableLocalSession()) {
+      return true;
+    }
     clearAuthSession();
     notifyAuthSessionExpired();
     return false;

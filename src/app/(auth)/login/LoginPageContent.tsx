@@ -28,9 +28,9 @@ import type { LoginApiResponse, LoginTokensResponse } from "@/features/auth/type
 import { mapLoginApiFieldErrors } from "@/features/auth/map-login-errors";
 import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
-import { persistAuthSession } from "@/features/auth/session-storage";
 import { resetAuthQueryCache } from "@/features/auth/auth-cache";
 import { postAuthBroadcast } from "@/features/auth/auth-broadcast";
+import { useAuth } from "@/features/auth/auth-context";
 
 type LoginFieldErrors = Partial<
     Record<"email" | "password" | "phoneE164", string>
@@ -43,6 +43,7 @@ function isLoginWithTokens(data: LoginApiResponse): data is LoginTokensResponse 
 export default function LoginPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
+    const { establishSession } = useAuth();
     const searchParams = useSearchParams();
     const redirect = searchParams.get("redirect") || "/";
     const [tab, setTab] = useState<"email" | "phone">("email");
@@ -72,7 +73,7 @@ export default function LoginPage() {
         onSuccess: (data) => {
             if (isLoginWithTokens(data)) {
                 resetAuthQueryCache(queryClient);
-                persistAuthSession({
+                establishSession({
                     accessToken: data.accessToken,
                     user: data.user,
                 });
