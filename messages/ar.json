@@ -138,8 +138,8 @@
     "adminDashboard": "لوحة تحكم المسؤول",
     "vendorDashboard": "لوحة تحكم المزود",
     "customerDashboard": "لوحة تحكم العميل",
-    "attractions": "الترفيه والمعالم",
-    "corporate": "أماكن الشركات",
+    "attractions": "الترفيه",
+    "corporate": "الشركات",
     "mainNav": "التنقل الرئيسي"
   },
   "footer": {
@@ -214,7 +214,7 @@
     "couldNotLoadVenues": "تعذر تحميل الأماكن.",
     "noVenuesAvailable": "لا تتوفر أماكن بعد.",
     "browseVenues": "تصفح الأماكن",
-    "testimonialQuote": "Vestibulum eu quam nec neque pellentesque efficitur id eget nisl. Proin porta est convallis lacus bl",
+    "testimonialQuote": "كانت عملية الحجز سهلة وسريعة. وجدت المكان المثالي في دقائق معدودة.",
     "sampleUserName": "Jane Cooper"
   },
   "events": {

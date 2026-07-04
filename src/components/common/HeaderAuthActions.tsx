@@ -61,14 +61,14 @@ export function HeaderAuthActions({
   if (!isReady) {
     return (
       <div
-        className={`${stacked ? "w-full space-y-3" : "flex items-center gap-3"} ${className}`}
+        className={`${stacked ? "w-full space-y-3" : "flex items-center gap-1.5"} ${className}`}
         aria-hidden
       >
-        <div className="h-9 w-20 rounded-md bg-muted/40 animate-pulse" />
+        <div className="h-9 w-16 rounded-md bg-muted/40 animate-pulse" />
         {stacked ? (
           <div className="h-10 w-full rounded-md bg-muted/40 animate-pulse" />
         ) : (
-          <div className="h-9 w-24 rounded-md bg-muted/40 animate-pulse" />
+          <div className="h-9 w-20 rounded-md bg-muted/40 animate-pulse" />
         )}
       </div>
     );
@@ -77,13 +77,13 @@ export function HeaderAuthActions({
   if (!isAuthenticated) {
     return (
       <div
-        className={`${stacked ? "w-full space-y-3" : "flex items-center gap-3"} ${className}`}
+        className={`${stacked ? "w-full space-y-3" : "flex items-center gap-1.5"} ${className}`}
       >
         <Button
           asChild
           variant={stacked ? "outline" : "ghost"}
           size={stacked ? "default" : "sm"}
-          className={stacked ? "h-11 w-full rounded-xl" : ""}
+          className={stacked ? "h-11 w-full rounded-xl" : "px-2.5"}
         >
           <Link href="/signup" onClick={onNavigate}>
             {tAuth("register")}
@@ -92,7 +92,7 @@ export function HeaderAuthActions({
         <Button
           asChild
           size={stacked ? "default" : "sm"}
-          className={stacked ? "h-11 w-full rounded-xl" : ""}
+          className={stacked ? "h-11 w-full rounded-xl" : "px-2.5"}
         >
           <Link href="/login" onClick={onNavigate}>
             {tAuth("login")}

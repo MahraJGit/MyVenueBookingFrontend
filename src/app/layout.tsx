@@ -60,7 +60,7 @@ export default async function RootLayout({
       className={`${inter.variable} ${poppins.variable} ${notoUrdu.variable} ${notoArabic.variable} dark`}
     >
       <body className={fontClass}>
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           <AppProviders>{children}</AppProviders>
         </NextIntlClientProvider>
       </body>

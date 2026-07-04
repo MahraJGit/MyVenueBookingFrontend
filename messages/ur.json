@@ -118,7 +118,7 @@
     "home": "ہوم",
     "events": "تقریبات",
     "venueBooking": "وینو بکنگ",
-    "listYourVenue": "اپنا وینو لسٹ کریں",
+    "listYourVenue": "وینو لسٹ کریں",
     "blog": "بلاگ",
     "more": "مزید",
     "about": "ہمارے بارے میں",
@@ -138,8 +138,8 @@
     "adminDashboard": "ایڈمن ڈیش بورڈ",
     "vendorDashboard": "وینڈر ڈیش بورڈ",
     "customerDashboard": "کسٹمر ڈیش بورڈ",
-    "attractions": "تفریح اور دلچسپیاں",
-    "corporate": "کارپوریٹ وینوز",
+    "attractions": "تفریح",
+    "corporate": "کارپوریٹ",
     "mainNav": "مرکزی نیویگیشن"
   },
   "footer": {
@@ -214,7 +214,7 @@
     "couldNotLoadVenues": "وینوز لوڈ نہیں ہو سکے۔",
     "noVenuesAvailable": "ابھی کوئی وینو دستیاب نہیں۔",
     "browseVenues": "وینوز براؤز کریں",
-    "testimonialQuote": "Vestibulum eu quam nec neque pellentesque efficitur id eget nisl. Proin porta est convallis lacus bl",
+    "testimonialQuote": "بکنگ آسان اور تیز تھی۔ میں نے چند منٹوں میں بہترین وینو تلاش کر لیا۔",
     "sampleUserName": "Jane Cooper"
   },
   "events": {

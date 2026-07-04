@@ -115,10 +115,10 @@
     "records": "records"
   },
   "nav": {
-    "home": "Startseite",
-    "events": "Veranstaltungen",
-    "venueBooking": "Veranstaltungsort buchen",
-    "listYourVenue": "Veranstaltungsort eintragen",
+    "home": "Start",
+    "events": "Events",
+    "venueBooking": "Venues",
+    "listYourVenue": "Venue eintragen",
     "blog": "Blog",
     "more": "Mehr",
     "about": "Über uns",
@@ -138,8 +138,8 @@
     "adminDashboard": "Admin-Dashboard",
     "vendorDashboard": "Anbieter-Dashboard",
     "customerDashboard": "Kunden-Dashboard",
-    "attractions": "Attraktionen & Unterhaltung",
-    "corporate": "Firmenveranstaltungsorte",
+    "attractions": "Attraktionen",
+    "corporate": "Business",
     "mainNav": "Hauptnavigation"
   },
   "footer": {
@@ -214,7 +214,7 @@
     "couldNotLoadVenues": "Veranstaltungsorte konnten nicht geladen werden.",
     "noVenuesAvailable": "Noch keine Veranstaltungsorte verfügbar.",
     "browseVenues": "Veranstaltungsorte durchsuchen",
-    "testimonialQuote": "Vestibulum eu quam nec neque pellentesque efficitur id eget nisl. Proin porta est convallis lacus bl",
+    "testimonialQuote": "Die Buchung war einfach und schnell. Ich habe in wenigen Minuten den perfekten Veranstaltungsort gefunden.",
     "sampleUserName": "Jane Cooper"
   },
   "events": {

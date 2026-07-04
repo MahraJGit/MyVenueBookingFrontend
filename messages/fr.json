@@ -117,8 +117,8 @@
   "nav": {
     "home": "Accueil",
     "events": "Événements",
-    "venueBooking": "Réservation de lieu",
-    "listYourVenue": "Référencer votre lieu",
+    "venueBooking": "Lieux",
+    "listYourVenue": "Publier un lieu",
     "blog": "Blog",
     "more": "Plus",
     "about": "À propos",
@@ -138,8 +138,8 @@
     "adminDashboard": "Tableau de bord admin",
     "vendorDashboard": "Tableau de bord fournisseur",
     "customerDashboard": "Tableau de bord client",
-    "attractions": "Attractions & divertissement",
-    "corporate": "Lieux d'entreprise",
+    "attractions": "Attractions",
+    "corporate": "Entreprise",
     "mainNav": "Navigation principale"
   },
   "footer": {
@@ -214,7 +214,7 @@
     "couldNotLoadVenues": "Impossible de charger les lieux.",
     "noVenuesAvailable": "Aucun lieu disponible pour le moment.",
     "browseVenues": "Parcourir les lieux",
-    "testimonialQuote": "Vestibulum eu quam nec neque pellentesque efficitur id eget nisl. Proin porta est convallis lacus bl",
+    "testimonialQuote": "La réservation était simple et rapide. J'ai trouvé le lieu idéal en quelques minutes seulement.",
     "sampleUserName": "Jane Cooper"
   },
   "events": {
