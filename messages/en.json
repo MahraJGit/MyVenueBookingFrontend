@@ -840,6 +840,7 @@
   "adminDashboard": {
     "title": "Admin Dashboard",
     "addQuickEvent": "Add Quick Event",
+    "addQuickVenue": "Add Quick Venue",
     "users": "Users",
     "manageUsers": "Manage Users",
     "vendorRequests": "Vendor Requests",

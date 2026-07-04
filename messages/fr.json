@@ -838,6 +838,7 @@
   "adminDashboard": {
     "title": "Tableau de bord admin",
     "addQuickEvent": "Ajouter un événement rapide",
+    "addQuickVenue": "Ajouter un lieu rapide",
     "users": "Utilisateurs",
     "manageUsers": "Gérer les utilisateurs",
     "vendorRequests": "Demandes de fournisseurs",

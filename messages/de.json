@@ -838,6 +838,7 @@
   "adminDashboard": {
     "title": "Admin-Dashboard",
     "addQuickEvent": "Schnellveranstaltung hinzufügen",
+    "addQuickVenue": "Schnell-Venue hinzufügen",
     "users": "Benutzer",
     "manageUsers": "Benutzer verwalten",
     "vendorRequests": "Anbieteranfragen",

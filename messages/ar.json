@@ -838,6 +838,7 @@
   "adminDashboard": {
     "title": "لوحة تحكم المسؤول",
     "addQuickEvent": "إضافة فعالية سريعة",
+    "addQuickVenue": "إضافة مكان سريع",
     "users": "المستخدمون",
     "manageUsers": "إدارة المستخدمين",
     "vendorRequests": "طلبات المزودين",

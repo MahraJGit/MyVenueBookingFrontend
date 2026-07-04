@@ -838,6 +838,7 @@
   "adminDashboard": {
     "title": "ایڈمن ڈیش بورڈ",
     "addQuickEvent": "فوری تقریب شامل کریں",
+    "addQuickVenue": "فوری وینو شامل کریں",
     "users": "صارفین",
     "manageUsers": "صارفین کا انتظام",
     "vendorRequests": "وینڈر کی درخواستیں",
