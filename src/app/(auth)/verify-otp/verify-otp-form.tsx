@@ -27,6 +27,8 @@ export function VerifyOtpForm() {
   const searchParams = useSearchParams();
   const userIdParam = searchParams.get("userId");
   const redirect = searchParams.get("redirect") || "/";
+  const channel = searchParams.get("channel");
+  const isEmailChannel = channel === "email";
 
   const t = useTranslations("auth");
   const tCommon = useTranslations("common");
@@ -158,7 +160,9 @@ export function VerifyOtpForm() {
     }
 
     if (!isOtpComplete) {
-      setOtpInlineError(t("enterAllDigits"));
+      setOtpInlineError(
+        isEmailChannel ? t("enterAllDigitsEmail") : t("enterAllDigits"),
+      );
       return;
     }
 
@@ -221,7 +225,7 @@ export function VerifyOtpForm() {
             {t("verifyAccount")}
           </h2>
           <p className="text-gray-400 mt-3 text-center text-sm max-w-xs leading-relaxed">
-            {t("enterSixDigitCode")}
+            {isEmailChannel ? t("enterSixDigitCodeEmail") : t("enterSixDigitCode")}
           </p>
         </div>
 
@@ -280,7 +284,7 @@ export function VerifyOtpForm() {
                 : t("resendCodeNow")}
             </span>
             <p className="text-center text-xs text-gray-500 max-w-xs leading-snug">
-              {t("smsHint")}
+              {isEmailChannel ? t("emailHint") : t("smsHint")}
             </p>
             {resendInlineError ? (
               <p

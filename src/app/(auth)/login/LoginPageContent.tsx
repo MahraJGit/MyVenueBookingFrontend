@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -31,6 +31,10 @@ import { toastApiError } from "@/lib/toasts";
 import { resetAuthQueryCache } from "@/features/auth/auth-cache";
 import { postAuthBroadcast } from "@/features/auth/auth-broadcast";
 import { useAuth } from "@/features/auth/auth-context";
+import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
+
+/** Set to true when phone sign-in tab should be shown again. */
+const PHONE_LOGIN_ENABLED = false;
 
 type LoginFieldErrors = Partial<
     Record<"email" | "password" | "phoneE164", string>
@@ -67,6 +71,13 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
+
+    useEffect(() => {
+        const oauthError = searchParams.get("error");
+        if (oauthError) {
+            toast.error(oauthError);
+        }
+    }, [searchParams]);
 
     const loginMutation = useMutation({
         mutationFn: loginAccount,
@@ -192,32 +203,35 @@ export default function LoginPage() {
                         priority
                     />
                     <p className="text-gray-400 mt-3 text-center text-sm">
-                        {t("signInWithEmailOrPhone")}
+                        {t("signInWithEmail")}
                     </p>
                 </div>
 
                 <Tabs
                     value={tab}
                     onValueChange={(v) => {
+                        if (!PHONE_LOGIN_ENABLED) return;
                         setTab(v as "email" | "phone");
                         setFieldErrors({});
                     }}
                     className="w-full max-w-sm"
                 >
-                    <TabsList className="grid grid-cols-2 bg-[#242424] border border-[#242424] rounded-lg mb-6 w-full">
-                        <TabsTrigger
-                            value="email"
-                            className="data-[state=active]:bg-pink-600 data-[state=active]:text-white bg-[#242424] text-gray-300"
-                        >
-                            {t("emailTab")}
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="phone"
-                            className="data-[state=active]:bg-pink-600 data-[state=active]:text-white bg-[#242424] text-gray-300"
-                        >
-                            {t("phoneNumber")}
-                        </TabsTrigger>
-                    </TabsList>
+                    {PHONE_LOGIN_ENABLED ? (
+                        <TabsList className="grid grid-cols-2 bg-[#242424] border border-[#242424] rounded-lg mb-6 w-full">
+                            <TabsTrigger
+                                value="email"
+                                className="data-[state=active]:bg-pink-600 data-[state=active]:text-white bg-[#242424] text-gray-300"
+                            >
+                                {t("emailTab")}
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="phone"
+                                className="data-[state=active]:bg-pink-600 data-[state=active]:text-white bg-[#242424] text-gray-300"
+                            >
+                                {t("phoneNumber")}
+                            </TabsTrigger>
+                        </TabsList>
+                    ) : null}
 
                     <TabsContent value="email">
                         <form
@@ -317,71 +331,14 @@ export default function LoginPage() {
                             >
                                 {pending ? t("signingIn") : t("login")}
                             </Button>
-
-                            <div className="text-center mt-4 social-login-divider">
-                                <span className="text-xs text-gray-500">{t("orContinueWith")}</span>
-                            </div>
-
-                            <div className="flex justify-center gap-3 mt-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="bg-[#1F1F1F] border-[#303030] hover:bg-[#333] px-10 h-14"
-                                    disabled={pending}
-                                >
-                                    <Image
-                                        src="/images/apple.png"
-                                        alt={t("socialApple")}
-                                        width={20}
-                                        height={20}
-                                        className="h-6"
-                                    />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="bg-[#1F1F1F] border-[#303030] hover:bg-[#333] px-10 h-14"
-                                    disabled={pending}
-                                >
-                                    <Image
-                                        src="/images/google.png"
-                                        alt={t("socialGoogle")}
-                                        width={20}
-                                        height={20}
-                                        className="h-6"
-                                    />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="bg-[#1F1F1F] border-[#303030] hover:bg-[#333] px-10 h-14"
-                                    disabled={pending}
-                                >
-                                    <Image
-                                        src="/images/facebook.png"
-                                        alt={t("socialFacebook")}
-                                        width={20}
-                                        height={20}
-                                        className="h-6"
-                                    />
-                                </Button>
-                            </div>
-                            <p className="text-center text-xs text-gray-400 mt-4">
-                                {t("newToAccount")}{" "}
-                                <Link
-                                    href={`/signup${redirect !== "/" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
-                                    className="text-pink-500 hover:underline block"
-                                >
-                                    {t("createAccount")}
-                                </Link>
-                            </p>
                         </form>
                     </TabsContent>
 
+                    {PHONE_LOGIN_ENABLED ? (
                     <TabsContent value="phone">
                         <form
                             onSubmit={submitPhoneLogin}
-                            className="flex flex-col space-y-4 max-w-sm mx-auto"
+                            className="flex flex-col space-y-4"
                             noValidate
                         >
                             <div>
@@ -470,19 +427,22 @@ export default function LoginPage() {
                             >
                                 {pending ? t("signingIn") : t("login")}
                             </Button>
-
-                            <p className="text-center text-xs text-gray-400 mt-4">
-                                {t("newToAccount")}{" "}
-                                <Link
-                                    href={`/signup${redirect !== "/" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
-                                    className="text-pink-500 hover:underline"
-                                >
-                                    {t("createAccount")}
-                                </Link>
-                            </p>
                         </form>
                     </TabsContent>
+                    ) : null}
                 </Tabs>
+
+                <SocialLoginButtons redirectPath={redirect} disabled={pending} />
+
+                <p className="mt-4 w-full max-w-sm text-center text-xs text-gray-400">
+                    {t("newToAccount")}{" "}
+                    <Link
+                        href={`/signup${redirect !== "/" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
+                        className="text-pink-500 hover:underline"
+                    >
+                        {t("createAccount")}
+                    </Link>
+                </p>
             </div>
         </section>
     );

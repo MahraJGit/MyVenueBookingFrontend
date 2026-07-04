@@ -1,28 +1,79 @@
 "use client";
-import React, { useState } from "react";
+
+import React, { useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Mail } from "lucide-react";
 import Image from "next/image";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-
-import "@/styles/auth.css";
 import Link from "next/link";
+import { z } from "zod";
+import "@/styles/auth.css";
+import { requestPasswordReset } from "@/features/auth/api";
+import { getPublicApiBaseUrl } from "@/lib/env";
+import { ApiError } from "@/lib/api/errors";
+import { toastApiError } from "@/lib/toasts";
 
 const ForgetPassword = () => {
   const t = useTranslations("auth");
   const tCommon = useTranslations("common");
+  const tValidation = useTranslations("validation");
+  const tErrors = useTranslations("errors");
+
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [fieldError, setFieldError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const emailSchema = useMemo(
+    () =>
+      z.object({
+        email: z.string().trim().email(tValidation("invalidEmail")),
+      }),
+    [tValidation],
+  );
+
+  const resetMutation = useMutation({
+    mutationFn: requestPasswordReset,
+    onSuccess: (data) => {
+      setSubmitted(true);
+      toast.success(data.message || t("forgotPasswordSuccess"));
+    },
+    onError: (error: unknown) => {
+      if (error instanceof ApiError && error.statusCode === 400 && error.fieldErrors?.length) {
+        const emailErr = error.fieldErrors.find((item) => item.field === "email");
+        if (emailErr) {
+          setFieldError(emailErr.message);
+          return;
+        }
+      }
+      toastApiError(error);
+    },
+  });
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    setFieldError("");
+
+    if (!getPublicApiBaseUrl()) {
+      toast.error(tErrors("apiNotConfigured"), {
+        description: tErrors("apiNotConfiguredDescription"),
+      });
+      return;
+    }
+
+    const parsed = emailSchema.safeParse({ email });
+    if (!parsed.success) {
+      setFieldError(parsed.error.flatten().fieldErrors.email?.[0] ?? tValidation("invalidEmail"));
+      return;
+    }
+
+    resetMutation.mutate({ email: parsed.data.email.trim().toLowerCase() });
+  };
+
+  const pending = resetMutation.isPending;
 
   return (
     <section className="forgot-password">
@@ -41,28 +92,20 @@ const ForgetPassword = () => {
           </h2>
 
           <p className="text-gray-400 mt-3 text-center text-sm max-w-sm leading-relaxed">
-            {t("forgotPasswordPhoneHint")}
+            {submitted ? t("forgotPasswordCheckEmail") : t("forgotPasswordEmailHint")}
           </p>
         </div>
 
-        <Tabs defaultValue="email" className="w-full max-w-sm">
-          <TabsList className="grid grid-cols-2 bg-[#242424] border border-[#242424] rounded-lg mb-6 w-full">
-            <TabsTrigger
-              value="email"
-              className="data-[state=active]:bg-pink-600 data-[state=active]:text-white bg-[#242424] text-gray-300"
-            >
-              {t("emailTab")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="phone"
-              className="data-[state=active]:bg-pink-600 data-[state=active]:text-white bg-[#242424] text-gray-300"
-            >
-              {t("phoneNumber")}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="email">
-            <form className="flex flex-col space-y-4">
+        <div className="w-full max-w-sm">
+          {submitted ? (
+            <div className="rounded-2xl border border-[#1F1F1F] bg-[#1B1B1B] px-4 py-5 text-center">
+              <p className="text-sm text-gray-300">{t("forgotPasswordCheckEmail")}</p>
+              <Button asChild variant="outline" className="mt-5 w-full border-[#303030]">
+                <Link href="/login">{t("backToLogin")}</Link>
+              </Button>
+            </div>
+          ) : (
+            <form className="flex flex-col space-y-4" onSubmit={handleSubmit} noValidate>
               <div>
                 <Label htmlFor="email" className="text-gray-300 text-xs">
                   {tCommon("email")}
@@ -74,84 +117,41 @@ const ForgetPassword = () => {
                     type="email"
                     placeholder={t("emailPlaceholder")}
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      setFieldError("");
+                    }}
                     className="pl-10 bg-[#242424] border border-[#242424] text-gray-200 placeholder:text-gray-500"
+                    aria-invalid={!!fieldError}
+                    autoComplete="email"
+                    disabled={pending}
                   />
                 </div>
-              </div>
-
-              <p className="text-gray-400 text-xs leading-relaxed">
-                {t("forgotPasswordEmailHint")}
-              </p>
-
-              <Button
-                type="submit"
-                variant="default"
-                size="lg"
-                className="mt-6 cursor-pointer w-full bg-pink-600 hover:bg-pink-700"
-              >
-                {t("sendResetLink")}
-              </Button>
-            </form>
-          </TabsContent>
-
-          <TabsContent value="phone">
-            <form className="flex flex-col space-y-4 max-w-sm mx-auto text-gray-400">
-              <div>
-                <Label htmlFor="phone" className="text-gray-300 text-xs">
-                  {t("phoneNumber")}
-                </Label>
-                <div className="flex gap-2 mt-1">
-                  <Select defaultValue="+1">
-                    <SelectTrigger className="bg-[#242424] border border-[#242424] text-white rounded-md">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#242424] text-white">
-                      <SelectItem value="+1">
-                        <div className="flex items-center gap-2 w-[50px]">
-                          <Image
-                            src="/svg/usa.svg"
-                            alt={t("usaFlagAlt")}
-                            width={24}
-                            height={16}
-                          />
-                          <span>+1</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="+44">🇬🇧 +44</SelectItem>
-                      <SelectItem value="+91">🇮🇳 +91</SelectItem>
-                      <SelectItem value="+61">🇦🇺 +61</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder={t("phonePlaceholder")}
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="bg-[#242424] border border-[#242424] text-white placeholder:text-gray-500 flex-grow"
-                  />
-                </div>
+                {fieldError ? (
+                  <p className="text-xs text-red-400 mt-1">{fieldError}</p>
+                ) : null}
               </div>
 
               <Button
                 type="submit"
                 variant="default"
                 size="lg"
-                className="mt-6 cursor-pointer w-full bg-pink-600 hover:bg-pink-700"
+                disabled={pending}
+                className="mt-2 cursor-pointer w-full bg-pink-600 hover:bg-pink-700 disabled:opacity-60"
               >
-                {t("sendCode")}
+                {pending ? t("sendingResetLink") : t("sendResetLink")}
               </Button>
             </form>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
 
-        <p className="mt-6 text-center text-xs text-gray-400">
-          <Link href="/login" className="text-pink-500 hover:underline">
-            {t("backToLogin")}
-          </Link>
-        </p>
+        {!submitted ? (
+          <p className="mt-6 text-center text-xs text-gray-400">
+            <Link href="/login" className="text-pink-500 hover:underline">
+              {t("backToLogin")}
+            </Link>
+          </p>
+        ) : null}
       </div>
     </section>
   );

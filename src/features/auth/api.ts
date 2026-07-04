@@ -3,6 +3,12 @@ import type {
   LoginApiResponse,
   LoginRequestBody,
   LogoutSuccessResponse,
+  OAuthLinkApiResponse,
+  OAuthLinkRequestBody,
+  ForgotPasswordRequestBody,
+  ForgotPasswordSuccessResponse,
+  ResetPasswordRequestBody,
+  ResetPasswordSuccessResponse,
   RefreshTokensResponse,
   RegisterRequestBody,
   RegisterSuccessResponse,
@@ -62,5 +68,27 @@ export function logoutAccount() {
     `${AUTH_BASE}/logout`,
     {},
     withCookies,
+  );
+}
+
+export function linkOAuthAccount(body: OAuthLinkRequestBody) {
+  return apiPost<OAuthLinkApiResponse, OAuthLinkRequestBody>(
+    `${AUTH_BASE}/oauth/link`,
+    body,
+    withCookies,
+  );
+}
+
+export function requestPasswordReset(body: ForgotPasswordRequestBody) {
+  return apiPost<ForgotPasswordSuccessResponse, ForgotPasswordRequestBody>(
+    `${AUTH_BASE}/forgot-password`,
+    body,
+  );
+}
+
+export function resetPassword(body: ResetPasswordRequestBody) {
+  return apiPost<ResetPasswordSuccessResponse, ResetPasswordRequestBody>(
+    `${AUTH_BASE}/reset-password`,
+    body,
   );
 }

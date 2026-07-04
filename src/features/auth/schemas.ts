@@ -1,18 +1,9 @@
 import { z } from "zod";
 import { e164ToApiParts, isE164Valid } from "@/lib/phone";
 import type { RegisterRequestBody } from "./types";
+import { passwordRules, type ValidationTranslator } from "./password-rules";
 
-export type ValidationTranslator = (key: string) => string;
-
-function passwordRules(t: ValidationTranslator) {
-  return z
-    .string()
-    .min(8, t("passwordMin"))
-    .regex(/[a-z]/, t("passwordLowercase"))
-    .regex(/[A-Z]/, t("passwordUppercase"))
-    .regex(/\d/, t("passwordNumber"))
-    .regex(/[@$!%*?&]/, t("passwordSpecial"));
-}
+export type { ValidationTranslator };
 
 /** Client-side signup form validation (aligned with backend `registerDto`). */
 export function createSignupFormSchema(t: ValidationTranslator) {

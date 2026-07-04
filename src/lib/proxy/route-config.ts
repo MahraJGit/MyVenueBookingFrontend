@@ -25,6 +25,8 @@ const AUTH_ROUTE_PREFIXES = [
   "/verify-otp",
   "/forgot-password",
   "/reset-password",
+  "/auth/oauth/callback",
+  "/auth/link-account",
 ] as const;
 
 const BOOKING_CHECKOUT_PATTERN = /^\/venues\/booking\/[^/]+\/checkout\/?$/;

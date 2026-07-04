@@ -21,6 +21,8 @@ import { registerAccount } from "@/features/auth/api";
 import { mapRegisterApiFieldErrors } from "@/features/auth/map-register-errors";
 import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
+import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
+import { PasswordRequirements } from "@/components/auth/PasswordRequirements";
 
 export default function SignupPage() {
     const router = useRouter();
@@ -208,9 +210,6 @@ export default function SignupPage() {
                             disabled={pending}
                             aria-invalid={!!fieldErrors.phoneE164}
                         />
-                        <p className="text-[11px] text-gray-500 mt-1.5 leading-snug">
-                            {t("phoneOtpHint")}
-                        </p>
                         {fieldErrors.phoneE164 ? (
                             <p className="text-xs text-red-400 mt-1">{fieldErrors.phoneE164}</p>
                         ) : null}
@@ -237,6 +236,9 @@ export default function SignupPage() {
                                 disabled={pending}
                             />
                         </div>
+                        <p className="text-[11px] text-gray-500 mt-1.5 leading-snug">
+                            {t("emailOtpHint")}
+                        </p>
                         {fieldErrors.email ? (
                             <p className="text-xs text-red-400 mt-1">{fieldErrors.email}</p>
                         ) : null}
@@ -280,6 +282,7 @@ export default function SignupPage() {
                                 )}
                             </button>
                         </div>
+                        <PasswordRequirements password={formData.password} />
                         {fieldErrors.password ? (
                             <p className="text-xs text-red-400 mt-1">{fieldErrors.password}</p>
                         ) : null}
@@ -344,54 +347,7 @@ export default function SignupPage() {
                         {pending ? t("creatingAccount") : t("signup")}
                     </Button>
 
-                    <div className="text-center mt-4 social-login-divider">
-                        <span className="text-sm text-gray-500">{t("orContinueWith")}</span>
-                    </div>
-
-                    <div className="flex justify-center gap-3 mt-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="bg-[#1F1F1F] border-[#303030] hover:bg-[#333] px-10 h-14"
-                            disabled={pending}
-                        >
-                            <Image
-                                src="/images/apple.png"
-                                alt={t("socialApple")}
-                                width={20}
-                                height={20}
-                                className="h-6"
-                            />
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="bg-[#1F1F1F] border-[#303030] hover:bg-[#333] px-10 h-14"
-                            disabled={pending}
-                        >
-                            <Image
-                                src="/images/google.png"
-                                alt={t("socialGoogle")}
-                                width={20}
-                                height={20}
-                                className="h-6"
-                            />
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="bg-[#1F1F1F] border-[#303030] hover:bg-[#333] px-10 h-14"
-                            disabled={pending}
-                        >
-                            <Image
-                                src="/images/facebook.png"
-                                alt={t("socialFacebook")}
-                                width={20}
-                                height={20}
-                                className="h-6"
-                            />
-                        </Button>
-                    </div>
+                    <SocialLoginButtons redirectPath={redirect} disabled={pending} />
 
                     <p className="text-center text-xs text-gray-400 mt-4">
                         {t("haveAccount")}{" "}

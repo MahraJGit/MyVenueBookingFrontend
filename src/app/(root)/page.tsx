@@ -186,7 +186,7 @@ const Home = () => {
             <p>{t("faqSubtitle")}</p>
           </div>
 
-          <div className="faq-items">
+          <div className="faq-items max-w-3xl mx-auto">
             <Accordion type="single" collapsible className="space-y-5">
               <AccordionItem value="item-1" className="py-5 px-4 bg-[#1B1B1B] border border-[#1F1F1F] rounded-2xl">
                 <AccordionTrigger className="flex items-center gap-2 hover:no-underline">

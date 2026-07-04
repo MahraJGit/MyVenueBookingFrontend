@@ -79,3 +79,45 @@ export type LogoutSuccessResponse = {
   success: true;
   message?: string;
 };
+
+export type OAuthLinkRequestBody = {
+  token: string;
+  password: string;
+};
+
+export type OAuthLinkOtpRequiredResponse = {
+  success: true;
+  requireOtp: true;
+  userId: string;
+  redirect?: string;
+};
+
+export type OAuthLinkSessionResponse = {
+  success: true;
+  accessToken: string;
+  user: AuthUser;
+  redirect?: string;
+};
+
+export type OAuthLinkApiResponse =
+  | OAuthLinkOtpRequiredResponse
+  | OAuthLinkSessionResponse;
+
+export type ForgotPasswordRequestBody = {
+  email: string;
+};
+
+export type ForgotPasswordSuccessResponse = {
+  success: true;
+  message: string;
+};
+
+export type ResetPasswordRequestBody = {
+  token: string;
+  password: string;
+};
+
+export type ResetPasswordSuccessResponse = {
+  success: true;
+  message: string;
+};
