@@ -32,6 +32,7 @@ import {
   useVenueSortOptions,
 } from "@/features/i18n/use-listing-filters";
 import { useTranslations } from "next-intl";
+import { useLocaleContext } from "@/features/i18n/locale-context";
 import "@/styles/event-list.css";
 
 const PAGE_SIZE = 8;
@@ -51,11 +52,12 @@ function sortMergedVenues(
   venues: PublicVenue[],
   sortBy: string,
   sortOrder: string,
+  locale: string,
 ): PublicVenue[] {
   const dir = sortOrder === "asc" ? 1 : -1;
   return [...venues].sort((a, b) => {
     if (sortBy === "name") {
-      return dir * a.name.localeCompare(b.name);
+      return dir * a.name.localeCompare(b.name, locale);
     }
     const aTime = new Date(a.createdAt ?? 0).getTime();
     const bTime = new Date(b.createdAt ?? 0).getTime();
@@ -82,6 +84,7 @@ type SegmentHubPageProps = {
 
 export function SegmentHubPage({ variant }: SegmentHubPageProps) {
   const t = useTranslations("marketSegments");
+  const { locale } = useLocaleContext();
   const labels = useListingLabels();
   const eventSortOptions = useEventSortOptions();
   const venueSortOptions = useVenueSortOptions();
@@ -157,6 +160,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
     queryKey: [
       "public-events",
       "hub",
+      locale,
       variant,
       page,
       searchFromUrl,
@@ -178,7 +182,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
   });
 
   const { data: venueTypes = [], isLoading: loadingTypes } = useQuery({
-    queryKey: venueKeys.types(),
+    queryKey: [...venueKeys.types(), locale],
     queryFn: listVenueTypes,
     enabled: !isAttractions,
   });
@@ -201,6 +205,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
     queryKey: [
       "public-venues",
       "hub",
+      locale,
       variant,
       page,
       corporateTypeIds,
@@ -231,7 +236,12 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
         }
       }
 
-      const merged = sortMergedVenues([...byId.values()], sortBy, sortOrder);
+      const merged = sortMergedVenues(
+        [...byId.values()],
+        sortBy,
+        sortOrder,
+        locale,
+      );
       const total = merged.length;
       const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
       const safePage = Math.min(page, totalPages);
@@ -266,7 +276,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
   return (
     <section className="eventslist public-listing-section">
       <div className="container mx-auto px-4">
-        <div className="section-header mb-10 max-w-3xl">
+        <div className="section-header mb-10 max-w-3xl text-start">
           <h1 className="page-title mb-3 text-white">
             {isAttractions ? (
               <>
@@ -342,14 +352,16 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
         </div>
 
         <div className="mb-6 flex flex-col gap-3 border-b border-[#1F1F1F] pb-5 sm:flex-row sm:items-center sm:justify-between">
-          <h2>{isAttractions ? t("eventsSection") : t("venuesSection")}</h2>
+          <h2 className="text-start">
+            {isAttractions ? t("eventsSection") : t("venuesSection")}
+          </h2>
           <Link
             href={
               isAttractions
                 ? buildEventsPageHref(ATTRACTIONS_ENTERTAINMENT_CATEGORY)
                 : "/venues"
             }
-            className="w-full rounded-full border border-primary px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:text-primary sm:w-auto"
+            className="w-full shrink-0 rounded-full border border-primary px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:text-primary sm:w-auto"
           >
             {isAttractions ? t("viewAllEvents") : t("viewAllVenues")}
           </Link>
@@ -399,13 +411,13 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
               </div>
             ) : null}
             {isAttractions ? (
-              <ResponsiveEventCardsGrid>
+              <ResponsiveEventCardsGrid key={`attractions-events-${locale}`}>
                 {events.map((event) => (
                   <EventCard key={event.id} event={event} />
                 ))}
               </ResponsiveEventCardsGrid>
             ) : (
-              <ResponsiveEventCardsGrid>
+              <ResponsiveEventCardsGrid key={`corporate-venues-${locale}`}>
                 {venues.map((venue) => (
                   <VenueCard key={venue.id} venue={venue} />
                 ))}

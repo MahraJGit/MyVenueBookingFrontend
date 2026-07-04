@@ -2,7 +2,7 @@ import { ApiError } from "@/lib/api/errors";
 import { authFetch } from "@/lib/api/auth-fetch";
 import { assertApiConfigured } from "@/lib/env";
 import { refreshAndApplySession } from "@/features/auth/coordinated-refresh";
-import { clearAuthSession, getAccessToken } from "@/features/auth/session-storage";
+import { getAccessToken } from "@/features/auth/session-storage";
 
 const VENDOR_DOCS_FOLDER = "vendor-documents";
 
@@ -142,9 +142,13 @@ function uploadVendorDocumentViaBackendWithProgress(
             );
           })
           .then(resolve)
-          .catch(() => {
-            clearAuthSession();
-            reject(new ApiError(401, "Please login to continue."));
+          .catch((error) => {
+            // refreshAndApplySession already clears the session on definitive auth failure.
+            reject(
+              error instanceof ApiError
+                ? error
+                : new ApiError(401, "Please login to continue."),
+            );
           });
         return;
       }

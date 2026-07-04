@@ -15,6 +15,8 @@ import { useTranslations } from "next-intl";
 import { logoutAccount } from "@/features/auth/api";
 import { postAuthBroadcast, subscribeAuthBroadcast } from "@/features/auth/auth-broadcast";
 import { resetAuthQueryCache } from "@/features/auth/auth-cache";
+import { refreshAndApplySession } from "@/features/auth/coordinated-refresh";
+import { isAccessTokenStillValid } from "@/features/auth/decode-access-token";
 import { restoreAuthSession } from "@/features/auth/restore-session";
 import { teardownClientAuth } from "@/features/auth/teardown-client-auth";
 import type { AuthUser } from "@/features/auth/types";
@@ -22,9 +24,9 @@ import { buildDisplayName, buildInitials } from "@/features/auth/auth-display";
 import {
   AUTH_CHANGED_EVENT,
   AUTH_SESSION_EXPIRED_EVENT,
-  clearAuthSession,
   getAccessToken,
   getAuthUser,
+  hasPersistedAuthSession,
   persistAuthSession,
 } from "@/features/auth/session-storage";
 import { disconnectChatSocket } from "@/features/chat/use-chat-socket";
@@ -99,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const tAuth = useTranslations("auth");
-  // Never read sessionStorage in initial state — it breaks SSR hydration.
+  // Never read localStorage in initial state — it breaks SSR hydration.
   const [session, setSession] = useState<AuthSession>(EMPTY_SESSION);
   const [isReady, setIsReady] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -121,23 +123,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    syncFromStorage();
-    setIsReady(true);
-
-    if (!readSession().isAuthenticated) {
-      setIsRestoring(true);
-    }
-
     void (async () => {
-      await restoreAuthSession();
-      if (cancelled) return;
+      // localStorage is shared across tabs — hydrate immediately when present.
       syncFromStorage();
-      setIsRestoring(false);
+
+      if (!hasPersistedAuthSession()) {
+        setIsRestoring(true);
+        await restoreAuthSession();
+        if (cancelled) return;
+        syncFromStorage();
+        setIsRestoring(false);
+      } else {
+        // Access tokens expire (15m); refresh proactively so idle tabs stay usable.
+        const token = getAccessToken();
+        if (token && !isAccessTokenStillValid(token)) {
+          await refreshAndApplySession();
+          if (cancelled) return;
+          syncFromStorage();
+        }
+      }
+
+      // Only mark ready after local session is loaded or cookie restore finishes.
+      setIsReady(true);
     })();
 
     const onAuthChanged = () => {
       syncFromStorage();
       setIsReady(true);
+      setIsRestoring(false);
     };
     const onSessionExpired = () => {
       resetAuthQueryCache(queryClient);
@@ -145,22 +158,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       syncFromStorage();
     };
 
+    // localStorage changes from other tabs fire the storage event.
+    const onStorage = (event: StorageEvent) => {
+      if (
+        event.key === "mvb_access_token" ||
+        event.key === "mvb_user_json" ||
+        event.key === null
+      ) {
+        onAuthChanged();
+      }
+    };
+
     window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
     window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, onSessionExpired);
-    window.addEventListener("storage", onAuthChanged);
+    window.addEventListener("storage", onStorage);
 
     const unsubscribeBroadcast = subscribeAuthBroadcast((message) => {
       if (message.type === "logout") {
         teardownClientAuth(queryClient);
         syncFromStorage();
+        setIsReady(true);
+        setIsRestoring(false);
         return;
       }
 
+      // Login in another tab: localStorage already updated via storage event in most cases.
+      // Re-sync and, if needed, restore from the shared refresh cookie.
       void (async () => {
-        clearAuthSession();
-        await restoreAuthSession();
-        resetAuthQueryCache(queryClient);
         syncFromStorage();
+        if (!hasPersistedAuthSession()) {
+          setIsRestoring(true);
+          await restoreAuthSession();
+          if (cancelled) return;
+          syncFromStorage();
+          setIsRestoring(false);
+        }
+        resetAuthQueryCache(queryClient);
+        setIsReady(true);
       })();
     });
 
@@ -168,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
       window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, onSessionExpired);
-      window.removeEventListener("storage", onAuthChanged);
+      window.removeEventListener("storage", onStorage);
       unsubscribeBroadcast();
     };
   }, [queryClient, syncFromStorage]);

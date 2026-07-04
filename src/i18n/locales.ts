@@ -40,3 +40,17 @@ export function resolveLocale(value: string | null | undefined): AppLocale {
   if (value && isAppLocale(value)) return value;
   return DEFAULT_LOCALE;
 }
+
+/** BCP 47 tags for `Intl` date/number formatting. */
+export const LOCALE_INTL_TAGS: Record<AppLocale, string> = {
+  en: "en-US",
+  ur: "ur-PK",
+  de: "de-DE",
+  ar: "ar-SA",
+  fr: "fr-FR",
+};
+
+export function getIntlLocale(locale: string | null | undefined): string {
+  const resolved = resolveLocale(locale);
+  return LOCALE_INTL_TAGS[resolved];
+}

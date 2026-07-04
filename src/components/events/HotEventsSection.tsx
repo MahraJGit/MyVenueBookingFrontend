@@ -2,33 +2,20 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { EventCard } from "@/components/events/EventCard";
 import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
-import { EventCategoryFilters } from "@/components/events/EventCategoryFilters";
-import { listPublicEventCategories } from "@/features/event-categories/api";
 import { listPublicEvents } from "@/features/events/api";
-import {
-  ALL_EVENTS_CATEGORY,
-  buildEventsPageHref,
-  categoryQueryValue,
-} from "@/features/events/utils";
+import { ALL_EVENTS_CATEGORY, buildEventsPageHref } from "@/features/events/utils";
+import { useLocaleContext } from "@/features/i18n/locale-context";
 
 const HOMEPAGE_EVENT_LIMIT = 4;
 
 export function HotEventsSection() {
-  const [activeCategory, setActiveCategory] = useState(ALL_EVENTS_CATEGORY);
   const tHome = useTranslations("home");
   const tEvents = useTranslations("events");
   const tCommon = useTranslations("common");
-
-  const { data: categories = [], isLoading: loadingCategories } = useQuery({
-    queryKey: ["public-event-categories"],
-    queryFn: listPublicEventCategories,
-  });
-
-  const categoryNames = categories.map((c) => c.name);
+  const { locale } = useLocaleContext();
 
   const {
     data: eventsResult,
@@ -36,21 +23,18 @@ export function HotEventsSection() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["public-events", "homepage", activeCategory],
+    queryKey: ["public-events", "homepage", locale],
     queryFn: () =>
       listPublicEvents({
         page: 1,
         limit: HOMEPAGE_EVENT_LIMIT,
         sortBy: "createdAt",
         sortOrder: "desc",
-        ...(categoryQueryValue(activeCategory)
-          ? { category: categoryQueryValue(activeCategory) }
-          : {}),
       }),
   });
 
   const events = eventsResult?.data ?? [];
-  const seeAllHref = buildEventsPageHref(activeCategory);
+  const seeAllHref = buildEventsPageHref(ALL_EVENTS_CATEGORY);
 
   return (
     <section className="shows py-10">
@@ -61,13 +45,6 @@ export function HotEventsSection() {
             {tCommon("seeAll")}
           </Link>
         </div>
-
-        {/* <EventCategoryFilters
-          categories={categoryNames}
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
-          isLoading={loadingCategories}
-        /> */}
 
         {isError ? (
           <p className="text-sm text-red-400 py-8">
@@ -86,10 +63,7 @@ export function HotEventsSection() {
           </ResponsiveEventCardsGrid>
         ) : events.length === 0 ? (
           <p className="text-sm text-[#B3B3B3] py-8">
-            {activeCategory !== ALL_EVENTS_CATEGORY
-              ? tEvents("noEventsInCategory", { category: activeCategory })
-              : tEvents("noEventsFound")}
-            .
+            {tEvents("noEventsFound")}.
           </p>
         ) : (
           <ResponsiveEventCardsGrid>

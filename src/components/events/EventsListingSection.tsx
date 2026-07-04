@@ -20,12 +20,16 @@ import { EventsPageHeader } from "@/components/events/EventsPageHeader";
 import { RecommendedEventsSlider, useRecommendedEventsVisible } from "@/components/recommendations/RecommendedEventsSlider";
 import { ListingGridDivider } from "@/components/recommendations/RecommendationsCarousel";
 import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
-import { listPublicEventCategories } from "@/features/event-categories/api";
+import {
+  listPublicEventCategories,
+  toEventCategoryOption,
+} from "@/features/event-categories/api";
 import { listPublicEvents } from "@/features/events/api";
 import {
   ALL_EVENTS_CATEGORY,
   categoryQueryValue,
 } from "@/features/events/utils";
+import { useLocaleContext } from "@/features/i18n/locale-context";
 import {
   useEventSortOptions,
   useListingLabels,
@@ -49,6 +53,7 @@ export function EventsListingSection() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tEvents = useTranslations("events");
+  const { locale } = useLocaleContext();
   const sortOptions = useEventSortOptions();
   const labels = useListingLabels();
 
@@ -114,11 +119,14 @@ export function EventsListingSection() {
   };
 
   const { data: categories = [], isLoading: loadingCategories } = useQuery({
-    queryKey: ["public-event-categories"],
+    queryKey: ["public-event-categories", locale],
     queryFn: listPublicEventCategories,
   });
 
-  const categoryNames = categories.map((c) => c.name);
+  const categoryOptions = categories.map(toEventCategoryOption);
+  const activeCategoryLabel =
+    categoryOptions.find((c) => c.value === activeCategory)?.label ??
+    activeCategory;
 
   const {
     data,
@@ -130,6 +138,7 @@ export function EventsListingSection() {
     queryKey: [
       "public-events",
       "listing",
+      locale,
       page,
       categoryFromUrl,
       searchFromUrl,
@@ -161,7 +170,7 @@ export function EventsListingSection() {
         <EventsPageHeader />
 
         <EventCategoryFilters
-          categories={categoryNames}
+          categories={categoryOptions}
           activeCategory={activeCategory}
           onCategoryChange={handleCategoryChange}
           isLoading={loadingCategories}
@@ -200,7 +209,7 @@ export function EventsListingSection() {
           </Select>
           <div className="flex flex-wrap gap-2 sm:contents">
             <Button onClick={applyFilters} className="w-full bg-primary sm:w-auto">
-              <Search className="mr-2 h-4 w-4" />
+              <Search className="me-2 h-4 w-4" />
               {labels.search}
             </Button>
             {(searchFromUrl || cityFromUrl) && (
@@ -243,7 +252,7 @@ export function EventsListingSection() {
         ) : events.length === 0 ? (
           <p className="mb-8 py-8 text-sm text-[#B3B3B3]">
             {activeCategory !== ALL_EVENTS_CATEGORY
-              ? tEvents("noEventsInCategory", { category: activeCategory })
+              ? tEvents("noEventsInCategory", { category: activeCategoryLabel })
               : tEvents("noEventsFound")}
             {searchFromUrl ? labels.matching(searchFromUrl) : ""}
             {cityFromUrl ? labels.inCity(cityFromUrl) : ""}.

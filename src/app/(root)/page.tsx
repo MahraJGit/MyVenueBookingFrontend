@@ -111,7 +111,7 @@ const Home = () => {
                   <div className="w-[50%] self-center">
                     <Image
                       src="/images/dollor-icon.png"
-                      alt="concert image"
+                      alt=""
                       width={160}
                       height={144}
                       className="mx-auto"
@@ -126,7 +126,7 @@ const Home = () => {
                   <div className="w-[50%] self-center">
                     <Image
                       src="/images/badge-icon.png"
-                      alt="concert image"
+                      alt=""
                       width={160}
                       height={144}
                       className="mx-auto"
@@ -148,7 +148,7 @@ const Home = () => {
                 </div>
                 <Image
                   src="/images/service-24.png"
-                  alt="concert image"
+                  alt=""
                   width={240}
                   height={240}
                 />

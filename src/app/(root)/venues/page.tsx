@@ -1,16 +1,27 @@
 "use client";
 
 import { Suspense } from "react";
+import { useTranslations } from "next-intl";
 import { VenuesListingSection } from "@/components/venues/VenuesListingSection";
 import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
 
 function VenuesListingFallback() {
+  const tCommon = useTranslations("common");
+  const t = useTranslations("venuesListing");
+
   return (
-    <section className="eventslist public-listing-section">
+    <section
+      className="eventslist public-listing-section"
+      aria-busy="true"
+      aria-label={tCommon("loading")}
+    >
       <div className="container mx-auto px-4">
         <div className="mb-10 max-w-3xl">
           <div className="mb-3 h-10 w-full max-w-md animate-pulse rounded bg-[#242424]" />
           <div className="h-5 w-full max-w-lg animate-pulse rounded bg-[#242424]" />
+          <span className="sr-only">
+            {t("title")} {t("titleHighlight")}
+          </span>
         </div>
         <div className="-mx-1 mb-8 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap">
           {Array.from({ length: 6 }).map((_, i) => (

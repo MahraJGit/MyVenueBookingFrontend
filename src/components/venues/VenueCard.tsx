@@ -37,10 +37,16 @@ export function VenueCard({ venue }: VenueCardProps) {
       />
       <div className="card-body relative z-0 -mt-10 flex w-full max-w-[92%] flex-1 flex-col rounded-2xl border border-[#303030] bg-[#1B1B1B] transition-all duration-300 ease-in-out group-hover:rounded-t-none">
         <div className="flex h-full flex-col gap-4 p-4">
-          <h4 className="line-clamp-1">{venue.name}</h4>
+          <h4 className="line-clamp-1" dir="auto">
+            {venue.name}
+          </h4>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs">{venue.venueType?.name || "—"}</span>
-            <span className="line-clamp-1 text-right text-xs">{location}</span>
+            <span className="text-xs" dir="auto">
+              {venue.venueType?.name || "—"}
+            </span>
+            <span className="line-clamp-1 text-end text-xs" dir="auto">
+              {location}
+            </span>
           </div>
           <div className="price text-md mt-auto font-bold text-primary">
             {priceInfo ? (

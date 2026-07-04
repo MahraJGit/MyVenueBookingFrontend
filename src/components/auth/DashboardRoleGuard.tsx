@@ -21,13 +21,14 @@ export function DashboardRoleGuard({
   children,
 }: DashboardRoleGuardProps) {
   const router = useRouter();
-  const { user, isReady, isAuthenticated } = useAuth();
+  const { user, isReady, isRestoring, isAuthenticated } = useAuth();
 
   const isAllowed =
     isAuthenticated && user && hasAnyRole(user.role, allowedRoles);
 
   useEffect(() => {
-    if (!isReady) return;
+    // Wait until auth has fully settled (including cookie restore) before redirecting.
+    if (!isReady || isRestoring) return;
 
     if (!isAuthenticated) {
       router.replace("/login");
@@ -37,9 +38,9 @@ export function DashboardRoleGuard({
     if (user && !hasAnyRole(user.role, allowedRoles)) {
       router.replace(getDefaultDashboardForRole(user.role as AppRole));
     }
-  }, [allowedRoles, isAuthenticated, isReady, router, user]);
+  }, [allowedRoles, isAuthenticated, isReady, isRestoring, router, user]);
 
-  if (!isReady) {
+  if (!isReady || isRestoring) {
     return (
       <div className="flex min-h-[240px] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
