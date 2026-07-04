@@ -22,7 +22,7 @@ import { listPublicVenues, listVenueTypes } from "@/features/venues/api";
 import type { PublicVenue } from "@/features/venues/types";
 import {
   ATTRACTIONS_ENTERTAINMENT_CATEGORY,
-  CORPORATE_VENUE_TYPE_SLUGS,
+  isCorporateHubVenueType,
 } from "@/features/market-segments/constants";
 import { buildEventsPageHref } from "@/features/events/utils";
 import { venueKeys } from "@/features/venues/query-keys";
@@ -184,11 +184,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
   });
 
   const corporateTypeIds = venueTypes
-    .filter((t) =>
-      CORPORATE_VENUE_TYPE_SLUGS.includes(
-        t.slug as (typeof CORPORATE_VENUE_TYPE_SLUGS)[number],
-      ),
-    )
+    .filter(isCorporateHubVenueType)
     .map((t) => t.id);
 
   const {
