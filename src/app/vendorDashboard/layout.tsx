@@ -8,8 +8,8 @@ import {
   dashboardMainClass,
   dashboardOverlayClass,
   dashboardShellClass,
-  DashboardMobileHeader,
 } from '@/components/dashboard/dashboard-shared'
+import { DashboardTopbar } from '@/components/dashboard/DashboardTopbar'
 import { ChatSocketProvider } from '@/components/chat/ChatSocketProvider'
 
 export default function VendorDashboardLayout({
@@ -34,8 +34,10 @@ export default function VendorDashboardLayout({
       <VendorSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className={dashboardMainClass}>
-        <DashboardMobileHeader onMenuClick={() => setSidebarOpen(true)} />
-        <main className={dashboardContentClass}>{children}</main>
+        <main className={dashboardContentClass}>
+          <DashboardTopbar onMenuClick={() => setSidebarOpen(true)} />
+          {children}
+        </main>
       </div>
     </div>
     </ChatSocketProvider>

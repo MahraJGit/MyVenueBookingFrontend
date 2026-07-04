@@ -58,12 +58,23 @@ export default function Sidebar({
         </Link>
       </div>
 
-      <Link href="/adminDashbaord/addEvents" className="mb-6 block" onClick={onClose}>
-        <Button className="flex w-full gap-2 bg-primary text-white hover:bg-primary/80">
-          <Plus size={18} />
-          {t('addQuickEvent')}
-        </Button>
-      </Link>
+      <div className="mb-6 grid gap-2">
+        <Link href="/adminDashbaord/addEvents" onClick={onClose}>
+          <Button className="flex w-full gap-2 bg-primary text-white hover:bg-primary/80">
+            <Plus size={18} />
+            {t('addQuickEvent')}
+          </Button>
+        </Link>
+        <Link href="/adminDashbaord/venues/new" onClick={onClose}>
+          <Button
+            variant="outline"
+            className="flex w-full gap-2 border-[#303030] text-white hover:bg-primary/20 hover:text-white"
+          >
+            <Plus size={18} />
+            {t('addQuickVenue')}
+          </Button>
+        </Link>
+      </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Accordion type="multiple" defaultValue={['users', 'events', 'venues']} className="space-y-2">

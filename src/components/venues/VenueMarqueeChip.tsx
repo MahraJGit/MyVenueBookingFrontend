@@ -34,11 +34,13 @@ export function VenueMarqueeChip({ venue }: VenueMarqueeChipProps) {
         onError={() => setSrc(fallback)}
         className="h-[75px] w-[75px] shrink-0 rounded-[10px] object-cover"
       />
-      <div className="detail min-w-0 pr-2">
-        <h5 className="mb-1 line-clamp-1 text-sm font-medium text-white">
+      <div className="detail min-w-0 pe-2">
+        <h5 className="mb-1 line-clamp-1 text-sm font-medium text-white" dir="auto">
           {venue.name}
         </h5>
-        <p className="line-clamp-1 text-xs text-[#9A9A9A]">{subtitle}</p>
+        <p className="line-clamp-1 text-xs text-[#9A9A9A]" dir="auto">
+          {subtitle}
+        </p>
       </div>
     </Link>
   );

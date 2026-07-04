@@ -51,8 +51,9 @@
       "browseVenues": "وینوز براؤز کریں"
     },
     "nav": {
-      "attractions": "تفریح اور دلچسپیاں",
-      "corporate": "کارپوریٹ وینوز",
+      "listYourVenue": "وینو لسٹ کریں",
+      "attractions": "تفریح",
+      "corporate": "کارپوریٹ",
       "mainNav": "مرکزی نیویگیشن"
     },
     "venues": {
@@ -567,8 +568,12 @@
       "browseVenues": "Veranstaltungsorte durchsuchen"
     },
     "nav": {
-      "attractions": "Attraktionen & Unterhaltung",
-      "corporate": "Firmenveranstaltungsorte",
+      "home": "Start",
+      "events": "Events",
+      "venueBooking": "Venues",
+      "listYourVenue": "Venue eintragen",
+      "attractions": "Attraktionen",
+      "corporate": "Business",
       "mainNav": "Hauptnavigation"
     },
     "venues": {
@@ -1083,8 +1088,8 @@
       "browseVenues": "تصفح الأماكن"
     },
     "nav": {
-      "attractions": "الترفيه والمعالم",
-      "corporate": "أماكن الشركات",
+      "attractions": "الترفيه",
+      "corporate": "الشركات",
       "mainNav": "التنقل الرئيسي"
     },
     "venues": {
@@ -1599,8 +1604,12 @@
       "browseVenues": "Parcourir les lieux"
     },
     "nav": {
-      "attractions": "Attractions & divertissement",
-      "corporate": "Lieux d'entreprise",
+      "home": "Accueil",
+      "events": "Événements",
+      "venueBooking": "Lieux",
+      "listYourVenue": "Publier un lieu",
+      "attractions": "Attractions",
+      "corporate": "Entreprise",
       "mainNav": "Navigation principale"
     },
     "venues": {

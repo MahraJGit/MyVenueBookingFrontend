@@ -74,6 +74,10 @@
     "preferences": "Preferences",
     "account": "Account",
     "openAccountMenu": "Open account menu",
+    "backToSite": "Back to site",
+    "roleBuyer": "Customer",
+    "roleVendor": "Vendor",
+    "roleAdmin": "Admin",
     "logoAlt": "Logo",
     "selectLanguage": "Select language",
     "selectCurrency": "Select currency",
@@ -214,7 +218,7 @@
     "couldNotLoadVenues": "Could not load venues.",
     "noVenuesAvailable": "No venues available yet.",
     "browseVenues": "Browse venues",
-    "testimonialQuote": "Vestibulum eu quam nec neque pellentesque efficitur id eget nisl. Proin porta est convallis lacus bl",
+    "testimonialQuote": "Booking was simple and fast. I found the perfect venue in just a few minutes.",
     "sampleUserName": "Jane Cooper"
   },
   "events": {
@@ -836,6 +840,7 @@
   "adminDashboard": {
     "title": "Admin Dashboard",
     "addQuickEvent": "Add Quick Event",
+    "addQuickVenue": "Add Quick Venue",
     "users": "Users",
     "manageUsers": "Manage Users",
     "vendorRequests": "Vendor Requests",
@@ -1054,13 +1059,13 @@
     "joinPartnersTitle": "Join as a partners today!",
     "joinPartnersDesc": "Join our network of trusted partners and grow your business with us. Whether you're a venue owner or looking to earn through referrals, we have opportunities for everyone.",
     "registerNow": "Register Now",
-    "audienceInsightsTitle": "Refundable Tickets",
+    "audienceInsightsTitle": "Audience Insights",
     "audienceInsightsDesc": "Gain access to the reservation details of each booking to help understand audience behavior.",
     "moreBookingsTitle2": "2 More Bookings, Less Effort:",
-    "testimonialQuote": "Vestibulum eu quam nec neque pellentesque efficitur id eget nisl. Proin porta est convallis lacus bl",
+    "testimonialQuote": "Partnering was simple and the bookings started coming in within weeks.",
     "sampleUserName": "Jane Cooper",
-    "blogImageAlt": "blog image",
-    "concertImageAlt": "concert image"
+    "blogImageAlt": "Partner venue showcase",
+    "concertImageAlt": "Partner benefit illustration"
   },
   "affiliateJoin": {
     "checkingSession": "Checking your session...",
@@ -1153,7 +1158,7 @@
     "readArticle": "Read article",
     "heroTitle": "Find Your Perfect",
     "heroTitleHighlight": "Blogs",
-    "heroSubtitle": "More than 100 concerts in different countries are now available to you.",
+    "heroSubtitle": "Tips, guides, and stories to help you plan events and book the perfect venue.",
     "ourArticles": "Our Articles",
     "searchPlaceholder": "Search your blog",
     "readMore": "Read more",

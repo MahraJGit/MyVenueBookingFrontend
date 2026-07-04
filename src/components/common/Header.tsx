@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -10,13 +10,22 @@ import { HeaderAuthActions, HeaderAuthMobileLinks } from '@/components/common/He
 import { CurrencySelect } from '@/components/currency/CurrencySelect';
 import { LanguageSelect } from '@/components/i18n/LanguageSelect';
 import { useLocaleContext } from '@/features/i18n/locale-context';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 type NavItem = { href: string; label: string };
 
+/** Primary links stay in the bar; longer secondary links go under More. */
+const PRIMARY_NAV_COUNT = 5;
+
 function navLinkClass(isActive: boolean) {
   return cn(
-    'rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors 2xl:px-3.5',
+    'rounded-full px-2 py-1.5 text-xs font-medium whitespace-nowrap transition-colors xl:px-2.5 xl:text-[13px]',
     isActive
       ? 'bg-primary/15 text-primary shadow-[inset_0_0_0_1px_rgba(215,73,142,0.25)]'
       : 'text-foreground/75 hover:bg-white/5 hover:text-primary',
@@ -62,6 +71,10 @@ const Header = () => {
     ],
     [tNav],
   );
+
+  const primaryNavItems = navItems.slice(0, PRIMARY_NAV_COUNT);
+  const moreNavItems = navItems.slice(PRIMARY_NAV_COUNT);
+  const moreIsActive = moreNavItems.some((item) => pathname === item.href);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
@@ -124,27 +137,27 @@ const Header = () => {
             isNavFlat ? 'site-nav-bar--scrolled' : 'site-nav-bar--floating',
           )}
         >
-          <div className="mx-auto flex h-full w-full max-w-screen-2xl items-center justify-between gap-3 px-4 2xl:px-6">
-            <Link href="/" className="relative z-10 flex shrink-0 items-center">
+          <div className="mx-auto grid h-full w-full max-w-screen-2xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 sm:gap-3 sm:px-4 2xl:px-6">
+            <Link href="/" className="relative z-20 flex shrink-0 items-center">
               <Image
                 src="/svg/logo.svg"
                 alt="Evenjo"
                 width={165}
                 height={43}
-                className="h-8 w-auto sm:h-9 2xl:h-10"
+                className="h-7 w-auto sm:h-8 2xl:h-9"
                 priority
               />
             </Link>
 
             <nav
-              className="hidden min-w-0 flex-1 items-center justify-center 2xl:flex"
+              className="hidden min-w-0 items-center justify-center overflow-hidden 2xl:flex"
               aria-label={tNav('mainNav')}
             >
-              <ul className="flex items-center gap-0.5 2xl:gap-1">
-                {navItems.map((item) => {
+              <ul className="flex max-w-full items-center justify-center gap-0.5">
+                {primaryNavItems.map((item) => {
                   const isActive = pathname === item.href;
                   return (
-                    <li key={item.href}>
+                    <li key={item.href} className="min-w-0 shrink">
                       <Link
                         href={item.href}
                         onClick={closeMobileMenu}
@@ -155,33 +168,66 @@ const Header = () => {
                     </li>
                   );
                 })}
+                {moreNavItems.length > 0 ? (
+                  <li className="shrink-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        className={cn(
+                          navLinkClass(moreIsActive),
+                          'inline-flex items-center gap-0.5 outline-none',
+                        )}
+                      >
+                        {tNav('more')}
+                        <ChevronDown className="size-3.5 opacity-70" aria-hidden />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="center" className="min-w-[12rem]">
+                        {moreNavItems.map((item) => (
+                          <DropdownMenuItem key={item.href} asChild>
+                            <Link
+                              href={item.href}
+                              onClick={closeMobileMenu}
+                              className={cn(
+                                'cursor-pointer',
+                                pathname === item.href && 'text-primary',
+                              )}
+                            >
+                              {item.label}
+                            </Link>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </li>
+                ) : null}
               </ul>
             </nav>
 
-            <div
-              className={cn(
-                'hidden shrink-0 items-center gap-2 2xl:flex 2xl:gap-3',
-                isRtl && 'flex-row-reverse',
-              )}
-            >
-              <LanguageSelect
-                triggerClassName="h-9 w-9 border-[#303030]/80 bg-black/30 backdrop-blur-sm"
-              />
-              <CurrencySelect
-                triggerClassName="h-9 gap-1.5 rounded-full border-[#303030]/80 bg-black/30 px-2.5 backdrop-blur-sm"
-              />
-              <HeaderAuthActions />
-            </div>
+            <div className="relative z-20 flex shrink-0 items-center justify-self-end gap-1.5">
+              <div
+                className={cn(
+                  'hidden items-center gap-1.5 2xl:flex 2xl:gap-2',
+                  isRtl && 'flex-row-reverse',
+                )}
+              >
+                <LanguageSelect
+                  triggerClassName="h-9 w-9 border-[#303030]/80 bg-black/30 backdrop-blur-sm"
+                />
+                <CurrencySelect
+                  triggerClassName="h-9 gap-1 rounded-full border-[#303030]/80 bg-black/30 px-2 backdrop-blur-sm"
+                />
+                <HeaderAuthActions />
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((open) => !open)}
-              className="site-nav-menu-btn relative z-10 flex size-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-foreground transition-colors hover:bg-white/10 2xl:hidden"
-              aria-label={mobileMenuOpen ? tCommon('closeMenu') : tCommon('toggleMenu')}
-              aria-expanded={mobileMenuOpen}
-            >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((open) => !open)}
+                className="site-nav-menu-btn flex size-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-foreground transition-colors hover:bg-white/10 2xl:hidden"
+                aria-label={mobileMenuOpen ? tCommon('closeMenu') : tCommon('toggleMenu')}
+                aria-expanded={mobileMenuOpen}
+              >
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+            </div>
           </div>
         </div>
       </header>

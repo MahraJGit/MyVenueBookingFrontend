@@ -25,12 +25,27 @@ function unwrapEnvelope<T>(json: SuccessEnvelope<T>): T {
 export type EventCategory = {
   id: string;
   name: string;
+  /** Source (English) name used for API filters; present when `name` is translated. */
+  originalName?: string;
   slug: string;
   description: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 };
+
+/** Display label + stable filter value for category pills. */
+export type EventCategoryOption = {
+  label: string;
+  value: string;
+};
+
+export function toEventCategoryOption(category: EventCategory): EventCategoryOption {
+  return {
+    label: category.name,
+    value: category.originalName?.trim() || category.name,
+  };
+}
 
 export type CreateEventCategoryBody = {
   name: string;

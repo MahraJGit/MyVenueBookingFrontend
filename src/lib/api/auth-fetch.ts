@@ -1,4 +1,8 @@
-import { getAccessToken } from "@/features/auth/session-storage";import { refreshAndApplySession } from "@/features/auth/coordinated-refresh";
+import {
+  getAccessToken,
+  hasPersistedAuthSession,
+} from "@/features/auth/session-storage";
+import { refreshAndApplySession } from "@/features/auth/coordinated-refresh";
 import { withLocaleHeaders } from "./locale-headers";
 import { ApiError } from "./errors";
 import { assertApiConfigured } from "@/lib/env";
@@ -35,14 +39,30 @@ async function doFetch(path: string, options: AuthFetchOptions): Promise<Respons
   }
 }
 
+/**
+ * Authenticated fetch with automatic access-token refresh.
+ * If the access token is missing but a refresh cookie may exist, attempts refresh first.
+ */
 export async function authFetch(path: string, options: AuthFetchOptions): Promise<Response> {
+  if (!getAccessToken()) {
+    const refreshed = await refreshAndApplySession();
+    if (!refreshed || !getAccessToken()) {
+      throw new ApiError(401, "Please login to continue.");
+    }
+  }
+
   const firstResponse = await doFetch(path, options);
   if (firstResponse.status !== 401) {
     return firstResponse;
   }
 
   const refreshed = await refreshAndApplySession();
-  if (!refreshed) {
+  if (!refreshed || !getAccessToken()) {
+    return firstResponse;
+  }
+
+  // Avoid retrying when refresh left us with the same unusable snapshot.
+  if (!hasPersistedAuthSession()) {
     return firstResponse;
   }
 

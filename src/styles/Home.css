@@ -225,15 +225,22 @@
 }
 
 .top-venues {
+      /* Keep marquee geometry LTR so translateX(-50%) loops stay seamless
+         when the document direction switches to RTL (ar/ur). */
       .marquee-container {
             position: relative;
             overflow: hidden;
             white-space: nowrap;
+            direction: ltr;
+            unicode-bidi: isolate;
       }
 
       .wrapper {
             width: max-content;
             display: flex;
+            flex-direction: row;
+            direction: ltr;
+            will-change: transform;
       }
 
       .animate-marquee-left {
@@ -299,8 +306,20 @@
             }
       }
 
+      /* Keep marquee geometry LTR so translateX(-50%) loops stay seamless
+         when the document direction switches to RTL (ar/ur). */
+      .marquee {
+            overflow: hidden;
+            direction: ltr;
+            unicode-bidi: isolate;
+      }
+
       .marquee-track {
             display: flex;
+            flex-direction: row;
+            width: max-content;
+            direction: ltr;
+            will-change: transform;
             animation: marquee-left 25s linear infinite;
       }
 
@@ -308,7 +327,7 @@
             animation: marquee-right 25s linear infinite;
       }
 
-      .marquee-track:hover {
+      .marquee:hover .marquee-track {
             animation-play-state: paused;
       }
 }

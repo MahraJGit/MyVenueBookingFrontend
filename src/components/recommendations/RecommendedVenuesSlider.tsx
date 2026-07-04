@@ -9,6 +9,7 @@ import {
 } from "@/components/recommendations/RecommendationsCarousel";
 import { VenueCard } from "@/components/venues/VenueCard";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLocaleContext } from "@/features/i18n/locale-context";
 import { RECOMMENDATION_SLIDER_LIMIT } from "@/features/recommendations/constants";
 import { getRecommendedVenues } from "@/features/recommendations/api";
 import { recommendationKeys } from "@/features/recommendations/query-keys";
@@ -16,9 +17,10 @@ import { recommendationKeys } from "@/features/recommendations/query-keys";
 export function RecommendedVenuesSlider() {
   const t = useTranslations("recommendations");
   const { isAuthenticated, isReady } = useAuth();
+  const { locale } = useLocaleContext();
 
   const { data, isLoading } = useQuery({
-    queryKey: recommendationKeys.venues(RECOMMENDATION_SLIDER_LIMIT),
+    queryKey: recommendationKeys.venues(RECOMMENDATION_SLIDER_LIMIT, locale),
     queryFn: () => getRecommendedVenues(RECOMMENDATION_SLIDER_LIMIT),
     enabled: isAuthenticated && isReady,
     staleTime: 5 * 60 * 1000,
@@ -50,9 +52,10 @@ export function RecommendedVenuesSlider() {
 
 export function useRecommendedVenuesVisible() {
   const { isAuthenticated, isReady } = useAuth();
+  const { locale } = useLocaleContext();
 
   const { data, isLoading } = useQuery({
-    queryKey: recommendationKeys.venues(RECOMMENDATION_SLIDER_LIMIT),
+    queryKey: recommendationKeys.venues(RECOMMENDATION_SLIDER_LIMIT, locale),
     queryFn: () => getRecommendedVenues(RECOMMENDATION_SLIDER_LIMIT),
     enabled: isAuthenticated && isReady,
     staleTime: 5 * 60 * 1000,

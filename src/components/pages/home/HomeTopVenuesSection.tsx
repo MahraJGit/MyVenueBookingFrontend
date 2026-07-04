@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { VenueMarqueeChip } from "@/components/venues/VenueMarqueeChip";
+import { useLocaleContext } from "@/features/i18n/locale-context";
 import { listPublicVenues } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
 import type { PublicVenue } from "@/features/venues/types";
@@ -76,12 +77,16 @@ function MarqueeSkeleton({ className }: { className?: string }) {
 
 export function HomeTopVenuesSection() {
   const t = useTranslations("home");
+  // Use locale context so a header language change refetches immediately
+  // (Accept-Language is set from storage; backend translates via Google Cloud).
+  const { locale } = useLocaleContext();
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey: venueKeys.publicList({
       page: 1,
       limit: HOMEPAGE_VENUE_LIMIT,
       homepage: true,
+      locale,
     }),
     queryFn: () =>
       listPublicVenues({
@@ -93,6 +98,9 @@ export function HomeTopVenuesSection() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Show skeleton while loading or while switching language (new locale cache miss).
+  const showMarqueeLoading = isLoading || (isFetching && !data);
+
   const venues = data?.data ?? [];
   const { row1, row2 } = splitVenueRows(venues);
   const showSecondRow = row2.length > 0;
@@ -100,7 +108,7 @@ export function HomeTopVenuesSection() {
   return (
     <section className="top-venues relative overflow-hidden py-10">
       <div className="container mx-auto px-4">
-        <div className="section-header mb-8 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
+        <div className="section-header mb-8 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-start">
           <div>
             <h2>{t("topVenues")}</h2>
             <p className="mt-1 text-sm text-[#9A9A9A]">
@@ -122,8 +130,12 @@ export function HomeTopVenuesSection() {
         </p>
       ) : null}
 
-      {isLoading ? (
-        <div className="marquee-container relative -mx-4 overflow-hidden">
+      {showMarqueeLoading ? (
+        <div
+          key={`top-venues-skeleton-${locale}`}
+          className="marquee-container relative -mx-4 overflow-hidden"
+          dir="ltr"
+        >
           <MarqueeSkeleton className="mb-4" />
           <MarqueeSkeleton />
         </div>
@@ -135,7 +147,11 @@ export function HomeTopVenuesSection() {
           </Link>
         </p>
       ) : (
-        <div className="marquee-container relative -mx-4 overflow-hidden">
+        <div
+          key={`top-venues-marquee-${locale}`}
+          className="marquee-container relative -mx-4 overflow-hidden"
+          dir="ltr"
+        >
           <MarqueeRow venues={row1} direction="left" className="mb-4" />
           {showSecondRow ? (
             <MarqueeRow venues={row2} direction="right" />

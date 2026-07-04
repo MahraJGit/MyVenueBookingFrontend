@@ -52,7 +52,7 @@ export function VenueTypeFilters({
             : "border-[#B3B3B3] text-[#B3B3B3]"
         }`}
           >
-            {type.name}
+            <span dir="auto">{type.name}</span>
           </button>
         );
       })}

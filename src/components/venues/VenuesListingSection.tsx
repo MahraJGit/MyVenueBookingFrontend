@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { listPublicVenues, listVenueTypes } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
+import { useLocaleContext } from "@/features/i18n/locale-context";
 import {
   useListingLabels,
   useVenueSortOptions,
@@ -44,6 +45,7 @@ export function VenuesListingSection() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations("venuesListing");
+  const { locale } = useLocaleContext();
   const sortOptions = useVenueSortOptions();
   const labels = useListingLabels();
 
@@ -107,7 +109,7 @@ export function VenuesListingSection() {
   };
 
   const { data: types = [], isLoading: loadingTypes } = useQuery({
-    queryKey: venueKeys.types(),
+    queryKey: [...venueKeys.types(), locale],
     queryFn: listVenueTypes,
   });
 
@@ -123,6 +125,7 @@ export function VenuesListingSection() {
   } = useQuery({
     queryKey: venueKeys.publicList({
       page,
+      locale,
       search: searchFromUrl,
       city: cityFromUrl,
       venueTypeId: venueTypeIdFromUrl,
@@ -150,9 +153,10 @@ export function VenuesListingSection() {
   return (
     <section className="eventslist py-10 pt-24 sm:pt-28">
       <div className="container mx-auto px-4">
-        <div className="mb-10 max-w-3xl">
+        <div className="mb-10 max-w-3xl text-start">
           <h1 className="page-title mb-3 text-white">
-            {t("title")} <span className="text-gradient-accent">{t("titleHighlight")}</span>
+            {t("title")}{" "}
+            <span className="text-gradient-accent">{t("titleHighlight")}</span>
           </h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
@@ -197,7 +201,7 @@ export function VenuesListingSection() {
           </Select>
           <div className="flex flex-wrap gap-2 sm:contents">
             <Button onClick={applyFilters} className="w-full bg-primary sm:w-auto">
-              <Search className="mr-2 h-4 w-4" />
+              <Search className="me-2 h-4 w-4" />
               {labels.search}
             </Button>
             {(searchFromUrl || cityFromUrl) && (
@@ -240,9 +244,9 @@ export function VenuesListingSection() {
         ) : venues.length === 0 ? (
           <p className="mb-8 py-8 text-sm text-[#B3B3B3]">
             {t("noVenuesFound")}
-            {activeTypeName ? t("inType", { type: activeTypeName }) : ""}
-            {searchFromUrl ? labels.matching(searchFromUrl) : ""}
-            {cityFromUrl ? labels.inCity(cityFromUrl) : ""}.
+            {activeTypeName ? ` ${t("inType", { type: activeTypeName })}` : ""}
+            {searchFromUrl ? ` ${labels.matching(searchFromUrl)}` : ""}
+            {cityFromUrl ? ` ${labels.inCity(cityFromUrl)}` : ""}.
           </p>
         ) : (
           <div className="relative mb-8">
@@ -251,7 +255,7 @@ export function VenuesListingSection() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : null}
-            <ResponsiveEventCardsGrid>
+            <ResponsiveEventCardsGrid key={`venues-grid-${locale}`}>
               {venues.map((venue) => (
                 <VenueCard key={venue.id} venue={venue} />
               ))}

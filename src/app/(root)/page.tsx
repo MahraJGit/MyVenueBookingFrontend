@@ -1,16 +1,97 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import "@/styles/Home.css";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { HotEventsSection } from "@/components/events/HotEventsSection";
 import { HomeHeroSection } from "@/components/pages/home/HomeHeroSection";
 import { HomeTopVenuesSection } from "@/components/pages/home/HomeTopVenuesSection";
+import { useLocaleContext } from "@/features/i18n/locale-context";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+
+const TESTIMONIAL_CARD_COUNT = 4;
+
+function TestimonialCard({
+  quote,
+  userName,
+  userImageAlt,
+  ratingStarsAlt,
+}: {
+  quote: string;
+  userName: string;
+  userImageAlt: string;
+  ratingStarsAlt: string;
+}) {
+  return (
+    <div className="testimonial min-w-[280px] max-w-[300px] shrink-0 rounded-2xl bg-[#1B1B1B] px-4 py-3">
+      <p className="text-xs!" dir="auto">
+        {quote}
+      </p>
+      <div className="profile mt-4 flex gap-2">
+        <Image
+          src="/images/profile.png"
+          alt={userImageAlt}
+          width={32}
+          height={32}
+          className="rounded-[50%]"
+        />
+        <div className="name">
+          <h5 dir="auto">{userName}</h5>
+          <Image
+            src="/images/stars.png"
+            alt={ratingStarsAlt}
+            width={60}
+            height={12}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TestimonialsMarqueeRow({
+  reverse = false,
+  cards,
+}: {
+  reverse?: boolean;
+  cards: React.ReactNode[];
+}) {
+  return (
+    <div className="marquee overflow-hidden" dir="ltr">
+      <div
+        className={`marquee-track flex gap-6 ${reverse ? "reverse" : ""}`}
+      >
+        {/* Duplicate the set so translateX(-50%) loops seamlessly. */}
+        {[0, 1].map((copy) => (
+          <React.Fragment key={copy}>
+            {cards.map((card, index) => (
+              <React.Fragment key={`${copy}-${index}`}>{card}</React.Fragment>
+            ))}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const Home = () => {
   const t = useTranslations("home");
+  const { locale } = useLocaleContext();
+
+  const testimonialCards = useMemo(
+    () =>
+      Array.from({ length: TESTIMONIAL_CARD_COUNT }, (_, index) => (
+        <TestimonialCard
+          key={index}
+          quote={t("testimonialQuote")}
+          userName={t("sampleUserName")}
+          userImageAlt={t("userImageAlt")}
+          ratingStarsAlt={t("ratingStarsAlt")}
+        />
+      )),
+    [t],
+  );
 
   return (
     <>
@@ -30,7 +111,7 @@ const Home = () => {
                   <div className="w-[50%] self-center">
                     <Image
                       src="/images/dollor-icon.png"
-                      alt="concert image"
+                      alt=""
                       width={160}
                       height={144}
                       className="mx-auto"
@@ -45,7 +126,7 @@ const Home = () => {
                   <div className="w-[50%] self-center">
                     <Image
                       src="/images/badge-icon.png"
-                      alt="concert image"
+                      alt=""
                       width={160}
                       height={144}
                       className="mx-auto"
@@ -67,7 +148,7 @@ const Home = () => {
                 </div>
                 <Image
                   src="/images/service-24.png"
-                  alt="concert image"
+                  alt=""
                   width={240}
                   height={240}
                 />
@@ -79,85 +160,19 @@ const Home = () => {
       {/* why-us section end */}
 
       {/* testimonials section start */}
-      <section className="testimonials py-10 overflow-hidden relative">
+      <section className="testimonials relative overflow-hidden py-10">
         <div className="container mx-auto px-4">
           <div className="section-header mb-8 text-center">
             <h2 className="mb-2">{t("lovedByThousands")}</h2>
             <p>{t("testimonialsSubtitle")}</p>
           </div>
 
-          <div className="marquee flex gap-6 mb-6">
-            <div className="marquee-track flex gap-6">
-              {[...Array(2)].map((_, i) => (
-                <React.Fragment key={i}>
-                  {[...Array(4)].map((_, index) => (
-                    <div
-                      key={index}
-                      className="testimonial min-w-[280px] max-w-[300px] rounded-2xl py-3 px-4 bg-[#1B1B1B]"
-                    >
-                      <p className="text-xs!">
-                        {t("testimonialQuote")}
-                      </p>
-                      <div className="profile flex gap-2 mt-4">
-                        <Image
-                          src="/images/profile.png"
-                          alt={t("userImageAlt")}
-                          width={32}
-                          height={32}
-                          className="rounded-[50%]"
-                        />
-                        <div className="name">
-                          <h5>{t("sampleUserName")}</h5>
-                          <Image
-                            src="/images/stars.png"
-                            alt={t("ratingStarsAlt")}
-                            width={60}
-                            height={12}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-
-          <div className="marquee flex gap-6">
-            <div className="marquee-track reverse flex gap-6">
-              {[...Array(2)].map((_, i) => (
-                <React.Fragment key={i}>
-                  {[...Array(4)].map((_, index) => (
-                    <div
-                      key={index}
-                      className="testimonial min-w-[280px] max-w-[300px] rounded-2xl py-3 px-4 bg-[#1B1B1B]"
-                    >
-                      <p className="text-xs!">
-                        {t("testimonialQuote")}
-                      </p>
-                      <div className="profile flex gap-2 mt-4">
-                        <Image
-                          src="/images/profile.png"
-                          alt={t("userImageAlt")}
-                          width={32}
-                          height={32}
-                          className="rounded-[50%]"
-                        />
-                        <div className="name">
-                          <h5>{t("sampleUserName")}</h5>
-                          <Image
-                            src="/images/stars.png"
-                            alt={t("ratingStarsAlt")}
-                            width={60}
-                            height={12}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </React.Fragment>
-              ))}
-            </div>
+          <div
+            key={`testimonials-marquee-${locale}`}
+            className="space-y-6"
+          >
+            <TestimonialsMarqueeRow cards={testimonialCards} />
+            <TestimonialsMarqueeRow cards={testimonialCards} reverse />
           </div>
         </div>
       </section>

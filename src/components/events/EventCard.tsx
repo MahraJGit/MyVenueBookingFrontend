@@ -15,6 +15,8 @@ import {
 } from "@/features/events/utils";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { FavoriteButton } from "@/components/favorites/FavoriteButton";
+import { useLocaleContext } from "@/features/i18n/locale-context";
+import { getIntlLocale } from "@/i18n/locales";
 
 type EventCardProps = {
   event: PublicEvent;
@@ -23,10 +25,13 @@ type EventCardProps = {
 export function EventCard({ event }: EventCardProps) {
   const tEvents = useTranslations("events");
   const tCommon = useTranslations("common");
+  const { locale } = useLocaleContext();
+  const intlLocale = getIntlLocale(locale);
   const [countdown, setCountdown] = useState<string | null>(null);
   const salePhase = computeEventSalePhase(event);
   const minTicket = getMinTicketPrice(event);
   const location = [event.city, event.state].filter(Boolean).join(", ");
+  const tags = (event.tags ?? []).filter((tag) => tag.trim()).slice(0, 3);
 
   useEffect(() => {
     const tick = () =>
@@ -47,42 +52,78 @@ export function EventCard({ event }: EventCardProps) {
         href={`/events/${event.slug}`}
         className="relative flex h-full w-full cursor-pointer flex-col items-center"
       >
-      <EventCoverImage
-        coverImage={event.coverImage}
-        thumbnail={event.thumbnail}
-        eventName={event.eventName}
-        seed={event.id}
-      />
-      <div className="card-body relative z-0 -mt-10 flex w-full max-w-[92%] flex-1 flex-col rounded-2xl border border-[#303030] bg-[#1B1B1B] transition-all duration-300 ease-in-out group-hover:rounded-t-none">
-        <div className="timer flex justify-between bg-[#850D06] rounded-t-2xl py-2 px-4 opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible max-h-0 group-hover:max-h-10 overflow-hidden absolute -top-10 left-0 right-0 z-10 transition-all duration-300 ease-in-out">
-          <span>{salePhase === "not_started" ? tEvents("saleStartsIn") : tEvents("timeToEnd")}</span>
-          <span>{countdown ?? "--:--:--"}</span>
-        </div>
-        <div className="flex h-full flex-col gap-4 p-4">
-          <div className="flex items-start justify-between gap-2">
-            <h4 className="line-clamp-1 flex-1">{event.eventName}</h4>
-            <EventSaleBadge phase={salePhase} />
+        <EventCoverImage
+          coverImage={event.coverImage}
+          thumbnail={event.thumbnail}
+          eventName={event.eventName}
+          seed={event.id}
+        />
+        <div className="card-body relative z-0 -mt-10 flex w-full max-w-[92%] flex-1 flex-col rounded-2xl border border-[#303030] bg-[#1B1B1B] transition-all duration-300 ease-in-out group-hover:rounded-t-none">
+          <div className="timer absolute -top-10 right-0 left-0 z-10 flex max-h-0 justify-between overflow-hidden rounded-t-2xl bg-[#850D06] px-4 py-2 opacity-0 transition-all duration-300 ease-in-out group-hover:visible group-hover:max-h-10 group-hover:opacity-100">
+            <span>
+              {salePhase === "not_started"
+                ? tEvents("saleStartsIn")
+                : tEvents("timeToEnd")}
+            </span>
+            <span>{countdown ?? "--:--:--"}</span>
           </div>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs">{formatEventDate(event.startDateTime)}</span>
-            <span className="line-clamp-1 text-right text-xs">{location || "—"}</span>
-          </div>
-          <div className="price text-md mt-auto font-bold text-primary">
-            {minTicket ? (
-              <>
-                {tCommon("from")}{" "}
-                <span>
-                  <DisplayPrice amount={minTicket.price} currency={minTicket.currency} />
-                </span>
-              </>
-            ) : (
-              <span className="text-sm font-medium text-zinc-400">
-                {tEvents(getSalePhaseLabelKey(salePhase))}
+          <div className="flex h-full flex-col gap-3 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <h4 className="line-clamp-1 flex-1" dir="auto">
+                {event.eventName}
+              </h4>
+              <EventSaleBadge phase={salePhase} />
+            </div>
+
+            {event.category || tags.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {event.category ? (
+                  <span
+                    className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                    dir="auto"
+                  >
+                    {event.category}
+                  </span>
+                ) : null}
+                {tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-[#303030] bg-[#242424] px-2 py-0.5 text-[11px] text-[#B3B3B3]"
+                    dir="auto"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs">
+                {formatEventDate(event.startDateTime, intlLocale)}
               </span>
-            )}
+              <span className="line-clamp-1 text-end text-xs" dir="auto">
+                {location || "—"}
+              </span>
+            </div>
+            <div className="price text-md mt-auto font-bold text-primary">
+              {minTicket ? (
+                <>
+                  {tCommon("from")}{" "}
+                  <span>
+                    <DisplayPrice
+                      amount={minTicket.price}
+                      currency={minTicket.currency}
+                    />
+                  </span>
+                </>
+              ) : (
+                <span className="text-sm font-medium text-zinc-400">
+                  {tEvents(getSalePhaseLabelKey(salePhase))}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
       </Link>
     </div>
   );

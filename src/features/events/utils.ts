@@ -22,20 +22,20 @@ export function getFallbackEventImage(seed: string): string {
   return FALLBACK_IMAGES[hash] ?? FALLBACK_IMAGES[0];
 }
 
-export function formatEventDate(iso: string): string {
+export function formatEventDate(iso: string, locale?: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-US", {
+  return d.toLocaleDateString(locale || undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 }
 
-export function formatEventDateTime(iso: string): string {
+export function formatEventDateTime(iso: string, locale?: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString(locale || undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",

@@ -39,7 +39,7 @@
             text-align: center;
 
             @media (min-width: 640px) {
-                text-align: left;
+                text-align: start;
             }
 
             @media (max-width: 1024px) {
@@ -119,8 +119,20 @@
         }
     }
 
+    /* Keep marquee geometry LTR so translateX(-50%) loops stay seamless
+       when the document direction switches to RTL (ar/ur). */
+    .marquee {
+        overflow: hidden;
+        direction: ltr;
+        unicode-bidi: isolate;
+    }
+
     .marquee-track {
         display: flex;
+        flex-direction: row;
+        width: max-content;
+        direction: ltr;
+        will-change: transform;
         animation: marquee-left 25s linear infinite;
     }
 
@@ -128,7 +140,7 @@
         animation: marquee-right 25s linear infinite;
     }
 
-    .marquee-track:hover {
+    .marquee:hover .marquee-track {
         animation-play-state: paused;
     }
 }
