@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
+  ExternalLink,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -28,6 +29,7 @@ import { userProfileQueryKey } from "@/features/auth/auth-cache";
 import { patchAuthUser } from "@/features/auth/session-storage";
 import { getMyProfile } from "@/features/users/api";
 import { resolveAvatarSrc } from "@/features/users/profile-display";
+import { cn } from "@/lib/utils";
 
 type HeaderAuthActionsProps = {
   className?: string;
@@ -42,12 +44,35 @@ function dashboardIcon(href: string) {
   return LayoutDashboard;
 }
 
+function isDashboardActive(pathname: string, href: string) {
+  if (href.startsWith("/userDashboard")) {
+    return pathname.startsWith("/userDashboard");
+  }
+  if (href.startsWith("/vendorDashboard")) {
+    return pathname.startsWith("/vendorDashboard");
+  }
+  if (href.startsWith("/adminDashbaord") || href.startsWith("/adminDashboard")) {
+    return (
+      pathname.startsWith("/adminDashbaord") ||
+      pathname.startsWith("/adminDashboard")
+    );
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function roleLabelKey(role?: string): "roleBuyer" | "roleVendor" | "roleAdmin" {
+  if (role === "VENDOR") return "roleVendor";
+  if (role === "ADMIN") return "roleAdmin";
+  return "roleBuyer";
+}
+
 export function HeaderAuthActions({
   className = "",
   onNavigate,
   stacked = false,
 }: HeaderAuthActionsProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const tNav = useTranslations("nav");
   const tAuth = useTranslations("auth");
   const tCommon = useTranslations("common");
@@ -153,6 +178,8 @@ export function HeaderAuthActions({
     await logout();
   };
 
+  const roleKey = roleLabelKey(user?.role);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -173,10 +200,14 @@ export function HeaderAuthActions({
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
           <p className="text-sm font-medium leading-none">{resolvedDisplayName}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {tCommon(roleKey)}
+          </p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {dashboardLinks.map((link) => {
           const Icon = dashboardIcon(link.href);
+          const active = isDashboardActive(pathname, link.href);
           return (
             <DropdownMenuItem
               key={link.href}
@@ -184,6 +215,7 @@ export function HeaderAuthActions({
                 onNavigate?.();
                 router.push(link.href);
               }}
+              className={cn(active && "bg-primary/10 text-primary")}
             >
               <Icon className="size-4" />
               {tNav(link.labelKey)}
@@ -195,9 +227,22 @@ export function HeaderAuthActions({
             onNavigate?.();
             router.push("/userDashboard/profile");
           }}
+          className={cn(
+            pathname.startsWith("/userDashboard/profile") &&
+              "bg-primary/10 text-primary",
+          )}
         >
           <Settings className="size-4" />
           {tNav("profileSettings")}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() => {
+            onNavigate?.();
+            router.push("/");
+          }}
+        >
+          <ExternalLink className="size-4" />
+          {tCommon("backToSite")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onSelect={handleLogout}>
@@ -212,8 +257,11 @@ export function HeaderAuthActions({
 /** Mobile drawer: full-width links mirroring the avatar menu. */
 export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
+  const pathname = usePathname();
   const tNav = useTranslations("nav");
-  const { isAuthenticated, isReady, displayName, dashboardLinks, logout } = useAuth();
+  const tCommon = useTranslations("common");
+  const { isAuthenticated, isReady, displayName, dashboardLinks, logout, user } =
+    useAuth();
 
   if (!isReady) return null;
 
@@ -223,25 +271,41 @@ export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void 
     );
   }
 
+  const roleKey = roleLabelKey(user?.role);
+
   return (
     <div className="space-y-1">
-      <p className="mb-2 px-3 text-sm font-medium text-foreground">{displayName}</p>
-      {dashboardLinks.map((link) => (
-        <button
-          key={link.href}
-          type="button"
-          className="flex w-full items-center rounded-xl px-3 py-3 text-left text-[15px] font-medium text-foreground/90 transition-colors hover:bg-white/5 hover:text-primary"
-          onClick={() => {
-            onNavigate?.();
-            router.push(link.href);
-          }}
-        >
-          {tNav(link.labelKey)}
-        </button>
-      ))}
+      <div className="mb-2 px-3">
+        <p className="text-sm font-medium text-foreground">{displayName}</p>
+        <p className="text-xs text-muted-foreground">{tCommon(roleKey)}</p>
+      </div>
+      {dashboardLinks.map((link) => {
+        const active = isDashboardActive(pathname, link.href);
+        return (
+          <button
+            key={link.href}
+            type="button"
+            className={cn(
+              "flex w-full items-center rounded-xl px-3 py-3 text-start text-[15px] font-medium transition-colors hover:bg-white/5 hover:text-primary",
+              active ? "bg-primary/10 text-primary" : "text-foreground/90",
+            )}
+            onClick={() => {
+              onNavigate?.();
+              router.push(link.href);
+            }}
+          >
+            {tNav(link.labelKey)}
+          </button>
+        );
+      })}
       <button
         type="button"
-        className="flex w-full items-center rounded-xl px-3 py-3 text-left text-[15px] font-medium text-foreground/90 transition-colors hover:bg-white/5 hover:text-primary"
+        className={cn(
+          "flex w-full items-center rounded-xl px-3 py-3 text-start text-[15px] font-medium transition-colors hover:bg-white/5 hover:text-primary",
+          pathname.startsWith("/userDashboard/profile")
+            ? "bg-primary/10 text-primary"
+            : "text-foreground/90",
+        )}
         onClick={() => {
           onNavigate?.();
           router.push("/userDashboard/profile");
@@ -251,7 +315,17 @@ export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void 
       </button>
       <button
         type="button"
-        className="flex w-full items-center rounded-xl px-3 py-3 text-left text-[15px] font-medium text-destructive transition-colors hover:bg-destructive/10"
+        className="flex w-full items-center rounded-xl px-3 py-3 text-start text-[15px] font-medium text-foreground/90 transition-colors hover:bg-white/5 hover:text-primary"
+        onClick={() => {
+          onNavigate?.();
+          router.push("/");
+        }}
+      >
+        {tCommon("backToSite")}
+      </button>
+      <button
+        type="button"
+        className="flex w-full items-center rounded-xl px-3 py-3 text-start text-[15px] font-medium text-destructive transition-colors hover:bg-destructive/10"
         onClick={async () => {
           onNavigate?.();
           await logout();
