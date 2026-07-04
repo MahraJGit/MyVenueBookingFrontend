@@ -33,6 +33,8 @@ import {
   resolveAvatarSrc,
 } from "@/features/users/profile-display"
 import { patchAuthUser } from "@/features/auth/session-storage"
+import { useAuth } from "@/features/auth/auth-context"
+import { userProfileQueryKey } from "@/features/auth/auth-cache"
 import { toastApiError } from "@/lib/toasts"
 import { toast } from "sonner"
 
@@ -90,6 +92,7 @@ export default function ProfilePage() {
   const tCommon = useTranslations("common")
   const tAuth = useTranslations("auth")
   const tValidation = useTranslations("validation")
+  const { user, isAuthenticated } = useAuth()
   const queryClient = useQueryClient()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [form, setForm] = React.useState<ProfileFormState | null>(null)
@@ -101,8 +104,9 @@ export default function ProfilePage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["user-profile"],
+    queryKey: userProfileQueryKey(user?.id),
     queryFn: getMyProfile,
+    enabled: isAuthenticated && !!user?.id,
   })
 
   React.useEffect(() => {
@@ -112,7 +116,7 @@ export default function ProfilePage() {
   }, [profile])
 
   const applyProfileUpdate = (updated: UserProfile) => {
-    queryClient.setQueryData(["user-profile"], updated)
+    queryClient.setQueryData(userProfileQueryKey(user?.id), updated)
     setForm(profileToForm(updated))
     syncAuthFromProfile(updated)
   }

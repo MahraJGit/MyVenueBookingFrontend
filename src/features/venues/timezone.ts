@@ -51,3 +51,39 @@ export function formatDateKey(date: Date): string {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
+
+/** Format a UTC ISO instant as `YYYY-MM-DDTHH:mm` in the venue timezone (for datetime-local inputs). */
+export function utcIsoToDatetimeLocalValue(iso: string, timezone: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+
+  const year = get("year");
+  const month = get("month");
+  const day = get("day");
+  const hour = get("hour").padStart(2, "0");
+  const minute = get("minute").padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+/** Parse a datetime-local value as venue-local time and return UTC ISO. */
+export function datetimeLocalValueToUtcIso(value: string, timezone: string): string {
+  const [datePart, timePart] = value.split("T");
+  if (!datePart || !timePart) {
+    throw new Error("Invalid datetime-local value");
+  }
+  return localSlotToUtcIso(datePart, timePart, timezone);
+}

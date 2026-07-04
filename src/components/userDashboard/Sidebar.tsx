@@ -13,10 +13,12 @@ import {
   Settings,
   Heart,
   X,
+  MessageCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { dashboardSidebarClass, DashboardLogoutButton } from '@/components/dashboard/dashboard-shared'
+import { ChatUnreadBadge } from '@/components/chat/ChatUnreadBadge'
 
 type UserSidebarProps = {
   isOpen: boolean
@@ -58,6 +60,11 @@ export default function UserSidebar({ isOpen, onClose }: UserSidebarProps) {
       labelKey: 'notification' as const,
       href: '/userDashboard/notifications',
       icon: Bell,
+    },
+    {
+      labelKey: 'messages' as const,
+      href: '/userDashboard/messages',
+      icon: MessageCircle,
     },
   ]
 
@@ -111,7 +118,10 @@ export default function UserSidebar({ isOpen, onClose }: UserSidebarProps) {
                 className={isActive ? 'text-primary' : 'text-gray-400'}
               />
 
-              {t(item.labelKey)}
+              <span className="flex min-w-0 flex-1 items-center gap-2">
+                <span className="truncate">{t(item.labelKey)}</span>
+                {item.labelKey === 'messages' ? <ChatUnreadBadge context="buyer" /> : null}
+              </span>
             </Link>
           )
         })}

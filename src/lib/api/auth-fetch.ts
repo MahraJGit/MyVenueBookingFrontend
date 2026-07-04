@@ -1,5 +1,4 @@
-import { refreshAuthTokens } from "@/features/auth/api";
-import { clearAuthSession, getAccessToken, updateAccessToken } from "@/features/auth/session-storage";
+import { getAccessToken } from "@/features/auth/session-storage";import { refreshAndApplySession } from "@/features/auth/coordinated-refresh";
 import { withLocaleHeaders } from "./locale-headers";
 import { ApiError } from "./errors";
 import { assertApiConfigured } from "@/lib/env";
@@ -8,28 +7,6 @@ type AuthFetchOptions = Omit<RequestInit, "headers"> & {
   headers?: HeadersInit;
   networkErrorMessage: string;
 };
-
-let refreshInFlight: Promise<boolean> | null = null;
-
-async function refreshAccessToken(): Promise<boolean> {
-  try {
-    const data = await refreshAuthTokens();
-    updateAccessToken(data.accessToken);
-    return true;
-  } catch {
-    clearAuthSession();
-    return false;
-  }
-}
-
-async function refreshAccessTokenShared(): Promise<boolean> {
-  if (!refreshInFlight) {
-    refreshInFlight = refreshAccessToken().finally(() => {
-      refreshInFlight = null;
-    });
-  }
-  return refreshInFlight;
-}
 
 function buildHeaders(extra?: HeadersInit): Headers {
   const token = getAccessToken();
@@ -64,7 +41,7 @@ export async function authFetch(path: string, options: AuthFetchOptions): Promis
     return firstResponse;
   }
 
-  const refreshed = await refreshAccessTokenShared();
+  const refreshed = await refreshAndApplySession();
   if (!refreshed) {
     return firstResponse;
   }

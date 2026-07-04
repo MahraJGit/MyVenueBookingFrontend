@@ -19,6 +19,7 @@ import {
 } from "@/components/userDashboard/DashboardScrollableTabs";
 import { listFavorites } from "@/features/favorites/api";
 import { favoriteKeys } from "@/features/favorites/query-keys";
+import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
 
 type FavouritesTab = "events" | "venues";
@@ -29,11 +30,13 @@ export default function FavouritesPage() {
   const t = useTranslations("userDashboard");
   const tFav = useTranslations("favorites");
   const tCommon = useTranslations("common");
+  const { user, isAuthenticated, isReady } = useAuth();
   const [activeTab, setActiveTab] = useState<FavouritesTab>("events");
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: favoriteKeys.list("all"),
+    queryKey: favoriteKeys.list(user?.id, "all"),
     queryFn: () => listFavorites("all"),
+    enabled: isAuthenticated && isReady && !!user?.id,
   });
 
   const events = data?.events ?? [];

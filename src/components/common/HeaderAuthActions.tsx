@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -22,6 +23,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/features/auth/auth-context";
+import { buildDisplayName, buildInitials } from "@/features/auth/auth-display";
+import { userProfileQueryKey } from "@/features/auth/auth-cache";
+import { patchAuthUser } from "@/features/auth/session-storage";
 import { getMyProfile } from "@/features/users/api";
 import { resolveAvatarSrc } from "@/features/users/profile-display";
 
@@ -47,16 +51,50 @@ export function HeaderAuthActions({
   const tNav = useTranslations("nav");
   const tAuth = useTranslations("auth");
   const tCommon = useTranslations("common");
-  const { isAuthenticated, isReady, displayName, initials, dashboardLinks, logout, user } =
+  const { isAuthenticated, isReady, isRestoring, displayName, initials, dashboardLinks, logout, user } =
     useAuth();
 
   const { data: profile } = useQuery({
-    queryKey: ["user-profile"],
+    queryKey: userProfileQueryKey(user?.id),
     queryFn: getMyProfile,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !!user?.id,
   });
 
   const avatarSrc = resolveAvatarSrc(profile?.avatarUrl ?? user?.avatarUrl);
+
+  const resolvedDisplayName = useMemo(() => {
+    const source = profile ?? user;
+    if (!source) return displayName;
+    return buildDisplayName(source) || displayName;
+  }, [profile, user, displayName]);
+
+  const avatarInitials = useMemo(() => {
+    const source = profile ?? user;
+    if (!source) return initials;
+    return buildInitials(source);
+  }, [profile, user, initials]);
+
+  useEffect(() => {
+    if (!profile || !user) return;
+    const next = {
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      email: profile.email ?? user.email,
+      avatarUrl: profile.avatarUrl,
+      phone: profile.phone ?? undefined,
+      phoneCountryCode: profile.phoneCountryCode,
+    };
+    const changed =
+      next.firstName !== user.firstName ||
+      next.lastName !== user.lastName ||
+      next.email !== user.email ||
+      next.avatarUrl !== user.avatarUrl ||
+      next.phone !== user.phone ||
+      next.phoneCountryCode !== user.phoneCountryCode;
+    if (changed) {
+      patchAuthUser(next);
+    }
+  }, [profile, user]);
 
   if (!isReady) {
     return (
@@ -75,6 +113,14 @@ export function HeaderAuthActions({
   }
 
   if (!isAuthenticated) {
+    if (isRestoring) {
+      return (
+        <div className={`${stacked ? "w-full" : ""} ${className}`} aria-hidden>
+          <div className="h-9 w-9 rounded-full bg-muted/40 animate-pulse" />
+        </div>
+      );
+    }
+
     return (
       <div
         className={`${stacked ? "w-full space-y-3" : "flex items-center gap-1.5"} ${className}`}
@@ -119,14 +165,14 @@ export function HeaderAuthActions({
             avatarUrl={avatarSrc}
             className="h-9 w-9 border border-border"
             fallbackClassName="bg-primary/15 text-primary text-sm font-medium"
-            alt={displayName}
-            fallback={initials}
+            alt={resolvedDisplayName}
+            fallback={avatarInitials}
           />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
-          <p className="text-sm font-medium leading-none">{displayName}</p>
+          <p className="text-sm font-medium leading-none">{resolvedDisplayName}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {dashboardLinks.map((link) => {

@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode, Suspense, useState } from 'react'
+import { DashboardRoleGuard } from "@/components/auth/DashboardRoleGuard"
 import Sidebar from '@/components/dashboard/sidebar'
 import { VendorAdminRedirect } from '@/components/dashboard/VendorAdminRedirect'
 import {
@@ -10,6 +11,7 @@ import {
   dashboardShellClass,
   DashboardMobileHeader,
 } from '@/components/dashboard/dashboard-shared'
+import { ChatSocketProvider } from '@/components/chat/ChatSocketProvider'
 
 export default function DashboardLayout({
   children,
@@ -21,6 +23,8 @@ export default function DashboardLayout({
   return (
     <Suspense fallback={null}>
       <VendorAdminRedirect>
+        <DashboardRoleGuard allowedRoles={["ADMIN"]}>
+        <ChatSocketProvider>
         <div className={dashboardShellClass}>
           {sidebarOpen ? (
             <div
@@ -37,6 +41,8 @@ export default function DashboardLayout({
             <main className={dashboardContentClass}>{children}</main>
           </div>
         </div>
+        </ChatSocketProvider>
+        </DashboardRoleGuard>
       </VendorAdminRedirect>
     </Suspense>
   )

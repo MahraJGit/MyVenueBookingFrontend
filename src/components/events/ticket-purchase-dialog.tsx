@@ -13,7 +13,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { getAccessToken } from "@/features/auth/session-storage";
+import { useAuth } from "@/features/auth/auth-context";
 import { listPaymentMethods } from "@/features/payments/api";
 import {
   checkoutTickets,
@@ -59,6 +59,7 @@ export function TicketPurchaseDialog({
   const tTicket = useTranslations("ticketPurchase");
   const tEvents = useTranslations("events");
   const tCommon = useTranslations("common");
+  const { isAuthenticated, isReady } = useAuth();
   const { formatChargePrice } = useCurrency();
   const [quantities, setQuantities] = React.useState<Quantities>({});
   const [checkingPayment, setCheckingPayment] = React.useState(false);
@@ -87,7 +88,7 @@ export function TicketPurchaseDialog({
   }, [open, ticketTypes]);
 
   React.useEffect(() => {
-    if (!open || !getAccessToken()) return;
+    if (!open || !isReady || !isAuthenticated) return;
 
     let cancelled = false;
     setCheckingPayment(true);
@@ -115,7 +116,7 @@ export function TicketPurchaseDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, tTicket]);
+  }, [open, isReady, isAuthenticated, tTicket]);
 
   const lineItems = React.useMemo(() => {
     return ticketTypes
@@ -148,7 +149,7 @@ export function TicketPurchaseDialog({
   };
 
   const handlePurchase = async () => {
-    if (!getAccessToken()) {
+    if (!isAuthenticated) {
       const redirect = encodeURIComponent(pathname || `/events/${event.slug}`);
       router.push(`/login?redirect=${redirect}`);
       return;

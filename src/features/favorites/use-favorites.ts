@@ -10,12 +10,13 @@ import { toastApiError } from "@/lib/toasts";
 const EMPTY_IDS: FavoriteIds = { eventIds: [], venueIds: [] };
 
 export function useFavoriteIds() {
-  const { isAuthenticated, isReady } = useAuth();
+  const { isAuthenticated, isReady, user } = useAuth();
+  const userId = user?.id;
 
   return useQuery({
-    queryKey: favoriteKeys.ids(),
+    queryKey: favoriteKeys.ids(userId),
     queryFn: getFavoriteIds,
-    enabled: isAuthenticated && isReady,
+    enabled: isAuthenticated && isReady && !!userId,
     staleTime: 30_000,
   });
 }
@@ -28,6 +29,8 @@ export function useIsFavorited(type: FavoritableType, id: string) {
 
 export function useToggleFavorite() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
 
   return useMutation({
     mutationFn: ({
@@ -38,10 +41,11 @@ export function useToggleFavorite() {
       id: string;
     }) => toggleFavorite(type, id),
     onMutate: async ({ type, id }) => {
-      await queryClient.cancelQueries({ queryKey: favoriteKeys.ids() });
-      const previous = queryClient.getQueryData<FavoriteIds>(favoriteKeys.ids());
+      const idsKey = favoriteKeys.ids(userId);
+      await queryClient.cancelQueries({ queryKey: idsKey });
+      const previous = queryClient.getQueryData<FavoriteIds>(idsKey);
 
-      queryClient.setQueryData<FavoriteIds>(favoriteKeys.ids(), (current) => {
+      queryClient.setQueryData<FavoriteIds>(idsKey, (current) => {
         const base = current ?? EMPTY_IDS;
         const key = type === "event" ? "eventIds" : "venueIds";
         const isFavorited = base[key].includes(id);
@@ -57,7 +61,7 @@ export function useToggleFavorite() {
     },
     onError: (error, _variables, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(favoriteKeys.ids(), context.previous);
+        queryClient.setQueryData(favoriteKeys.ids(userId), context.previous);
       }
       toastApiError(error);
     },

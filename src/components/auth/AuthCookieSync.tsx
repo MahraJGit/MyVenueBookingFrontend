@@ -1,34 +1,31 @@
 "use client";
 
 import { useEffect } from "react";
-import {
-  AUTH_CHANGED_EVENT,
-  getAccessToken,
-  getAuthUser,
-} from "@/features/auth/session-storage";
+import { useAuth } from "@/features/auth/auth-context";
 import {
   clearAuthRoleCookie,
+  getAuthRoleFromDocument,
   setAuthRoleCookie,
 } from "@/features/auth/auth-cookies";
 import { isAppRole } from "@/features/auth/roles";
 
-/** Keeps proxy-readable auth cookies aligned with sessionStorage. */
+/** Keeps proxy-readable auth cookies aligned with the restored auth session. */
 export function AuthCookieSync() {
-  useEffect(() => {
-    const sync = () => {
-      const token = getAccessToken();
-      const user = getAuthUser();
-      if (token && user && isAppRole(user.role)) {
-        setAuthRoleCookie(user.role);
-        return;
-      }
-      clearAuthRoleCookie();
-    };
+  const { isReady, isAuthenticated, user } = useAuth();
 
-    sync();
-    window.addEventListener(AUTH_CHANGED_EVENT, sync);
-    return () => window.removeEventListener(AUTH_CHANGED_EVENT, sync);
-  }, []);
+  useEffect(() => {
+    if (!isReady) return;
+
+    if (isAuthenticated && user && isAppRole(user.role)) {
+      const cookieRole = getAuthRoleFromDocument();
+      if (cookieRole !== user.role) {
+        setAuthRoleCookie(user.role);
+      }
+      return;
+    }
+
+    clearAuthRoleCookie();
+  }, [isReady, isAuthenticated, user]);
 
   return null;
 }

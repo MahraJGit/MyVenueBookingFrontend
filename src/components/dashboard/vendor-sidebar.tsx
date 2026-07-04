@@ -14,6 +14,7 @@ import {
   Clapperboard,
   LayoutDashboard,
   TrendingUp,
+  MessageCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,6 +28,7 @@ import {
   dashboardSidebarClass,
   DashboardLogoutButton,
 } from '@/components/dashboard/dashboard-shared'
+import { ChatUnreadBadge } from '@/components/chat/ChatUnreadBadge'
 import { cn } from '@/lib/utils'
 
 const paths = getDashboardPaths('vendor')
@@ -100,6 +102,7 @@ export default function VendorSidebar({
           </SidebarSection>
 
           <SidebarSection title={t('account')} value="account">
+            <SidebarLink icon={MessageCircle} label={t('messages')} href={`${paths.root}/messages`} onClose={onClose} showUnreadBadge unreadContext="vendor" />
             <SidebarLink icon={Calendar} label={tNav('customerDashboard')} href="/userDashboard/tickets" onClose={onClose} />
           </SidebarSection>
         </Accordion>
@@ -139,11 +142,15 @@ function SidebarLink({
   label,
   href,
   onClose,
+  showUnreadBadge = false,
+  unreadContext = "vendor",
 }: {
   icon: React.ComponentType<{ className?: string; size?: number }>
   label: string
   href: string
   onClose: () => void
+  showUnreadBadge?: boolean
+  unreadContext?: "buyer" | "vendor" | "admin"
 }) {
   const pathname = usePathname()
   const isActive =
@@ -162,7 +169,10 @@ function SidebarLink({
       )}
     >
       <Icon size={20} className="shrink-0" />
-      <span className="truncate">{label}</span>
+      <span className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="truncate">{label}</span>
+        {showUnreadBadge ? <ChatUnreadBadge context={unreadContext} /> : null}
+      </span>
     </Link>
   )
 }

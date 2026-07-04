@@ -32,7 +32,7 @@ import {
 } from "@/components/events/ticket-purchase-dialog";
 import { EventOrganizerSection } from "@/components/events/EventOrganizerSection";
 import { VendorReviewsSection } from "@/components/reviews/VendorReviewsSection";
-import { getAccessToken } from "@/features/auth/session-storage";
+import { useAuth } from "@/features/auth/auth-context";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -96,6 +96,7 @@ export default function EventDetailPage() {
   const searchParams = useSearchParams();
   const isEmbed = searchParams.get("embed") === "1";
   const queryClient = useQueryClient();
+  const { isAuthenticated, isReady } = useAuth();
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
 
   const { data: event, isLoading, isError, error } = useQuery({
@@ -422,7 +423,7 @@ export default function EventDetailPage() {
               disabled={!canBuyTickets}
               onClick={() =>
                 openTicketPurchaseFlow({
-                  isAuthenticated: Boolean(getAccessToken()),
+                  isAuthenticated: isReady && isAuthenticated,
                   pathname: pathname ?? `/events/${slug}`,
                   slug: slug ?? "",
                   onOpen: () => setTicketDialogOpen(true),

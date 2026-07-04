@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+import { OpenChatButton } from '@/components/chat/OpenChatButton'
 import { ArrowRight, ArrowUpDown, ChevronRight, Loader2, Star, Ticket } from 'lucide-react'
 import {
   getMyTicketOrders,
@@ -47,6 +48,8 @@ import {
   dashboardDropdownContentClass,
 } from '@/components/dashboard/dashboard-ui'
 import { DashboardPageHeader } from '@/components/dashboard/dashboard-shared'
+import { myTicketOrdersQueryKey } from '@/features/auth/auth-cache'
+import { useAuth } from '@/features/auth/auth-context'
 import { VendorReviewDialog } from '@/components/reviews/VendorReviewDialog'
 import { toastApiError } from '@/lib/toasts'
 
@@ -113,14 +116,16 @@ const Tickets = () => {
   const t = useTranslations('userDashboard')
   const tCommon = useTranslations('common')
   const tNav = useTranslations('nav')
+  const { user, isAuthenticated, isReady } = useAuth()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<TicketOrderTabValue>('upcoming')
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null)
 
   const { data: orders = [], isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['my-ticket-orders'],
+    queryKey: myTicketOrdersQueryKey(user?.id),
     queryFn: getMyTicketOrders,
+    enabled: isAuthenticated && isReady && !!user?.id,
   })
 
   React.useEffect(() => {
@@ -325,6 +330,13 @@ const Tickets = () => {
                             {t('reviewedOrganizer')}
                           </span>
                         ) : null}
+                        {ticket.paymentStatus === 'confirmed' ? (
+                          <OpenChatButton
+                            kind="ticket"
+                            referenceId={ticket.orderGroupId}
+                            messagesPath="/userDashboard/messages"
+                          />
+                        ) : null}
                         <Button asChild variant="link" size="sm" className="h-auto p-0">
                           <Link
                             href={`/userDashboard/view-ticket?orderGroupId=${encodeURIComponent(ticket.orderGroupId)}`}
@@ -354,7 +366,7 @@ const Tickets = () => {
           eventName={reviewTarget.eventName}
           vendorId={reviewTarget.vendorId}
           onSuccess={() => {
-            void queryClient.invalidateQueries({ queryKey: ['my-ticket-orders'] })
+            void queryClient.invalidateQueries({ queryKey: myTicketOrdersQueryKey(user?.id) })
           }}
         />
       ) : null}

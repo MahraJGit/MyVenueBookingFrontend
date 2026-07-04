@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -28,7 +28,9 @@ import type { LoginApiResponse, LoginTokensResponse } from "@/features/auth/type
 import { mapLoginApiFieldErrors } from "@/features/auth/map-login-errors";
 import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
-import { persistAuthSession } from "@/features/auth/session-storage";
+import { resetAuthQueryCache } from "@/features/auth/auth-cache";
+import { postAuthBroadcast } from "@/features/auth/auth-broadcast";
+import { useAuth } from "@/features/auth/auth-context";
 
 type LoginFieldErrors = Partial<
     Record<"email" | "password" | "phoneE164", string>
@@ -40,6 +42,8 @@ function isLoginWithTokens(data: LoginApiResponse): data is LoginTokensResponse 
 
 export default function LoginPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
+    const { establishSession } = useAuth();
     const searchParams = useSearchParams();
     const redirect = searchParams.get("redirect") || "/";
     const [tab, setTab] = useState<"email" | "phone">("email");
@@ -68,10 +72,12 @@ export default function LoginPage() {
         mutationFn: loginAccount,
         onSuccess: (data) => {
             if (isLoginWithTokens(data)) {
-                persistAuthSession({
+                resetAuthQueryCache(queryClient);
+                establishSession({
                     accessToken: data.accessToken,
                     user: data.user,
                 });
+                postAuthBroadcast({ type: "login" });
                 const greet =
                     data.user.firstName?.trim() ||
                     data.user.email?.trim() ||

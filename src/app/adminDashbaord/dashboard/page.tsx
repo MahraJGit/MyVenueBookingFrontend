@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils'
 import NotificationBell from '@/components/notifications/NotificationBell'
 import { useQuery } from '@tanstack/react-query'
 import { listNotifications } from '@/features/notifications/api'
+import { notificationsQueryKey } from '@/features/auth/auth-cache'
+import { useAuth } from '@/features/auth/auth-context'
 import Link from 'next/link'
 import { TrendingUp } from "lucide-react"
 import { useTranslations } from 'next-intl'
@@ -98,6 +100,7 @@ const Dashboard = () => {
   const t = useTranslations('adminDashboard')
   const tCommon = useTranslations('common')
   const tNotifications = useTranslations('notifications')
+  const { user, isAuthenticated, isReady } = useAuth()
 
   const lineChartConfig = {
     desktop: {
@@ -117,9 +120,10 @@ const Dashboard = () => {
   } satisfies ChartConfig
 
   const { data: recentNotifications = [] } = useQuery({
-    queryKey: ['notifications', 'dashboard-preview'],
+    queryKey: notificationsQueryKey(user?.id, 'dashboard-preview'),
     queryFn: () => listNotifications('all'),
     select: (items) => items.slice(0, 5),
+    enabled: isAuthenticated && isReady && !!user?.id,
   })
 
   return (

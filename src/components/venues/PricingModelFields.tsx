@@ -41,7 +41,7 @@ const HOURLY_SLOT_MINUTES = 60;
 
 export function defaultPricingForm(model: ActivePricingModel = "HOURLY"): PricingFormState {
   const configs: Record<ActivePricingModel, Record<string, unknown>> = {
-    HOURLY: { slotDurationMinutes: HOURLY_SLOT_MINUTES, bufferMinutes: 15, minBookingSlots: 1 },
+    HOURLY: { slotDurationMinutes: HOURLY_SLOT_MINUTES, bufferMinutes: 15 },
     NAMED_SLOTS: {
       slots: [{ name: "Morning", startTime: "09:00", endTime: "13:00", price: 500 }],
       bufferMinutes: 0,
@@ -76,7 +76,6 @@ export function normalizePricingForSave(pricing: PricingFormState): PricingFormS
         ...pricing.config,
         slotDurationMinutes: HOURLY_SLOT_MINUTES,
         bufferMinutes: Number(pricing.config.bufferMinutes) || 0,
-        minBookingSlots: Number(pricing.config.minBookingSlots) || 1,
       },
     };
   }

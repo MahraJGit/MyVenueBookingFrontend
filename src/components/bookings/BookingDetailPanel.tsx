@@ -58,15 +58,22 @@ import {
   formatBookingTotal,
 } from "@/components/bookings/user-booking-utils";
 import { BookingTotalPrice } from "@/components/currency/BookingTotalPrice";
+import { BookingLineItems } from "@/components/bookings/BookingLineItems";
 import {
   cancelBooking,
   getBooking,
   rescheduleBooking,
 } from "@/features/bookings/api";
 import { bookingKeys } from "@/features/venues/query-keys";
+import { useAuth } from "@/features/auth/auth-context";
 import type { Booking } from "@/features/bookings/types";
-import { formatInVenueTimezone } from "@/features/venues/timezone";
+import {
+  datetimeLocalValueToUtcIso,
+  formatInVenueTimezone,
+  utcIsoToDatetimeLocalValue,
+} from "@/features/venues/timezone";
 import { toastApiError } from "@/lib/toasts";
+import { OpenChatButton } from "@/components/chat/OpenChatButton";
 import { VenueReviewDialog } from "@/components/reviews/VenueReviewDialog";
 
 type BookingDetailPanelProps = {
@@ -74,11 +81,11 @@ type BookingDetailPanelProps = {
   onClose?: () => void;
   allowCancel?: boolean;
   allowReschedule?: boolean;
-  variant?: "default" | "user";
+  variant?: "default" | "user" | "vendor";
 };
 
-function DetailSkeleton({ variant }: { variant: "default" | "user" }) {
-  if (variant === "user") {
+function DetailSkeleton({ variant }: { variant: "default" | "user" | "vendor" }) {
+  if (variant === "user" || variant === "vendor") {
     return (
       <div className={`overflow-hidden ${dashboardListItemClass}`}>
         <Skeleton className="h-40 w-full rounded-none" />
@@ -110,6 +117,7 @@ export function BookingDetailPanel({
   variant = "default",
 }: BookingDetailPanelProps) {
   const queryClient = useQueryClient();
+  const { user, isAuthenticated, isReady } = useAuth();
   const t = useTranslations("booking");
   const tCommon = useTranslations("common");
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
@@ -117,8 +125,9 @@ export function BookingDetailPanel({
   const [endLocal, setEndLocal] = useState("");
 
   const { data: booking, isLoading, refetch } = useQuery({
-    queryKey: bookingKeys.detail(bookingId),
+    queryKey: bookingKeys.detail(user?.id, bookingId),
     queryFn: () => getBooking(bookingId),
+    enabled: isAuthenticated && isReady && !!user?.id,
   });
 
   const cancelMut = useMutation({
@@ -132,11 +141,14 @@ export function BookingDetailPanel({
   });
 
   const rescheduleMut = useMutation({
-    mutationFn: () =>
-      rescheduleBooking(bookingId, {
-        startTime: new Date(startLocal).toISOString(),
-        endTime: new Date(endLocal).toISOString(),
-      }),
+    mutationFn: () => {
+      if (!booking) throw new Error("Booking not loaded");
+      const tz = booking.venue.timezone;
+      return rescheduleBooking(bookingId, {
+        startTime: datetimeLocalValueToUtcIso(startLocal, tz),
+        endTime: datetimeLocalValueToUtcIso(endLocal, tz),
+      });
+    },
     onSuccess: () => {
       toast.success(t("bookingRescheduled"));
       setRescheduleOpen(false);
@@ -146,8 +158,55 @@ export function BookingDetailPanel({
     onError: (e) => toastApiError(e),
   });
 
+  const openReschedule = () => {
+    if (!booking) return;
+    const tz = booking.venue.timezone;
+    setStartLocal(utcIsoToDatetimeLocalValue(booking.startTime, tz));
+    setEndLocal(utcIsoToDatetimeLocalValue(booking.endTime, tz));
+    setRescheduleOpen(true);
+  };
+
+  const handleStartLocalChange = (value: string) => {
+    setStartLocal(value);
+    if (!booking || !value) return;
+    const durationMs =
+      new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime();
+    try {
+      const nextStart = datetimeLocalValueToUtcIso(value, booking.venue.timezone);
+      const nextEnd = new Date(new Date(nextStart).getTime() + durationMs);
+      setEndLocal(
+        utcIsoToDatetimeLocalValue(nextEnd.toISOString(), booking.venue.timezone),
+      );
+    } catch {
+      /* keep end as-is until value is complete */
+    }
+  };
+
   if (isLoading || !booking) {
     return <DetailSkeleton variant={variant} />;
+  }
+
+  if (variant === "vendor") {
+    return (
+      <VendorBookingDetail
+        booking={booking}
+        onClose={onClose}
+        allowCancel={allowCancel}
+        allowReschedule={allowReschedule}
+        cancelMut={cancelMut}
+        rescheduleMut={rescheduleMut}
+        rescheduleOpen={rescheduleOpen}
+        setRescheduleOpen={setRescheduleOpen}
+        startLocal={startLocal}
+        onStartLocalChange={handleStartLocalChange}
+        endLocal={endLocal}
+        setEndLocal={setEndLocal}
+        onOpenReschedule={openReschedule}
+        onExpire={() => refetch()}
+        t={t}
+        tCommon={tCommon}
+      />
+    );
   }
 
   if (variant === "user") {
@@ -162,9 +221,10 @@ export function BookingDetailPanel({
         rescheduleOpen={rescheduleOpen}
         setRescheduleOpen={setRescheduleOpen}
         startLocal={startLocal}
-        setStartLocal={setStartLocal}
+        onStartLocalChange={handleStartLocalChange}
         endLocal={endLocal}
         setEndLocal={setEndLocal}
+        onOpenReschedule={openReschedule}
         onExpire={() => refetch()}
         t={t}
         tCommon={tCommon}
@@ -183,9 +243,10 @@ export function BookingDetailPanel({
       rescheduleOpen={rescheduleOpen}
       setRescheduleOpen={setRescheduleOpen}
       startLocal={startLocal}
-      setStartLocal={setStartLocal}
+      onStartLocalChange={handleStartLocalChange}
       endLocal={endLocal}
       setEndLocal={setEndLocal}
+      onOpenReschedule={openReschedule}
       onExpire={() => refetch()}
       t={t}
       tCommon={tCommon}
@@ -203,9 +264,10 @@ type DetailBodyProps = {
   rescheduleOpen: boolean;
   setRescheduleOpen: (open: boolean) => void;
   startLocal: string;
-  setStartLocal: (v: string) => void;
+  onStartLocalChange: (v: string) => void;
   endLocal: string;
   setEndLocal: (v: string) => void;
+  onOpenReschedule: () => void;
   onExpire: () => void;
   t: ReturnType<typeof useTranslations<"booking">>;
   tCommon: ReturnType<typeof useTranslations<"common">>;
@@ -221,9 +283,10 @@ function UserBookingDetail({
   rescheduleOpen,
   setRescheduleOpen,
   startLocal,
-  setStartLocal,
+  onStartLocalChange,
   endLocal,
   setEndLocal,
+  onOpenReschedule,
   onExpire,
   t,
   tCommon,
@@ -358,6 +421,11 @@ function UserBookingDetail({
           </div>
         ) : null}
 
+        <BookingLineItems
+          booking={booking}
+          className={`rounded-xl border p-4 ${dashboardSurfaceBorderClass} bg-[#1a1a1a]`}
+        />
+
         <Separator className="bg-[#242424]" />
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -372,6 +440,14 @@ function UserBookingDetail({
             </Button>
           ) : booking.hasReviewedVenue ? (
             <p className="w-full text-sm text-muted-foreground">{tDashboard("reviewedVenue")}</p>
+          ) : null}
+          {(booking.status === "CONFIRMED" || booking.status === "COMPLETED") ? (
+            <OpenChatButton
+              kind="booking"
+              referenceId={booking.id}
+              messagesPath="/userDashboard/messages"
+              variant="outline"
+            />
           ) : null}
           {isHold ? (
             <Button asChild className="flex-1 bg-primary hover:bg-primary/90">
@@ -391,7 +467,7 @@ function UserBookingDetail({
             <Button
               variant="outline"
               className="flex-1"
-              onClick={() => setRescheduleOpen(true)}
+              onClick={onOpenReschedule}
             >
               {t("reschedule")}
             </Button>
@@ -415,8 +491,9 @@ function UserBookingDetail({
       <RescheduleDialog
         open={rescheduleOpen}
         onOpenChange={setRescheduleOpen}
+        timezone={tz}
         startLocal={startLocal}
-        setStartLocal={setStartLocal}
+        onStartLocalChange={onStartLocalChange}
         endLocal={endLocal}
         setEndLocal={setEndLocal}
         onConfirm={() => rescheduleMut.mutate()}
@@ -451,9 +528,10 @@ function DefaultBookingDetail({
   rescheduleOpen,
   setRescheduleOpen,
   startLocal,
-  setStartLocal,
+  onStartLocalChange,
   endLocal,
   setEndLocal,
+  onOpenReschedule,
   onExpire,
   t,
   tCommon,
@@ -517,13 +595,22 @@ function DefaultBookingDetail({
           ) : null}
         </dl>
 
+        <BookingLineItems booking={booking} className="rounded-lg border border-border bg-muted/20 p-4" />
+
         <div className="flex flex-wrap gap-2">
+          {(booking.status === "CONFIRMED" || booking.status === "COMPLETED") ? (
+            <OpenChatButton
+              kind="booking"
+              referenceId={booking.id}
+              messagesPath="/vendorDashboard/messages"
+            />
+          ) : null}
           {allowReschedule &&
             (booking.status === "HOLD" || booking.status === "CONFIRMED") && (
               <Button
                 variant="outline"
                 className="border-border"
-                onClick={() => setRescheduleOpen(true)}
+                onClick={onOpenReschedule}
               >
                 {t("reschedule")}
               </Button>
@@ -549,8 +636,9 @@ function DefaultBookingDetail({
         <RescheduleDialog
           open={rescheduleOpen}
           onOpenChange={setRescheduleOpen}
+          timezone={tz}
           startLocal={startLocal}
-          setStartLocal={setStartLocal}
+          onStartLocalChange={onStartLocalChange}
           endLocal={endLocal}
           setEndLocal={setEndLocal}
           onConfirm={() => rescheduleMut.mutate()}
@@ -560,6 +648,202 @@ function DefaultBookingDetail({
         />
       </CardContent>
     </Card>
+  );
+}
+
+function VendorBookingDetail({
+  booking,
+  onClose,
+  allowCancel,
+  allowReschedule,
+  cancelMut,
+  rescheduleMut,
+  rescheduleOpen,
+  setRescheduleOpen,
+  startLocal,
+  onStartLocalChange,
+  endLocal,
+  setEndLocal,
+  onOpenReschedule,
+  onExpire,
+  t,
+  tCommon,
+}: DetailBodyProps) {
+  const tz = booking.venue.timezone;
+  const statusKey = {
+    DRAFT: "draft",
+    HOLD: "hold",
+    PENDING: "pending",
+    CONFIRMED: "confirmed",
+    CANCELLED: "cancelled",
+    COMPLETED: "completed",
+  } as const;
+  const canModify =
+    booking.status === "HOLD" || booking.status === "CONFIRMED";
+  const canCancel =
+    allowCancel &&
+    booking.status !== "CANCELLED" &&
+    booking.status !== "COMPLETED";
+
+  return (
+    <div className={`sticky top-6 overflow-hidden ${dashboardListItemClass}`}>
+      <div className="relative h-40 bg-[#1a1a1a]">
+        {booking.venue.coverImage ? (
+          <Image
+            src={booking.venue.coverImage}
+            alt={booking.venue.name}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-[#151515]">
+            <MapPin className="h-10 w-10 text-muted-foreground" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-linear-to-t from-[#151515] via-[#151515]/20 to-transparent" />
+        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">{booking.venue.name}</h2>
+            <p className="text-xs text-muted-foreground">
+              {t("bookingRef", { ref: booking.id.slice(0, 8).toUpperCase() })}
+            </p>
+          </div>
+          <Badge
+            variant="outline"
+            className={cn("shrink-0", bookingStatusBadgeClass(booking.status))}
+          >
+            {t(statusKey[booking.status])}
+          </Badge>
+        </div>
+        {onClose ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-3 top-3 h-8 w-8 rounded-full bg-black/40 text-white hover:bg-black/60"
+            onClick={onClose}
+            aria-label={t("closeDetails")}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        ) : null}
+      </div>
+
+      <div className="space-y-5 p-6">
+        {booking.status === "HOLD" && booking.expiresAt ? (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+            <p className="mb-2 text-sm font-medium text-amber-200">
+              {t("vendorHoldPending")}
+            </p>
+            <CountdownTimer
+              expiresAt={booking.expiresAt}
+              onExpire={onExpire}
+              className="border-amber-500/30 bg-amber-500/5"
+            />
+          </div>
+        ) : null}
+
+        {booking.buyer ? (
+          <div className={`rounded-xl border p-3 text-sm ${dashboardSurfaceBorderClass} bg-[#1a1a1a]`}>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t("buyer")}
+            </p>
+            <p className="mt-1 font-medium text-foreground">
+              {booking.buyer.firstName} {booking.buyer.lastName}
+            </p>
+            <p className="text-muted-foreground">{booking.buyer.email}</p>
+          </div>
+        ) : null}
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <DetailStat
+            icon={CalendarDays}
+            label={t("starts")}
+            value={formatInVenueTimezone(booking.startTime, tz)}
+          />
+          <DetailStat
+            icon={CalendarDays}
+            label={t("ends")}
+            value={formatInVenueTimezone(booking.endTime, tz)}
+          />
+          {booking.numGuests ? (
+            <DetailStat
+              icon={Users}
+              label={t("guests")}
+              value={String(booking.numGuests)}
+            />
+          ) : null}
+        </div>
+
+        {booking.specialRequests ? (
+          <div className={`rounded-xl border p-3 text-sm ${dashboardSurfaceBorderClass} bg-[#1a1a1a]`}>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t("specialRequests")}
+            </p>
+            <p className="mt-1 text-foreground">{booking.specialRequests}</p>
+          </div>
+        ) : null}
+
+        <BookingLineItems
+          booking={booking}
+          className={`rounded-xl border p-4 ${dashboardSurfaceBorderClass} bg-[#1a1a1a]`}
+        />
+
+        <Separator className="bg-[#242424]" />
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          {(booking.status === "CONFIRMED" || booking.status === "COMPLETED") ? (
+            <OpenChatButton
+              kind="booking"
+              referenceId={booking.id}
+              messagesPath="/vendorDashboard/messages"
+              variant="outline"
+            />
+          ) : null}
+          <Button asChild variant="outline" className="flex-1">
+            <Link href={`/venues/${booking.venueId}`}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              {t("viewVenue")}
+            </Link>
+          </Button>
+          {allowReschedule && canModify ? (
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={onOpenReschedule}
+            >
+              {t("reschedule")}
+            </Button>
+          ) : null}
+          {canCancel ? (
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={() => cancelMut.mutate()}
+              disabled={cancelMut.isPending}
+            >
+              {cancelMut.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              {t("cancelBooking")}
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      <RescheduleDialog
+        open={rescheduleOpen}
+        onOpenChange={setRescheduleOpen}
+        timezone={tz}
+        startLocal={startLocal}
+        onStartLocalChange={onStartLocalChange}
+        endLocal={endLocal}
+        setEndLocal={setEndLocal}
+        onConfirm={() => rescheduleMut.mutate()}
+        isPending={rescheduleMut.isPending}
+        t={t}
+        tCommon={tCommon}
+      />
+    </div>
   );
 }
 
@@ -590,8 +874,9 @@ function DetailStat({
 function RescheduleDialog({
   open,
   onOpenChange,
+  timezone,
   startLocal,
-  setStartLocal,
+  onStartLocalChange,
   endLocal,
   setEndLocal,
   onConfirm,
@@ -601,8 +886,9 @@ function RescheduleDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  timezone: string;
   startLocal: string;
-  setStartLocal: (v: string) => void;
+  onStartLocalChange: (v: string) => void;
   endLocal: string;
   setEndLocal: (v: string) => void;
   onConfirm: () => void;
@@ -617,13 +903,16 @@ function RescheduleDialog({
           <DialogTitle>{t("rescheduleBooking")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            {t("rescheduleTimezoneHint", { timezone })}
+          </p>
           <div className="space-y-2">
             <Label htmlFor="reschedule-start">{t("newStartDateTime")}</Label>
             <Input
               id="reschedule-start"
               type="datetime-local"
               value={startLocal}
-              onChange={(e) => setStartLocal(e.target.value)}
+              onChange={(e) => onStartLocalChange(e.target.value)}
               className="border-zinc-700 bg-zinc-950"
             />
           </div>

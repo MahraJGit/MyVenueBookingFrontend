@@ -16,6 +16,7 @@ import {
   dashboardSidebarClass,
   DashboardLogoutButton,
 } from '@/components/dashboard/dashboard-shared'
+import { ChatUnreadBadge } from '@/components/chat/ChatUnreadBadge'
 import { cn } from '@/lib/utils'
 
 function isActivePath(pathname: string, href: string) {
@@ -69,6 +70,7 @@ export default function Sidebar({
           <SidebarSection title={t('users')} value="users">
             <SidebarLink icon="/svg/AddUserMale.svg" label={t('manageUsers')} href="/adminDashbaord/users" onClose={onClose} />
             <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorRequests')} href="/adminDashbaord/vendorRequests" onClose={onClose} />
+            <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorMessages')} href="/adminDashbaord/messages" onClose={onClose} showUnreadBadge unreadContext="admin" />
           </SidebarSection>
 
           <SidebarSection title={t('venues')} value="venues">
@@ -119,11 +121,15 @@ function SidebarLink({
   label,
   href,
   onClose,
+  showUnreadBadge = false,
+  unreadContext = "admin",
 }: {
   icon: string
   label: string
   href: string
   onClose: () => void
+  showUnreadBadge?: boolean
+  unreadContext?: "buyer" | "vendor" | "admin"
 }) {
   const pathname = usePathname()
   const isActive = isActivePath(pathname, href)
@@ -140,7 +146,10 @@ function SidebarLink({
       )}
     >
       <img src={icon} className="h-6 w-6 shrink-0" alt="" />
-      <span className="truncate">{label}</span>
+      <span className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="truncate">{label}</span>
+        {showUnreadBadge ? <ChatUnreadBadge context={unreadContext} /> : null}
+      </span>
     </Link>
   )
 }

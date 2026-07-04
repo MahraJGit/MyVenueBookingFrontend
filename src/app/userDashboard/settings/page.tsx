@@ -20,6 +20,8 @@ import {
   getNotificationPreferences,
   updateNotificationPreferences,
 } from '@/features/notifications/api'
+import { notificationPreferencesQueryKey } from '@/features/auth/auth-cache'
+import { useAuth } from '@/features/auth/auth-context'
 import type { NotificationPreferences } from '@/features/notifications/types'
 import {
   DashboardPanel,
@@ -31,12 +33,14 @@ import { DashboardPageHeader } from '@/components/dashboard/dashboard-shared'
 export default function NotificationSettings() {
   const t = useTranslations('notifications')
   const tCommon = useTranslations('common')
+  const { user, isAuthenticated, isReady } = useAuth()
   const queryClient = useQueryClient()
   const [settings, setSettings] = useState<NotificationPreferences | null>(null)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['notification-preferences'],
+    queryKey: notificationPreferencesQueryKey(user?.id),
     queryFn: getNotificationPreferences,
+    enabled: isAuthenticated && isReady && !!user?.id,
   })
 
   useEffect(() => {
@@ -49,7 +53,7 @@ export default function NotificationSettings() {
     mutationFn: updateNotificationPreferences,
     onSuccess: (updated) => {
       setSettings(updated)
-      queryClient.setQueryData(['notification-preferences'], updated)
+      queryClient.setQueryData(notificationPreferencesQueryKey(user?.id), updated)
     },
   })
 

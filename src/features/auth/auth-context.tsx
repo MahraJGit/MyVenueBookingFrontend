@@ -9,16 +9,25 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { logoutAccount } from "@/features/auth/api";
+import { postAuthBroadcast, subscribeAuthBroadcast } from "@/features/auth/auth-broadcast";
+import { resetAuthQueryCache } from "@/features/auth/auth-cache";
+import { restoreAuthSession } from "@/features/auth/restore-session";
+import { teardownClientAuth } from "@/features/auth/teardown-client-auth";
 import type { AuthUser } from "@/features/auth/types";
+import { buildDisplayName, buildInitials } from "@/features/auth/auth-display";
 import {
   AUTH_CHANGED_EVENT,
+  AUTH_SESSION_EXPIRED_EVENT,
   clearAuthSession,
   getAccessToken,
   getAuthUser,
+  persistAuthSession,
 } from "@/features/auth/session-storage";
+import { disconnectChatSocket } from "@/features/chat/use-chat-socket";
 
 export type DashboardLinkLabelKey =
   | "customerDashboard"
@@ -35,17 +44,24 @@ type AuthContextValue = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isReady: boolean;
+  /** True while checking HttpOnly refresh cookie (no local session yet). */
+  isRestoring: boolean;
   isVendor: boolean;
   isAdmin: boolean;
   dashboardLinks: DashboardLink[];
   displayName: string;
   initials: string;
+  establishSession: (session: { accessToken: string; user: AuthUser }) => void;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function readSession() {
+type AuthSession =
+  | { user: null; isAuthenticated: false }
+  | { user: AuthUser; isAuthenticated: true };
+
+function readSession(): AuthSession {
   const token = getAccessToken();
   const user = getAuthUser();
   if (!token || !user) {
@@ -77,46 +93,85 @@ export function getDashboardLinksForRole(role: string): DashboardLink[] {
   return [{ labelKey: "dashboard", href: customerDashboard.href }];
 }
 
-function buildDisplayName(user: AuthUser): string {
-  const fullName = [user.firstName, user.lastName]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(" ");
-  return fullName || user.email?.trim() || "";
-}
-
-function buildInitials(user: AuthUser): string {
-  const first = user.firstName?.trim().charAt(0) ?? "";
-  const last = user.lastName?.trim().charAt(0) ?? "";
-  const fromName = `${first}${last}`.toUpperCase();
-  if (fromName) return fromName;
-  const emailInitial = user.email?.trim().charAt(0).toUpperCase();
-  return emailInitial || "?";
-}
+const EMPTY_SESSION: AuthSession = { user: null, isAuthenticated: false };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const tAuth = useTranslations("auth");
-  const [session, setSession] = useState(() => readSession());
+  // Never read sessionStorage in initial state — it breaks SSR hydration.
+  const [session, setSession] = useState<AuthSession>(EMPTY_SESSION);
   const [isReady, setIsReady] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const syncFromStorage = useCallback(() => {
     setSession(readSession());
   }, []);
 
+  const establishSession = useCallback(
+    (next: { accessToken: string; user: AuthUser }) => {
+      persistAuthSession(next);
+      setSession({ user: next.user, isAuthenticated: true });
+      setIsReady(true);
+      setIsRestoring(false);
+    },
+    [],
+  );
+
   useEffect(() => {
+    let cancelled = false;
+
     syncFromStorage();
     setIsReady(true);
 
-    const onAuthChanged = () => syncFromStorage();
+    if (!readSession().isAuthenticated) {
+      setIsRestoring(true);
+    }
+
+    void (async () => {
+      await restoreAuthSession();
+      if (cancelled) return;
+      syncFromStorage();
+      setIsRestoring(false);
+    })();
+
+    const onAuthChanged = () => {
+      syncFromStorage();
+      setIsReady(true);
+    };
+    const onSessionExpired = () => {
+      resetAuthQueryCache(queryClient);
+      disconnectChatSocket();
+      syncFromStorage();
+    };
+
     window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, onSessionExpired);
     window.addEventListener("storage", onAuthChanged);
 
+    const unsubscribeBroadcast = subscribeAuthBroadcast((message) => {
+      if (message.type === "logout") {
+        teardownClientAuth(queryClient);
+        syncFromStorage();
+        return;
+      }
+
+      void (async () => {
+        clearAuthSession();
+        await restoreAuthSession();
+        resetAuthQueryCache(queryClient);
+        syncFromStorage();
+      })();
+    });
+
     return () => {
+      cancelled = true;
       window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+      window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, onSessionExpired);
       window.removeEventListener("storage", onAuthChanged);
+      unsubscribeBroadcast();
     };
-  }, [syncFromStorage]);
+  }, [queryClient, syncFromStorage]);
 
   const logout = useCallback(async () => {
     try {
@@ -124,11 +179,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Clear local session even if the server logout call fails.
     } finally {
-      clearAuthSession();
+      postAuthBroadcast({ type: "logout" });
+      teardownClientAuth(queryClient);
       syncFromStorage();
       router.replace("/");
     }
-  }, [router, syncFromStorage]);
+  }, [queryClient, router, syncFromStorage]);
 
   const value = useMemo<AuthContextValue>(() => {
     const user = session.user;
@@ -137,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: session.isAuthenticated,
       isReady,
+      isRestoring,
       isVendor: role === "VENDOR",
       isAdmin: role === "ADMIN",
       dashboardLinks: user ? getDashboardLinksForRole(role) : [],
@@ -144,9 +201,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? buildDisplayName(user) || tAuth("account")
         : "",
       initials: user ? buildInitials(user) : "?",
+      establishSession,
       logout,
     };
-  }, [session, isReady, logout, tAuth]);
+  }, [session, isReady, isRestoring, establishSession, logout, tAuth]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

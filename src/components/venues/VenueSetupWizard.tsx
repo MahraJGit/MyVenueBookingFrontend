@@ -180,6 +180,12 @@ export function VenueSetupWizard({
     isBlocked: true,
   });
 
+  const [policies, setPolicies] = useState({
+    maxAdvanceDays: 365,
+    freeCancelHoursBeforeStart: 48,
+    lateRefundPercent: 0,
+  });
+
   const [initialized, setInitialized] = useState(false);
   const [fieldAttempted, setFieldAttempted] = useState({
     name: false,
@@ -265,12 +271,21 @@ export function VenueSetupWizard({
               ? {
                   slotDurationMinutes: 60,
                   bufferMinutes: Number(config.bufferMinutes) || 0,
-                  minBookingSlots: Number(config.minBookingSlots) || 1,
                   ...config,
                 }
               : config,
       });
     }
+    const rules = (existing.rules as Record<string, unknown>) ?? {};
+    const bookingPolicy = (rules.bookingPolicy as Record<string, unknown>) ?? {};
+    const cancellationPolicy =
+      (rules.cancellationPolicy as Record<string, unknown>) ?? {};
+    setPolicies({
+      maxAdvanceDays: Number(bookingPolicy.maxAdvanceDays) || 365,
+      freeCancelHoursBeforeStart:
+        Number(cancellationPolicy.freeCancelHoursBeforeStart) || 48,
+      lateRefundPercent: Number(cancellationPolicy.lateRefundPercent) || 0,
+    });
     setInitialized(true);
   }, [existing, initialized]);
 
@@ -298,6 +313,14 @@ export function VenueSetupWizard({
           propertyPayload,
           existing?.customAttributes,
         ),
+        rules: {
+          ...((existing?.rules as Record<string, unknown>) ?? {}),
+          bookingPolicy: { maxAdvanceDays: policies.maxAdvanceDays },
+          cancellationPolicy: {
+            freeCancelHoursBeforeStart: policies.freeCancelHoursBeforeStart,
+            lateRefundPercent: policies.lateRefundPercent,
+          },
+        },
         ...(isAdminScope && !hasPersistedVenue && selectedVendorId
           ? { vendorId: selectedVendorId }
           : {}),
@@ -852,6 +875,62 @@ export function VenueSetupWizard({
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               {basicsFields}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle>{t("bookingPolicies")}</CardTitle>
+              <CardDescription>{t("bookingPoliciesDesc")}</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="max-advance-days">{t("maxAdvanceDays")}</Label>
+                <p className="text-xs text-muted-foreground">{t("maxAdvanceDaysHint")}</p>
+                <NumberInput
+                  id="max-advance-days"
+                  integer
+                  min={1}
+                  max={730}
+                  value={policies.maxAdvanceDays}
+                  onValueChange={(v) =>
+                    setPolicies({ ...policies, maxAdvanceDays: v ?? 365 })
+                  }
+                  className={inputClass}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="free-cancel-hours">{t("freeCancelHours")}</Label>
+                <p className="text-xs text-muted-foreground">{t("freeCancelHoursHint")}</p>
+                <NumberInput
+                  id="free-cancel-hours"
+                  integer
+                  min={0}
+                  value={policies.freeCancelHoursBeforeStart}
+                  onValueChange={(v) =>
+                    setPolicies({
+                      ...policies,
+                      freeCancelHoursBeforeStart: v ?? 48,
+                    })
+                  }
+                  className={inputClass}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="late-refund-percent">{t("lateRefundPercent")}</Label>
+                <p className="text-xs text-muted-foreground">{t("lateRefundPercentHint")}</p>
+                <NumberInput
+                  id="late-refund-percent"
+                  integer
+                  min={0}
+                  max={100}
+                  value={policies.lateRefundPercent}
+                  onValueChange={(v) =>
+                    setPolicies({ ...policies, lateRefundPercent: v ?? 0 })
+                  }
+                  className={inputClass}
+                />
+              </div>
             </CardContent>
           </Card>
 

@@ -14,6 +14,8 @@ export const venueKeys = {
 
 export const bookingKeys = {
   all: ["bookings"] as const,
-  list: (params: Record<string, unknown>) => [...bookingKeys.all, "list", params] as const,
-  detail: (id: string) => [...bookingKeys.all, "detail", id] as const,
+  list: (userId: string | null | undefined, params: Record<string, unknown>) =>
+    [...bookingKeys.all, userId ?? "anonymous", "list", params] as const,
+  detail: (userId: string | null | undefined, id: string) =>
+    [...bookingKeys.all, userId ?? "anonymous", "detail", id] as const,
 };
