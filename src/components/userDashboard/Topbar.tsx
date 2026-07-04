@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { DashboardTopbar } from "@/components/dashboard/DashboardTopbar";
 
 type TopbarProps = {
@@ -8,12 +7,9 @@ type TopbarProps = {
 };
 
 const Topbar = ({ onMenuClick }: TopbarProps) => {
-  const t = useTranslations("userDashboard");
-
   return (
     <DashboardTopbar
       onMenuClick={onMenuClick}
-      searchPlaceholder={t("searchPlaceholder")}
       notificationsHref="/userDashboard/notifications"
       notificationsVariant="user"
     />
