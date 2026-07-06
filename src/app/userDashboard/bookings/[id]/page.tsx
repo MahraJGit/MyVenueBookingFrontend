@@ -25,6 +25,7 @@ export default function UserBookingDetailPage({
     queryKey: bookingKeys.detail(user?.id, id),
     queryFn: () => getBooking(id),
     enabled: isAuthenticated && isReady && !!user?.id,
+    refetchOnMount: "always",
   });
 
   return (

@@ -58,6 +58,22 @@ type ReadOnlyContactFields = {
 
 type ProfileFormState = EditableProfileFields & ReadOnlyContactFields
 
+/** Calendar dates are local; API stores UTC noon on that calendar day. */
+function dateOnlyToIso(date: Date): string {
+  return new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0),
+  ).toISOString()
+}
+
+function isoToDateOnly(iso: string): Date {
+  const parsed = new Date(iso)
+  return new Date(
+    parsed.getUTCFullYear(),
+    parsed.getUTCMonth(),
+    parsed.getUTCDate(),
+  )
+}
+
 function profileToForm(profile: UserProfile): ProfileFormState {
   return {
     firstName: profile.firstName ?? "",
@@ -68,7 +84,7 @@ function profileToForm(profile: UserProfile): ProfileFormState {
     state: profile.state ?? "",
     city: profile.city ?? "",
     zipCode: profile.zipCode ?? "",
-    dob: profile.dob ? new Date(profile.dob) : undefined,
+    dob: profile.dob ? isoToDateOnly(profile.dob) : undefined,
     avatarUrl: resolveAvatarSrc(profile.avatarUrl),
   }
 }
@@ -132,9 +148,7 @@ export default function ProfilePage() {
         zipCode: form.zipCode.trim() || undefined,
       }
       if (form.dob) {
-        const d = new Date(form.dob)
-        d.setUTCHours(12, 0, 0, 0)
-        body.dob = d.toISOString()
+        body.dob = dateOnlyToIso(form.dob)
       }
       if (form.avatarUrl) {
         body.avatarUrl = form.avatarUrl

@@ -253,7 +253,7 @@ const AffiliatePage = () => {
             </p>
           </div>
 
-          <div className="faq-items">
+          <div className="faq-items max-w-3xl mx-auto">
             <Accordion type="single" collapsible className="space-y-5">
               {faqItems.map((key, index) => (
                 <AccordionItem

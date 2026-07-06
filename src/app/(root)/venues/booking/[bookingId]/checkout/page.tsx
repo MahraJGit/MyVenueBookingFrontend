@@ -28,9 +28,11 @@ import {
 } from "@/components/ui/dialog";
 import {
   checkoutBooking,
+  completeBookingCheckout,
   confirmCardPaymentIfNeeded,
   getBooking,
 } from "@/features/bookings/api";
+import type { Booking } from "@/features/bookings/types";
 import { listPaymentMethods, type SavedPaymentMethod } from "@/features/payments/api";
 import { bookingKeys } from "@/features/venues/query-keys";
 import { useAuth } from "@/features/auth/auth-context";
@@ -72,6 +74,7 @@ export default function VenueBookingCheckoutPage({
     queryKey: bookingKeys.detail(user?.id, bookingId),
     queryFn: () => getBooking(bookingId),
     enabled: isAuthenticated && isReady && !!user?.id,
+    refetchOnMount: "always",
   });
 
   const {
@@ -86,6 +89,12 @@ export default function VenueBookingCheckoutPage({
 
   const selectedMethod = pickDefaultMethod(paymentMethods);
 
+  const syncBookingCache = async (confirmed: Booking) => {
+    if (!user?.id) return;
+    queryClient.setQueryData(bookingKeys.detail(user.id, bookingId), confirmed);
+    await queryClient.invalidateQueries({ queryKey: bookingKeys.all });
+  };
+
   const checkoutMut = useMutation({
     mutationFn: () =>
       checkoutBooking(bookingId, {
@@ -94,7 +103,9 @@ export default function VenueBookingCheckoutPage({
     onSuccess: async (result) => {
       if (result.status === "requires_action") {
         try {
-          await confirmCardPaymentIfNeeded(result.clientSecret);
+          const paymentIntentId = await confirmCardPaymentIfNeeded(result.clientSecret);
+          const completed = await completeBookingCheckout(bookingId, paymentIntentId);
+          await syncBookingCache(completed.booking);
           toast.success(tVenueCheckout("paymentConfirmed"));
           router.push(`/userDashboard/bookings/${bookingId}`);
         } catch (e) {
@@ -102,6 +113,7 @@ export default function VenueBookingCheckoutPage({
         }
         return;
       }
+      await syncBookingCache(result.booking);
       toast.success(tBooking("bookingConfirmed"));
       router.push(`/userDashboard/bookings/${bookingId}`);
     },
@@ -155,7 +167,7 @@ export default function VenueBookingCheckoutPage({
   const canPay = Boolean(selectedMethod) && booking.status === "HOLD";
 
   return (
-    <RoleGuard allowedRoles={["BUYER", "ADMIN"]}>
+    <RoleGuard allowedRoles={["BUYER", "VENDOR", "ADMIN"]}>
       <div className="container mx-auto max-w-6xl px-4 pb-16 pt-28">
         <div className="mb-6">
           <Link

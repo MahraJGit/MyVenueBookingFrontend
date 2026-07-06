@@ -54,8 +54,8 @@ export function LanguageSelect({
       </button>
 
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
-        <DialogHeader className="border-b border-border px-6 py-4 text-start">
-          <DialogTitle>{tCommon("selectLanguage")}</DialogTitle>
+        <DialogHeader className="border-b border-border py-4 ps-6 pe-10 text-start">
+          <DialogTitle dir="auto">{tCommon("selectLanguage")}</DialogTitle>
         </DialogHeader>
 
         <ul className="max-h-[min(60vh,24rem)] overflow-y-auto p-2">
@@ -73,10 +73,14 @@ export function LanguageSelect({
                       : "text-foreground hover:bg-white/5",
                   )}
                 >
-                  <CountryFlag code={option.countryCode} className="h-5 w-7" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium">{option.nativeLabel}</span>
-                    <span className="block text-xs text-muted-foreground">{option.label}</span>
+                  <CountryFlag code={option.countryCode} className="h-5 w-7 shrink-0" />
+                  <span className="min-w-0 flex-1 text-start">
+                    <span className="block text-sm font-medium" dir="auto">
+                      {option.nativeLabel}
+                    </span>
+                    <span className="block text-xs text-muted-foreground" dir="auto">
+                      {option.label}
+                    </span>
                   </span>
                   {isSelected ? (
                     <Check className="size-4 shrink-0 text-primary" aria-hidden />

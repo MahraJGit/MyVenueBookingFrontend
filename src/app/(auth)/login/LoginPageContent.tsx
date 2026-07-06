@@ -329,7 +329,7 @@ export default function LoginPage() {
                                 disabled={pending}
                                 className="mt-6 w-full bg-pink-600 hover:bg-pink-700 text-white disabled:opacity-60"
                             >
-                                {pending ? t("signingIn") : t("login")}
+                                {pending ? t("signingIn") : t("signIn")}
                             </Button>
                         </form>
                     </TabsContent>
@@ -425,7 +425,7 @@ export default function LoginPage() {
                                 disabled={pending}
                                 className="mt-6 w-full bg-pink-600 hover:bg-pink-700 text-white disabled:opacity-60"
                             >
-                                {pending ? t("signingIn") : t("login")}
+                                {pending ? t("signingIn") : t("signIn")}
                             </Button>
                         </form>
                     </TabsContent>

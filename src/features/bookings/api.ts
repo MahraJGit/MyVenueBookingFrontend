@@ -89,6 +89,21 @@ export async function checkoutBooking(
   });
 }
 
+export async function completeBookingCheckout(
+  id: string,
+  paymentIntentId: string,
+): Promise<Extract<CheckoutResult, { status: "succeeded" }>> {
+  return authJson<Extract<CheckoutResult, { status: "succeeded" }>>(
+    `/api/bookings/${encodeURIComponent(id)}/complete`,
+    {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentIntentId }),
+      networkErrorMessage: "Network error while confirming payment.",
+    },
+  );
+}
+
 export async function cancelBooking(id: string): Promise<Booking> {
   return authJson<Booking>(`/api/bookings/${encodeURIComponent(id)}/cancel`, {
     method: "POST",

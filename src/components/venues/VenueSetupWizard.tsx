@@ -263,9 +263,6 @@ export function VenueSetupWizard({
                     ? Number(config.pricePerDay)
                     : Number(existing.pricing.basePrice),
                 minBookingDays: Number(config.minBookingDays) || 1,
-                dayStartTime: String(config.dayStartTime ?? "00:00"),
-                dayEndTime: String(config.dayEndTime ?? "23:59"),
-                ...config,
               }
             : modelType === "HOURLY"
               ? {

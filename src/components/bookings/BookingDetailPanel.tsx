@@ -128,6 +128,7 @@ export function BookingDetailPanel({
     queryKey: bookingKeys.detail(user?.id, bookingId),
     queryFn: () => getBooking(bookingId),
     enabled: isAuthenticated && isReady && !!user?.id,
+    refetchOnMount: "always",
   });
 
   const cancelMut = useMutation({

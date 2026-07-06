@@ -1,21 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { cn } from '@/lib/utils'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { Switch } from '@/components/ui/switch'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { CountryFlag } from '@/components/i18n/CountryFlag'
-import { LOCALE_OPTIONS } from '@/i18n/locales'
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
@@ -26,13 +16,11 @@ import type { NotificationPreferences } from '@/features/notifications/types'
 import {
   DashboardPanel,
   DashboardPageShell,
-  dashboardSelectTriggerClass,
 } from '@/components/dashboard/dashboard-ui'
 import { DashboardPageHeader } from '@/components/dashboard/dashboard-shared'
 
 export default function NotificationSettings() {
   const t = useTranslations('notifications')
-  const tCommon = useTranslations('common')
   const { user, isAuthenticated, isReady } = useAuth()
   const queryClient = useQueryClient()
   const [settings, setSettings] = useState<NotificationPreferences | null>(null)
@@ -112,36 +100,6 @@ export default function NotificationSettings() {
           checked={settings.pushNotifications}
           onChange={() => toggleSetting('pushNotifications')}
         />
-      </div>
-
-      <div className="mt-8">
-        <label className="block text-sm font-medium mb-2">
-          {t('preferredLanguage')}
-        </label>
-
-        <Select
-          value={settings.language}
-          onValueChange={(value) => {
-            const next = { ...settings, language: value }
-            setSettings(next)
-            saveMutation.mutate({ language: value })
-          }}
-        >
-          <SelectTrigger className={cn(dashboardSelectTriggerClass, 'w-full sm:w-60')}>
-            <SelectValue placeholder={tCommon('selectLanguage')} />
-          </SelectTrigger>
-
-          <SelectContent>
-            {LOCALE_OPTIONS.map((option) => (
-              <SelectItem key={option.code} value={option.code}>
-                <div className="flex items-center gap-2">
-                  <CountryFlag code={option.countryCode} className="h-3.5 w-5" />
-                  <span>{option.nativeLabel}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
       </DashboardPanel>
     </DashboardPageShell>

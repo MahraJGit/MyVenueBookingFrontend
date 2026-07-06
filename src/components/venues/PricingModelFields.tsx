@@ -49,8 +49,6 @@ export function defaultPricingForm(model: ActivePricingModel = "HOURLY"): Pricin
     DAILY_BLOCK: {
       pricePerDay: 1000,
       minBookingDays: 1,
-      dayStartTime: "00:00",
-      dayEndTime: "23:59",
     },
   };
   const basePrices: Record<ActivePricingModel, number> = {
@@ -85,15 +83,14 @@ export function normalizePricingForSave(pricing: PricingFormState): PricingFormS
       Number(pricing.config.pricePerDay) > 0
         ? Number(pricing.config.pricePerDay)
         : pricing.basePrice;
+    const { dayStartTime: _dayStart, dayEndTime: _dayEnd, ...restConfig } = pricing.config;
     return {
       ...pricing,
       basePrice: pricePerDay,
       config: {
-        ...pricing.config,
+        ...restConfig,
         pricePerDay,
         minBookingDays: Number(pricing.config.minBookingDays) || 1,
-        dayStartTime: String(pricing.config.dayStartTime || "00:00"),
-        dayEndTime: String(pricing.config.dayEndTime || "23:59"),
       },
     };
   }
@@ -237,43 +234,21 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
             {t("dailyBlockInfo")}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="day-start">{t("dailyBookingStarts")}</Label>
-              <Input
-                id="day-start"
-                type="time"
-                value={String(value.config.dayStartTime ?? "00:00")}
-                onChange={(e) => setConfig("dayStartTime", e.target.value)}
-                className={inputClass}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="day-end">{t("dailyBookingEnds")}</Label>
-              <Input
-                id="day-end"
-                type="time"
-                value={String(value.config.dayEndTime ?? "23:59")}
-                onChange={(e) => setConfig("dayEndTime", e.target.value)}
-                className={inputClass}
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="min-days">{t("minDaysPerBooking")}</Label>
-              <NumberInput
-                id="min-days"
-                min={1}
-                integer
-                value={
-                  value.config.minBookingDays === undefined || value.config.minBookingDays === null
-                    ? undefined
-                    : Number(value.config.minBookingDays)
-                }
-                defaultOnBlur={1}
-                onValueChange={(days) => setConfig("minBookingDays", days ?? 1)}
-                className={inputClass}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="min-days">{t("minDaysPerBooking")}</Label>
+            <NumberInput
+              id="min-days"
+              min={1}
+              integer
+              value={
+                value.config.minBookingDays === undefined || value.config.minBookingDays === null
+                  ? undefined
+                  : Number(value.config.minBookingDays)
+              }
+              defaultOnBlur={1}
+              onValueChange={(days) => setConfig("minBookingDays", days ?? 1)}
+              className={inputClass}
+            />
           </div>
         </div>
       )}

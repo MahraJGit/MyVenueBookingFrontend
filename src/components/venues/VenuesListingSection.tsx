@@ -29,6 +29,8 @@ import {
 import "@/styles/event-list.css";
 
 const PAGE_SIZE = 8;
+const LISTING_GRID_CLASS = "mb-8";
+const LISTING_THREE_COL_GRID = { maxThreeColumns: true as const };
 
 function sortValueFromParams(
   sortBy: string,
@@ -45,6 +47,8 @@ export function VenuesListingSection() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations("venuesListing");
+  const tVenues = useTranslations("venues");
+  const tCommon = useTranslations("common");
   const { locale } = useLocaleContext();
   const sortOptions = useVenueSortOptions();
   const labels = useListingLabels();
@@ -161,137 +165,155 @@ export function VenuesListingSection() {
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
 
-        <VenueTypeFilters
-          types={types}
-          activeTypeId={venueTypeIdFromUrl}
-          onTypeChange={handleTypeChange}
-          isLoading={loadingTypes}
-        />
-
-        <div className="mb-8 flex flex-col gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 sm:flex-row sm:flex-wrap sm:items-center">
-          <Input
-            placeholder={labels.searchVenues}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") applyFilters();
-            }}
-            className="w-full border-[#303030] bg-black text-white sm:max-w-xs"
-          />
-          <Input
-            placeholder={labels.city}
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") applyFilters();
-            }}
-            className="w-full border-[#303030] bg-black text-white sm:max-w-[160px]"
-          />
-          <Select value={sortValue} onValueChange={handleSortChange}>
-            <SelectTrigger className="w-full border-[#303030] bg-black text-white sm:w-[180px]">
-              <SelectValue placeholder={labels.sortBy} />
-            </SelectTrigger>
-            <SelectContent>
-              {sortOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex flex-wrap gap-2 sm:contents">
-            <Button onClick={applyFilters} className="w-full bg-primary sm:w-auto">
-              <Search className="me-2 h-4 w-4" />
-              {labels.search}
-            </Button>
-            {(searchFromUrl || cityFromUrl) && (
-              <Button
-                variant="outline"
-                className="w-full border-[#303030] text-muted-foreground sm:w-auto"
-                onClick={() => {
-                  setSearch("");
-                  setCity("");
-                  pushParams({ search: undefined, city: undefined, page: undefined });
-                }}
-              >
-                {labels.clearFilters}
-              </Button>
-            )}
-          </div>
+        <div className="mb-10">
+          <RecommendedVenuesSlider />
         </div>
 
-        <RecommendedVenuesSlider />
-
-        {showGridDivider ? (
-          <ListingGridDivider label={tRecommendations("allVenues")} />
-        ) : null}
-
-        {isError ? (
-          <p className="mb-8 py-8 text-sm text-red-400">
-            {error instanceof Error ? error.message : t("couldNotLoad")}
-          </p>
-        ) : null}
-
-        {isLoading ? (
-          <ResponsiveEventCardsGrid className="mb-8">
-            {Array.from({ length: PAGE_SIZE }).map((_, i) => (
-              <div
-                key={i}
-                className="h-[420px] animate-pulse rounded-[20px] bg-[#242424]"
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4 lg:items-start lg:gap-10">
+          <aside className="space-y-6 lg:sticky lg:top-28 lg:col-span-1">
+            <div>
+              <h2 className="mb-3 text-sm font-medium text-white">
+                {tVenues("venueType")}
+              </h2>
+              <VenueTypeFilters
+                types={types}
+                activeTypeId={venueTypeIdFromUrl}
+                onTypeChange={handleTypeChange}
+                isLoading={loadingTypes}
               />
-            ))}
-          </ResponsiveEventCardsGrid>
-        ) : venues.length === 0 ? (
-          <p className="mb-8 py-8 text-sm text-[#B3B3B3]">
-            {t("noVenuesFound")}
-            {activeTypeName ? ` ${t("inType", { type: activeTypeName })}` : ""}
-            {searchFromUrl ? ` ${labels.matching(searchFromUrl)}` : ""}
-            {cityFromUrl ? ` ${labels.inCity(cityFromUrl)}` : ""}.
-          </p>
-        ) : (
-          <div className="relative mb-8">
-            {isFetching && !isLoading ? (
-              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-black/40 backdrop-blur-[1px]">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+
+            <div className="flex flex-col gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4">
+              <h2 className="text-sm font-medium text-white">{tCommon("filter")}</h2>
+              <Input
+                placeholder={labels.searchVenues}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") applyFilters();
+                }}
+                className="w-full border-[#303030] bg-black text-white"
+              />
+              <Input
+                placeholder={labels.city}
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") applyFilters();
+                }}
+                className="w-full border-[#303030] bg-black text-white"
+              />
+              <Select value={sortValue} onValueChange={handleSortChange}>
+                <SelectTrigger className="w-full border-[#303030] bg-black text-white">
+                  <SelectValue placeholder={labels.sortBy} />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={applyFilters} className="w-full bg-primary">
+                <Search className="me-2 h-4 w-4" />
+                {labels.search}
+              </Button>
+              {(searchFromUrl || cityFromUrl) && (
+                <Button
+                  variant="outline"
+                  className="w-full border-[#303030] text-muted-foreground"
+                  onClick={() => {
+                    setSearch("");
+                    setCity("");
+                    pushParams({ search: undefined, city: undefined, page: undefined });
+                  }}
+                >
+                  {labels.clearFilters}
+                </Button>
+              )}
+            </div>
+          </aside>
+
+          <div className="min-w-0 lg:col-span-3">
+            {showGridDivider ? (
+              <ListingGridDivider label={tRecommendations("allVenues")} />
+            ) : null}
+
+            {isError ? (
+              <p className="mb-8 py-8 text-sm text-red-400">
+                {error instanceof Error ? error.message : t("couldNotLoad")}
+              </p>
+            ) : null}
+
+            {isLoading ? (
+              <ResponsiveEventCardsGrid
+                className={LISTING_GRID_CLASS}
+                {...LISTING_THREE_COL_GRID}
+              >
+                {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-[420px] animate-pulse rounded-[20px] bg-[#242424]"
+                  />
+                ))}
+              </ResponsiveEventCardsGrid>
+            ) : venues.length === 0 ? (
+              <p className="mb-8 py-8 text-sm text-[#B3B3B3]">
+                {t("noVenuesFound")}
+                {activeTypeName ? ` ${t("inType", { type: activeTypeName })}` : ""}
+                {searchFromUrl ? ` ${labels.matching(searchFromUrl)}` : ""}
+                {cityFromUrl ? ` ${labels.inCity(cityFromUrl)}` : ""}.
+              </p>
+            ) : (
+              <div className="relative mb-8">
+                {isFetching && !isLoading ? (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-black/40 backdrop-blur-[1px]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : null}
+                <ResponsiveEventCardsGrid
+                  key={`venues-grid-${locale}`}
+                  {...LISTING_THREE_COL_GRID}
+                >
+                  {venues.map((venue) => (
+                    <VenueCard key={venue.id} venue={venue} />
+                  ))}
+                </ResponsiveEventCardsGrid>
+              </div>
+            )}
+
+            {showPagination ? (
+              <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-2">
+                <Button
+                  variant="outline"
+                  className="border-[#303030] sm:min-w-[7rem]"
+                  disabled={page <= 1 || isFetching}
+                  onClick={() => {
+                    pushParams({ page: page <= 2 ? undefined : String(page - 1) });
+                  }}
+                >
+                  {labels.previous}
+                </Button>
+                <span className="flex items-center justify-center px-2 text-center text-sm text-muted-foreground sm:px-4">
+                  {data?.meta.total != null
+                    ? labels.pageOfWithCount(page, totalPages, data.meta.total, "venues")
+                    : labels.pageOf(page, totalPages)}
+                </span>
+                <Button
+                  variant="outline"
+                  className="border-[#303030] sm:min-w-[7rem]"
+                  disabled={page >= totalPages || isFetching}
+                  onClick={() => {
+                    pushParams({ page: String(page + 1) });
+                  }}
+                >
+                  {labels.next}
+                </Button>
               </div>
             ) : null}
-            <ResponsiveEventCardsGrid key={`venues-grid-${locale}`}>
-              {venues.map((venue) => (
-                <VenueCard key={venue.id} venue={venue} />
-              ))}
-            </ResponsiveEventCardsGrid>
           </div>
-        )}
-
-        {showPagination ? (
-          <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-2">
-            <Button
-              variant="outline"
-              className="border-[#303030] sm:min-w-[7rem]"
-              disabled={page <= 1 || isFetching}
-              onClick={() => {
-                pushParams({ page: page <= 2 ? undefined : String(page - 1) });
-              }}
-            >
-              {labels.previous}
-            </Button>
-            <span className="flex items-center justify-center px-2 text-center text-sm text-muted-foreground sm:px-4">
-              {data?.meta.total != null
-                ? labels.pageOfWithCount(page, totalPages, data.meta.total, "venues")
-                : labels.pageOf(page, totalPages)}
-            </span>
-            <Button
-              variant="outline"
-              className="border-[#303030] sm:min-w-[7rem]"
-              disabled={page >= totalPages || isFetching}
-              onClick={() => {
-                pushParams({ page: String(page + 1) });
-              }}
-            >
-              {labels.next}
-            </Button>
-          </div>
-        ) : null}
+        </div>
       </div>
     </section>
   );

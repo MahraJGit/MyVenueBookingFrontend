@@ -584,20 +584,25 @@ export default function VenueDetailPage({
                     ) : isDailyPricing && bookableDaySlots.length > 0 ? (
                       (() => {
                         const daySlot = bookableDaySlots[0];
-                        const slotLabel = daySlot.name
-                          ? daySlot.name
-                          : `${daySlot.startTime} – ${daySlot.endTime}`;
                         return (
-                          <Button
-                            className="h-auto min-h-11 w-full whitespace-normal rounded-full bg-primary px-4 py-2.5 text-sm shadow-lg shadow-primary/20 hover:bg-primary/90"
-                            onClick={() => {
-                              setSelectedSlots([daySlot]);
-                              setBookingOpen(true);
-                            }}
-                          >
-                            {t("bookSlot", { slot: slotLabel })} —{" "}
-                            <DisplayPrice amount={daySlot.price} currency={currency} />
-                          </Button>
+                          <div className="space-y-2">
+                            <p className="text-center text-xs text-zinc-400">
+                              {t("bookingHours", {
+                                start: daySlot.startTime,
+                                end: daySlot.endTime,
+                              })}
+                            </p>
+                            <Button
+                              className="h-auto min-h-11 w-full whitespace-normal rounded-full bg-primary px-4 py-2.5 text-sm shadow-lg shadow-primary/20 hover:bg-primary/90"
+                              onClick={() => {
+                                setSelectedSlots([daySlot]);
+                                setBookingOpen(true);
+                              }}
+                            >
+                              {t("bookFullDay")} —{" "}
+                              <DisplayPrice amount={daySlot.price} currency={currency} />
+                            </Button>
+                          </div>
                         );
                       })()
                     ) : (
