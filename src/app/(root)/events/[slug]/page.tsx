@@ -365,13 +365,15 @@ export default function EventDetailPage() {
                   key={ticketType.id ?? ticketType.name}
                   className="bg-[#1B1B1B] border border-[#303030] rounded-2xl p-6 flex flex-col gap-4"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-start gap-2">
                       <Ticket size={18} className="text-primary shrink-0" />
-                      <h4 className="font-semibold text-white truncate">{ticketType.name}</h4>
+                      <h4 className="min-h-[3rem] flex-1 text-sm font-semibold leading-6 text-white break-words">
+                        {ticketType.name}
+                      </h4>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <EventSaleBadge phase={ticketPhase} />
+                      {ticketPhase !== "not_started" ? <EventSaleBadge phase={ticketPhase} /> : null}
                       <span className="text-sm font-bold text-primary border border-primary rounded-full px-3 py-0.5">
                         <DisplayPrice
                           amount={ticketAmount(ticketType.price)}

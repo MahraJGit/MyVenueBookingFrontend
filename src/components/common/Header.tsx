@@ -17,20 +17,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import {
+  mobileNavLinkClass,
+  navDropdownItemClass,
+  navLinkClass,
+} from '@/components/common/nav-link-styles';
 
 type NavItem = { href: string; label: string };
 
 /** Primary links stay in the bar; longer secondary links go under More. */
 const PRIMARY_NAV_COUNT = 5;
-
-function navLinkClass(isActive: boolean) {
-  return cn(
-    'rounded-full px-2 py-1.5 text-xs font-medium whitespace-nowrap transition-colors xl:px-2.5 xl:text-[13px]',
-    isActive
-      ? 'bg-primary/15 text-primary shadow-[inset_0_0_0_1px_rgba(215,73,142,0.25)]'
-      : 'text-foreground/75 hover:bg-white/5 hover:text-primary',
-  );
-}
 
 function DrawerSection({
   title,
@@ -181,20 +177,20 @@ const Header = () => {
                         <ChevronDown className="size-3.5 opacity-70" aria-hidden />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="center" className="min-w-[12rem]">
-                        {moreNavItems.map((item) => (
-                          <DropdownMenuItem key={item.href} asChild>
-                            <Link
-                              href={item.href}
-                              onClick={closeMobileMenu}
-                              className={cn(
-                                'cursor-pointer',
-                                pathname === item.href && 'text-primary',
-                              )}
+                        {moreNavItems.map((item) => {
+                          const isActive = pathname === item.href;
+                          return (
+                            <DropdownMenuItem
+                              key={item.href}
+                              asChild
+                              className={navDropdownItemClass(isActive)}
                             >
-                              {item.label}
-                            </Link>
-                          </DropdownMenuItem>
-                        ))}
+                              <Link href={item.href} onClick={closeMobileMenu}>
+                                {item.label}
+                              </Link>
+                            </DropdownMenuItem>
+                          );
+                        })}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </li>
@@ -268,10 +264,8 @@ const Header = () => {
                       href={item.href}
                       onClick={closeMobileMenu}
                       className={cn(
-                        'flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium transition-colors',
-                        isActive
-                          ? 'bg-primary/15 text-primary shadow-[inset_0_0_0_1px_rgba(215,73,142,0.2)]'
-                          : 'text-foreground/90 hover:bg-white/5 hover:text-primary',
+                        mobileNavLinkClass(isActive),
+                        'justify-start gap-3',
                       )}
                     >
                       <span

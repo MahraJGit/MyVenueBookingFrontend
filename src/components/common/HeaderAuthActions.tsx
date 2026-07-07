@@ -29,6 +29,7 @@ import { userProfileQueryKey } from "@/features/auth/auth-cache";
 import { patchAuthUser } from "@/features/auth/session-storage";
 import { getMyProfile } from "@/features/users/api";
 import { resolveAvatarSrc } from "@/features/users/profile-display";
+import { mobileNavLinkActiveVisualClass, navLinkActiveVisualClass } from "@/components/common/nav-link-styles";
 import { cn } from "@/lib/utils";
 
 type HeaderAuthActionsProps = {
@@ -157,16 +158,20 @@ export function HeaderAuthActions({
           className={stacked ? "h-11 w-full rounded-xl" : "px-2.5"}
         >
           <Link href="/signup" onClick={onNavigate}>
-            {tAuth("register")}
+            {tAuth("signup")}
           </Link>
         </Button>
         <Button
           asChild
+          variant="ghost"
           size={stacked ? "default" : "sm"}
-          className={stacked ? "h-11 w-full rounded-xl" : "px-2.5"}
+          className={cn(
+            stacked ? "h-11 w-full" : "px-2.5",
+            stacked ? mobileNavLinkActiveVisualClass : navLinkActiveVisualClass,
+          )}
         >
           <Link href="/login" onClick={onNavigate}>
-            {tAuth("login")}
+            {tAuth("signIn")}
           </Link>
         </Button>
       </div>

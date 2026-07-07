@@ -87,7 +87,7 @@ export function FavoriteButton({ type, id, className }: FavoriteButtonProps) {
               <Link href={signupUrl}>{t("signup")}</Link>
             </Button>
             <Button asChild>
-              <Link href={loginUrl}>{t("login")}</Link>
+              <Link href={loginUrl}>{t("signIn")}</Link>
             </Button>
           </DialogFooter>
         </DialogContent>

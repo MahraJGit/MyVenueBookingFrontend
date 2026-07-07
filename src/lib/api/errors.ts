@@ -40,7 +40,64 @@ export class ApiError extends Error {
   }
 }
 
-export function formatFieldErrorsForToast(fieldErrors?: BackendFieldError[]) {
-  if (!fieldErrors?.length) return undefined;
-  return fieldErrors.map((e) => `${e.field}: ${e.message}`).join("\n");
+const GENERIC_API_MESSAGES = new Set([
+  "Validation failed",
+  "Request failed",
+]);
+
+/** Deduplicated user-facing validation messages (no field paths). */
+export function extractFieldErrorMessages(
+  fieldErrors?: BackendFieldError[],
+): string[] {
+  if (!fieldErrors?.length) return [];
+
+  const seen = new Set<string>();
+  const messages: string[] = [];
+
+  for (const { message } of fieldErrors) {
+    const trimmed = message.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    messages.push(trimmed);
+  }
+
+  return messages;
+}
+
+/** Toast description: one message per line, without technical field keys. */
+export function formatFieldErrorsForToast(
+  fieldErrors?: BackendFieldError[],
+): string | undefined {
+  const messages = extractFieldErrorMessages(fieldErrors);
+  if (!messages.length) return undefined;
+  return messages.join("\n");
+}
+
+export function resolveApiErrorForToast(
+  error: ApiError,
+  options?: { multipleValidationTitle?: string },
+): { title: string; description?: string } {
+  const messages = extractFieldErrorMessages(error.fieldErrors);
+  const isGeneric = GENERIC_API_MESSAGES.has(error.message);
+
+  if (!messages.length) {
+    return { title: error.message };
+  }
+
+  if (messages.length === 1) {
+    return { title: messages[0] };
+  }
+
+  if (isGeneric) {
+    return {
+      title:
+        options?.multipleValidationTitle ?? "Please check the following",
+      description: messages.join("\n"),
+    };
+  }
+
+  return {
+    title: error.message,
+    description: messages.join("\n"),
+  };
 }

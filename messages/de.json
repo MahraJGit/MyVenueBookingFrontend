@@ -423,6 +423,8 @@
     "newStartDateTime": "Neues Startdatum & -zeit",
     "newEndDateTime": "Neues Enddatum & -zeit",
     "rescheduleDurationHint": "Die Dauer muss der ursprünglichen Buchung entsprechen. Zeiten sollten dem lokalen Zeitplan des Veranstaltungsorts entsprechen.",
+    "invalidStartDateTime": "Bitte wählen Sie ein gültiges Startdatum und eine gültige Uhrzeit.",
+    "invalidEndDateTime": "Bitte wählen Sie ein gültiges Enddatum und eine gültige Uhrzeit.",
     "confirmReschedule": "Umplanung bestätigen",
     "venue": "Veranstaltungsort",
     "buyer": "Käufer",
@@ -662,14 +664,15 @@
     "uploadFailed": "Hochladen fehlgeschlagen",
     "sessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
     "apiNotConfigured": "API nicht konfiguriert",
-    "apiNotConfiguredDescription": "Setzen Sie NEXT_PUBLIC_API_BASE_URL in .env.local (siehe .env.example)."
+    "apiNotConfiguredDescription": "Setzen Sie NEXT_PUBLIC_API_BASE_URL in .env.local (siehe .env.example).",
+    "validationSummary": "Bitte prüfen Sie Folgendes"
   },
   "favorites": {
     "addToFavourites": "Zu Favoriten hinzufügen",
     "removeFromFavourites": "Aus Favoriten entfernen",
     "loginRequiredTitle": "Anmelden, um Favoriten zu speichern",
     "loginRequiredDesc": "Erstellen Sie ein Konto oder melden Sie sich an, um Events und Venues zu speichern.",
-    "login": "Anmelden",
+    "signIn": "Anmelden",
     "signup": "Registrieren",
     "events": "Events",
     "venues": "Venues"
@@ -878,7 +881,7 @@
     "events": "Veranstaltungen",
     "eventReviews": "Veranstaltungsbewertungen",
     "myEvents": "Meine Veranstaltungen",
-    "bookingTickets": "Buchungen & Tickets",
+    "bookingTickets": "Tickets",
     "eventCategories": "Veranstaltungskategorien",
     "analyticsReports": "Analysen & Berichte",
     "support": "Support kontaktieren",
@@ -1020,21 +1023,23 @@
     "firstSuffix": "zuerst.",
     "mediaUploadDesc": "Bilder werden in Ihren Cloud-Speicher hochgeladen; nur die zurückgegebenen Links werden mit der Veranstaltung gespeichert.",
     "coverRequired": "Erforderlich. JPEG, PNG oder WebP — über die Plattform hochgeladen.",
-    "thumbnailOptional": "Optional. Ein kleineres Vorschaubild für Veranstaltungskarten und Listen.",
+    "thumbnailOptional": "Optional. Wenn Sie kein Vorschaubild hochladen, wird Ihr Titelbild in Veranstaltungskarten und Listen verwendet.",
+    "galleryRequired": "Erforderlich. Fügen Sie mindestens {min} Bilder zur Veranstaltungsgalerie hinzu.",
+    "galleryMinError": "Fügen Sie mindestens {min} Galeriebilder hinzu, bevor Sie speichern.",
     "galleryOptional": "Optional. Mehrere Bilder hinzufügen; jede Datei wird hochgeladen und ihre URL gespeichert.",
     "addGalleryImages": "Galeriebilder hinzufügen",
     "loadingPreview": "Vorschau wird geladen...",
     "previewUnavailable": "Vorschau nicht verfügbar",
     "removeImage": "Bild entfernen",
     "noGalleryYet": "Noch keine Galeriebilder.",
-    "venueLocationDesc": "Veranstaltungsort-Details und Veranstaltungsort. Koordinaten werden mit der Veranstaltung in der Datenbank gespeichert.",
+    "venueLocationDesc": "Details zum Veranstaltungsort und zum Ort des Events.",
     "countryCode": "Ländercode",
     "stateRegion": "Bundesland / Region",
     "zipPostal": "PLZ / Postleitzahl",
     "latitude": "Breitengrad",
     "longitude": "Längengrad",
     "typeTag": "Typ-Tag",
-    "tagsHint": "Klicken Sie auf Hinzufügen (oder Enter). Tags werden als JSON-String-Array in der Datenbank gespeichert.",
+    "tagsHint": "Klicken Sie auf Hinzufügen (oder drücken Sie Enter).",
     "addType": "Typ hinzufügen",
     "ticketN": "Ticket {n}",
     "quantityTotal": "Gesamtmenge",
@@ -1696,7 +1701,8 @@
     "loadingReviews": "Bewertungen werden geladen…"
   },
   "toasts": {
-    "somethingWentWrong": "Something went wrong"
+    "somethingWentWrong": "Something went wrong",
+    "validationSummary": "Bitte prüfen Sie Folgendes"
   },
   "pricingModelFields": {
     "intro": "Choose one pricing model for this venue. Only a single model can be active at a time.",
@@ -1862,6 +1868,7 @@
     "noSalesRecords": "No sales records on this page.",
     "buyer": "Buyer",
     "couldNotLoad": "Could not load ticket sales.",
+    "groupByEvent": "Nach Veranstaltung gruppieren",
     "pageOfRecords": "Page {page} of {totalPages} ({total} records)"
   },
   "adminEventCategories": {
@@ -1986,6 +1993,7 @@
   "venueGallery": {
     "title": "Gallery",
     "hint": "Optional. Add multiple images — each file is uploaded and saved to your gallery.",
+    "imageCount": "{count} von {min} Bildern hinzugefügt",
     "uploading": "Uploading…",
     "addImages": "Add gallery images",
     "noImages": "No gallery images yet."

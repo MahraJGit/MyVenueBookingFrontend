@@ -135,7 +135,7 @@
     "terms": "الشروط والأحكام",
     "privacy": "سياسة الخصوصية",
     "login": "تسجيل الدخول",
-    "register": "التسجيل",
+    "register": "إنشاء حساب",
     "logout": "تسجيل الخروج",
     "profileSettings": "إعدادات الملف الشخصي",
     "dashboard": "لوحة التحكم",
@@ -423,6 +423,8 @@
     "newStartDateTime": "تاريخ ووقت البدء الجديد",
     "newEndDateTime": "تاريخ ووقت الانتهاء الجديد",
     "rescheduleDurationHint": "يجب أن تتطابق المدة مع الحجز الأصلي. يجب أن تعكس الأوقات الجدول المحلي للمكان.",
+    "invalidStartDateTime": "يرجى اختيار تاريخ ووقت بدء صالحين.",
+    "invalidEndDateTime": "يرجى اختيار تاريخ ووقت انتهاء صالحين.",
     "confirmReschedule": "تأكيد إعادة الجدولة",
     "venue": "المكان",
     "buyer": "المشتري",
@@ -510,7 +512,7 @@
   "auth": {
     "login": "تسجيل الدخول",
     "signup": "إنشاء حساب",
-    "register": "التسجيل",
+    "register": "إنشاء حساب",
     "logout": "تسجيل الخروج",
     "emailTab": "البريد الإلكتروني",
     "phoneTab": "الهاتف",
@@ -662,15 +664,16 @@
     "uploadFailed": "فشل الرفع",
     "sessionExpired": "انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى.",
     "apiNotConfigured": "لم يتم تكوين API",
-    "apiNotConfiguredDescription": "عيّن NEXT_PUBLIC_API_BASE_URL في .env.local (راجع .env.example)."
+    "apiNotConfiguredDescription": "عيّن NEXT_PUBLIC_API_BASE_URL في .env.local (راجع .env.example).",
+    "validationSummary": "يرجى التحقق من التالي"
   },
   "favorites": {
     "addToFavourites": "إضافة إلى المفضلة",
     "removeFromFavourites": "إزالة من المفضلة",
     "loginRequiredTitle": "سجّل الدخول لحفظ المفضلة",
     "loginRequiredDesc": "أنشئ حسابًا أو سجّل الدخول لحفظ الفعاليات والأماكن التي تحبها.",
-    "login": "تسجيل الدخول",
-    "signup": "التسجيل",
+    "signIn": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
     "events": "الفعاليات",
     "venues": "الأماكن"
   },
@@ -878,7 +881,7 @@
     "events": "الفعاليات",
     "eventReviews": "مراجعات الفعاليات",
     "myEvents": "فعالياتي",
-    "bookingTickets": "الحجوزات والتذاكر",
+    "bookingTickets": "التذاكر",
     "eventCategories": "فئات الفعاليات",
     "analyticsReports": "التحليلات والتقارير",
     "support": "اتصل بالدعم",
@@ -1020,21 +1023,23 @@
     "firstSuffix": "أولاً.",
     "mediaUploadDesc": "تُرفع الصور إلى التخزين السحابي؛ ويُحفظ مع الفعالية الروابط المُرجعة فقط.",
     "coverRequired": "مطلوب. JPEG أو PNG أو WebP — يُرفع عبر المنصة.",
-    "thumbnailOptional": "اختياري. صورة معاينة أصغر تظهر في بطاقات الفعاليات والقوائم.",
+    "thumbnailOptional": "اختياري. إذا لم ترفع صورة مصغرة، سيتم استخدام صورة الغلاف في بطاقات الفعاليات والقوائم.",
+    "galleryRequired": "مطلوب. أضف {min} صور على الأقل إلى معرض الفعالية.",
+    "galleryMinError": "أضف {min} صور على الأقل إلى المعرض قبل الحفظ.",
     "galleryOptional": "اختياري. أضف صورًا متعددة؛ يُرفع كل ملف ويُحفظ رابطه.",
     "addGalleryImages": "إضافة صور المعرض",
     "loadingPreview": "جارٍ تحميل المعاينة...",
     "previewUnavailable": "المعاينة غير متاحة",
     "removeImage": "إزالة الصورة",
     "noGalleryYet": "لا توجد صور في المعرض بعد.",
-    "venueLocationDesc": "تفاصيل المكان ومكان إقامة الفعالية. تُحفظ الإحداثيات مع الفعالية في قاعدة البيانات.",
+    "venueLocationDesc": "تفاصيل المكان ومكان إقامة الفعالية.",
     "countryCode": "رمز الدولة",
     "stateRegion": "الولاية / المنطقة",
     "zipPostal": "الرمز البريدي",
     "latitude": "خط العرض",
     "longitude": "خط الطول",
     "typeTag": "وسم النوع",
-    "tagsHint": "انقر إضافة (أو اضغط Enter). تُحفظ الوسوم كمصفوفة JSON في قاعدة البيانات.",
+    "tagsHint": "انقر إضافة (أو اضغط Enter).",
     "addType": "إضافة نوع",
     "ticketN": "تذكرة {n}",
     "quantityTotal": "الكمية الإجمالية",
@@ -1696,7 +1701,8 @@
     "loadingReviews": "جارٍ تحميل التقييمات…"
   },
   "toasts": {
-    "somethingWentWrong": "Something went wrong"
+    "somethingWentWrong": "Something went wrong",
+    "validationSummary": "يرجى التحقق من التالي"
   },
   "pricingModelFields": {
     "intro": "Choose one pricing model for this venue. Only a single model can be active at a time.",
@@ -1862,6 +1868,7 @@
     "noSalesRecords": "No sales records on this page.",
     "buyer": "Buyer",
     "couldNotLoad": "Could not load ticket sales.",
+    "groupByEvent": "تجميع حسب الحدث",
     "pageOfRecords": "Page {page} of {totalPages} ({total} records)"
   },
   "adminEventCategories": {
@@ -1986,6 +1993,7 @@
   "venueGallery": {
     "title": "Gallery",
     "hint": "Optional. Add multiple images — each file is uploaded and saved to your gallery.",
+    "imageCount": "تمت إضافة {count} من {min} صور",
     "uploading": "Uploading…",
     "addImages": "Add gallery images",
     "noImages": "No gallery images yet."

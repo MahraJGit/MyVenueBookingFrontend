@@ -102,7 +102,7 @@ function uploadVendorDocumentViaBackendWithProgress(
     const url = `${baseUrl}/api/uploads/single?folder=${encodeURIComponent(VENDOR_DOCS_FOLDER)}`;
     const token = getAccessToken();
     if (!token) {
-      reject(new ApiError(401, "Please login to continue."));
+      reject(new ApiError(401, "Please sign in to continue."));
       return;
     }
 
@@ -133,7 +133,7 @@ function uploadVendorDocumentViaBackendWithProgress(
         refreshAndApplySession()
           .then((refreshed) => {
             if (!refreshed) {
-              throw new ApiError(401, "Please login to continue.");
+              throw new ApiError(401, "Please sign in to continue.");
             }
             return uploadVendorDocumentViaBackendWithProgress(
               file,
@@ -147,7 +147,7 @@ function uploadVendorDocumentViaBackendWithProgress(
             reject(
               error instanceof ApiError
                 ? error
-                : new ApiError(401, "Please login to continue."),
+                : new ApiError(401, "Please sign in to continue."),
             );
           });
         return;

@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { ApiError, formatFieldErrorsForToast } from "@/lib/api/errors";
+import { ApiError, resolveApiErrorForToast } from "@/lib/api/errors";
 
 /** Client-side toast helper with translated fallback messages. */
 export function useToastApiError() {
@@ -16,8 +16,10 @@ export function useToastApiError() {
         return;
       }
       if (error instanceof ApiError) {
-        const extra = formatFieldErrorsForToast(error.fieldErrors);
-        toast.error(error.message, extra ? { description: extra } : undefined);
+        const { title, description } = resolveApiErrorForToast(error, {
+          multipleValidationTitle: t("validationSummary"),
+        });
+        toast.error(title, description ? { description } : undefined);
         return;
       }
       toast.error(fallbackMessage ?? t("generic"));

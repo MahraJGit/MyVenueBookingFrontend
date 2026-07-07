@@ -1,6 +1,6 @@
 import { createTranslator } from "next-intl";
 import { toast } from "sonner";
-import { ApiError, formatFieldErrorsForToast } from "@/lib/api/errors";
+import { ApiError, resolveApiErrorForToast } from "@/lib/api/errors";
 import { DEFAULT_LOCALE, type AppLocale } from "@/i18n/locales";
 import { readStoredLocale } from "@/lib/locale-storage";
 import en from "../../messages/en.json";
@@ -25,8 +25,11 @@ export function toastApiError(error: unknown, fallbackMessage?: string): void {
     return;
   }
   if (error instanceof ApiError) {
-    const extra = formatFieldErrorsForToast(error.fieldErrors);
-    toast.error(error.message, extra ? { description: extra } : undefined);
+    const t = toastTranslator();
+    const { title, description } = resolveApiErrorForToast(error, {
+      multipleValidationTitle: t("validationSummary"),
+    });
+    toast.error(title, description ? { description } : undefined);
     return;
   }
   toast.error(fallbackMessage ?? toastTranslator()("somethingWentWrong"));

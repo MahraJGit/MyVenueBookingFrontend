@@ -133,13 +133,15 @@ export default function SignupPage() {
         <section className="signup">
             <div className="flex flex-col items-center justify-center text-white px-4">
                 <div className="flex flex-col items-center mb-8">
-                    <Image
-                        src="/images/logo2.png"
-                        alt={tCommon("logoAlt")}
-                        width={48}
-                        height={48}
-                        priority
-                    />
+                    <Link href="/">
+                        <Image
+                            src="/images/logo2.png"
+                            alt={tCommon("logoAlt")}
+                            width={48}
+                            height={48}
+                            priority
+                        />
+                    </Link>
                     <p className="text-gray-400 mt-3 text-center text-sm">
                         {t("createYourAccount")}
                     </p>

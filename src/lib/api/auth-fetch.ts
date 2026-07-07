@@ -15,7 +15,7 @@ type AuthFetchOptions = Omit<RequestInit, "headers"> & {
 function buildHeaders(extra?: HeadersInit): Headers {
   const token = getAccessToken();
   if (!token) {
-    throw new ApiError(401, "Please login to continue.");
+    throw new ApiError(401, "Please sign in to continue.");
   }
 
   const merged = withLocaleHeaders({ headers: extra });
@@ -47,7 +47,7 @@ export async function authFetch(path: string, options: AuthFetchOptions): Promis
   if (!getAccessToken()) {
     const refreshed = await refreshAndApplySession();
     if (!refreshed || !getAccessToken()) {
-      throw new ApiError(401, "Please login to continue.");
+      throw new ApiError(401, "Please sign in to continue.");
     }
   }
 

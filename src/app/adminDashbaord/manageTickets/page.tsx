@@ -8,6 +8,8 @@ import { Banknote, ExternalLink, Loader2, Ticket } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -49,18 +51,13 @@ import {
   dashboardOutlineButtonClass,
 } from "@/components/dashboard/dashboard-ui";
 import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
-import {
-  DashboardFilterBar,
-  DashboardScrollableTabs,
-} from "@/components/userDashboard/DashboardScrollableTabs";
+import { DashboardFilterBar } from "@/components/userDashboard/DashboardScrollableTabs";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 const selectTriggerClass = dashboardSelectTriggerClass;
 const selectContentClass = dashboardDropdownContentClass;
-
-type TicketsTab = "by-event" | "sales-log";
 
 function formatDateTime(iso: string) {
   try {
@@ -85,7 +82,7 @@ export default function ManageTicketsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
 
-  const [activeTab, setActiveTab] = useState<TicketsTab>("by-event");
+  const [groupByEvent, setGroupByEvent] = useState(false);
   const [statusFilter, setStatusFilter] =
     useState<TicketSaleStatusFilter>("CONFIRMED");
   const [eventFilter, setEventFilter] = useState<string>("ALL");
@@ -96,10 +93,11 @@ export default function ManageTicketsPage() {
     () => ({
       status: statusFilter,
       eventId: eventFilter === "ALL" ? undefined : eventFilter,
+      search: search.trim() || undefined,
       page,
       limit: PAGE_SIZE,
     }),
-    [statusFilter, eventFilter, page],
+    [statusFilter, eventFilter, search, page],
   );
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
@@ -112,43 +110,17 @@ export default function ManageTicketsPage() {
   const pagination = data?.pagination;
   const totalPages = pagination?.totalPages ?? 1;
 
-  const searchLower = search.trim().toLowerCase();
-
-  const filteredSummary = useMemo(() => {
-    if (!searchLower) return summary;
-    return summary.filter(
-      (row) =>
-        row.eventName.toLowerCase().includes(searchLower) ||
-        row.vendorName?.toLowerCase().includes(searchLower),
-    );
-  }, [summary, searchLower]);
-
-  const filteredRecords = useMemo(() => {
-    if (!searchLower) return records;
-    return records.filter((row) => {
-      const buyerName = `${row.buyer.firstName} ${row.buyer.lastName}`.toLowerCase();
-      return (
-        row.eventName.toLowerCase().includes(searchLower) ||
-        row.ticketTypeName.toLowerCase().includes(searchLower) ||
-        row.orderCode?.toLowerCase().includes(searchLower) ||
-        buyerName.includes(searchLower) ||
-        row.buyer.email.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [records, searchLower]);
-
   const totals = useMemo(() => {
-    return filteredSummary.reduce(
+    return summary.reduce(
       (acc, row) => ({
         tickets: acc.tickets + row.totalTicketsSold,
         revenue: acc.revenue + row.totalRevenue,
       }),
       { tickets: 0, revenue: 0 },
     );
-  }, [filteredSummary]);
+  }, [summary]);
 
-  const currency =
-    filteredSummary[0]?.currency ?? records[0]?.currency ?? "PKR";
+  const currency = summary[0]?.currency ?? records[0]?.currency ?? "PKR";
 
   const statusLabel = (status: string) => {
     const map: Record<string, string> = {
@@ -169,8 +141,7 @@ export default function ManageTicketsPage() {
     setPage(1);
   }, [search, statusFilter, eventFilter]);
 
-  const showSalesPagination =
-    activeTab === "sales-log" && !isLoading && (pagination?.total ?? 0) > 0;
+  const showSalesPagination = !groupByEvent && !isLoading && (pagination?.total ?? 0) > 0;
 
   return (
     <DashboardPageShell>
@@ -252,14 +223,17 @@ export default function ManageTicketsPage() {
       </div>
 
       <DashboardFilterBar className={dashboardFilterBarBorderClass}>
-        <DashboardScrollableTabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          items={[
-            { value: "by-event", label: t("byEvent") },
-            { value: "sales-log", label: t("salesLog") },
-          ]}
-        />
+        <div className="flex w-full items-center justify-end gap-3">
+          <Label htmlFor="group-by-event-toggle" className="text-sm text-muted-foreground">
+            {t("groupByEvent")}
+          </Label>
+          <Switch
+            id="group-by-event-toggle"
+            checked={groupByEvent}
+            onCheckedChange={setGroupByEvent}
+            aria-label={t("groupByEvent")}
+          />
+        </div>
       </DashboardFilterBar>
 
       <DashboardDataTable
@@ -269,12 +243,12 @@ export default function ManageTicketsPage() {
                 label: tListing("pageOfWithCount", {
                   page: pagination?.page ?? page,
                   totalPages,
-                  total: pagination?.total ?? filteredRecords.length,
+                  total: pagination?.total ?? records.length,
                   type: t("salesLog").toLowerCase(),
                 }),
                 page,
                 totalPages,
-                total: pagination?.total ?? filteredRecords.length,
+                total: pagination?.total ?? records.length,
                 onPageChange: setPage,
                 previousLabel: tCommon("previous"),
                 nextLabel: tCommon("next"),
@@ -283,11 +257,11 @@ export default function ManageTicketsPage() {
             : undefined
         }
       >
-        {activeTab === "by-event" ? (
+        {groupByEvent ? (
           <ByEventTable
             isAdmin={isAdmin}
             isLoading={isLoading}
-            rows={filteredSummary}
+            rows={summary}
             t={t}
             tAdmin={tAdmin}
             tCommon={tCommon}
@@ -296,7 +270,7 @@ export default function ManageTicketsPage() {
           <SalesLogTable
             isAdmin={isAdmin}
             isLoading={isLoading}
-            rows={filteredRecords}
+            rows={records}
             statusLabel={statusLabel}
             t={t}
             tAdmin={tAdmin}

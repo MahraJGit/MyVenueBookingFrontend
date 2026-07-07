@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils"
 
 const inputClass = "bg-input/50 border-border"
 const selectTriggerClass = cn(inputClass, "w-full")
+const EVENT_GALLERY_MIN_IMAGES = 3
 
 const TIMEZONES = [
     "Asia/Dubai",
@@ -83,11 +84,23 @@ type TicketForm = {
     salesEnd: string
 }
 
+type TicketTimeError = {
+    salesStart?: string
+    salesEnd?: string
+}
+
+type TimingValidationResult = {
+    eventStartError: string | null
+    eventEndError: string | null
+    ticketTimeErrors: TicketTimeError[]
+    isValid: boolean
+}
+
 const defaultTicket = (ticketName: string): TicketForm => ({
-    name: ticketName,
-    price: "0",
+    name: "",
+    price: "",
     currency: "PKR",
-    quantityTotal: "100",
+    quantityTotal: "",
     salesStart: "",
     salesEnd: "",
 })
@@ -117,6 +130,58 @@ function pad2(n: number) {
 function toTimeValue(date: Date | null) {
     if (!date) return "12:00"
     return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`
+}
+
+function validateEventAndTicketTiming(
+    startLocal: string,
+    endLocal: string,
+    tickets: TicketForm[],
+): TimingValidationResult {
+    const start = parseLocalDateTime(startLocal)
+    const end = parseLocalDateTime(endLocal)
+    const now = new Date()
+    let eventStartError: string | null = null
+    let eventEndError: string | null = null
+
+    if (!start || !end) {
+        if (!start) eventStartError = "Please select a valid start date/time."
+        if (!end) eventEndError = "Please select a valid end date/time."
+    } else if (start <= now) {
+        eventStartError = "Event start date/time must be in the future."
+    } else if (end <= start) {
+        eventEndError = "End date must be after start date."
+    }
+
+    const ticketTimeErrors: TicketTimeError[] = tickets.map(() => ({}))
+    if (start && end) {
+        tickets.forEach((ticket, index) => {
+            const salesStart = parseLocalDateTime(ticket.salesStart)
+            const salesEnd = parseLocalDateTime(ticket.salesEnd)
+
+            if (salesStart && (salesStart < start || salesStart > end)) {
+                ticketTimeErrors[index].salesStart =
+                    "Sales start must be between event start and end."
+            }
+            if (salesEnd && (salesEnd < start || salesEnd > end)) {
+                ticketTimeErrors[index].salesEnd =
+                    "Sales end must be between event start and end."
+            }
+            if (salesStart && salesEnd && salesEnd <= salesStart) {
+                ticketTimeErrors[index].salesEnd =
+                    "Sales end must be after sales start."
+            }
+        })
+    }
+
+    return {
+        eventStartError,
+        eventEndError,
+        ticketTimeErrors,
+        isValid:
+            !eventStartError &&
+            !eventEndError &&
+            ticketTimeErrors.every((err) => !err.salesStart && !err.salesEnd),
+    }
 }
 
 export default function AddEventsContentPage() {
@@ -204,6 +269,11 @@ export default function AddEventsContentPage() {
         if (eventCategories.some((c) => c.name === cat)) return null
         return cat
     }, [category, eventCategories])
+
+    const timingValidation = React.useMemo(
+        () => validateEventAndTicketTiming(startLocal, endLocal, tickets),
+        [startLocal, endLocal, tickets],
+    )
 
     React.useEffect(() => {
         if (!existing) return
@@ -335,12 +405,20 @@ export default function AddEventsContentPage() {
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
+        if (!timingValidation.isValid) {
+            toast.error("Please fix event date/time errors before saving.")
+            return
+        }
         if (!category.trim()) {
             toast.error(t("selectCategoryError"))
             return
         }
         if (!coverImage.trim()) {
             toast.error(t("uploadCoverError"))
+            return
+        }
+        if (galleryUrls.length < EVENT_GALLERY_MIN_IMAGES) {
+            toast.error(t("galleryMinError", { min: EVENT_GALLERY_MIN_IMAGES }))
             return
         }
         saveMutation.mutate()
@@ -568,6 +646,9 @@ export default function AddEventsContentPage() {
                                 required
                                 prettyLabel={prettyDateTime(startLocal)}
                             />
+                            {timingValidation.eventStartError ? (
+                                <p className="text-xs text-destructive">{timingValidation.eventStartError}</p>
+                            ) : null}
                         </div>
                         <div className="space-y-2">
                             <Label>{tForms("endDate")}</Label>
@@ -577,6 +658,9 @@ export default function AddEventsContentPage() {
                                 required
                                 prettyLabel={prettyDateTime(endLocal)}
                             />
+                            {timingValidation.eventEndError ? (
+                                <p className="text-xs text-destructive">{timingValidation.eventEndError}</p>
+                            ) : null}
                         </div>
 
                         <div className="space-y-2 sm:col-span-2">
@@ -709,6 +793,7 @@ export default function AddEventsContentPage() {
                             onUpload={onGalleryFiles}
                             onRemove={removeGalleryAt}
                             inputId="event-gallery-upload"
+                            hint={t("galleryRequired", { min: EVENT_GALLERY_MIN_IMAGES })}
                         />
                     </CardContent>
                 </Card>
@@ -1012,8 +1097,13 @@ export default function AddEventsContentPage() {
                                                 ),
                                             )
                                         }
-                                        prettyLabel={t("salesStart")}
+                                        prettyLabel={prettyDateTime(ticket.salesStart)}
                                     />
+                                    {timingValidation.ticketTimeErrors[i]?.salesStart ? (
+                                        <p className="text-xs text-destructive">
+                                            {timingValidation.ticketTimeErrors[i]?.salesStart}
+                                        </p>
+                                    ) : null}
                                 </div>
                                 <div className="space-y-2 sm:col-span-2">
                                     <Label>{t("salesEnd")}</Label>
@@ -1026,8 +1116,13 @@ export default function AddEventsContentPage() {
                                                 ),
                                             )
                                         }
-                                        prettyLabel={t("salesEnd")}
+                                        prettyLabel={prettyDateTime(ticket.salesEnd)}
                                     />
+                                    {timingValidation.ticketTimeErrors[i]?.salesEnd ? (
+                                        <p className="text-xs text-destructive">
+                                            {timingValidation.ticketTimeErrors[i]?.salesEnd}
+                                        </p>
+                                    ) : null}
                                 </div>
                             </div>
                         ))}

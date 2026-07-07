@@ -96,7 +96,7 @@ export function VenueScheduleEditor({ schedules, onChange }: VenueScheduleEditor
                     value={row.openTime}
                     disabled={!row.isOpen}
                     onChange={(e) => updateRow(idx, { openTime: e.target.value })}
-                    className="bg-input/50 w-32"
+                    className="bg-input/50 w-34 min-w-[8rem]"
                   />
                 </TableCell>
                 <TableCell>
@@ -105,7 +105,7 @@ export function VenueScheduleEditor({ schedules, onChange }: VenueScheduleEditor
                     value={row.closeTime}
                     disabled={!row.isOpen}
                     onChange={(e) => updateRow(idx, { closeTime: e.target.value })}
-                    className="bg-input/50 w-32"
+                    className="bg-input/50 w-34 min-w-[8rem]"
                   />
                 </TableCell>
               </TableRow>

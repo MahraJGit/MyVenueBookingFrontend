@@ -11,6 +11,8 @@ type VenueGalleryUploadProps = {
   onUpload: (files: FileList) => void | Promise<void>;
   onRemove: (index: number) => void;
   inputId?: string;
+  /** Override default optional gallery hint (e.g. required event gallery). */
+  hint?: string;
 };
 
 export function VenueGalleryUpload({
@@ -19,6 +21,7 @@ export function VenueGalleryUpload({
   onUpload,
   onRemove,
   inputId = "venue-gallery-upload",
+  hint,
 }: VenueGalleryUploadProps) {
   const t = useTranslations("venueGallery");
   const tA11y = useTranslations("a11y");
@@ -27,7 +30,7 @@ export function VenueGalleryUpload({
     <div className="space-y-3 sm:col-span-2">
       <div>
         <Label>{t("title")}</Label>
-        <p className="text-xs text-muted-foreground mt-1">{t("hint")}</p>
+        <p className="text-xs text-muted-foreground mt-1">{hint ?? t("hint")}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button

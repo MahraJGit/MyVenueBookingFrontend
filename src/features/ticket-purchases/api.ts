@@ -188,12 +188,14 @@ export type TicketSalesResponse = {
   filters: {
     eventId: string | null;
     status: TicketSaleStatusFilter;
+    search: string | null;
   };
 };
 
 export type ListTicketSalesParams = {
   eventId?: string;
   status?: TicketSaleStatusFilter;
+  search?: string;
   page?: number;
   limit?: number;
 };
@@ -202,6 +204,7 @@ export async function getTicketSales(params: ListTicketSalesParams = {}) {
   const search = new URLSearchParams();
   if (params.eventId) search.set("eventId", params.eventId);
   if (params.status) search.set("status", params.status);
+  if (params.search) search.set("search", params.search);
   if (params.page) search.set("page", String(params.page));
   if (params.limit) search.set("limit", String(params.limit));
 
