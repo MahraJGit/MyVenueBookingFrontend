@@ -348,6 +348,7 @@ function UserBookingDetail({
   const queryClient = useQueryClient();
   const [reviewOpen, setReviewOpen] = useState(false);
   const tz = booking.venue.timezone;
+  const { locale } = useLocaleContext();
   const statusKey = {
     DRAFT: "draft",
     HOLD: "hold",
@@ -590,6 +591,7 @@ function DefaultBookingDetail({
   tCommon,
 }: DetailBodyProps) {
   const tz = booking.venue.timezone;
+  const { locale } = useLocaleContext();
 
   return (
     <Card className="border-border bg-card">
@@ -723,6 +725,7 @@ function VendorBookingDetail({
   tCommon,
 }: DetailBodyProps) {
   const tz = booking.venue.timezone;
+  const { locale } = useLocaleContext();
   const statusKey = {
     DRAFT: "draft",
     HOLD: "hold",
