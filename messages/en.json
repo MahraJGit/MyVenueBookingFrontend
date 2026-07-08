@@ -290,7 +290,10 @@
     "mapNotAvailable": "Map not available",
     "eventLocation": "Event Location",
     "galleryImageAlt": "Gallery {index}",
-    "noDescriptionProvided": "No description provided."
+    "noDescriptionProvided": "No description provided.",
+    "businessTypeIndividual": "Individual",
+    "businessTypeCompany": "Company",
+    "businessTypePartnership": "Partnership"
   },
   "venues": {
     "title": "Venues",
@@ -368,7 +371,16 @@
     "multiSlotHint": "Select at least {min} consecutive available slots",
     "multiSlotHintSingle": "Tap one or more consecutive slots — a single hour is fine",
     "minSlotsRequired": "Select at least {min} consecutive slots ({selected} selected)",
-    "slotsSelected": "{count} slots"
+    "slotsSelected": "{count} slots",
+    "modelHourly": "Hourly",
+    "modelNamedSlots": "Named slots",
+    "modelDailyBlock": "Daily",
+    "modelFlatRate": "Flat rate",
+    "unavailBlocked": "This date is blocked by the venue.",
+    "unavailClosed": "The venue is closed on this day.",
+    "unavailFullyBooked": "Fully booked — please try another date.",
+    "unavailOutOfWindow": "This date is outside the booking window.",
+    "unavailDefault": "Not available on this date."
   },
   "booking": {
     "title": "Booking",
@@ -1522,6 +1534,13 @@
     "displayCurrency": "Display currency",
     "convertedFrom": "Converted from {currency}",
     "chargeCurrency": "Charged in {currency}",
+    "browseNotice": "Prices shown in {currency} use approximate exchange rates{ratesDate}. You will be charged in the {source}'s currency.",
+    "browseNoticeRatesDate": " ({date})",
+    "chargeSourceOrganizer": "organizer",
+    "chargeSourceVendor": "vendor",
+    "chargeSourceVenue": "venue",
+    "chargeDisclaimerConverted": "You will be charged {amount}. Exchange rates are approximate and may vary.",
+    "chargeDisclaimerNative": "Payment is processed in the {source}'s selected currency ({currency}).",
     "AED": "UAE Dirham",
     "PKR": "Pakistani Rupee",
     "USD": "US Dollar",
@@ -2030,6 +2049,9 @@
     "typeAdminSupport": "Platform support",
     "adminSupportTitle": "Admin support",
     "unknownVendor": "Vendor",
+    "bookingTitle": "Booking: {name}",
+    "ticketsTitle": "Tickets: {name}",
+    "supportTitle": "Support: {name}",
     "loadOlder": "Load older messages",
     "noMessages": "No messages yet. Say hello!",
     "inboxError": "Could not load conversations. Please try again.",

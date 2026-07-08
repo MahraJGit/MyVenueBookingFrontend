@@ -1,4 +1,5 @@
 import { TZDate } from "@date-fns/tz";
+import { getIntlLocale } from "@/i18n/locales";
 
 /**
  * Convert a local date (YYYY-MM-DD) + time (HH:mm) in a venue timezone to UTC ISO string.
@@ -31,10 +32,12 @@ export function slotRangeToUtc(
 
 /**
  * Format a UTC ISO instant in the venue's timezone for display.
+ * Pass `locale` (app locale like `ur`) so month/day names follow the UI language.
  */
 export function formatInVenueTimezone(
   iso: string,
   timezone: string,
+  locale?: string | null,
   options: Intl.DateTimeFormatOptions = {
     dateStyle: "medium",
     timeStyle: "short",
@@ -42,7 +45,10 @@ export function formatInVenueTimezone(
 ): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return new Intl.DateTimeFormat("en-US", { ...options, timeZone: timezone }).format(d);
+  return new Intl.DateTimeFormat(getIntlLocale(locale), {
+    ...options,
+    timeZone: timezone,
+  }).format(d);
 }
 
 export function formatDateKey(date: Date): string {

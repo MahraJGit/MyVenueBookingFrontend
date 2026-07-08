@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { getDateFnsLocale } from "@/lib/date-locale";
+import { useLocaleContext } from "@/features/i18n/locale-context";
 import {
   Card,
   CardContent,
@@ -161,6 +163,7 @@ export function BookingDetailPanel({
 }: BookingDetailPanelProps) {
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isReady } = useAuth();
+  const { locale } = useLocaleContext();
   const t = useTranslations("booking");
   const tCommon = useTranslations("common");
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
@@ -428,12 +431,12 @@ function UserBookingDetail({
           <DetailStat
             icon={CalendarDays}
             label={t("starts")}
-            value={formatInVenueTimezone(booking.startTime, tz)}
+            value={formatInVenueTimezone(booking.startTime, tz, locale)}
           />
           <DetailStat
             icon={CalendarDays}
             label={t("ends")}
-            value={formatInVenueTimezone(booking.endTime, tz)}
+            value={formatInVenueTimezone(booking.endTime, tz, locale)}
           />
           <DetailStat
             icon={CreditCard}
@@ -608,13 +611,13 @@ function DefaultBookingDetail({
           <div>
             <dt className="text-muted-foreground">{t("start")}</dt>
             <dd className="text-foreground">
-              {formatInVenueTimezone(booking.startTime, tz)}
+              {formatInVenueTimezone(booking.startTime, tz, locale)}
             </dd>
           </div>
           <div>
             <dt className="text-muted-foreground">{t("end")}</dt>
             <dd className="text-foreground">
-              {formatInVenueTimezone(booking.endTime, tz)}
+              {formatInVenueTimezone(booking.endTime, tz, locale)}
             </dd>
           </div>
           <div>
@@ -808,12 +811,12 @@ function VendorBookingDetail({
           <DetailStat
             icon={CalendarDays}
             label={t("starts")}
-            value={formatInVenueTimezone(booking.startTime, tz)}
+            value={formatInVenueTimezone(booking.startTime, tz, locale)}
           />
           <DetailStat
             icon={CalendarDays}
             label={t("ends")}
-            value={formatInVenueTimezone(booking.endTime, tz)}
+            value={formatInVenueTimezone(booking.endTime, tz, locale)}
           />
           {booking.numGuests ? (
             <DetailStat
@@ -946,6 +949,8 @@ function RescheduleDialog({
   t: ReturnType<typeof useTranslations<"booking">>;
   tCommon: ReturnType<typeof useTranslations<"common">>;
 }) {
+  const { locale } = useLocaleContext();
+  const dateFnsLocale = getDateFnsLocale(locale);
   const startInputRef = useRef<HTMLInputElement | null>(null);
   const endInputRef = useRef<HTMLInputElement | null>(null);
   const startSelected = parseDatetimeLocalValue(startLocal);
@@ -1003,7 +1008,9 @@ function RescheduleDialog({
                   className="w-full justify-start border-zinc-700 bg-zinc-950 text-left font-normal"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startSelected ? format(startSelected, "PPP p") : t("newStartDateTime")}
+                  {startSelected
+                    ? format(startSelected, "PPP p", { locale: dateFnsLocale })
+                    : t("newStartDateTime")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent
@@ -1049,7 +1056,9 @@ function RescheduleDialog({
                   className="w-full justify-start border-zinc-700 bg-zinc-950 text-left font-normal"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endSelected ? format(endSelected, "PPP p") : t("newEndDateTime")}
+                  {endSelected
+                    ? format(endSelected, "PPP p", { locale: dateFnsLocale })
+                    : t("newEndDateTime")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent
@@ -1114,6 +1123,8 @@ export function BookingsTable({
   showBuyer = false,
 }: BookingsTableProps) {
   const t = useTranslations("booking");
+  const { locale } = useLocaleContext();
+  const dateFnsLocale = getDateFnsLocale(locale);
   const resolvedEmptyMessage = emptyMessage ?? t("noBookingsFound");
   const colCount = showBuyer ? 5 : 4;
 
@@ -1157,10 +1168,12 @@ export function BookingsTable({
                   </TableCell>
                 ) : null}
                 <TableCell className="text-muted-foreground">
-                  {format(new Date(booking.startTime), "MMM d, yyyy h:mm a")}
+                  {format(new Date(booking.startTime), "MMM d, yyyy h:mm a", {
+                    locale: dateFnsLocale,
+                  })}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {format(new Date(booking.endTime), "h:mm a")}
+                  {format(new Date(booking.endTime), "h:mm a", { locale: dateFnsLocale })}
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={booking.status} />

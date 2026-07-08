@@ -48,15 +48,51 @@ import {
   getVenueDisplayPrice,
   isPropertyStyleVenueType,
   parseVenuePropertyAttributes,
-  pricingModelLabel,
-  unavailabilityMessage,
 } from "@/features/venues/utils";
-import type { AvailabilitySlot } from "@/features/venues/types";
+import type { AvailabilitySlot, PricingModel, UnavailabilityReason } from "@/features/venues/types";
 import {
   combinedSlotRange,
   selectedSlotsTotalPrice,
   toggleSlotSelection,
 } from "@/features/venues/slot-selection";
+import { useLocaleContext } from "@/features/i18n/locale-context";
+import { useVenuePriceLabels } from "@/features/i18n/use-venue-price-labels";
+
+function usePricingModelLabel() {
+  const t = useTranslations("venues");
+  return (model: PricingModel) => {
+    switch (model) {
+      case "HOURLY":
+        return t("modelHourly");
+      case "NAMED_SLOTS":
+        return t("modelNamedSlots");
+      case "DAILY_BLOCK":
+        return t("modelDailyBlock");
+      case "FLAT_RATE":
+        return t("modelFlatRate");
+      default:
+        return model;
+    }
+  };
+}
+
+function useUnavailabilityMessage() {
+  const t = useTranslations("venues");
+  return (reason?: UnavailabilityReason) => {
+    switch (reason) {
+      case "BLOCKED":
+        return t("unavailBlocked");
+      case "CLOSED":
+        return t("unavailClosed");
+      case "FULLY_BOOKED":
+        return t("unavailFullyBooked");
+      case "OUT_OF_WINDOW":
+        return t("unavailOutOfWindow");
+      default:
+        return t("unavailDefault");
+    }
+  };
+}
 
 function VenueDetailSkeleton() {
   return (
@@ -169,6 +205,10 @@ export default function VenueDetailPage({
 }) {
   const { id } = use(params);
   const t = useTranslations("venues");
+  const { locale } = useLocaleContext();
+  const priceLabels = useVenuePriceLabels();
+  const pricingModelLabel = usePricingModelLabel();
+  const unavailabilityMessage = useUnavailabilityMessage();
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedSlots, setSelectedSlots] = useState<AvailabilitySlot[]>([]);
@@ -193,7 +233,7 @@ export default function VenueDetailPage({
   }, [t]);
 
   const { data: venue, isLoading, isError } = useQuery({
-    queryKey: venueKeys.publicDetail(id),
+    queryKey: [...venueKeys.publicDetail(id), locale],
     queryFn: () => getPublicVenue(id),
   });
 
@@ -215,8 +255,8 @@ export default function VenueDetailPage({
   });
 
   const priceInfo = useMemo(
-    () => (venue ? getVenueDisplayPrice(venue) : null),
-    [venue],
+    () => (venue ? getVenueDisplayPrice(venue, priceLabels) : null),
+    [venue, priceLabels],
   );
 
   const isDailyPricing = dayAvailability?.modelType === "DAILY_BLOCK";
@@ -470,7 +510,7 @@ export default function VenueDetailPage({
                 </h2>
                 <ul className="flex flex-wrap gap-3">
                   {venue.amenities!.map((a) => {
-                    const priceInfo = getVenueAmenityPriceInfo(a);
+                    const priceInfo = getVenueAmenityPriceInfo(a, priceLabels);
                     return (
                       <li
                         key={a.id}

@@ -29,22 +29,9 @@ import { DisplayPrice } from '@/components/currency/DisplayPrice'
 import { toastApiError } from '@/lib/toasts'
 import { cn } from '@/lib/utils'
 import { dashboardSurfaceClass } from '@/components/dashboard/dashboard-ui'
+import { useLocaleContext } from '@/features/i18n/locale-context'
+import { formatLocalizedDateTime } from '@/lib/date-locale'
 import React from 'react'
-
-function formatEventDateTime(iso: string) {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const datePart = d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  })
-  const timePart = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-  return `${datePart} • ${timePart}`
-}
 
 function formatLocation(order: {
   venueName: string | null
@@ -71,6 +58,7 @@ export default function ViewTicketContent() {
   const searchParams = useSearchParams()
   const t = useTranslations('viewTicket')
   const tDashboard = useTranslations('userDashboard')
+  const { locale } = useLocaleContext()
   const { user, isAuthenticated, isReady } = useAuth()
   const queryClient = useQueryClient()
   const orderGroupId = searchParams.get('orderGroupId')
@@ -203,7 +191,7 @@ export default function ViewTicketContent() {
             <div>
               <p className="font-medium">{t('eventDate')}</p>
               <p className="text-muted-foreground">
-                {formatEventDateTime(order.eventStartDateTime)}
+                {formatLocalizedDateTime(order.eventStartDateTime, locale)}
               </p>
             </div>
           </div>
@@ -212,7 +200,7 @@ export default function ViewTicketContent() {
             <Ticket className="text-pink-500 shrink-0" />
             <div>
               <p className="font-medium">{t('tickets')}</p>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground" dir="auto">
                 {ticketTypesSummary(order.items)}
               </p>
             </div>
@@ -256,7 +244,7 @@ export default function ViewTicketContent() {
           <div>
             <p className="text-muted-foreground">{t('orderDate')}</p>
             <p className="font-medium">
-              {formatEventDateTime(order.orderDate)}
+              {formatLocalizedDateTime(order.orderDate, locale)}
             </p>
           </div>
 

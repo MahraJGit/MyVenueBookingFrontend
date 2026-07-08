@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useLocaleContext } from "@/features/i18n/locale-context";
+import { getDateFnsLocale } from "@/lib/date-locale";
 import {
   getConversation,
   listConversations,
@@ -66,6 +68,8 @@ function detailToSummary(detail: ConversationDetail): ConversationSummary {
 
 export function ChatInbox({ basePath, context }: ChatInboxProps) {
   const t = useTranslations("chat");
+  const { locale } = useLocaleContext();
+  const dateFnsLocale = getDateFnsLocale(locale);
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -249,7 +253,9 @@ export function ChatInbox({ basePath, context }: ChatInboxProps) {
     <div className="grid h-[min(70vh,calc(100dvh-11rem))] min-h-[420px] gap-4 overflow-hidden lg:grid-cols-[320px_1fr]">
       <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
         <div className="shrink-0 border-b p-4">
-          <h2 className="font-semibold">{t("inbox")}</h2>
+          <h2 className="font-semibold" dir="auto">
+            {t("inbox")}
+          </h2>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
@@ -279,18 +285,20 @@ export function ChatInbox({ basePath, context }: ChatInboxProps) {
         {!selectedId ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center text-muted-foreground">
             <MessageCircle className="h-10 w-10 opacity-40" />
-            <p>{t("selectConversation")}</p>
+            <p dir="auto">{t("selectConversation")}</p>
           </div>
         ) : (
           <>
             <div className="shrink-0 border-b p-4">
-              <h3 className="font-semibold">
+              <h3 className="font-semibold" dir="auto">
                 {selected
                   ? getConversationTitle(selected, viewerRole, t)
                   : t("conversation")}
               </h3>
               {selectedTypeLabel ? (
-                <p className="text-xs text-muted-foreground">{selectedTypeLabel}</p>
+                <p className="text-xs text-muted-foreground" dir="auto">
+                  {selectedTypeLabel}
+                </p>
               ) : null}
             </div>
 
@@ -324,7 +332,7 @@ export function ChatInbox({ basePath, context }: ChatInboxProps) {
                   {t("messagesError")}
                 </p>
               ) : messages.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
+                <p className="py-8 text-center text-sm text-muted-foreground" dir="auto">
                   {t("noMessages")}
                 </p>
               ) : (
@@ -350,7 +358,9 @@ export function ChatInbox({ basePath, context }: ChatInboxProps) {
                           {message.content}
                         </p>
                         <p className="mt-1 text-[10px] opacity-70">
-                          {format(new Date(message.createdAt), "MMM d, h:mm a")}
+                          {format(new Date(message.createdAt), "MMM d, h:mm a", {
+                            locale: dateFnsLocale,
+                          })}
                         </p>
                       </div>
                     </div>
@@ -366,6 +376,7 @@ export function ChatInbox({ basePath, context }: ChatInboxProps) {
                 placeholder={t("messagePlaceholder")}
                 maxLength={2000}
                 disabled={sendMutation.isPending || messagesQuery.isError}
+                dir="auto"
               />
               <Button
                 type="submit"
@@ -409,7 +420,9 @@ function ConversationRow({
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-medium">{displayTitle}</span>
+        <span className="truncate text-sm font-medium" dir="auto">
+          {displayTitle}
+        </span>
         {conversation.unreadCount > 0 ? (
           <Badge variant="default" className="shrink-0">
             {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
@@ -417,7 +430,9 @@ function ConversationRow({
         ) : null}
       </div>
       {preview ? (
-        <span className="truncate text-xs text-muted-foreground">{preview}</span>
+        <span className="truncate text-xs text-muted-foreground" dir="auto">
+          {preview}
+        </span>
       ) : null}
     </button>
   );

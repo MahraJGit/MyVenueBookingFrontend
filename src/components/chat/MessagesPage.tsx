@@ -17,7 +17,10 @@ function MessagesPageContent({
   const t = useTranslations("chat");
   return (
     <DashboardPageShell>
-      <DashboardPageHeader title={t("title")} description={t("subtitle")} />
+      <DashboardPageHeader
+        title={<span dir="auto">{t("title")}</span>}
+        description={<span dir="auto">{t("subtitle")}</span>}
+      />
       <ChatInbox basePath={basePath} context={context} />
     </DashboardPageShell>
   );

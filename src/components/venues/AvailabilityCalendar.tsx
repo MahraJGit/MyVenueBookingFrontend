@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import type { MonthAvailabilityDay } from "@/features/venues/types";
 import { cn } from "@/lib/utils";
+import { useLocaleContext } from "@/features/i18n/locale-context";
+import { getDateFnsLocale } from "@/lib/date-locale";
 
 type AvailabilityCalendarProps = {
   month: Date;
@@ -78,6 +80,8 @@ export function AvailabilityCalendar({
 }: AvailabilityCalendarProps) {
   const t = useTranslations("venues");
   const tCommon = useTranslations("common");
+  const { locale } = useLocaleContext();
+  const dateFnsLocale = getDateFnsLocale(locale);
   const today = useMemo(() => startOfDay(disabledBefore), [disabledBefore]);
 
   const availabilityMap = useMemo(() => {
@@ -126,6 +130,7 @@ export function AvailabilityCalendar({
         disabled={disabledDays}
         showOutsideDays
         fixedWeeks
+        locale={dateFnsLocale}
         components={{ DayButton: VenueDayButton }}
         className="w-full max-w-full min-w-0 bg-transparent p-0 [--cell-size:clamp(1.55rem,7.5vw,2rem)] sm:[--cell-size:clamp(1.65rem,6.5vw,2.05rem)]"
         classNames={{

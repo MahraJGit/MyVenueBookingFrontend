@@ -33,11 +33,13 @@ import {
 import { EventOrganizerSection } from "@/components/events/EventOrganizerSection";
 import { VendorReviewsSection } from "@/components/reviews/VendorReviewsSection";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLocaleContext } from "@/features/i18n/locale-context";
+import { getIntlLocale } from "@/i18n/locales";
 
-function formatTime(iso: string): string {
+function formatTime(iso: string, locale: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("en-US", {
+  return d.toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
@@ -90,6 +92,8 @@ export default function EventDetailPage() {
   const t = useTranslations("events");
   const tTickets = useTranslations("tickets");
   const tCommon = useTranslations("common");
+  const { locale } = useLocaleContext();
+  const intlLocale = getIntlLocale(locale);
   const { slug } = useParams<{ slug: string }>();
   const pathname = usePathname();
   const router = useRouter();
@@ -100,7 +104,7 @@ export default function EventDetailPage() {
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
 
   const { data: event, isLoading, isError, error } = useQuery({
-    queryKey: ["public-event", slug],
+    queryKey: ["public-event", slug, locale],
     queryFn: () => getPublicEventBySlug(slug),
     enabled: Boolean(slug),
   });
@@ -186,15 +190,15 @@ export default function EventDetailPage() {
           <div className="flex w-full max-w-3xl flex-col items-center justify-center gap-2 text-xs text-zinc-300 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3 sm:text-sm">
             <span className="flex items-center gap-2">
               <CalendarDays size={16} className="text-primary" />
-              {formatEventDate(event.startDateTime)}
+              {formatEventDate(event.startDateTime, intlLocale)}
             </span>
             <span className="flex items-center gap-2">
               <MapPin size={16} className="shrink-0 text-primary" />
-              <span className="line-clamp-1">{event.venueName || event.city}</span>
+              <span className="line-clamp-1" dir="auto">{event.venueName || event.city}</span>
             </span>
             <span className="flex items-center gap-2">
               <Clock size={16} className="text-primary" />
-              {formatTime(event.startDateTime)} - {formatTime(event.endDateTime)}
+              {formatTime(event.startDateTime, intlLocale)} - {formatTime(event.endDateTime, intlLocale)}
             </span>
             {event.category && (
               <span className="flex items-center gap-2">
@@ -216,7 +220,7 @@ export default function EventDetailPage() {
                   <div className="relative h-[120px] md:h-[150px] rounded-xl overflow-hidden">
                     <Image
                       src={img}
-                      alt={`Gallery ${i + 1}`}
+                      alt={t("galleryImageAlt", { index: i + 1 })}
                       fill
                       className="object-cover"
                     />
@@ -385,10 +389,10 @@ export default function EventDetailPage() {
                   {(ticketType.salesStart || ticketType.salesEnd) && (
                     <div className="text-xs text-zinc-500 space-y-1">
                       {ticketType.salesStart ? (
-                        <p>{t("saleStartsAt", { date: formatEventDateTime(ticketType.salesStart) })}</p>
+                        <p>{t("saleStartsAt", { date: formatEventDateTime(ticketType.salesStart, intlLocale) })}</p>
                       ) : null}
                       {ticketType.salesEnd ? (
-                        <p>{t("saleEndsAt", { date: formatEventDateTime(ticketType.salesEnd) })}</p>
+                        <p>{t("saleEndsAt", { date: formatEventDateTime(ticketType.salesEnd, intlLocale) })}</p>
                       ) : null}
                     </div>
                   )}
@@ -409,7 +413,7 @@ export default function EventDetailPage() {
               {canBuyTickets
                 ? tTickets("selectTicketsPrompt")
                 : salePhase === "not_started" && earliestSalesStart
-                  ? t("saleStartsAt", { date: formatEventDateTime(earliestSalesStart) })
+                  ? t("saleStartsAt", { date: formatEventDateTime(earliestSalesStart, intlLocale) })
                   : t(
                       salePhase === "not_started"
                         ? "saleNotStarted"

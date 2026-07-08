@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCurrency, useDisplayPrice } from "@/features/currency/currency-context";
 import { cn } from "@/lib/utils";
 
@@ -20,19 +21,23 @@ export function CheckoutPrice({
   showDisclaimer = true,
   chargeLabel = "venue",
 }: CheckoutPriceProps) {
+  const t = useTranslations("currency");
   const { formatted, chargeFormatted, isConverted } = useDisplayPrice(amount, currency);
-  const vendorLabel = chargeLabel === "event" ? "organizer" : "venue";
+  const sourceKey = chargeLabel === "event" ? "chargeSourceOrganizer" : "chargeSourceVenue";
 
   return (
     <div className={className}>
       <p className={cn("text-xl font-bold text-primary", amountClassName)}>{formatted}</p>
       {showDisclaimer && isConverted ? (
         <p className="mt-1 text-xs text-muted-foreground">
-          You will be charged {chargeFormatted}. Exchange rates are approximate and may vary.
+          {t("chargeDisclaimerConverted", { amount: chargeFormatted })}
         </p>
       ) : showDisclaimer ? (
         <p className="mt-1 text-xs text-muted-foreground">
-          Payment is processed in the {vendorLabel}&apos;s selected currency ({currency}).
+          {t("chargeDisclaimerNative", {
+            source: t(sourceKey),
+            currency,
+          })}
         </p>
       ) : null}
     </div>
@@ -46,14 +51,21 @@ export function CurrencyBrowseNotice({
   className?: string;
   chargeLabel?: "vendor" | "event";
 }) {
+  const t = useTranslations("currency");
   const { displayCurrency, ratesDate } = useCurrency();
-  const sourceLabel = chargeLabel === "event" ? "organizer" : "vendor";
+  const sourceKey =
+    chargeLabel === "event" ? "chargeSourceOrganizer" : "chargeSourceVendor";
+  const ratesDateSuffix = ratesDate
+    ? t("browseNoticeRatesDate", { date: ratesDate })
+    : "";
 
   return (
-    <p className={cn("text-xs text-muted-foreground", className)}>
-      Prices shown in {displayCurrency} use approximate exchange rates
-      {ratesDate ? ` (${ratesDate})` : ""}. You will be charged in the {sourceLabel}&apos;s
-      currency.
+    <p className={cn("text-xs text-muted-foreground", className)} dir="auto">
+      {t("browseNotice", {
+        currency: displayCurrency,
+        ratesDate: ratesDateSuffix,
+        source: t(sourceKey),
+      })}
     </p>
   );
 }

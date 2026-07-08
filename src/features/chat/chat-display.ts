@@ -3,10 +3,25 @@ type ConversationLike = {
   title: string | null;
 };
 
+type ChatTitleKey =
+  | "conversation"
+  | "adminSupportTitle"
+  | "unknownVendor"
+  | "bookingTitle"
+  | "ticketsTitle"
+  | "supportTitle";
+
+type ChatTypeKey =
+  | "conversation"
+  | "typeBooking"
+  | "typeTicket"
+  | "typeSupport"
+  | "typeAdminSupport";
+
 export function getConversationTitle(
   conversation: ConversationLike,
   viewerRole: string | undefined,
-  t: (key: "conversation" | "adminSupportTitle" | "unknownVendor") => string,
+  t: (key: ChatTitleKey, values?: Record<string, string>) => string,
 ): string {
   if (conversation.type === "VENDOR_SUPPORT") {
     if (viewerRole === "VENDOR") {
@@ -19,13 +34,31 @@ export function getConversationTitle(
     }
   }
 
-  return conversation.title ?? t("conversation");
+  const raw = conversation.title?.trim();
+  if (!raw) return t("conversation");
+
+  const bookingMatch = raw.match(/^Booking:\s*(.+)$/i);
+  if (bookingMatch?.[1]) {
+    return t("bookingTitle", { name: bookingMatch[1].trim() });
+  }
+
+  const ticketsMatch = raw.match(/^Tickets:\s*(.+)$/i);
+  if (ticketsMatch?.[1]) {
+    return t("ticketsTitle", { name: ticketsMatch[1].trim() });
+  }
+
+  const supportMatch = raw.match(/^Support:\s*(.+)$/i);
+  if (supportMatch?.[1]) {
+    return t("supportTitle", { name: supportMatch[1].trim() });
+  }
+
+  return raw;
 }
 
 export function getConversationTypeLabel(
   type: string,
   viewerRole: string | undefined,
-  t: (key: "conversation" | "typeBooking" | "typeTicket" | "typeSupport" | "typeAdminSupport") => string,
+  t: (key: ChatTypeKey) => string,
 ): string | null {
   if (type === "BOOKING") return t("typeBooking");
   if (type === "TICKET_ORDER") return t("typeTicket");

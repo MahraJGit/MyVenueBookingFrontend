@@ -10,6 +10,7 @@ import type { Booking, BookingStatus } from "@/features/bookings/types";
 import { formatInVenueTimezone } from "@/features/venues/timezone";
 import { bookingStatusBadgeClass } from "@/components/bookings/user-booking-utils";
 import { BookingTotalPrice } from "@/components/currency/BookingTotalPrice";
+import { useLocaleContext } from "@/features/i18n/locale-context";
 
 type VendorBookingsListProps = {
   bookings: Booking[];
@@ -58,6 +59,7 @@ function VendorBookingCard({
   onSelect: () => void;
 }) {
   const t = useTranslations("booking");
+  const { locale } = useLocaleContext();
   const bookingStatusLabel = useBookingStatusLabel();
   const tz = booking.venue.timezone;
   const buyerName = booking.buyer
@@ -120,7 +122,7 @@ function VendorBookingCard({
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <CalendarDays className="h-3.5 w-3.5 text-primary" />
-              {formatInVenueTimezone(booking.startTime, tz)}
+              {formatInVenueTimezone(booking.startTime, tz, locale)}
             </span>
             <BookingTotalPrice booking={booking} className="font-medium text-foreground" />
           </div>
@@ -128,7 +130,7 @@ function VendorBookingCard({
           <div className="mt-3 flex items-center justify-between gap-2">
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              {formatInVenueTimezone(booking.endTime, tz)}
+              {formatInVenueTimezone(booking.endTime, tz, locale)}
             </span>
             <span className="inline-flex items-center gap-0.5 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
               {t("viewDetails")}

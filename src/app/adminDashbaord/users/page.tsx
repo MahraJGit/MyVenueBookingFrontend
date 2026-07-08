@@ -6,6 +6,8 @@ import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { useLocaleContext } from "@/features/i18n/locale-context";
+import { getDateFnsLocale } from "@/lib/date-locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -88,6 +90,8 @@ export default function UsersPage() {
   const t = useTranslations("adminUsers");
   const tCommon = useTranslations("common");
   const tListing = useTranslations("listing");
+  const { locale } = useLocaleContext();
+  const dateFnsLocale = getDateFnsLocale(locale);
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
 
@@ -355,7 +359,9 @@ export default function UsersPage() {
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground">
                         {user.createdAt
-                          ? format(new Date(user.createdAt), "MMM d, yyyy")
+                          ? format(new Date(user.createdAt), "MMM d, yyyy", {
+                              locale: dateFnsLocale,
+                            })
                           : "—"}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right">

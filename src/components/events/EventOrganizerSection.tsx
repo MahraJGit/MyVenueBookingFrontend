@@ -8,7 +8,13 @@ type EventOrganizerSectionProps = {
   vendor: PublicVendorProfile;
 };
 
-function formatBusinessType(value: string): string {
+function formatBusinessType(
+  value: string,
+  t: (key: "businessTypeIndividual" | "businessTypeCompany" | "businessTypePartnership") => string,
+): string {
+  if (value === "INDIVIDUAL") return t("businessTypeIndividual");
+  if (value === "COMPANY") return t("businessTypeCompany");
+  if (value === "PARTNERSHIP") return t("businessTypePartnership");
   return value
     .replace(/_/g, " ")
     .toLowerCase()
@@ -29,11 +35,11 @@ export function EventOrganizerSection({ vendor }: EventOrganizerSectionProps) {
                 <Building2 size={22} className="text-primary" />
               </div>
               <div className="min-w-0">
-                <h3 className="break-words text-lg font-semibold text-white">
+                <h3 className="break-words text-lg font-semibold text-white" dir="auto">
                   {vendor.vendorName}
                 </h3>
                 <p className="text-sm text-zinc-400">
-                  {formatBusinessType(vendor.businessType)}
+                  {formatBusinessType(vendor.businessType, t)}
                 </p>
               </div>
             </div>

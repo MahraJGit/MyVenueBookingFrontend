@@ -52,6 +52,8 @@ import { myTicketOrdersQueryKey } from '@/features/auth/auth-cache'
 import { useAuth } from '@/features/auth/auth-context'
 import { VendorReviewDialog } from '@/components/reviews/VendorReviewDialog'
 import { toastApiError } from '@/lib/toasts'
+import { useLocaleContext } from '@/features/i18n/locale-context'
+import { formatLocalizedDateTime } from '@/lib/date-locale'
 
 type SortOption = 'newest' | 'oldest' | 'amount-high' | 'amount-low'
 
@@ -61,36 +63,6 @@ type ReviewTarget = {
   eventId: string
   eventName: string
   vendorId: string
-}
-
-function formatOrderDateTime(iso: string) {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const datePart = d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  })
-  const timePart = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-  return `${datePart} · ${timePart}`
-}
-
-function formatEventDateTime(iso: string) {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const datePart = d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  })
-  const timePart = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-  return `${datePart} · ${timePart}`
 }
 
 function sortOrders(orders: MyTicketOrder[], sort: SortOption) {
@@ -116,6 +88,7 @@ const Tickets = () => {
   const t = useTranslations('userDashboard')
   const tCommon = useTranslations('common')
   const tNav = useTranslations('nav')
+  const { locale } = useLocaleContext()
   const { user, isAuthenticated, isReady } = useAuth()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<TicketOrderTabValue>('upcoming')
@@ -280,17 +253,17 @@ const Tickets = () => {
               ) : (
                 filteredTickets.map((ticket) => (
                   <TableRow key={ticket.orderGroupId} className="border-border">
-                    <TableCell className="font-medium text-foreground">
+                    <TableCell className="font-medium text-foreground" dir="auto">
                       {ticket.eventName}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {ticket.orderCode}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {formatOrderDateTime(ticket.orderDate)}
+                      {formatLocalizedDateTime(ticket.orderDate, locale)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {formatEventDateTime(ticket.eventStartDateTime)}
+                      {formatLocalizedDateTime(ticket.eventStartDateTime, locale)}
                     </TableCell>
                     <TableCell className="text-foreground">
                       <DisplayPrice amount={ticket.totalAmount} currency={ticket.currency} />

@@ -41,6 +41,7 @@ import { decimalToNumber } from "@/features/venues/utils";
 import { CheckoutPrice } from "@/components/currency/CheckoutPrice";
 import { BookingLineItems } from "@/components/bookings/BookingLineItems";
 import { useDisplayPrice } from "@/features/currency/currency-context";
+import { useLocaleContext } from "@/features/i18n/locale-context";
 import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
 
@@ -69,6 +70,7 @@ export default function VenueBookingCheckoutPage({
   const tUserDashboard = useTranslations("userDashboard");
   const tCommon = useTranslations("common");
   const { user, isAuthenticated, isReady } = useAuth();
+  const { locale } = useLocaleContext();
 
   const { data: booking, isLoading, refetch } = useQuery({
     queryKey: bookingKeys.detail(user?.id, bookingId),
@@ -239,10 +241,10 @@ export default function VenueBookingCheckoutPage({
                   <div className="flex items-start gap-2 text-sm text-zinc-300">
                     <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <div>
-                      <p>{formatInVenueTimezone(booking.startTime, tz)}</p>
+                      <p>{formatInVenueTimezone(booking.startTime, tz, locale)}</p>
                       <p className="text-muted-foreground">
                         {tVenueCheckout("toTime", {
-                          time: formatInVenueTimezone(booking.endTime, tz),
+                          time: formatInVenueTimezone(booking.endTime, tz, locale),
                         })}
                       </p>
                     </div>
