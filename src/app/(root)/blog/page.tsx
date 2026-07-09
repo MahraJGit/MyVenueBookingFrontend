@@ -179,7 +179,7 @@ const BlogPage = () => {
             <div className="flex w-full flex-col items-center justify-between gap-4 sm:flex-row">
               <button
                 type="button"
-                className="flex cursor-pointer items-center gap-1 text-sm text-white transition hover:text-primary sm:text-base"
+                className="flex cursor-pointer items-center gap-1 rounded-md border border-transparent px-2.5 py-1.5 text-sm text-white transition hover:border-primary hover:text-primary sm:text-base"
               >
                 <PrevIcon size={16} /> {t("previous")}
               </button>
@@ -187,7 +187,7 @@ const BlogPage = () => {
               <div className="flex flex-wrap justify-center gap-2">
                 <button
                   type="button"
-                  className="cursor-pointer px-3 py-1.5 text-sm text-white transition hover:text-primary sm:px-4 sm:py-2"
+                  className="cursor-pointer rounded-md border border-transparent px-3 py-1.5 text-sm text-white transition hover:border-primary hover:text-primary sm:px-4 sm:py-2"
                 >
                   1
                 </button>
@@ -199,13 +199,13 @@ const BlogPage = () => {
                 </button>
                 <button
                   type="button"
-                  className="cursor-pointer px-3 py-1.5 text-sm text-white transition hover:text-primary sm:px-4 sm:py-2"
+                  className="cursor-pointer rounded-md border border-transparent px-3 py-1.5 text-sm text-white transition hover:border-primary hover:text-primary sm:px-4 sm:py-2"
                 >
                   3
                 </button>
                 <button
                   type="button"
-                  className="cursor-pointer px-3 py-1.5 text-sm text-white transition hover:text-primary sm:px-4 sm:py-2"
+                  className="cursor-pointer rounded-md border border-transparent px-3 py-1.5 text-sm text-white transition hover:border-primary hover:text-primary sm:px-4 sm:py-2"
                 >
                   4
                 </button>
@@ -217,7 +217,7 @@ const BlogPage = () => {
                 </button>
                 <button
                   type="button"
-                  className="cursor-pointer px-3 py-1.5 text-sm text-white transition hover:text-primary sm:px-4 sm:py-2"
+                  className="cursor-pointer rounded-md border border-transparent px-3 py-1.5 text-sm text-white transition hover:border-primary hover:text-primary sm:px-4 sm:py-2"
                 >
                   5
                 </button>
@@ -225,7 +225,7 @@ const BlogPage = () => {
 
               <button
                 type="button"
-                className="flex cursor-pointer items-center gap-1 text-sm text-white transition hover:text-primary sm:text-base"
+                className="flex cursor-pointer items-center gap-1 rounded-md border border-transparent px-2.5 py-1.5 text-sm text-white transition hover:border-primary hover:text-primary sm:text-base"
               >
                 {t("next")} <NextIcon size={16} />
               </button>

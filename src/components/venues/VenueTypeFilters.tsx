@@ -49,7 +49,7 @@ export function VenueTypeFilters({
         ${
           isActive
             ? `border-[#D7498E] bg-[linear-gradient(180deg,rgba(215,73,142,0.3)_0%,rgba(27,27,27,0)_100%)] text-[#D580F2]`
-            : "border-[#B3B3B3] text-[#B3B3B3]"
+            : "border-[#B3B3B3] text-[#B3B3B3] hover:border-[#D7498E] hover:text-[#D580F2]"
         }`}
           >
             <span dir="auto">{type.name}</span>

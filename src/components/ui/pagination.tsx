@@ -59,7 +59,7 @@ function PaginationLink({
           variant: isActive ? "outline" : "ghost",
           size,
         }),
-        "min-w-9",
+        "min-w-9 border border-transparent hover:border-primary",
         className,
       )}
       {...props}
@@ -76,7 +76,10 @@ function PaginationPrevious({
     <PaginationLink
       aria-label="Go to previous page"
       size="default"
-      className={cn("gap-1 px-2.5 sm:pl-2.5", className)}
+      className={cn(
+        "gap-1 border border-transparent px-2.5 hover:border-primary sm:pl-2.5",
+        className,
+      )}
       {...props}
     >
       <ChevronLeftIcon className="size-4" />
@@ -94,7 +97,10 @@ function PaginationNext({
     <PaginationLink
       aria-label="Go to next page"
       size="default"
-      className={cn("gap-1 px-2.5 sm:pr-2.5", className)}
+      className={cn(
+        "gap-1 border border-transparent px-2.5 hover:border-primary sm:pr-2.5",
+        className,
+      )}
       {...props}
     >
       {children ? <span>{children}</span> : null}

@@ -211,7 +211,7 @@ export function EventsListingSection() {
                 className="w-full border-[#303030] bg-black text-white"
               />
               <Select value={sortValue} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-full border-[#303030] bg-black text-white">
+                <SelectTrigger className="w-full border-[#303030] bg-black text-white hover:border-primary dark:hover:border-primary dark:hover:bg-input/30">
                   <SelectValue placeholder={labels.sortBy} />
                 </SelectTrigger>
                 <SelectContent>
@@ -292,7 +292,7 @@ export function EventsListingSection() {
               <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-2">
                 <Button
                   variant="outline"
-                  className="border-[#303030] sm:min-w-[7rem]"
+                  className="border-[#303030] hover:border-primary hover:text-primary dark:hover:border-primary dark:hover:bg-transparent sm:min-w-[7rem]"
                   disabled={page <= 1 || isFetching}
                   onClick={() => {
                     pushParams({ page: page <= 2 ? undefined : String(page - 1) });
@@ -307,7 +307,7 @@ export function EventsListingSection() {
                 </span>
                 <Button
                   variant="outline"
-                  className="border-[#303030] sm:min-w-[7rem]"
+                  className="border-[#303030] hover:border-primary hover:text-primary dark:hover:border-primary dark:hover:bg-transparent sm:min-w-[7rem]"
                   disabled={page >= totalPages || isFetching}
                   onClick={() => {
                     pushParams({ page: String(page + 1) });

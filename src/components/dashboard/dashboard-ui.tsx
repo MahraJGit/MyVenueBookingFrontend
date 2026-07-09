@@ -224,7 +224,7 @@ export function DashboardPagination({
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
-              className={dashboardOutlineButtonClass}
+              className={cn(dashboardOutlineButtonClass, 'hover:border-primary')}
               disabled={page <= 1 || isLoading}
               onClick={() => onPageChange(Math.max(1, page - 1))}
             >
@@ -242,6 +242,7 @@ export function DashboardPagination({
                 <PaginationLink
                   className={cn(
                     dashboardOutlineButtonClass,
+                    'hover:border-primary',
                     item === page && 'border-primary/50 bg-[#151515] text-white',
                   )}
                   isActive={item === page}
@@ -256,7 +257,7 @@ export function DashboardPagination({
 
           <PaginationItem>
             <PaginationNext
-              className={dashboardOutlineButtonClass}
+              className={cn(dashboardOutlineButtonClass, 'hover:border-primary')}
               disabled={page >= totalPages || isLoading}
               onClick={() => onPageChange(Math.min(totalPages, page + 1))}
             >

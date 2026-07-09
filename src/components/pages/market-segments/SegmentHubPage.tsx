@@ -315,7 +315,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
             className="w-full border-[#303030] bg-black text-white sm:max-w-[160px]"
           />
           <Select value={sortValue} onValueChange={handleSortChange}>
-            <SelectTrigger className="w-full border-[#303030] bg-black text-white sm:w-[180px]">
+            <SelectTrigger className="w-full border-[#303030] bg-black text-white hover:border-primary dark:hover:border-primary dark:hover:bg-input/30 sm:w-[180px]">
               <SelectValue placeholder={labels.sortBy} />
             </SelectTrigger>
             <SelectContent>
@@ -426,7 +426,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
           <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-2">
             <Button
               variant="outline"
-              className="border-[#303030] sm:min-w-[7rem]"
+              className="border-[#303030] hover:border-primary hover:text-primary dark:hover:border-primary dark:hover:bg-transparent sm:min-w-[7rem]"
               disabled={page <= 1 || isFetching}
               onClick={() => {
                 pushParams({ page: page <= 2 ? undefined : String(page - 1) });
@@ -446,7 +446,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
             </span>
             <Button
               variant="outline"
-              className="border-[#303030] sm:min-w-[7rem]"
+              className="border-[#303030] hover:border-primary hover:text-primary dark:hover:border-primary dark:hover:bg-transparent sm:min-w-[7rem]"
               disabled={page >= totalPages || isFetching}
               onClick={() => {
                 pushParams({ page: String(page + 1) });
