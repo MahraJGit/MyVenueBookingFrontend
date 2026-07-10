@@ -3,7 +3,7 @@
 import { Copy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { TimePicker } from "@/components/ui/date-time-picker";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -91,21 +91,19 @@ export function VenueScheduleEditor({ schedules, onChange }: VenueScheduleEditor
                   />
                 </TableCell>
                 <TableCell>
-                  <Input
-                    type="time"
+                  <TimePicker
                     value={row.openTime}
                     disabled={!row.isOpen}
-                    onChange={(e) => updateRow(idx, { openTime: e.target.value })}
-                    className="bg-input/50 w-34 min-w-[8rem]"
+                    onChange={(openTime) => updateRow(idx, { openTime })}
+                    triggerClassName="bg-input/50 h-9 w-full min-w-[8rem]"
                   />
                 </TableCell>
                 <TableCell>
-                  <Input
-                    type="time"
+                  <TimePicker
                     value={row.closeTime}
                     disabled={!row.isOpen}
-                    onChange={(e) => updateRow(idx, { closeTime: e.target.value })}
-                    className="bg-input/50 w-34 min-w-[8rem]"
+                    onChange={(closeTime) => updateRow(idx, { closeTime })}
+                    triggerClassName="bg-input/50 h-9 w-full min-w-[8rem]"
                   />
                 </TableCell>
               </TableRow>

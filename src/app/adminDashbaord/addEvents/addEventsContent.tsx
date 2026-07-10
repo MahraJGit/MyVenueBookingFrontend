@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
-import { CalendarIcon, ImagePlus, Loader2, Plus, Trash2 } from "lucide-react"
+import { ImagePlus, Loader2, Plus, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,9 +19,8 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { VenueGalleryUpload } from "@/components/venues/VenueGalleryUpload"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
     Select,
     SelectContent,
@@ -112,7 +111,8 @@ function toDatetimeLocalValue(d: Date) {
 
 function defaultSchedule() {
     const start = new Date()
-    start.setMinutes(0, 0, 0)
+    start.setDate(start.getDate() + 1)
+    start.setHours(18, 0, 0, 0)
     const end = new Date(start.getTime() + 3 * 60 * 60 * 1000)
     return { start: toDatetimeLocalValue(start), end: toDatetimeLocalValue(end) }
 }
@@ -123,13 +123,10 @@ function parseLocalDateTime(value: string): Date | null {
     return Number.isNaN(d.getTime()) ? null : d
 }
 
-function pad2(n: number) {
-    return String(n).padStart(2, "0")
-}
 
-function toTimeValue(date: Date | null) {
-    if (!date) return "12:00"
-    return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`
+function getLocalCalendarDateKey(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, "0")
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
 function validateEventAndTicketTiming(
@@ -139,34 +136,55 @@ function validateEventAndTicketTiming(
 ): TimingValidationResult {
     const start = parseLocalDateTime(startLocal)
     const end = parseLocalDateTime(endLocal)
-    const now = new Date()
+    const todayKey = getLocalCalendarDateKey(new Date())
     let eventStartError: string | null = null
     let eventEndError: string | null = null
 
     if (!start || !end) {
         if (!start) eventStartError = "Please select a valid start date/time."
         if (!end) eventEndError = "Please select a valid end date/time."
-    } else if (start <= now) {
-        eventStartError = "Event start date/time must be in the future."
-    } else if (end <= start) {
-        eventEndError = "End date must be after start date."
+    } else {
+        const startKey = getLocalCalendarDateKey(start)
+        if (startKey <= todayKey) {
+            eventStartError = "Event must start after today."
+        } else if (end <= start) {
+            eventEndError = "End date must be after start date."
+        }
     }
 
     const ticketTimeErrors: TicketTimeError[] = tickets.map(() => ({}))
-    if (start && end) {
+    if (start) {
         tickets.forEach((ticket, index) => {
             const salesStart = parseLocalDateTime(ticket.salesStart)
             const salesEnd = parseLocalDateTime(ticket.salesEnd)
 
-            if (salesStart && (salesStart < start || salesStart > end)) {
-                ticketTimeErrors[index].salesStart =
-                    "Sales start must be between event start and end."
+            if (salesStart) {
+                const salesStartKey = getLocalCalendarDateKey(salesStart)
+                if (salesStartKey < todayKey) {
+                    ticketTimeErrors[index].salesStart =
+                        "Sales start cannot be before today."
+                } else if (salesStart >= start) {
+                    ticketTimeErrors[index].salesStart =
+                        "Sales start must be before the event start."
+                }
             }
-            if (salesEnd && (salesEnd < start || salesEnd > end)) {
-                ticketTimeErrors[index].salesEnd =
-                    "Sales end must be between event start and end."
+            if (salesEnd) {
+                const salesEndKey = getLocalCalendarDateKey(salesEnd)
+                if (salesEndKey < todayKey) {
+                    ticketTimeErrors[index].salesEnd =
+                        "Sales end cannot be before today."
+                } else if (salesEnd >= start) {
+                    ticketTimeErrors[index].salesEnd =
+                        "Sales end must be before the event start."
+                }
             }
-            if (salesStart && salesEnd && salesEnd <= salesStart) {
+            if (
+                salesStart &&
+                salesEnd &&
+                !ticketTimeErrors[index].salesStart &&
+                !ticketTimeErrors[index].salesEnd &&
+                salesEnd <= salesStart
+            ) {
                 ticketTimeErrors[index].salesEnd =
                     "Sales end must be after sales start."
             }
@@ -196,13 +214,9 @@ export default function AddEventsContentPage() {
     const editId = searchParams.get("id")
     const queryClient = useQueryClient()
 
-    const prettyDateTime = React.useCallback(
-        (value: string) => {
-            const d = parseLocalDateTime(value)
-            if (!d) return t("pickDateTime")
-            return d.toLocaleString()
-        },
-        [t],
+    const formatPickerLabel = React.useCallback(
+        (date: Date) => date.toLocaleString(),
+        [],
     )
 
     const [eventName, setEventName] = React.useState("")
@@ -527,16 +541,12 @@ export default function AddEventsContentPage() {
                         <h1 className="text-xl font-bold text-white">
                             {editId ? t("editEventTitle") : t("createEventTitle")}
                         </h1>
-                        <p className="text-sm text-muted-foreground">
-                            {t("eventFormDesc")}
-                        </p>
                     </div>
                 </div>
 
                 <Card className="border-border bg-card">
                     <CardHeader>
                         <CardTitle>{t("basics")}</CardTitle>
-                        <CardDescription>{t("eventFormDesc")}</CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2 sm:col-span-2">
@@ -644,7 +654,9 @@ export default function AddEventsContentPage() {
                                 value={startLocal}
                                 onChange={setStartLocal}
                                 required
-                                prettyLabel={prettyDateTime(startLocal)}
+                                placeholder={t("pickDateTime")}
+                                formatLabel={formatPickerLabel}
+                                triggerClassName={inputClass}
                             />
                             {timingValidation.eventStartError ? (
                                 <p className="text-xs text-destructive">{timingValidation.eventStartError}</p>
@@ -656,7 +668,9 @@ export default function AddEventsContentPage() {
                                 value={endLocal}
                                 onChange={setEndLocal}
                                 required
-                                prettyLabel={prettyDateTime(endLocal)}
+                                placeholder={t("pickDateTime")}
+                                formatLabel={formatPickerLabel}
+                                triggerClassName={inputClass}
                             />
                             {timingValidation.eventEndError ? (
                                 <p className="text-xs text-destructive">{timingValidation.eventEndError}</p>
@@ -1097,7 +1111,9 @@ export default function AddEventsContentPage() {
                                                 ),
                                             )
                                         }
-                                        prettyLabel={prettyDateTime(ticket.salesStart)}
+                                        placeholder={t("pickDateTime")}
+                                        formatLabel={formatPickerLabel}
+                                        triggerClassName={inputClass}
                                     />
                                     {timingValidation.ticketTimeErrors[i]?.salesStart ? (
                                         <p className="text-xs text-destructive">
@@ -1116,7 +1132,9 @@ export default function AddEventsContentPage() {
                                                 ),
                                             )
                                         }
-                                        prettyLabel={prettyDateTime(ticket.salesEnd)}
+                                        placeholder={t("pickDateTime")}
+                                        formatLabel={formatPickerLabel}
+                                        triggerClassName={inputClass}
                                     />
                                     {timingValidation.ticketTimeErrors[i]?.salesEnd ? (
                                         <p className="text-xs text-destructive">
@@ -1134,78 +1152,5 @@ export default function AddEventsContentPage() {
             </form>
             </div>
         </DashboardPageShell>
-    )
-}
-
-function DateTimePicker({
-    value,
-    onChange,
-    required,
-    prettyLabel,
-}: {
-    value: string
-    onChange: (value: string) => void
-    required?: boolean
-    prettyLabel: string
-}) {
-    const tCommon = useTranslations("common")
-    const selected = parseLocalDateTime(value)
-
-    const onDateSelect = (date?: Date) => {
-        if (!date) return
-        const base = selected ?? new Date()
-        const next = new Date(date)
-        next.setHours(base.getHours(), base.getMinutes(), 0, 0)
-        onChange(toDatetimeLocalValue(next))
-    }
-
-    const onTimeChange = (time: string) => {
-        const [h, m] = time.split(":").map((v) => Number(v))
-        if (!Number.isFinite(h) || !Number.isFinite(m)) return
-        const base = selected ?? new Date()
-        base.setHours(h, m, 0, 0)
-        onChange(toDatetimeLocalValue(base))
-    }
-
-    return (
-        <div className="space-y-2">
-            <input
-                required={required}
-                value={value}
-                readOnly
-                className="sr-only"
-                tabIndex={-1}
-                aria-hidden
-            />
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full justify-start border-border text-left font-normal"
-                    >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {prettyLabel}
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto border-border bg-card p-2" align="start">
-                    <Calendar
-                        mode="single"
-                        selected={selected ?? undefined}
-                        onSelect={onDateSelect}
-                        className="rounded-md border border-border"
-                    />
-                    <div className="mt-2 border-t border-border pt-2">
-                        <Label className="mb-1 block text-xs text-muted-foreground">{tCommon("time")}</Label>
-                        <Input
-                            type="time"
-                            value={toTimeValue(selected)}
-                            onChange={(e) => onTimeChange(e.target.value)}
-                            className={inputClass}
-                        />
-                    </div>
-                </PopoverContent>
-            </Popover>
-        </div>
     )
 }

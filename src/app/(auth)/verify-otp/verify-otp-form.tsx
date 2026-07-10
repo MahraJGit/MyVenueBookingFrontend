@@ -17,8 +17,8 @@ import { resendOtp, verifyOtp } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/auth-context";
 import { resetAuthQueryCache } from "@/features/auth/auth-cache";
 import { postAuthBroadcast } from "@/features/auth/auth-broadcast";
-
-const RESEND_COOLDOWN_SECONDS = 30;
+import { clearSignupDraft } from "@/features/auth/signup-draft-storage";
+import { OTP_RESEND_COOLDOWN_SECONDS } from "@/features/auth/auth-constants";
 
 export function VerifyOtpForm() {
   const router = useRouter();
@@ -28,7 +28,7 @@ export function VerifyOtpForm() {
   const userIdParam = searchParams.get("userId");
   const redirect = searchParams.get("redirect") || "/";
   const channel = searchParams.get("channel");
-  const isEmailChannel = channel === "email";
+  const isEmailChannel = channel !== "phone";
 
   const t = useTranslations("auth");
   const tCommon = useTranslations("common");
@@ -48,7 +48,7 @@ export function VerifyOtpForm() {
       setCooldownSec(0);
       return;
     }
-    setCooldownSec(RESEND_COOLDOWN_SECONDS);
+    setCooldownSec(OTP_RESEND_COOLDOWN_SECONDS);
   }, [userIdParam]);
 
   useEffect(() => {
@@ -62,6 +62,7 @@ export function VerifyOtpForm() {
   const verifyMutation = useMutation({
     mutationFn: verifyOtp,
     onSuccess: (data) => {
+      clearSignupDraft();
       resetAuthQueryCache(queryClient);
       establishSession({
         accessToken: data.accessToken,
@@ -87,7 +88,7 @@ export function VerifyOtpForm() {
       toast.success(data.message || t("otpResent"));
       setOtp(["", "", "", "", "", ""]);
       setOtpInlineError("");
-      setCooldownSec(RESEND_COOLDOWN_SECONDS);
+      setCooldownSec(OTP_RESEND_COOLDOWN_SECONDS);
       requestAnimationFrame(() => {
         document.getElementById("otp-0")?.focus();
       });
@@ -308,7 +309,7 @@ export function VerifyOtpForm() {
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-4">
-          {t("wrongNumber")}{" "}
+          {isEmailChannel ? t("wrongEmail") : t("wrongNumber")}{" "}
           <Link
             href={`/signup${redirect !== "/" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
             className="text-pink-500 hover:underline"

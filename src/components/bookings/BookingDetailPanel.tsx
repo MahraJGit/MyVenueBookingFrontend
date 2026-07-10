@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -8,7 +8,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   CalendarDays,
-  CalendarIcon,
   CreditCard,
   ExternalLink,
   Loader2,
@@ -27,10 +26,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -98,35 +95,6 @@ function isValidDatetimeLocalInTimezone(value: string, timezone: string): boolea
   } catch {
     return false;
   }
-}
-
-function parseDatetimeLocalValue(value: string): Date | null {
-  if (!value) return null;
-  const [datePart, timePart] = value.split("T");
-  if (!datePart || !timePart) return null;
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hour, minute] = timePart.split(":").map(Number);
-  if (
-    !Number.isFinite(year) ||
-    !Number.isFinite(month) ||
-    !Number.isFinite(day) ||
-    !Number.isFinite(hour) ||
-    !Number.isFinite(minute)
-  ) {
-    return null;
-  }
-  return new Date(year, month - 1, day, hour, minute, 0, 0);
-}
-
-function toDatetimeLocalValue(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function toTimeValue(date: Date | null): string {
-  if (!date) return "12:00";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function DetailSkeleton({ variant }: { variant: "default" | "user" | "vendor" }) {
@@ -954,34 +922,6 @@ function RescheduleDialog({
 }) {
   const { locale } = useLocaleContext();
   const dateFnsLocale = getDateFnsLocale(locale);
-  const startInputRef = useRef<HTMLInputElement | null>(null);
-  const endInputRef = useRef<HTMLInputElement | null>(null);
-  const startSelected = parseDatetimeLocalValue(startLocal);
-  const endSelected = parseDatetimeLocalValue(endLocal);
-
-  const onDateSelect = (
-    date: Date | undefined,
-    current: Date | null,
-    onChange: (v: string) => void
-  ) => {
-    if (!date) return;
-    const base = current ?? new Date();
-    const next = new Date(date);
-    next.setHours(base.getHours(), base.getMinutes(), 0, 0);
-    onChange(toDatetimeLocalValue(next));
-  };
-
-  const onTimeChange = (
-    time: string,
-    current: Date | null,
-    onChange: (v: string) => void
-  ) => {
-    const [h, m] = time.split(":").map((v) => Number(v));
-    if (!Number.isFinite(h) || !Number.isFinite(m)) return;
-    const base = current ?? new Date();
-    base.setHours(h, m, 0, 0);
-    onChange(toDatetimeLocalValue(base));
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -995,97 +935,25 @@ function RescheduleDialog({
           </p>
           <div className="space-y-2">
             <Label htmlFor="reschedule-start">{t("newStartDateTime")}</Label>
-            <input
-              id="reschedule-start"
+            <DateTimePicker
               value={startLocal}
-              readOnly
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden
+              onChange={onStartLocalChange}
+              placeholder={t("newStartDateTime")}
+              formatLabel={(date) => format(date, "PPP p", { locale: dateFnsLocale })}
+              triggerClassName="w-full justify-start border-zinc-700 bg-zinc-950 text-left font-normal"
+              popoverClassName="z-[90] border-zinc-700 bg-zinc-900"
             />
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full justify-start border-zinc-700 bg-zinc-950 text-left font-normal"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startSelected
-                    ? format(startSelected, "PPP p", { locale: dateFnsLocale })
-                    : t("newStartDateTime")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="z-[90] w-auto border-zinc-700 bg-zinc-900 p-2"
-                align="start"
-              >
-                <Calendar
-                  mode="single"
-                  selected={startSelected ?? undefined}
-                  onSelect={(date) => onDateSelect(date, startSelected, onStartLocalChange)}
-                  className="rounded-md border border-zinc-700"
-                />
-                <div className="mt-2 border-t border-zinc-700 pt-2">
-                  <Label className="mb-1 block text-xs text-muted-foreground">{tCommon("time")}</Label>
-                  <Input
-                    ref={startInputRef}
-                    type="time"
-                    value={toTimeValue(startSelected)}
-                    onChange={(e) =>
-                      onTimeChange(e.target.value, startSelected, onStartLocalChange)
-                    }
-                    className="border-zinc-700 bg-zinc-950"
-                  />
-                </div>
-              </PopoverContent>
-            </Popover>
           </div>
           <div className="space-y-2">
             <Label htmlFor="reschedule-end">{t("newEndDateTime")}</Label>
-            <input
-              id="reschedule-end"
+            <DateTimePicker
               value={endLocal}
-              readOnly
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden
+              onChange={setEndLocal}
+              placeholder={t("newEndDateTime")}
+              formatLabel={(date) => format(date, "PPP p", { locale: dateFnsLocale })}
+              triggerClassName="w-full justify-start border-zinc-700 bg-zinc-950 text-left font-normal"
+              popoverClassName="z-[90] border-zinc-700 bg-zinc-900"
             />
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full justify-start border-zinc-700 bg-zinc-950 text-left font-normal"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endSelected
-                    ? format(endSelected, "PPP p", { locale: dateFnsLocale })
-                    : t("newEndDateTime")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="z-[90] w-auto border-zinc-700 bg-zinc-900 p-2"
-                align="start"
-              >
-                <Calendar
-                  mode="single"
-                  selected={endSelected ?? undefined}
-                  onSelect={(date) => onDateSelect(date, endSelected, setEndLocal)}
-                  className="rounded-md border border-zinc-700"
-                />
-                <div className="mt-2 border-t border-zinc-700 pt-2">
-                  <Label className="mb-1 block text-xs text-muted-foreground">{tCommon("time")}</Label>
-                  <Input
-                    ref={endInputRef}
-                    type="time"
-                    value={toTimeValue(endSelected)}
-                    onChange={(e) => onTimeChange(e.target.value, endSelected, setEndLocal)}
-                    className="border-zinc-700 bg-zinc-950"
-                  />
-                </div>
-              </PopoverContent>
-            </Popover>
           </div>
           <p className="text-xs text-muted-foreground">
             {t("rescheduleDurationHint")}

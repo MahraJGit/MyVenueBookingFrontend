@@ -315,7 +315,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
             className="w-full border-[#303030] bg-black text-white sm:max-w-[160px]"
           />
           <Select value={sortValue} onValueChange={handleSortChange}>
-            <SelectTrigger className="w-full border-[#303030] bg-black text-white hover:border-primary dark:hover:border-primary dark:hover:bg-input/30 sm:w-[180px]">
+            <SelectTrigger className="w-full border-[#303030] bg-black text-white hover:bg-black dark:hover:bg-black data-[state=open]:border-ring data-[state=open]:ring-ring/50 data-[state=open]:ring-[3px] sm:w-[180px]">
               <SelectValue placeholder={labels.sortBy} />
             </SelectTrigger>
             <SelectContent>

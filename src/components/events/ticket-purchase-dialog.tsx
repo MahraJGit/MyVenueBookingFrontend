@@ -27,6 +27,7 @@ import { toastApiError } from "@/lib/toasts";
 import { toast } from "sonner";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { CheckoutPrice } from "@/components/currency/CheckoutPrice";
+import { PlatformDisclaimer } from "@/components/legal/PlatformDisclaimer";
 import { useDisplayPrice, useCurrency } from "@/features/currency/currency-context";
 
 type TicketPurchaseDialogProps = {
@@ -316,6 +317,8 @@ export function TicketPurchaseDialog({
                   {tTicket("payWith", { card: defaultCardLabel })}
                 </p>
               ) : null}
+
+              <PlatformDisclaimer />
 
               <Button
                 className="w-full bg-pink-500 hover:bg-pink-600"

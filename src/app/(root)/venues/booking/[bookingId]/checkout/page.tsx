@@ -40,6 +40,7 @@ import { formatInVenueTimezone } from "@/features/venues/timezone";
 import { decimalToNumber } from "@/features/venues/utils";
 import { CheckoutPrice } from "@/components/currency/CheckoutPrice";
 import { BookingLineItems } from "@/components/bookings/BookingLineItems";
+import { PlatformDisclaimer } from "@/components/legal/PlatformDisclaimer";
 import { useDisplayPrice } from "@/features/currency/currency-context";
 import { useLocaleContext } from "@/features/i18n/locale-context";
 import { ApiError } from "@/lib/api/errors";
@@ -344,6 +345,7 @@ export default function VenueBookingCheckoutPage({
             </section>
 
             <div className="space-y-3 pt-2">
+              <PlatformDisclaimer />
               <Button
                 className="h-12 w-full bg-primary text-base font-semibold hover:bg-primary/90"
                 disabled={checkoutMut.isPending || !canPay}

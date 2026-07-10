@@ -45,9 +45,26 @@ function formatExpiry(month: number, year: number) {
   return `${mm} / ${yy}`;
 }
 
-function CardPreview({ method }: { method: SavedPaymentMethod | null }) {
+function CardPreview({
+  method,
+  isRefreshing,
+}: {
+  method: SavedPaymentMethod | null;
+  isRefreshing?: boolean;
+}) {
   const t = useTranslations("userDashboard");
   const tCommon = useTranslations("common");
+
+  if (isRefreshing && !method) {
+    return (
+      <div className="relative flex h-52 w-full items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-800/50 p-6 text-muted-foreground">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <Loader2 className="h-8 w-8 animate-spin opacity-60" />
+          <p className="text-sm">{t("addingCard")}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!method) {
     return (
@@ -92,6 +109,8 @@ export default function PaymentPage() {
   const tCommon = useTranslations("common");
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = React.useState(false);
+  const [formKey, setFormKey] = React.useState(0);
+  const [isAddingCard, setIsAddingCard] = React.useState(false);
   const stripeConfigured = Boolean(getStripePublishableKey());
 
   const { data: methods = [], isLoading, isError, refetch } = useQuery({
@@ -122,8 +141,20 @@ export default function PaymentPage() {
   });
 
   const handleCardAdded = () => {
+    setIsAddingCard(true);
     setAddOpen(false);
-    void queryClient.invalidateQueries({ queryKey: PAYMENT_METHODS_KEY });
+    void queryClient
+      .invalidateQueries({ queryKey: PAYMENT_METHODS_KEY })
+      .finally(() => {
+        setIsAddingCard(false);
+      });
+  };
+
+  const handleAddOpenChange = (open: boolean) => {
+    setAddOpen(open);
+    if (open) {
+      setFormKey((key) => key + 1);
+    }
   };
 
   if (!stripeConfigured) {
@@ -162,9 +193,16 @@ export default function PaymentPage() {
               </Button>
             </div>
           ) : methods.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("addCardHint")}
-            </p>
+            isAddingCard ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t("addingCard")}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t("addCardHint")}
+              </p>
+            )
           ) : (
             <ul className="space-y-3">
               {methods.map((method) => (
@@ -223,9 +261,12 @@ export default function PaymentPage() {
         </div>
 
         <div className="space-y-6">
-          <CardPreview method={defaultMethod} />
+          <CardPreview
+            method={defaultMethod}
+            isRefreshing={isLoading || isAddingCard}
+          />
 
-          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <Dialog open={addOpen} onOpenChange={handleAddOpenChange}>
             <DialogTrigger asChild>
               <Card
                 role="button"
@@ -246,6 +287,7 @@ export default function PaymentPage() {
               </DialogHeader>
               {addOpen ? (
                 <AddCardForm
+                  key={formKey}
                   onSuccess={handleCardAdded}
                   onCancel={() => setAddOpen(false)}
                 />

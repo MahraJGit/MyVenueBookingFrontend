@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TimePicker } from "@/components/ui/date-time-picker";
 import { NumberInput, parseOptionalNumericString } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1077,24 +1078,22 @@ export function VenueSetupWizard({
                 <>
                   <div className="space-y-2">
                     <Label>{t("customOpenTime")}</Label>
-                    <Input
-                      type="time"
+                    <TimePicker
                       value={blockForm.customOpenTime}
-                      onChange={(e) =>
-                        setBlockForm({ ...blockForm, customOpenTime: e.target.value })
+                      onChange={(customOpenTime) =>
+                        setBlockForm({ ...blockForm, customOpenTime })
                       }
-                      className={inputClass}
+                      triggerClassName={cn(inputClass, "h-9 w-full")}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>{t("customCloseTime")}</Label>
-                    <Input
-                      type="time"
+                    <TimePicker
                       value={blockForm.customCloseTime}
-                      onChange={(e) =>
-                        setBlockForm({ ...blockForm, customCloseTime: e.target.value })
+                      onChange={(customCloseTime) =>
+                        setBlockForm({ ...blockForm, customCloseTime })
                       }
-                      className={inputClass}
+                      triggerClassName={cn(inputClass, "h-9 w-full")}
                     />
                   </div>
                 </>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -23,6 +23,10 @@ import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 import { PasswordRequirements } from "@/components/auth/PasswordRequirements";
+import {
+  loadSignupDraft,
+  saveSignupDraft,
+} from "@/features/auth/signup-draft-storage";
 
 export default function SignupPage() {
     const router = useRouter();
@@ -53,13 +57,26 @@ export default function SignupPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+    useEffect(() => {
+        const draft = loadSignupDraft();
+        if (!draft) return;
+        setFormData({
+            firstName: draft.firstName,
+            lastName: draft.lastName,
+            phoneE164: draft.phoneE164,
+            email: draft.email,
+            password: draft.password,
+            confirmPassword: draft.confirmPassword,
+        });
+    }, []);
+
     const registerMutation = useMutation({
         mutationFn: registerAccount,
         onSuccess: (data) => {
             toast.success(data.message || t("registeredSuccess"));
             if (data.requireOtp && data.userId) {
                 router.push(
-                    `/verify-otp?userId=${encodeURIComponent(data.userId)}&redirect=${encodeURIComponent(redirect)}`,
+                    `/verify-otp?userId=${encodeURIComponent(data.userId)}&channel=email&redirect=${encodeURIComponent(redirect)}`,
                 );
                 return;
             }
@@ -118,6 +135,14 @@ export default function SignupPage() {
 
         try {
             const body = signupValuesToRegisterBody(parsed.data);
+            saveSignupDraft({
+                firstName: parsed.data.firstName,
+                lastName: parsed.data.lastName,
+                phoneE164: parsed.data.phoneE164 as Value | undefined,
+                email: parsed.data.email,
+                password: parsed.data.password,
+                confirmPassword: parsed.data.confirmPassword,
+            });
             registerMutation.mutate(body);
         } catch {
             setFieldErrors((prev) => ({

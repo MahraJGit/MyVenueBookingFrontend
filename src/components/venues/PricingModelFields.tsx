@@ -3,6 +3,7 @@
 import type { PricingModel, Currency } from "@/features/venues/types";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
+import { TimePicker } from "@/components/ui/date-time-picker";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import {
@@ -292,25 +293,23 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
                 }}
                 className={cn(inputClass, "sm:col-span-2")}
               />
-              <Input
-                type="time"
+              <TimePicker
                 value={String(slot.startTime ?? "")}
-                onChange={(e) => {
+                onChange={(startTime) => {
                   const next = [...slots];
-                  next[idx] = { ...next[idx], startTime: e.target.value };
+                  next[idx] = { ...next[idx], startTime };
                   setConfig("slots", next);
                 }}
-                className={inputClass}
+                triggerClassName={cn(inputClass, "h-9 w-full")}
               />
-              <Input
-                type="time"
+              <TimePicker
                 value={String(slot.endTime ?? "")}
-                onChange={(e) => {
+                onChange={(endTime) => {
                   const next = [...slots];
-                  next[idx] = { ...next[idx], endTime: e.target.value };
+                  next[idx] = { ...next[idx], endTime };
                   setConfig("slots", next);
                 }}
-                className={inputClass}
+                triggerClassName={cn(inputClass, "h-9 w-full")}
               />
               <div className="flex gap-2">
                 <NumberInput

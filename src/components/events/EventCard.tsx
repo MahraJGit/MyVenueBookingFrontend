@@ -75,27 +75,25 @@ export function EventCard({ event }: EventCardProps) {
               <EventSaleBadge phase={salePhase} />
             </div>
 
-            {event.category || tags.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {event.category ? (
-                  <span
-                    className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
-                    dir="auto"
-                  >
-                    {event.category}
-                  </span>
-                ) : null}
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-[#303030] bg-[#242424] px-2 py-0.5 text-[11px] text-[#B3B3B3]"
-                    dir="auto"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            ) : null}
+            <div className="flex h-6 min-h-6 flex-nowrap items-center gap-1.5 overflow-hidden">
+              {event.category ? (
+                <span
+                  className="max-w-[45%] shrink-0 truncate rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                  dir="auto"
+                >
+                  {event.category}
+                </span>
+              ) : null}
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="shrink-0 truncate rounded-full border border-[#303030] bg-[#242424] px-2 py-0.5 text-[11px] text-[#B3B3B3]"
+                  dir="auto"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
 
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs">

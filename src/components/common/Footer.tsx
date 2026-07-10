@@ -33,7 +33,9 @@ const Footer = () => {
       <div className="container mx-auto px-4 sm:px-6">
         <div className="inner flex flex-col items-center gap-8 sm:gap-10">
           <div className="footer-logo">
-            <Image src="/svg/logo.svg" alt={tCommon('logoAlt')} width={165} height={43} className="h-auto w-[140px] sm:w-[165px]" />
+            <Link href="/" aria-label={tNav('home')}>
+              <Image src="/svg/logo.svg" alt={tCommon('logoAlt')} width={165} height={43} className="h-auto w-[140px] sm:w-[165px]" />
+            </Link>
           </div>
           <nav aria-label="Footer">
             <ul className="flex flex-col items-center gap-4 text-sm font-normal sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-8 sm:gap-y-3">

@@ -13,8 +13,8 @@ import {
   Calendar,
   MapPin,
   Ticket,
-  Download,
-  RotateCcw,
+  // Download,
+  // RotateCcw,
   Loader2,
   ArrowLeft,
   Star,
@@ -158,6 +158,7 @@ export default function ViewTicketContent() {
               {tDashboard('reviewOrganizer')}
             </Button>
           ) : null}
+          {/* Temporarily hidden until refund/download flows are ready
           <Button variant="outline" size="sm" className="w-full sm:w-auto" disabled>
             <RotateCcw className="mr-2 h-4 w-4" />
             {t('refundTicket')}
@@ -166,6 +167,7 @@ export default function ViewTicketContent() {
             <Download className="mr-2 h-4 w-4" />
             {t('downloadTicket')}
           </Button>
+          */}
         </div>
       </div>
 

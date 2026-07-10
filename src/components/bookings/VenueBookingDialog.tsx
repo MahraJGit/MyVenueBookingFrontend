@@ -26,6 +26,7 @@ import type { PublicVenue } from "@/features/venues/types";
 import { slotRangeToUtc } from "@/features/venues/timezone";
 import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
+import { PlatformDisclaimer } from "@/components/legal/PlatformDisclaimer";
 
 type VenueBookingDialogProps = {
   open: boolean;
@@ -205,6 +206,8 @@ export function VenueBookingDialog({
               />
             </div>
           )}
+
+          <PlatformDisclaimer />
 
           <Button
             className="w-full bg-primary"

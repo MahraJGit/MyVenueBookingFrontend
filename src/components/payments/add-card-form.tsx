@@ -27,11 +27,16 @@ function SetupCardForm({ onSuccess, onCancel }: AddCardFormProps) {
   const tCommon = useTranslations("common");
   const tUser = useTranslations("userDashboard");
   const [submitting, setSubmitting] = React.useState(false);
+  const [elementReady, setElementReady] = React.useState(false);
+  const submittingRef = React.useRef(false);
+
+  const canSubmit = Boolean(stripe && elements && elementReady && !submitting);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !elementReady || submittingRef.current) return;
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const { error } = await stripe.confirmSetup({
@@ -52,6 +57,7 @@ function SetupCardForm({ onSuccess, onCancel }: AddCardFormProps) {
     } catch (err) {
       toastApiError(err);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -59,6 +65,7 @@ function SetupCardForm({ onSuccess, onCancel }: AddCardFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <PaymentElement
+        onReady={() => setElementReady(true)}
         options={{
           layout: "tabs",
         }}
@@ -78,7 +85,7 @@ function SetupCardForm({ onSuccess, onCancel }: AddCardFormProps) {
         <Button
           type="submit"
           className="flex-1 bg-pink-500 hover:bg-pink-600"
-          disabled={!stripe || !elements || submitting}
+          disabled={!canSubmit}
         >
           {submitting ? (
             <>
@@ -128,7 +135,10 @@ export function AddCardForm(props: AddCardFormProps) {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+    // Intentionally run once per mount so re-opening the modal gets a fresh
+    // SetupIntent without resetting mid-flight when translator identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only init
+  }, []);
 
   if (loading) {
     return (

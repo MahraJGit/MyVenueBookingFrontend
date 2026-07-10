@@ -106,7 +106,7 @@ export default function LoginPage() {
                 data.userId
             ) {
                 router.push(
-                    `/verify-otp?userId=${encodeURIComponent(data.userId)}&redirect=${encodeURIComponent(redirect)}`,
+                    `/verify-otp?userId=${encodeURIComponent(data.userId)}&channel=email&redirect=${encodeURIComponent(redirect)}`,
                 );
                 return;
             }
