@@ -40,7 +40,6 @@ import {
   type ManagedEvent,
 } from "@/features/events/api"
 import { EventPublicPreviewDialog } from "@/components/events/EventPublicPreviewDialog"
-import { useDashboardPaths } from "@/features/dashboard/paths"
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton"
 import { toastApiError } from "@/lib/toasts"
 import {
@@ -112,7 +111,6 @@ export default function EventReviewsPage() {
   const tForms = useTranslations("forms")
   const tListing = useTranslations("listing")
   const queryClient = useQueryClient()
-  const paths = useDashboardPaths()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL")
   const [page, setPage] = useState(1)
   const [viewEvent, setViewEvent] = useState<ManagedEvent | null>(null)
@@ -497,11 +495,6 @@ export default function EventReviewsPage() {
                 >
                   {tAdmin("reject")}
                 </Button>
-                <Button variant="outline" className={dashboardOutlineButtonClass} asChild>
-                  <Link href={paths.editEvent(activeDetails.id)}>
-                    {t("editInDashboard")}
-                  </Link>
-                </Button>
               </div>
             </div>
           ) : null}
@@ -567,7 +560,6 @@ export default function EventReviewsPage() {
       <EventPublicPreviewDialog
         event={viewEvent}
         onClose={() => setViewEvent(null)}
-        editHref={viewEvent ? paths.editEvent(viewEvent.id) : undefined}
       />
     </DashboardPageShell>
   )

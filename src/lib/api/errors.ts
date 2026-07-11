@@ -1,3 +1,5 @@
+import { normalizeValidationMessage } from "@/lib/api/validation-messages";
+
 export type BackendFieldError = {
   field: string;
   message: string;
@@ -12,10 +14,13 @@ export class ApiError extends Error {
     message: string,
     fieldErrors?: BackendFieldError[],
   ) {
-    super(message);
+    super(normalizeValidationMessage(message));
     this.name = "ApiError";
     this.statusCode = statusCode;
-    this.fieldErrors = fieldErrors;
+    this.fieldErrors = fieldErrors?.map((entry) => ({
+      field: entry.field,
+      message: normalizeValidationMessage(entry.message),
+    }));
   }
 
   static fromUnknown(statusCode: number, body: unknown): ApiError {
@@ -42,6 +47,7 @@ export class ApiError extends Error {
 
 const GENERIC_API_MESSAGES = new Set([
   "Validation failed",
+  "Please fix the highlighted fields and try again.",
   "Request failed",
 ]);
 
@@ -55,7 +61,7 @@ export function extractFieldErrorMessages(
   const messages: string[] = [];
 
   for (const { message } of fieldErrors) {
-    const trimmed = message.trim();
+    const trimmed = normalizeValidationMessage(message.trim());
     if (!trimmed || seen.has(trimmed)) continue;
     seen.add(trimmed);
     messages.push(trimmed);
@@ -78,10 +84,11 @@ export function resolveApiErrorForToast(
   options?: { multipleValidationTitle?: string },
 ): { title: string; description?: string } {
   const messages = extractFieldErrorMessages(error.fieldErrors);
-  const isGeneric = GENERIC_API_MESSAGES.has(error.message);
+  const normalizedTitle = normalizeValidationMessage(error.message);
+  const isGeneric = GENERIC_API_MESSAGES.has(normalizedTitle);
 
   if (!messages.length) {
-    return { title: error.message };
+    return { title: normalizedTitle };
   }
 
   if (messages.length === 1) {
@@ -97,7 +104,7 @@ export function resolveApiErrorForToast(
   }
 
   return {
-    title: error.message,
+    title: normalizedTitle,
     description: messages.join("\n"),
   };
 }

@@ -32,10 +32,10 @@ import {
   type VendorVerificationStatus,
   uploadSingleVendorDocumentWithProgress,
 } from "@/features/vendor/api";
+import { validateVendorJoinForm } from "@/features/vendor/validate-join-form";
 import { toastApiError } from "@/lib/toasts";
 import { SignupPhoneField } from "@/components/signup-phone-field";
 import type { Value } from "react-phone-number-input";
-import { isE164Valid } from "@/lib/phone";
 
 const DatePickerField = ({
   placeholder,
@@ -261,14 +261,14 @@ const JoinAffiliateFormPage = () => {
       return;
     }
 
-    if (!files.eidCopy || !files.passportCopy || !files.tradeLicenseCopy) {
-      toast.error(t("uploadAllDocuments"));
+    const validationError = validateVendorJoinForm(formValues, t, tValidation);
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 
-    const phoneE164 = formValues.phoneE164?.trim() ?? "";
-    if (!isE164Valid(phoneE164)) {
-      toast.error(tValidation("invalidPhone"));
+    if (!files.eidCopy || !files.passportCopy || !files.tradeLicenseCopy) {
+      toast.error(t("uploadAllDocuments"));
       return;
     }
 
@@ -341,7 +341,7 @@ const JoinAffiliateFormPage = () => {
         tradeLicenseCopyUrl,
         verificationDocuments,
         email: formValues.email.trim(),
-        phone: phoneE164,
+        phone: formValues.phoneE164!.trim(),
         address: formValues.address.trim(),
         taxId: formValues.taxId.trim(),
         paymentTerms: formValues.paymentTerms as "NET_15" | "NET_30" | "NET_60",

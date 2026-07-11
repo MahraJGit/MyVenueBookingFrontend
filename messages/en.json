@@ -1162,7 +1162,18 @@
     "selectAllDates": "Please select all required dates.",
     "uploadAllDocuments": "Please upload all required documents.",
     "uploadDocumentsFailed": "Failed to upload required documents. Please try again.",
-    "formSubmitted": "Form submitted successfully."
+    "formSubmitted": "Form submitted successfully.",
+    "errors": {
+      "vendorNameMin": "Vendor name must be at least 3 characters.",
+      "ownerNameMin": "Owner name must be at least 3 characters.",
+      "eidNumberMin": "EID number must be at least 5 characters.",
+      "passportNumberMin": "Passport number must be at least 5 characters.",
+      "legalEntityNameMin": "Legal entity name must be at least 3 characters.",
+      "tradeLicenseNumberMin": "Trade license number must be at least 5 characters.",
+      "emailRequired": "Email address is required.",
+      "addressMin": "Address must be at least 10 characters.",
+      "taxIdMin": "Tax ID must be at least 5 characters."
+    }
   },
   "eventList": {
     "yourSearch": "your search:",

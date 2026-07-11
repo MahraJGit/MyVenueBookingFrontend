@@ -35,7 +35,10 @@ import {
     uploadEventMedia,
     type CreateEventPayload,
 } from "@/features/events/api"
-import { listEventCategories } from "@/features/event-categories/api"
+import {
+    listEventCategories,
+    toEventCategoryOption,
+} from "@/features/event-categories/api"
 import { toastApiError } from "@/lib/toasts"
 import Link from "next/link"
 import dynamic from "next/dynamic"
@@ -56,7 +59,11 @@ const TIMEZONES = [
     "Europe/London",
     "America/New_York",
     "UTC",
-]
+] as const
+
+function defaultBrowserTimezone() {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Dubai"
+}
 
 const LocationPickerMap = dynamic(
     () =>
@@ -133,6 +140,7 @@ function validateEventAndTicketTiming(
     startLocal: string,
     endLocal: string,
     tickets: TicketForm[],
+    isEditMode = false,
 ): TimingValidationResult {
     const start = parseLocalDateTime(startLocal)
     const end = parseLocalDateTime(endLocal)
@@ -145,7 +153,7 @@ function validateEventAndTicketTiming(
         if (!end) eventEndError = "Please select a valid end date/time."
     } else {
         const startKey = getLocalCalendarDateKey(start)
-        if (startKey <= todayKey) {
+        if (!isEditMode && startKey <= todayKey) {
             eventStartError = "Event must start after today."
         } else if (end <= start) {
             eventEndError = "End date must be after start date."
@@ -160,7 +168,7 @@ function validateEventAndTicketTiming(
 
             if (salesStart) {
                 const salesStartKey = getLocalCalendarDateKey(salesStart)
-                if (salesStartKey < todayKey) {
+                if (!isEditMode && salesStartKey < todayKey) {
                     ticketTimeErrors[index].salesStart =
                         "Sales start cannot be before today."
                 } else if (salesStart >= start) {
@@ -170,7 +178,7 @@ function validateEventAndTicketTiming(
             }
             if (salesEnd) {
                 const salesEndKey = getLocalCalendarDateKey(salesEnd)
-                if (salesEndKey < todayKey) {
+                if (!isEditMode && salesEndKey < todayKey) {
                     ticketTimeErrors[index].salesEnd =
                         "Sales end cannot be before today."
                 } else if (salesEnd >= start) {
@@ -221,10 +229,8 @@ export default function AddEventsContentPage() {
 
     const [eventName, setEventName] = React.useState("")
     const [eventDescription, setEventDescription] = React.useState("")
-    const [timezone, setTimezone] = React.useState(
-        Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Dubai",
-    )
-    const [category, setCategory] = React.useState("")
+    const [categoryOverride, setCategoryOverride] = React.useState<string | null>(null)
+    const [timezoneOverride, setTimezoneOverride] = React.useState<string | null>(null)
     const [tags, setTags] = React.useState<string[]>([])
     const [tagInput, setTagInput] = React.useState("")
     const [coverImage, setCoverImage] = React.useState("")
@@ -253,6 +259,7 @@ export default function AddEventsContentPage() {
 
     const coverInputRef = React.useRef<HTMLInputElement>(null)
     const thumbnailInputRef = React.useRef<HTMLInputElement>(null)
+    const hydratedEventIdRef = React.useRef<string | null>(null)
 
     const { data: existing, isLoading: loadingEvent } = useQuery({
         queryKey: ["managed-event", editId],
@@ -269,33 +276,50 @@ export default function AddEventsContentPage() {
         queryFn: () => listEventCategories({ isActive: true }),
     })
 
+    const savedCategory = existing?.category?.trim() ?? ""
+    const savedTimezone = existing?.timezone?.trim() ?? ""
+    const category = categoryOverride ?? savedCategory
+    const timezone = timezoneOverride ?? (savedTimezone || defaultBrowserTimezone())
+
     const timezoneOptions = React.useMemo(() => {
-        const base = [...TIMEZONES]
-        if (timezone && !base.includes(timezone)) {
-            base.unshift(timezone)
+        const base: string[] = [...TIMEZONES]
+        for (const tz of [timezone, savedTimezone]) {
+            if (tz && !base.includes(tz)) {
+                base.unshift(tz)
+            }
         }
         return base
-    }, [timezone])
+    }, [timezone, savedTimezone])
+
+    const categoryOptions = React.useMemo(() => {
+        const options = eventCategories.map(toEventCategoryOption)
+        if (savedCategory && !options.some((c) => c.value === savedCategory)) {
+            return [{ label: savedCategory, value: savedCategory }, ...options]
+        }
+        return options
+    }, [eventCategories, savedCategory])
 
     const legacyCategoryName = React.useMemo(() => {
         const cat = category.trim()
         if (!cat) return null
-        if (eventCategories.some((c) => c.name === cat)) return null
+        if (categoryOptions.some((c) => c.value === cat)) return null
         return cat
-    }, [category, eventCategories])
+    }, [category, categoryOptions])
 
     const timingValidation = React.useMemo(
-        () => validateEventAndTicketTiming(startLocal, endLocal, tickets),
-        [startLocal, endLocal, tickets],
+        () => validateEventAndTicketTiming(startLocal, endLocal, tickets, Boolean(editId)),
+        [startLocal, endLocal, tickets, editId],
     )
 
     React.useEffect(() => {
-        if (!existing) return
+        if (!existing?.id) return
+        if (hydratedEventIdRef.current === existing.id) return
+        hydratedEventIdRef.current = existing.id
 
         setEventName(existing.eventName)
         setEventDescription(existing.eventDescription ?? "")
-        setTimezone(existing.timezone)
-        setCategory(existing.category ?? "")
+        setCategoryOverride(null)
+        setTimezoneOverride(null)
         setTags(existing.tags ?? [])
         setCoverImage(existing.coverImage ?? "")
         setThumbnail(existing.thumbnail ?? "")
@@ -338,6 +362,12 @@ export default function AddEventsContentPage() {
                 : [defaultTicket(t("generalTicket"))],
         )
     }, [existing, t])
+
+    React.useEffect(() => {
+        setCategoryOverride(null)
+        setTimezoneOverride(null)
+        hydratedEventIdRef.current = null
+    }, [editId])
 
     const saveMutation = useMutation({
         mutationFn: async () => {
@@ -500,7 +530,7 @@ export default function AddEventsContentPage() {
 
     const currencyOptions = ["PKR", "USD", "EUR", "GBP", "AED", "SAR"] as const
 
-    if (editId && loadingEvent) {
+    if (editId && (loadingEvent || loadingEventCategories || !existing)) {
         return (
             <div className="flex justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -572,11 +602,12 @@ export default function AddEventsContentPage() {
                         <div className="space-y-2">
                             <Label>{t("categoryLabel").replace(":", "")}</Label>
                             <Select
+                                key={`category-${editId ?? "new"}-${category}`}
                                 value={category || undefined}
-                                onValueChange={setCategory}
+                                onValueChange={setCategoryOverride}
                                 disabled={
                                     loadingEventCategories ||
-                                    (eventCategories.length === 0 && !legacyCategoryName)
+                                    (eventCategories.length === 0 && !category)
                                 }
                             >
                                 <SelectTrigger className={selectTriggerClass}>
@@ -599,9 +630,9 @@ export default function AddEventsContentPage() {
                                             <span className="text-muted-foreground">{t("currentValue")}</span>
                                         </SelectItem>
                                     ) : null}
-                                    {eventCategories.map((c) => (
-                                        <SelectItem key={c.id} value={c.name}>
-                                            {c.name}
+                                    {categoryOptions.map((c) => (
+                                        <SelectItem key={c.value} value={c.value}>
+                                            {c.label}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -635,7 +666,11 @@ export default function AddEventsContentPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="event-timezone">{tForms("timezone")}</Label>
-                            <Select value={timezone} onValueChange={setTimezone}>
+                            <Select
+                                key={`timezone-${editId ?? "new"}-${timezone}`}
+                                value={timezone}
+                                onValueChange={setTimezoneOverride}
+                            >
                                 <SelectTrigger id="event-timezone" className={selectTriggerClass}>
                                     <SelectValue />
                                 </SelectTrigger>
