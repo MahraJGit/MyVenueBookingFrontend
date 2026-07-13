@@ -88,6 +88,8 @@ import { defaultWeeklySchedules, buildVenueCustomAttributes, evaluateVenueReadin
 import { useDashboardPaths } from "@/features/dashboard/paths";
 import { listAdminVendorProfiles } from "@/features/vendor/api";
 import { toastApiError } from "@/lib/toasts";
+import { validateUploadFile } from "@/features/uploads/validation";
+import { validatePricingForm } from "@/features/venues/pricing-validation";
 import { cn } from "@/lib/utils";
 import { fieldClassName, isBlank } from "@/lib/form-validation";
 
@@ -114,6 +116,7 @@ export function VenueSetupWizard({
 }: VenueSetupWizardProps) {
   const t = useTranslations("venueSetup");
   const tForms = useTranslations("forms");
+  const tPricing = useTranslations("pricingModelFields");
   const router = useRouter();
   const queryClient = useQueryClient();
   const paths = useDashboardPaths();
@@ -430,6 +433,7 @@ export function VenueSetupWizard({
 
   const uploadCover = async (file: File) => {
     try {
+      validateUploadFile(file);
       const url = await uploadVenueMedia(file);
       setDetails((d) => ({ ...d, coverImage: url }));
       toast.success(t("coverUploaded"));
@@ -442,6 +446,9 @@ export function VenueSetupWizard({
     const list = Array.from(files);
     if (!list.length) return;
     try {
+      for (const file of list) {
+        validateUploadFile(file);
+      }
       setGalleryUploading(true);
       const results = await Promise.all(list.map((file) => uploadVenueMedia(file)));
       setDetails((d) => ({ ...d, gallery: [...d.gallery, ...results] }));
@@ -514,7 +521,11 @@ export function VenueSetupWizard({
 
   function trySavePricing() {
     setFieldAttempted((a) => ({ ...a, pricing: true }));
-    if (pricing.basePrice <= 0) return;
+    const validationError = validatePricingForm(pricing, tPricing);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
     savePricing.mutate();
   }
 

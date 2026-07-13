@@ -18,6 +18,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fieldClassName } from "@/lib/form-validation";
 import { FormField } from "@/components/ui/form-field";
+import { getNamedSlotRowErrors } from "@/features/venues/pricing-validation";
 
 const CURRENCIES: Currency[] = ["AED", "PKR", "USD", "EUR", "GBP", "SAR", "QAR"];
 
@@ -113,6 +114,11 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
 
   const basePriceError =
     showErrors && value.basePrice <= 0 ? t("priceMustBePositive") : null;
+
+  const namedSlotRowErrors =
+    showErrors && value.modelType === "NAMED_SLOTS"
+      ? getNamedSlotRowErrors(slots as Array<{ name?: string; startTime: string; endTime: string; price?: number }>, t)
+      : {};
 
   const activeModel: ActivePricingModel =
     value.modelType === "FLAT_RATE" ? "HOURLY" : value.modelType;
@@ -278,10 +284,16 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
               <Plus className="mr-1 h-4 w-4" /> {t("addSlot")}
             </Button>
           </div>
-          {slots.map((slot, idx) => (
+          {slots.map((slot, idx) => {
+            const rowErrors = namedSlotRowErrors[idx] ?? [];
+            const rowHasError = rowErrors.length > 0;
+            return (
+            <div key={idx} className="space-y-1">
             <div
-              key={idx}
-              className="grid gap-2 rounded-lg border border-border bg-background p-3 sm:grid-cols-5"
+              className={cn(
+                "grid gap-2 rounded-lg border bg-background p-3 sm:grid-cols-5",
+                rowHasError ? "border-destructive/60" : "border-border",
+              )}
             >
               <Input
                 placeholder={t("namePlaceholder")}
@@ -333,7 +345,12 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
                 </Button>
               </div>
             </div>
-          ))}
+            {rowHasError ? (
+              <p className="text-xs text-destructive">{rowErrors[0]}</p>
+            ) : null}
+            </div>
+            );
+          })}
         </div>
       )}
 

@@ -91,6 +91,7 @@ export default function VenueBookingCheckoutPage({
   });
 
   const selectedMethod = pickDefaultMethod(paymentMethods);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
   const syncBookingCache = async (confirmed: Booking) => {
     if (!user?.id) return;
@@ -167,7 +168,8 @@ export default function VenueBookingCheckoutPage({
   }
 
   const tz = booking.venue.timezone;
-  const canPay = Boolean(selectedMethod) && booking.status === "HOLD";
+  const canPay =
+    Boolean(selectedMethod) && booking.status === "HOLD" && disclaimerAccepted;
 
   return (
     <RoleGuard allowedRoles={["BUYER", "VENDOR", "ADMIN"]}>
@@ -345,7 +347,10 @@ export default function VenueBookingCheckoutPage({
             </section>
 
             <div className="space-y-3 pt-2">
-              <PlatformDisclaimer />
+              <PlatformDisclaimer
+                accepted={disclaimerAccepted}
+                onAcceptedChange={setDisclaimerAccepted}
+              />
               <Button
                 className="h-12 w-full bg-primary text-base font-semibold hover:bg-primary/90"
                 disabled={checkoutMut.isPending || !canPay}

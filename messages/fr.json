@@ -69,6 +69,8 @@
     "warning": "Avertissement",
     "info": "Info",
     "platformDisclaimer": "La plateforme met en relation les utilisateurs et les lieux. Nous ne sommes pas responsables des problèmes survenant pendant les événements. Les annonces sont vérifiées et la sécurité est prioritaire. La responsabilité finale du traitement des problèmes incombe à la fois au fournisseur et à l'invité.",
+    "platformDisclaimerTitle": "Avis important",
+    "platformDisclaimerAccept": "J'ai lu et compris cet avis. J'accepte que la plateforme ne soit pas responsable des problèmes liés aux événements et que la responsabilité incombe au fournisseur et à l'invité.",
     "notAvailable": "Non disponible",
     "comingSoon": "Bientôt disponible",
     "toggleMenu": "Basculer le menu",
@@ -325,6 +327,8 @@
     "selectSlot": "Sélectionner un créneau",
     "unavailable": "Indisponible",
     "available": "Disponible",
+    "previewModeBanner": "Mode aperçu — voici comment votre lieu apparaît aux clients.",
+    "previewBookingDisabled": "La réservation est désactivée en mode aperçu.",
     "bookVenue": "Réserver le lieu",
     "readiness": "Préparation du lieu",
     "readyToPublish": "Prêt à publier",
@@ -1492,7 +1496,9 @@
       "tradeLicenseNumberMin": "Trade license number must be at least 5 characters.",
       "emailRequired": "Email address is required.",
       "addressMin": "Address must be at least 10 characters.",
-      "taxIdMin": "Tax ID must be at least 5 characters."
+      "taxIdMin": "Tax ID must be at least 5 characters.",
+      "pdfOnly": "Only PDF files are allowed.",
+      "fileTooLarge": "File is too large ({size}). Maximum allowed size is 10MB."
     }
   },
   "eventList": {
@@ -1764,7 +1770,11 @@
     "namePlaceholder": "Name",
     "pricePlaceholder": "Price",
     "flatRateDeprecated": "Flat rate is no longer supported. Please select Hourly, Daily, or Named slots above and save.",
-    "defaultSlotName": "Slot"
+    "defaultSlotName": "Slot",
+    "namedSlotsRequired": "Add at least one named slot.",
+    "slotEndAfterStart": "{name} end time must be after start time.",
+    "slotsOverlap": "{nameA} and {nameB} have overlapping times.",
+    "minDaysExceedsMax": "Maximum days must be at least the minimum days."
   },
   "locationPicker": {
     "map": "Map",
@@ -2062,6 +2072,9 @@
     "typeTicket": "Billets d'événement",
     "typeSupport": "Support vendeur",
     "typeAdminSupport": "Support plateforme",
+    "typeVendorSupport": "Demande d'assistance vendeur",
+    "typeBuyerBooking": "Demande de réservation client",
+    "typeBuyerTicket": "Demande de billet client",
     "adminSupportTitle": "Support admin",
     "unknownVendor": "Vendeur",
     "loadOlder": "Charger les messages plus anciens",

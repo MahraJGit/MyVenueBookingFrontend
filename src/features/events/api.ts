@@ -1,6 +1,7 @@
 import { ApiError } from "@/lib/api/errors";
 import { apiGet } from "@/lib/api/client";
 import { authFetch } from "@/lib/api/auth-fetch";
+import { uploadSingleFile } from "@/features/uploads/upload-single";
 
 async function parseJson<T>(res: Response): Promise<T> {
   const text = await res.text();
@@ -213,6 +214,20 @@ export async function getPublicEventBySlug(slug: string): Promise<PublicEvent> {
   return unwrapEnvelope(json);
 }
 
+export async function getPreviewEventBySlug(slug: string): Promise<PublicEvent> {
+  const res = await authFetch(`/api/events/preview/${encodeURIComponent(slug)}`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    networkErrorMessage: "Network error while loading event preview.",
+  });
+
+  const json = await parseJson<SuccessEnvelope<PublicEvent>>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, json as unknown);
+  }
+  return unwrapEnvelope(json);
+}
+
 export async function listManagedEvents(params?: {
   page?: number;
   limit?: number;
@@ -333,33 +348,5 @@ export async function deleteEvent(id: string): Promise<void> {
 
 /** Upload image/file for cover or gallery — returns public-style URL stored in DB. */
 export async function uploadEventMedia(file: File): Promise<string> {
-  const folder = "event-media";
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await authFetch(
-    `/api/uploads/single?folder=${encodeURIComponent(folder)}`,
-    {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-      },
-      body: formData,
-      networkErrorMessage: "Network error while uploading file.",
-    },
-  );
-
-  const json = await parseJson<{
-    success?: boolean;
-    data?: { url?: string };
-    message?: string;
-  }>(res);
-  if (!res.ok) {
-    throw ApiError.fromUnknown(res.status, json as unknown);
-  }
-  const url = json.data?.url;
-  if (!url) {
-    throw new ApiError(res.status, "Upload response missing URL");
-  }
-  return url;
+  return uploadSingleFile(file, "event-media");
 }

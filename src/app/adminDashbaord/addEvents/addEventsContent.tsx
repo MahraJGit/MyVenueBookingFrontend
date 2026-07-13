@@ -40,6 +40,7 @@ import {
     toEventCategoryOption,
 } from "@/features/event-categories/api"
 import { toastApiError } from "@/lib/toasts"
+import { validateUploadFile } from "@/features/uploads/validation"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import type { AddressHint } from "@/components/maps/location-picker-map"
@@ -471,6 +472,7 @@ export default function AddEventsContentPage() {
     async function onCoverFile(f: File | null) {
         if (!f) return
         try {
+            validateUploadFile(f)
             setCoverUploading(true)
             const url = await uploadEventMedia(f)
             setCoverImage(url)
@@ -485,6 +487,7 @@ export default function AddEventsContentPage() {
     async function onThumbnailFile(f: File | null) {
         if (!f) return
         try {
+            validateUploadFile(f)
             setThumbnailUploading(true)
             const url = await uploadEventMedia(f)
             setThumbnail(url)
@@ -500,6 +503,9 @@ export default function AddEventsContentPage() {
         if (!files?.length) return
         const list = Array.from(files)
         try {
+            for (const file of list) {
+                validateUploadFile(file)
+            }
             setGalleryUploading(true)
             const results = await Promise.all(
                 list.map((file) => uploadEventMedia(file)),

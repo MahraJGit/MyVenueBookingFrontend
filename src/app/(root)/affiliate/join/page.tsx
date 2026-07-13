@@ -32,6 +32,10 @@ import {
   type VendorVerificationStatus,
   uploadSingleVendorDocumentWithProgress,
 } from "@/features/vendor/api";
+import {
+  formatUploadFileSize,
+  validateVendorDocumentFile,
+} from "@/features/uploads/validation";
 import { validateVendorJoinForm } from "@/features/vendor/validate-join-form";
 import { toastApiError } from "@/lib/toasts";
 import { SignupPhoneField } from "@/components/signup-phone-field";
@@ -112,7 +116,33 @@ const FileUploadField = ({
           accept=".pdf"
           className="hidden"
           onChange={(event) => {
-            onFileChange(event.target.files?.[0] ?? null);
+            const file = event.target.files?.[0] ?? null;
+            event.target.value = "";
+            if (!file) {
+              onFileChange(null);
+              return;
+            }
+            try {
+              validateVendorDocumentFile(file);
+              onFileChange(file);
+            } catch (error) {
+              onFileChange(null);
+              if (error instanceof ApiError) {
+                if (error.statusCode === 413) {
+                  toast.error(
+                    t("errors.fileTooLarge", {
+                      size: formatUploadFileSize(file.size),
+                    }),
+                  );
+                  return;
+                }
+                if (error.statusCode === 400) {
+                  toast.error(t("errors.pdfOnly"));
+                  return;
+                }
+              }
+              toastApiError(error);
+            }
           }}
         />
       </label>
@@ -270,6 +300,22 @@ const JoinAffiliateFormPage = () => {
     if (!files.eidCopy || !files.passportCopy || !files.tradeLicenseCopy) {
       toast.error(t("uploadAllDocuments"));
       return;
+    }
+
+    const selectedDocuments = [
+      files.eidCopy,
+      files.passportCopy,
+      files.tradeLicenseCopy,
+      files.verificationDocument,
+    ].filter((file): file is File => Boolean(file));
+
+    for (const file of selectedDocuments) {
+      try {
+        validateVendorDocumentFile(file);
+      } catch (error) {
+        toastApiError(error);
+        return;
+      }
     }
 
     setIsSubmitting(true);

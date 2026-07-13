@@ -3,6 +3,7 @@
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import {
   getDayAvailability,
   getMonthAvailability,
+  getPreviewVenue,
   getPublicVenue,
 } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
@@ -204,6 +206,9 @@ export default function VenueDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const searchParams = useSearchParams();
+  const isEmbed = searchParams.get("embed") === "1";
+  const isPreview = searchParams.get("preview") === "1";
   const t = useTranslations("venues");
   const { locale } = useLocaleContext();
   const priceLabels = useVenuePriceLabels();
@@ -233,8 +238,8 @@ export default function VenueDetailPage({
   }, [t]);
 
   const { data: venue, isLoading, isError } = useQuery({
-    queryKey: [...venueKeys.publicDetail(id), locale],
-    queryFn: () => getPublicVenue(id),
+    queryKey: [...venueKeys.publicDetail(id), locale, isPreview ? "preview" : "public"],
+    queryFn: () => (isPreview ? getPreviewVenue(id) : getPublicVenue(id)),
   });
 
   const year = calendarMonth.getFullYear();
@@ -308,6 +313,11 @@ export default function VenueDetailPage({
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0e0e0e] text-white">
+      {isEmbed || isPreview ? (
+        <div className="border-b border-primary/30 bg-primary/10 px-4 py-2 text-center text-xs text-primary sm:text-sm">
+          {t("previewModeBanner")}
+        </div>
+      ) : null}
       {/* Hero */}
       <section className="relative h-[42vh] min-h-[260px] max-h-[500px] overflow-hidden sm:min-h-[320px] md:h-[480px]">
         <Image
@@ -319,6 +329,7 @@ export default function VenueDetailPage({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] via-[#0e0e0e]/60 to-[#0e0e0e]/20" />
 
+        {!isEmbed && !isPreview ? (
         <Link
           href="/venues"
           className="absolute left-3 top-[calc(var(--site-header-offset)+0.5rem)] z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-xs backdrop-blur-md transition-colors hover:border-primary hover:text-primary sm:left-4 sm:px-4 sm:py-2 sm:text-sm md:left-6"
@@ -326,7 +337,9 @@ export default function VenueDetailPage({
           <ArrowLeft size={16} />
           {t("allVenuesLink")}
         </Link>
+        ) : null}
 
+        {!isEmbed && !isPreview ? (
         <button
           type="button"
           className="absolute right-3 top-[calc(var(--site-header-offset)+0.5rem)] z-10 rounded-full border border-white/20 bg-black/40 p-2 backdrop-blur-md transition-colors hover:border-primary hover:bg-black/50 sm:right-4 sm:p-2.5 md:right-6"
@@ -335,6 +348,7 @@ export default function VenueDetailPage({
         >
           <Share2 size={18} />
         </button>
+        ) : null}
 
         <div className="absolute inset-0 flex flex-col items-center justify-end px-4 pb-8 text-center sm:pb-10 md:pb-14">
           {venue.venueType?.name && (
@@ -588,6 +602,7 @@ export default function VenueDetailPage({
                   </div>
                 )}
 
+                {!isPreview && !isEmbed ? (
                 <div className="relative mt-1">
                   <AvailabilityCalendar
                     month={calendarMonth}
@@ -601,8 +616,13 @@ export default function VenueDetailPage({
                     className="border-0 bg-transparent p-0"
                   />
                 </div>
+                ) : (
+                  <p className="mt-4 rounded-lg bg-zinc-900/50 px-3 py-2.5 text-center text-xs leading-relaxed text-zinc-500">
+                    {t("previewBookingDisabled")}
+                  </p>
+                )}
 
-                {selectedDate && (
+                {!isPreview && !isEmbed && selectedDate && (
                   <div
                     className="mt-4 min-w-0 space-y-3 border-t border-[#303030] pt-4 sm:mt-5 sm:pt-5"
                     aria-live="polite"
@@ -692,7 +712,7 @@ export default function VenueDetailPage({
                   </div>
                 )}
 
-                {!selectedDate && (
+                {!isPreview && !isEmbed && !selectedDate && (
                   <p className="mt-4 rounded-lg bg-zinc-900/50 px-3 py-2.5 text-center text-xs leading-relaxed text-zinc-500">
                     {t("selectDateForSlots")}
                   </p>
@@ -707,7 +727,7 @@ export default function VenueDetailPage({
         <VenueReviewsSection venueId={venue.id} />
       </section>
 
-      {combinedRange && selectedDate && (
+      {!isPreview && !isEmbed && combinedRange && selectedDate && (
         <VenueBookingDialog
           open={bookingOpen}
           onOpenChange={setBookingOpen}

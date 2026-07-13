@@ -84,6 +84,7 @@ export function VenueBookingDialog({
   const [guestError, setGuestError] = useState<string | null>(null);
   const [specialRequests, setSpecialRequests] = useState("");
   const [amenitySelections, setAmenitySelections] = useState<AmenitySelection[]>([]);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
   const guestMessages = {
     required: t("guestsRequired"),
@@ -137,11 +138,19 @@ export function VenueBookingDialog({
     setGuestError(err);
     if (err) return;
 
+    if (!disclaimerAccepted) return;
+
     holdMut.mutate();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) setDisclaimerAccepted(false);
+        onOpenChange(nextOpen);
+      }}
+    >
       <DialogContent className="max-h-[90vh] overflow-y-auto border-[#303030] bg-[#1B1B1B] text-white sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("bookVenue", { name: venue.name })}</DialogTitle>
@@ -207,12 +216,15 @@ export function VenueBookingDialog({
             </div>
           )}
 
-          <PlatformDisclaimer />
+          <PlatformDisclaimer
+            accepted={disclaimerAccepted}
+            onAcceptedChange={setDisclaimerAccepted}
+          />
 
           <Button
             className="w-full bg-primary"
             onClick={handleSubmit}
-            disabled={holdMut.isPending}
+            disabled={holdMut.isPending || !disclaimerAccepted}
           >
             {holdMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t("reserveAndCheckout")}

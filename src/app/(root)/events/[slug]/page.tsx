@@ -14,7 +14,7 @@ import {
   CarouselPrevious,
   CarouselNext,
 } from "@/components/ui/carousel";
-import { getPublicEventBySlug, type PublicEvent } from "@/features/events/api";
+import { getPublicEventBySlug, getPreviewEventBySlug, type PublicEvent } from "@/features/events/api";
 import {
   formatEventDate,
   computeEventSalePhase,
@@ -99,13 +99,15 @@ export default function EventDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isEmbed = searchParams.get("embed") === "1";
+  const isPreview = searchParams.get("preview") === "1";
   const queryClient = useQueryClient();
   const { isAuthenticated, isReady } = useAuth();
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
 
   const { data: event, isLoading, isError, error } = useQuery({
-    queryKey: ["public-event", slug, locale],
-    queryFn: () => getPublicEventBySlug(slug),
+    queryKey: ["public-event", slug, locale, isPreview ? "preview" : "public"],
+    queryFn: () =>
+      isPreview ? getPreviewEventBySlug(slug) : getPublicEventBySlug(slug),
     enabled: Boolean(slug),
   });
 
@@ -147,7 +149,7 @@ export default function EventDetailPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0e0e0e] text-white">
-      {isEmbed ? (
+      {isEmbed || isPreview ? (
         <div className="border-b border-primary/30 bg-primary/10 px-4 py-2 text-center text-xs text-primary sm:text-sm">
           {t("previewModeBanner")}
         </div>
@@ -164,7 +166,7 @@ export default function EventDetailPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] via-[#0e0e0e]/50 to-transparent" />
 
         {/* Share button — top right */}
-        {!isEmbed ? (
+        {!isEmbed && !isPreview ? (
         <button
           type="button"
           aria-label={tCommon('share')}
@@ -402,7 +404,7 @@ export default function EventDetailPage() {
             })}
           </div>
 
-          {!isEmbed ? (
+          {!isEmbed && !isPreview ? (
           <div className="bg-[#1B1B1B] border border-[#303030] rounded-2xl p-6 flex flex-col items-center gap-3">
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Ticket size={18} className="text-primary" />

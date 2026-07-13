@@ -69,6 +69,8 @@
     "warning": "Warning",
     "info": "Info",
     "platformDisclaimer": "The platform connects users with venues. We are not liable for any problems during events. Listings are verified, and safety is prioritized. The final responsibility for handling issues stays with both the vendor and the guest.",
+    "platformDisclaimerTitle": "Important notice",
+    "platformDisclaimerAccept": "I have read and understand this notice. I accept that the platform is not liable for event-related issues and that responsibility lies with the vendor and guest.",
     "notAvailable": "Not available",
     "comingSoon": "Coming soon",
     "toggleMenu": "Toggle menu",
@@ -325,7 +327,8 @@
     "selectSlot": "Select a time slot",
     "unavailable": "Unavailable",
     "available": "Available",
-    "bookVenue": "Book venue",
+    "previewModeBanner": "Preview mode — this is how your venue appears to customers.",
+    "previewBookingDisabled": "Booking is disabled in preview mode.",
     "readiness": "Venue readiness",
     "readyToPublish": "Ready to publish",
     "notReady": "Not ready yet",
@@ -1172,7 +1175,9 @@
       "tradeLicenseNumberMin": "Trade license number must be at least 5 characters.",
       "emailRequired": "Email address is required.",
       "addressMin": "Address must be at least 10 characters.",
-      "taxIdMin": "Tax ID must be at least 5 characters."
+      "taxIdMin": "Tax ID must be at least 5 characters.",
+      "pdfOnly": "Only PDF files are allowed.",
+      "fileTooLarge": "File is too large ({size}). Maximum allowed size is 10MB."
     }
   },
   "eventList": {
@@ -1765,7 +1770,11 @@
     "namePlaceholder": "Name",
     "pricePlaceholder": "Price",
     "flatRateDeprecated": "Flat rate is no longer supported. Please select Hourly, Daily, or Named slots above and save.",
-    "defaultSlotName": "Slot"
+    "defaultSlotName": "Slot",
+    "namedSlotsRequired": "Add at least one named slot.",
+    "slotEndAfterStart": "{name} end time must be after start time.",
+    "slotsOverlap": "{nameA} and {nameB} have overlapping times.",
+    "minDaysExceedsMax": "Maximum days must be at least the minimum days."
   },
   "locationPicker": {
     "map": "Map",
@@ -2051,11 +2060,11 @@
   "chat": {
     "eyebrow": "Messaging",
     "title": "Messages",
-    "subtitle": "Chat with vendors, buyers, or platform support after a confirmed booking or ticket purchase.",
+    "subtitle": "Chat with vendors after a confirmed booking or ticket purchase. Vendors and admins have separate inboxes for support and customer messages.",
     "inbox": "Inbox",
     "conversation": "Conversation",
     "selectConversation": "Select a conversation to start chatting.",
-    "noConversations": "No conversations yet. Chats appear here when you book a venue, buy tickets, or (for vendors) when platform support is available.",
+    "noConversations": "No conversations yet. Chats appear here after you book a venue or buy tickets.",
     "messagePlaceholder": "Type a message…",
     "messageVendor": "Message vendor",
     "contactAdmin": "Contact admin",
@@ -2063,6 +2072,9 @@
     "typeTicket": "Event tickets",
     "typeSupport": "Vendor support",
     "typeAdminSupport": "Platform support",
+    "typeVendorSupport": "Vendor support request",
+    "typeBuyerBooking": "Guest booking inquiry",
+    "typeBuyerTicket": "Guest ticket inquiry",
     "adminSupportTitle": "Admin support",
     "unknownVendor": "Vendor",
     "bookingTitle": "Booking: {name}",

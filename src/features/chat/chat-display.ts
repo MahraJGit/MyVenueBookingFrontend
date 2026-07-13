@@ -16,7 +16,10 @@ type ChatTypeKey =
   | "typeBooking"
   | "typeTicket"
   | "typeSupport"
-  | "typeAdminSupport";
+  | "typeAdminSupport"
+  | "typeVendorSupport"
+  | "typeBuyerBooking"
+  | "typeBuyerTicket";
 
 export function getConversationTitle(
   conversation: ConversationLike,
@@ -60,11 +63,15 @@ export function getConversationTypeLabel(
   viewerRole: string | undefined,
   t: (key: ChatTypeKey) => string,
 ): string | null {
-  if (type === "BOOKING") return t("typeBooking");
-  if (type === "TICKET_ORDER") return t("typeTicket");
+  if (type === "BOOKING") {
+    return viewerRole === "ADMIN" ? t("typeBuyerBooking") : t("typeBooking");
+  }
+  if (type === "TICKET_ORDER") {
+    return viewerRole === "ADMIN" ? t("typeBuyerTicket") : t("typeTicket");
+  }
   if (type === "VENDOR_SUPPORT") {
     if (viewerRole === "VENDOR") return t("typeAdminSupport");
-    if (viewerRole === "ADMIN") return null;
+    if (viewerRole === "ADMIN") return t("typeVendorSupport");
     return t("typeSupport");
   }
   return t("conversation");

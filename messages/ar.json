@@ -69,6 +69,8 @@
     "warning": "تحذير",
     "info": "معلومات",
     "platformDisclaimer": "تربط المنصة المستخدمين بالأماكن. نحن غير مسؤولين عن أي مشاكل أثناء الفعاليات. يتم التحقق من القوائم، والسلامة أولوية. تبقى المسؤولية النهائية عن معالجة المشكلات مع المزود والضيف معًا.",
+    "platformDisclaimerTitle": "إشعار مهم",
+    "platformDisclaimerAccept": "لقد قرأت هذا الإشعار وأفهمه. أقبل أن المنصة غير مسؤولة عن المشكلات المتعلقة بالفعاليات وأن المسؤولية تقع على المزود والضيف.",
     "notAvailable": "غير متاح",
     "comingSoon": "قريباً",
     "toggleMenu": "تبديل القائمة",
@@ -325,6 +327,8 @@
     "selectSlot": "اختر الفترة الزمنية",
     "unavailable": "غير متاح",
     "available": "متاح",
+    "previewModeBanner": "وضع المعاينة — هكذا يظهر مكانك للعملاء.",
+    "previewBookingDisabled": "الحجز معطل في وضع المعاينة.",
     "bookVenue": "احجز المكان",
     "readiness": "جاهزية المكان",
     "readyToPublish": "جاهز للنشر",
@@ -1492,7 +1496,9 @@
       "tradeLicenseNumberMin": "Trade license number must be at least 5 characters.",
       "emailRequired": "Email address is required.",
       "addressMin": "Address must be at least 10 characters.",
-      "taxIdMin": "Tax ID must be at least 5 characters."
+      "taxIdMin": "Tax ID must be at least 5 characters.",
+      "pdfOnly": "Only PDF files are allowed.",
+      "fileTooLarge": "File is too large ({size}). Maximum allowed size is 10MB."
     }
   },
   "eventList": {
@@ -1764,7 +1770,11 @@
     "namePlaceholder": "Name",
     "pricePlaceholder": "Price",
     "flatRateDeprecated": "Flat rate is no longer supported. Please select Hourly, Daily, or Named slots above and save.",
-    "defaultSlotName": "Slot"
+    "defaultSlotName": "Slot",
+    "namedSlotsRequired": "Add at least one named slot.",
+    "slotEndAfterStart": "{name} end time must be after start time.",
+    "slotsOverlap": "{nameA} and {nameB} have overlapping times.",
+    "minDaysExceedsMax": "Maximum days must be at least the minimum days."
   },
   "locationPicker": {
     "map": "Map",
@@ -2062,6 +2072,9 @@
     "typeTicket": "تذاكر الفعالية",
     "typeSupport": "دعم البائع",
     "typeAdminSupport": "دعم المنصة",
+    "typeVendorSupport": "طلب دعم من المزود",
+    "typeBuyerBooking": "استفسار حجز الضيف",
+    "typeBuyerTicket": "استفسار تذكرة الضيف",
     "adminSupportTitle": "دعم المشرف",
     "unknownVendor": "بائع",
     "loadOlder": "تحميل رسائل أقدم",

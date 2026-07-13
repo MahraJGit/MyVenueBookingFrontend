@@ -36,6 +36,7 @@ import { patchAuthUser } from "@/features/auth/session-storage"
 import { useAuth } from "@/features/auth/auth-context"
 import { userProfileQueryKey } from "@/features/auth/auth-cache"
 import { toastApiError } from "@/lib/toasts"
+import { validateUploadFile } from "@/features/uploads/validation"
 import { toast } from "sonner"
 
 /** Editable via PUT /api/users/me */
@@ -196,6 +197,12 @@ export default function ProfilePage() {
     if (!file) return
     if (!file.type.startsWith("image/")) {
       toast.error(t("chooseImageFile"))
+      return
+    }
+    try {
+      validateUploadFile(file)
+    } catch (error) {
+      toastApiError(error)
       return
     }
     avatarMutation.mutate(file)

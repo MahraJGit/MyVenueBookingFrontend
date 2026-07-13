@@ -69,6 +69,8 @@
     "warning": "انتباہ",
     "info": "معلومات",
     "platformDisclaimer": "یہ پلیٹ فارم صارفین کو وینوز سے جوڑتا ہے۔ ہم تقریبات کے دوران کسی بھی مسئلے کے ذمہ دار نہیں ہیں۔ لسٹنگز کی تصدیق ہوتی ہے اور حفاظت کو ترجیح دی جاتی ہے۔ مسائل کو حل کرنے کی حتمی ذمہ داری وینڈر اور مہمان دونوں پر ہے۔",
+    "platformDisclaimerTitle": "اہم اطلاع",
+    "platformDisclaimerAccept": "میں نے یہ اطلاع پڑھ لی ہے اور سمجھ لی ہے۔ میں قبول کرتا/کرتی ہوں کہ پلیٹ فارم تقریبات سے متعلق مسائل کا ذمہ دار نہیں ہے اور ذمہ داری وینڈر اور مہمان دونوں پر ہے۔",
     "notAvailable": "دستیاب نہیں",
     "comingSoon": "جلد آ رہا ہے",
     "toggleMenu": "مینو ٹوگل کریں",
@@ -325,6 +327,8 @@
     "selectSlot": "وقت کا سلاٹ منتخب کریں",
     "unavailable": "دستیاب نہیں",
     "available": "دستیاب",
+    "previewModeBanner": "پریویو موڈ — آپ کا وینو گاہکوں کو یوں نظر آتا ہے۔",
+    "previewBookingDisabled": "پریویو موڈ میں بکنگ غیر فعال ہے۔",
     "bookVenue": "وینو بک کریں",
     "readiness": "وینو کی تیاری",
     "readyToPublish": "شائع کرنے کے لیے تیار",
@@ -1492,7 +1496,9 @@
       "tradeLicenseNumberMin": "Trade license number must be at least 5 characters.",
       "emailRequired": "Email address is required.",
       "addressMin": "Address must be at least 10 characters.",
-      "taxIdMin": "Tax ID must be at least 5 characters."
+      "taxIdMin": "Tax ID must be at least 5 characters.",
+      "pdfOnly": "Only PDF files are allowed.",
+      "fileTooLarge": "File is too large ({size}). Maximum allowed size is 10MB."
     }
   },
   "eventList": {
@@ -1764,7 +1770,11 @@
     "namePlaceholder": "Name",
     "pricePlaceholder": "Price",
     "flatRateDeprecated": "Flat rate is no longer supported. Please select Hourly, Daily, or Named slots above and save.",
-    "defaultSlotName": "Slot"
+    "defaultSlotName": "Slot",
+    "namedSlotsRequired": "Add at least one named slot.",
+    "slotEndAfterStart": "{name} end time must be after start time.",
+    "slotsOverlap": "{nameA} and {nameB} have overlapping times.",
+    "minDaysExceedsMax": "Maximum days must be at least the minimum days."
   },
   "locationPicker": {
     "map": "Map",
@@ -2062,6 +2072,9 @@
     "typeTicket": "ایونٹ ٹکٹیں",
     "typeSupport": "وینڈر سپورٹ",
     "typeAdminSupport": "پلیٹ فارم سپورٹ",
+    "typeVendorSupport": "وینڈر سپورٹ درخواست",
+    "typeBuyerBooking": "مہمان کی بکنگ انکوائری",
+    "typeBuyerTicket": "مہمان کی ٹکٹ انکوائری",
     "adminSupportTitle": "ایڈمن سپورٹ",
     "unknownVendor": "وینڈر",
     "bookingTitle": "بکنگ: {name}",

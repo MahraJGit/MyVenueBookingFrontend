@@ -1,5 +1,6 @@
 import { ApiError } from "@/lib/api/errors";
 import { authFetch } from "@/lib/api/auth-fetch";
+import { uploadSingleFile } from "@/features/uploads/upload-single";
 
 async function parseJson<T>(res: Response): Promise<T> {
   const text = await res.text();
@@ -80,31 +81,7 @@ const AVATAR_UPLOAD_FOLDER = "user-avatars";
 
 /** Upload avatar image; returns URL to pass as `avatarUrl` on profile update. */
 export async function uploadUserAvatar(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await authFetch(
-    `/api/uploads/single?folder=${encodeURIComponent(AVATAR_UPLOAD_FOLDER)}`,
-    {
-      method: "POST",
-      headers: { Accept: "application/json" },
-      body: formData,
-      networkErrorMessage: "Network error while uploading avatar.",
-    },
-  );
-
-  const json = await parseJson<{
-    success?: boolean;
-    data?: { url?: string };
-  }>(res);
-  if (!res.ok) {
-    throw ApiError.fromUnknown(res.status, json as unknown);
-  }
-  const url = json.data?.url;
-  if (!url) {
-    throw new ApiError(res.status, "Upload response missing URL");
-  }
-  return url;
+  return uploadSingleFile(file, AVATAR_UPLOAD_FOLDER);
 }
 
 export type UserRole = "BUYER" | "VENDOR" | "ADMIN";

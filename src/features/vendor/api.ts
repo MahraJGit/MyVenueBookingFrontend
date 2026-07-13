@@ -1,17 +1,8 @@
 import { ApiError } from "@/lib/api/errors";
 import { authFetch } from "@/lib/api/auth-fetch";
-import { assertApiConfigured } from "@/lib/env";
-import { refreshAndApplySession } from "@/features/auth/coordinated-refresh";
-import { getAccessToken } from "@/features/auth/session-storage";
+import { uploadSingleFile } from "@/features/uploads/upload-single";
 
 const VENDOR_DOCS_FOLDER = "vendor-documents";
-
-type UploadSingleViaApiResponse = {
-  success: boolean;
-  data: {
-    url: string;
-  };
-};
 
 type UploadOptions = {
   onProgress?: (progress: number) => void;
@@ -68,117 +59,7 @@ async function parseJson<T>(res: Response): Promise<T> {
 }
 
 async function uploadVendorDocumentViaBackend(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await authFetch(
-    `/api/uploads/single?folder=${encodeURIComponent(VENDOR_DOCS_FOLDER)}`,
-    {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-      },
-      body: formData,
-      networkErrorMessage: "Network error while uploading file.",
-    },
-  );
-
-  const data = await parseJson<unknown>(res);
-  if (!res.ok) {
-    throw ApiError.fromUnknown(res.status, data);
-  }
-
-  const parsed = data as UploadSingleViaApiResponse;
-  return parsed.data.url;
-}
-
-function uploadVendorDocumentViaBackendWithProgress(
-  file: File,
-  onProgress?: (progress: number) => void,
-  authAttempt = 0,
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const baseUrl = assertApiConfigured();
-    const url = `${baseUrl}/api/uploads/single?folder=${encodeURIComponent(VENDOR_DOCS_FOLDER)}`;
-    const token = getAccessToken();
-    if (!token) {
-      reject(new ApiError(401, "Please sign in to continue."));
-      return;
-    }
-
-    const xhr = new XMLHttpRequest();
-    const formData = new FormData();
-    formData.append("file", file);
-
-    xhr.open("POST", url);
-    xhr.withCredentials = true;
-    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-    xhr.setRequestHeader("Accept", "application/json");
-
-    xhr.upload.onprogress = (event) => {
-      if (!onProgress || !event.lengthComputable) return;
-      const progress = Math.min(
-        100,
-        Math.round((event.loaded / event.total) * 100),
-      );
-      onProgress(progress);
-    };
-
-    xhr.onerror = () => {
-      reject(new ApiError(0, "Network error while uploading file to storage."));
-    };
-
-    xhr.onload = () => {
-      if (xhr.status === 401 && authAttempt === 0) {
-        refreshAndApplySession()
-          .then((refreshed) => {
-            if (!refreshed) {
-              throw new ApiError(401, "Please sign in to continue.");
-            }
-            return uploadVendorDocumentViaBackendWithProgress(
-              file,
-              onProgress,
-              1,
-            );
-          })
-          .then(resolve)
-          .catch((error) => {
-            // refreshAndApplySession already clears the session on definitive auth failure.
-            reject(
-              error instanceof ApiError
-                ? error
-                : new ApiError(401, "Please sign in to continue."),
-            );
-          });
-        return;
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300) {
-        onProgress?.(100);
-        try {
-          const parsed = JSON.parse(xhr.responseText) as UploadSingleViaApiResponse;
-          resolve(parsed.data.url);
-        } catch {
-          reject(new ApiError(xhr.status, "Invalid response from server."));
-        }
-        return;
-      }
-
-      try {
-        const errBody = JSON.parse(xhr.responseText) as unknown;
-        reject(ApiError.fromUnknown(xhr.status, errBody));
-      } catch {
-        reject(
-          new ApiError(
-            xhr.status,
-            "Failed to upload file to storage. Please try again.",
-          ),
-        );
-      }
-    };
-
-    xhr.send(formData);
-  });
+  return uploadSingleFile(file, VENDOR_DOCS_FOLDER);
 }
 
 export async function uploadSingleVendorDocument(file: File): Promise<string> {
@@ -189,23 +70,10 @@ export async function uploadSingleVendorDocumentWithProgress(
   file: File,
   options?: UploadOptions,
 ): Promise<string> {
-  const maxRetries = options?.maxRetries ?? 2;
-  let lastError: unknown;
-  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    try {
-      return await uploadVendorDocumentViaBackendWithProgress(
-        file,
-        options?.onProgress,
-      );
-    } catch (error) {
-      lastError = error;
-      if (attempt < maxRetries) {
-        options?.onProgress?.(0);
-      }
-    }
-  }
-
-  throw lastError;
+  return uploadSingleFile(file, VENDOR_DOCS_FOLDER, {
+    onProgress: options?.onProgress,
+    maxRetries: options?.maxRetries,
+  });
 }
 
 export async function createVendorProfile(body: CreateVendorProfileBody) {

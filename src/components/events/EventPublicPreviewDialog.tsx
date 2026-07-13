@@ -21,8 +21,13 @@ type EventPublicPreviewDialogProps = {
   editHref?: string;
 };
 
-function canPreviewOnSite(status: ManagedEvent["status"]) {
-  return status === "APPROVED" || status === "ACTIVE";
+function buildPreviewUrl(slug: string) {
+  return `/events/${encodeURIComponent(slug)}?embed=1&preview=1`;
+}
+
+function buildPublicUrl(slug: string, preview: boolean) {
+  const base = `/events/${encodeURIComponent(slug)}`;
+  return preview ? `${base}?preview=1` : base;
 }
 
 export function EventPublicPreviewDialog({
@@ -34,9 +39,10 @@ export function EventPublicPreviewDialog({
   const tCommon = useTranslations("common");
 
   const open = Boolean(event);
-  const previewUrl = event ? `/events/${encodeURIComponent(event.slug)}?embed=1` : "";
-  const publicUrl = event ? `/events/${encodeURIComponent(event.slug)}` : "";
-  const showPreview = event ? canPreviewOnSite(event.status) : false;
+  const previewUrl = event ? buildPreviewUrl(event.slug) : "";
+  const usePreviewMode =
+    event?.status !== "APPROVED" && event?.status !== "ACTIVE";
+  const publicUrl = event ? buildPublicUrl(event.slug, usePreviewMode) : "";
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
@@ -58,7 +64,7 @@ export function EventPublicPreviewDialog({
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-            {showPreview ? (
+            {event ? (
               <Button asChild variant="outline" size="sm" className="border-[#242424]">
                 <Link href={publicUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
@@ -88,25 +94,13 @@ export function EventPublicPreviewDialog({
           </div>
         </div>
 
-        {event && showPreview ? (
+        {event ? (
           <iframe
             key={previewUrl}
             title={t("previewEvent", { name: event.eventName })}
             src={previewUrl}
             className="min-h-[min(78vh,820px)] w-full flex-1 border-0 bg-[#0e0e0e]"
           />
-        ) : event ? (
-          <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-            <p className="text-base font-medium text-white">{t("previewNotAvailable")}</p>
-            <p className="max-w-md text-sm text-zinc-400">{t("previewNotAvailableDesc")}</p>
-            {editHref ? (
-              <Button asChild variant="outline" className="mt-2 border-[#242424]">
-                <Link href={editHref} onClick={onClose}>
-                  {t("editEvent")}
-                </Link>
-              </Button>
-            ) : null}
-          </div>
         ) : null}
       </DialogContent>
     </Dialog>

@@ -254,28 +254,43 @@ export default function ManageVenuesPage() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-right">
                     <div className={dashboardTableActionsClass}>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="text-muted-foreground hover:text-foreground"
-                        aria-label={tPreview("viewVenue")}
-                        onClick={() => setViewVenue(venue)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="text-muted-foreground hover:text-foreground"
-                        aria-label={tCommon("edit")}
-                        asChild
-                      >
-                        <Link href={paths.editVenue(venue.id)}>
-                          <Pencil className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                      {isAdmin ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className={dashboardOutlineButtonClass}
+                          onClick={() => setViewVenue(venue)}
+                        >
+                          <Eye className="mr-1.5 h-3.5 w-3.5" />
+                          {tCommon("view")}
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label={tPreview("viewVenue")}
+                          onClick={() => setViewVenue(venue)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {!isAdmin ? (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label={tCommon("edit")}
+                          asChild
+                        >
+                          <Link href={paths.editVenue(venue.id)}>
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      ) : null}
                       {isAdmin && venue.status !== "ACTIVE" && venue.status !== "DRAFT" ? (
                         <Button
                           type="button"
@@ -317,7 +332,7 @@ export default function ManageVenuesPage() {
       <VenuePublicPreviewDialog
         venue={viewVenue}
         onClose={() => setViewVenue(null)}
-        editHref={viewVenue ? paths.editVenue(viewVenue.id) : undefined}
+        editHref={!isAdmin && viewVenue ? paths.editVenue(viewVenue.id) : undefined}
       />
     </DashboardPageShell>
   );

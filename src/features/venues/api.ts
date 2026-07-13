@@ -1,6 +1,7 @@
 import { ApiError } from "@/lib/api/errors";
 import { apiGet } from "@/lib/api/client";
 import { authFetch } from "@/lib/api/auth-fetch";
+import { uploadSingleFile } from "@/features/uploads/upload-single";
 import type {
   AmenityCatalogItem,
   CreateVenuePayload,
@@ -101,6 +102,20 @@ export async function getPublicVenue(id: string): Promise<PublicVenue> {
   const json = await apiGet<SuccessEnvelope<PublicVenue>>(
     `/api/venues/${encodeURIComponent(id)}`,
   );
+  return unwrapEnvelope(json);
+}
+
+export async function getPreviewVenue(id: string): Promise<PublicVenue> {
+  const res = await authFetch(`/api/venues/preview/${encodeURIComponent(id)}`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    networkErrorMessage: "Network error while loading venue preview.",
+  });
+
+  const json = await parseJson<SuccessEnvelope<PublicVenue>>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, json as unknown);
+  }
   return unwrapEnvelope(json);
 }
 
@@ -346,31 +361,5 @@ export async function deleteAmenityCatalogItem(id: string): Promise<void> {
 }
 
 export async function uploadVenueMedia(file: File): Promise<string> {
-  const folder = "venue-media";
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await authFetch(
-    `/api/uploads/single?folder=${encodeURIComponent(folder)}`,
-    {
-      method: "POST",
-      headers: { Accept: "application/json" },
-      body: formData,
-      networkErrorMessage: "Network error while uploading file.",
-    },
-  );
-
-  const json = await parseJson<{
-    success?: boolean;
-    data?: { url?: string };
-    message?: string;
-  }>(res);
-  if (!res.ok) {
-    throw ApiError.fromUnknown(res.status, json as unknown);
-  }
-  const url = json.data?.url;
-  if (!url) {
-    throw new ApiError(res.status, "Upload response missing URL");
-  }
-  return url;
+  return uploadSingleFile(file, "venue-media");
 }

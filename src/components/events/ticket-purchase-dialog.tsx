@@ -67,6 +67,7 @@ export function TicketPurchaseDialog({
   const [purchasing, setPurchasing] = React.useState(false);
   const [paymentBlocked, setPaymentBlocked] = React.useState(false);
   const [defaultCardLabel, setDefaultCardLabel] = React.useState<string | null>(null);
+  const [disclaimerAccepted, setDisclaimerAccepted] = React.useState(false);
 
   const ticketTypes = React.useMemo(
     () => getPurchasableTicketTypes(event),
@@ -78,6 +79,7 @@ export function TicketPurchaseDialog({
       setQuantities({});
       setPaymentBlocked(false);
       setDefaultCardLabel(null);
+      setDisclaimerAccepted(false);
       return;
     }
 
@@ -163,6 +165,10 @@ export function TicketPurchaseDialog({
 
     if (lineItems.length === 0) {
       toast.error(tTicket("selectAtLeastOne"));
+      return;
+    }
+
+    if (!disclaimerAccepted) {
       return;
     }
 
@@ -318,7 +324,10 @@ export function TicketPurchaseDialog({
                 </p>
               ) : null}
 
-              <PlatformDisclaimer />
+              <PlatformDisclaimer
+                accepted={disclaimerAccepted}
+                onAcceptedChange={setDisclaimerAccepted}
+              />
 
               <Button
                 className="w-full bg-pink-500 hover:bg-pink-600"
@@ -326,7 +335,8 @@ export function TicketPurchaseDialog({
                   purchasing ||
                   checkingPayment ||
                   paymentBlocked ||
-                  lineItems.length === 0
+                  lineItems.length === 0 ||
+                  !disclaimerAccepted
                 }
                 onClick={() => void handlePurchase()}
               >

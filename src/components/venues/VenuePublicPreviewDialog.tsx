@@ -21,8 +21,13 @@ type VenuePublicPreviewDialogProps = {
   editHref?: string;
 };
 
-function canPreviewOnSite(status: ManagedVenue["status"]) {
-  return status === "ACTIVE";
+function buildPreviewUrl(id: string) {
+  return `/venues/${encodeURIComponent(id)}?embed=1&preview=1`;
+}
+
+function buildPublicUrl(id: string, preview: boolean) {
+  const base = `/venues/${encodeURIComponent(id)}`;
+  return preview ? `${base}?preview=1` : base;
 }
 
 export function VenuePublicPreviewDialog({
@@ -34,9 +39,9 @@ export function VenuePublicPreviewDialog({
   const tCommon = useTranslations("common");
 
   const open = Boolean(venue);
-  const previewUrl = venue ? `/venues/${encodeURIComponent(venue.id)}?embed=1` : "";
-  const publicUrl = venue ? `/venues/${encodeURIComponent(venue.id)}` : "";
-  const showPreview = venue ? canPreviewOnSite(venue.status) : false;
+  const previewUrl = venue ? buildPreviewUrl(venue.id) : "";
+  const usePreviewMode = venue?.status !== "ACTIVE";
+  const publicUrl = venue ? buildPublicUrl(venue.id, usePreviewMode) : "";
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
@@ -58,7 +63,7 @@ export function VenuePublicPreviewDialog({
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-            {showPreview ? (
+            {venue ? (
               <Button asChild variant="outline" size="sm" className="border-[#242424]">
                 <Link href={publicUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
@@ -88,27 +93,13 @@ export function VenuePublicPreviewDialog({
           </div>
         </div>
 
-        {venue && showPreview ? (
+        {venue ? (
           <iframe
             key={previewUrl}
             title={t("previewVenue", { name: venue.name })}
             src={previewUrl}
             className="min-h-[min(78vh,820px)] w-full flex-1 border-0 bg-[#0e0e0e]"
           />
-        ) : venue ? (
-          <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-            <p className="text-base font-medium text-white">{t("previewNotAvailable")}</p>
-            <p className="max-w-md text-sm text-zinc-400">
-              {t("previewNotAvailableVenueDesc")}
-            </p>
-            {editHref ? (
-              <Button asChild variant="outline" className="mt-2 border-[#242424]">
-                <Link href={editHref} onClick={onClose}>
-                  {t("editVenue")}
-                </Link>
-              </Button>
-            ) : null}
-          </div>
         ) : null}
       </DialogContent>
     </Dialog>

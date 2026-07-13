@@ -4,6 +4,8 @@ import { Loader2, Trash2, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { validateUploadFile } from "@/features/uploads/validation";
+import { toastApiError } from "@/lib/toasts";
 
 type VenueGalleryUploadProps = {
   urls: string[];
@@ -59,8 +61,17 @@ export function VenueGalleryUpload({
           multiple
           className="hidden"
           onChange={(e) => {
-            if (e.target.files?.length) void onUpload(e.target.files);
+            const files = e.target.files;
             e.target.value = "";
+            if (!files?.length) return;
+            try {
+              for (const file of Array.from(files)) {
+                validateUploadFile(file);
+              }
+              void onUpload(files);
+            } catch (error) {
+              toastApiError(error);
+            }
           }}
         />
       </div>
