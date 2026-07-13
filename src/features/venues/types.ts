@@ -129,7 +129,8 @@ export type PublicVenue = {
 export type ManagedVenue = PublicVenue & {
   rejectionReason?: string | null;
   blocks?: VenueBlock[];
-  vendorId?: string;
+  vendorId?: string | null;
+  createdByUserId?: string | null;
   createdAt?: string;
   updatedAt?: string;
   readiness?: VenueReadiness;

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { StatusBadge } from "@/components/venues/StatusBadge";
+import { VenueReviewDetails } from "@/components/venues/VenueReviewDetails";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -34,15 +34,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getManagedVenue, listManagedVenues, updateVenueStatus } from "@/features/venues/api";
+import { getPreviewVenue, listManagedVenues, updateVenueStatus } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
 import type { ManagedVenue } from "@/features/venues/types";
-import {
-  DAY_NAMES,
-  decimalToNumber,
-  formatVenuePrice,
-  pricingModelLabel,
-} from "@/features/venues/utils";
+import { pricingModelLabel } from "@/features/venues/utils";
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
 import { toastApiError } from "@/lib/toasts";
 import {
@@ -60,15 +55,6 @@ import {
 } from "@/components/dashboard/dashboard-ui";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { cn } from "@/lib/utils";
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-sm text-foreground">{value}</p>
-    </div>
-  );
-}
 
 export default function VenueReviewsPage() {
   const t = useTranslations("adminVenueReviews");
@@ -93,8 +79,8 @@ export default function VenueReviewsPage() {
   });
 
   const { data: venueDetail, isLoading: detailLoading } = useQuery({
-    queryKey: venueKeys.managedDetail(viewVenue?.id ?? ""),
-    queryFn: () => getManagedVenue(viewVenue!.id),
+    queryKey: venueKeys.previewDetail(viewVenue?.id ?? ""),
+    queryFn: () => getPreviewVenue(viewVenue!.id),
     enabled: !!viewVenue?.id,
   });
 
@@ -286,9 +272,12 @@ export default function VenueReviewsPage() {
           if (!open) setViewVenue(null);
         }}
       >
-        <DialogContent className={cn("max-h-[85vh] overflow-y-auto sm:max-w-2xl", dashboardDialogContentClass)}>
+        <DialogContent className={cn("max-h-[90vh] overflow-y-auto sm:max-w-3xl", dashboardDialogContentClass)}>
           <DialogHeader>
-            <DialogTitle>{detail?.name ?? t("venueDetails")}</DialogTitle>
+            <DialogTitle className="flex flex-wrap items-center gap-2">
+              {detail?.name ?? t("venueDetails")}
+              {detail?.status ? <StatusBadge status={detail.status} /> : null}
+            </DialogTitle>
             <DialogDescription>{t("detailsDesc")}</DialogDescription>
           </DialogHeader>
 
@@ -296,115 +285,22 @@ export default function VenueReviewsPage() {
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : detail ? (
-            <div className="space-y-4 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                {detail.status && <StatusBadge status={detail.status} />}
-                {detail.venueType?.name && (
-                  <Badge variant="outline">{detail.venueType.name}</Badge>
-                )}
-              </div>
-
-              {detail.coverImage && (
-                <div className="overflow-hidden rounded-lg border border-border">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={detail.coverImage}
-                    alt={detail.name}
-                    className="h-48 w-full object-cover"
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <DetailRow label={tCommon("vendor")} value={detail.vendor?.vendorName ?? "—"} />
-                <DetailRow label={t("vendorEmail")} value={detail.vendor?.email ?? "—"} />
-                <DetailRow label={tForms("city")} value={detail.city ?? "—"} />
-                <DetailRow label={tForms("address")} value={detail.address} />
-                <DetailRow label={tForms("timezone")} value={detail.timezone} />
-                <DetailRow
-                  label={t("capacity")}
-                  value={
-                    detail.capacityMin || detail.capacityMax
-                      ? `${detail.capacityMin ?? "—"} – ${detail.capacityMax ?? "—"}`
-                      : "—"
-                  }
-                />
-              </div>
-
-              {detail.description ? (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">{tCommon("description")}</p>
-                  <p className="mt-1 whitespace-pre-wrap text-foreground">
-                    {detail.description}
-                  </p>
-                </div>
-              ) : null}
-
-              <Separator />
-
-              {detail.pricing ? (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">{t("pricing")}</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary" className="gap-1 font-normal">
-                      <DollarSign className="h-3 w-3" />
-                      {pricingModelLabel(detail.pricing.modelType)}
-                    </Badge>
-                    <span className="text-foreground">
-                      {formatVenuePrice(
-                        decimalToNumber(detail.pricing.basePrice),
-                        detail.pricing.currency,
-                      )}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {t("taxRate", { rate: decimalToNumber(detail.pricing.taxRate) })}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-
-              {detail.schedules && detail.schedules.some((s) => s.isOpen) ? (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">{t("openSchedule")}</p>
-                  <ul className="space-y-1 text-foreground">
-                    {detail.schedules
-                      .filter((s) => s.isOpen)
-                      .map((s) => (
-                        <li key={s.dayOfWeek} className="flex items-center gap-2">
-                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                          {DAY_NAMES[s.dayOfWeek]} · {s.openTime} – {s.closeTime}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              ) : null}
-
-              {detail.amenities && detail.amenities.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">{tForms("amenities")}</p>
-                  <ul className="flex flex-wrap gap-2">
-                    {detail.amenities.map((a) => (
-                      <Badge key={a.id} variant="outline">
-                        {a.catalog?.name ?? a.id}
-                      </Badge>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
+          ) : venueDetail ? (
+            <div className="space-y-4">
+              <VenueReviewDetails venue={venueDetail} />
 
               <div className="flex flex-wrap gap-2 border-t border-border pt-4">
                 <Button
                   className="bg-primary"
                   disabled={
                     statusMut.isPending &&
-                    pendingVenueId === detail.id &&
+                    pendingVenueId === venueDetail.id &&
                     pendingStatus === "ACTIVE"
                   }
-                  onClick={() => statusMut.mutate({ id: detail.id, status: "ACTIVE" })}
+                  onClick={() => statusMut.mutate({ id: venueDetail.id, status: "ACTIVE" })}
                 >
                   {statusMut.isPending &&
-                  pendingVenueId === detail.id &&
+                  pendingVenueId === venueDetail.id &&
                   pendingStatus === "ACTIVE" ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -416,9 +312,9 @@ export default function VenueReviewsPage() {
                 </Button>
                 <Button
                   variant="destructive"
-                  disabled={statusMut.isPending && pendingVenueId === detail.id}
+                  disabled={statusMut.isPending && pendingVenueId === venueDetail.id}
                   onClick={() => {
-                    setRejectVenue(detail);
+                    setRejectVenue(venueDetail);
                     setViewVenue(null);
                   }}
                 >

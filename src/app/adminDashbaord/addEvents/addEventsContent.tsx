@@ -499,9 +499,9 @@ export default function AddEventsContentPage() {
         }
     }
 
-    async function onGalleryFiles(files: FileList | null) {
-        if (!files?.length) return
-        const list = Array.from(files)
+    async function onGalleryFiles(files: File[]) {
+        if (!files.length) return
+        const list = files
         try {
             for (const file of list) {
                 validateUploadFile(file)

@@ -170,6 +170,7 @@ export async function listManagedVenues(params?: {
   status?: EntityStatus;
   vendorOnly?: boolean;
   allPlatform?: boolean;
+  mine?: boolean;
   readyForReview?: boolean;
   sortBy?: "createdAt" | "name";
   sortOrder?: "asc" | "desc";
@@ -185,6 +186,7 @@ export async function listManagedVenues(params?: {
   if (params?.status) sp.set("status", params.status);
   if (params?.vendorOnly) sp.set("vendorOnly", "true");
   if (params?.allPlatform) sp.set("allPlatform", "true");
+  if (params?.mine) sp.set("mine", "true");
   if (params?.readyForReview) sp.set("readyForReview", "true");
   if (params?.sortBy) sp.set("sortBy", params.sortBy);
   if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);

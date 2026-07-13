@@ -86,9 +86,9 @@ import { venueKeys } from "@/features/venues/query-keys";
 import type { VenueAmenityPayload } from "@/features/venues/types";
 import { defaultWeeklySchedules, buildVenueCustomAttributes, evaluateVenueReadiness, isPropertyStyleVenueType, parseVenuePropertyAttributes } from "@/features/venues/utils";
 import { useDashboardPaths } from "@/features/dashboard/paths";
-import { listAdminVendorProfiles } from "@/features/vendor/api";
 import { toastApiError } from "@/lib/toasts";
 import { validateUploadFile } from "@/features/uploads/validation";
+import { SecureStoredImage } from "@/components/uploads/SecureStoredImage";
 import { validatePricingForm } from "@/features/venues/pricing-validation";
 import { cn } from "@/lib/utils";
 import { fieldClassName, isBlank } from "@/lib/form-validation";
@@ -122,6 +122,7 @@ export function VenueSetupWizard({
   const paths = useDashboardPaths();
   const isAdminScope = dashboardScope === "admin";
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const hydratedVenueIdRef = useRef<string | null>(null);
 
   const [createdVenueId, setCreatedVenueId] = useState<string | null>(null);
   const effectiveVenueId = venueId ?? createdVenueId ?? undefined;
@@ -133,15 +134,6 @@ export function VenueSetupWizard({
     queryKey: venueKeys.managedDetail(effectiveVenueId ?? ""),
     queryFn: () => getManagedVenue(effectiveVenueId!),
     enabled: hasPersistedVenue,
-  });
-
-  const [selectedVendorId, setSelectedVendorId] = useState("");
-  const [vendorAttempted, setVendorAttempted] = useState(false);
-
-  const { data: approvedVendors = [] } = useQuery({
-    queryKey: ["admin-vendors-approved"],
-    queryFn: () => listAdminVendorProfiles("APPROVED"),
-    enabled: isAdminScope && !hasPersistedVenue,
   });
 
   const { data: venueTypes = [] } = useQuery({
@@ -169,9 +161,9 @@ export function VenueSetupWizard({
     venueTypeId: "",
     timezone: "Asia/Dubai",
     coverImage: "",
-    gallery: [] as string[],
   });
 
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
   const [galleryUploading, setGalleryUploading] = useState(false);
 
   const [schedules, setSchedules] = useState(defaultWeeklySchedules());
@@ -190,7 +182,6 @@ export function VenueSetupWizard({
     lateRefundPercent: 0,
   });
 
-  const [initialized, setInitialized] = useState(false);
   const [fieldAttempted, setFieldAttempted] = useState({
     name: false,
     address: false,
@@ -224,7 +215,14 @@ export function VenueSetupWizard({
   }, [hasPersistedVenue, activeTab]);
 
   useEffect(() => {
-    if (!existing || initialized) return;
+    hydratedVenueIdRef.current = null;
+  }, [effectiveVenueId]);
+
+  useEffect(() => {
+    if (!existing?.id) return;
+    if (hydratedVenueIdRef.current === existing.id) return;
+    hydratedVenueIdRef.current = existing.id;
+
     const propertyAttrs = parseVenuePropertyAttributes(existing.customAttributes);
     setDetails({
       name: existing.name,
@@ -241,7 +239,12 @@ export function VenueSetupWizard({
       venueTypeId: existing.venueType?.id ?? "",
       timezone: existing.timezone,
       coverImage: existing.coverImage ?? "",
-      gallery: existing.gallery ?? [],
+    });
+    setGalleryUrls((current) => {
+      const serverGallery = existing.gallery ?? [];
+      const pendingBlobs = current.filter((url) => url.startsWith("blob:"));
+      if (pendingBlobs.length === 0) return serverGallery;
+      return [...serverGallery, ...pendingBlobs];
     });
     if (existing.schedules?.length) {
       setSchedules(
@@ -287,8 +290,7 @@ export function VenueSetupWizard({
         Number(cancellationPolicy.freeCancelHoursBeforeStart) || 48,
       lateRefundPercent: Number(cancellationPolicy.lateRefundPercent) || 0,
     });
-    setInitialized(true);
-  }, [existing, initialized]);
+  }, [existing]);
 
   const saveDetails = useMutation({
     mutationFn: async () => {
@@ -309,7 +311,7 @@ export function VenueSetupWizard({
         venueTypeId: details.venueTypeId || undefined,
         timezone: details.timezone,
         coverImage: details.coverImage || undefined,
-        gallery: details.gallery,
+        gallery: galleryUrls.filter((url) => !url.startsWith("blob:")),
         customAttributes: buildVenueCustomAttributes(
           propertyPayload,
           existing?.customAttributes,
@@ -322,9 +324,6 @@ export function VenueSetupWizard({
             lateRefundPercent: policies.lateRefundPercent,
           },
         },
-        ...(isAdminScope && !hasPersistedVenue && selectedVendorId
-          ? { vendorId: selectedVendorId }
-          : {}),
       };
       if (hasPersistedVenue && effectiveVenueId) {
         return updateVenue(effectiveVenueId, payload);
@@ -442,33 +441,76 @@ export function VenueSetupWizard({
     }
   };
 
-  const onGalleryFiles = async (files: FileList) => {
-    const list = Array.from(files);
+  const onGalleryFiles = async (files: File[]) => {
+    const list = files;
     if (!list.length) return;
+
+    const blobUrls = list.map((file) => URL.createObjectURL(file));
+    setGalleryUrls((current) => [...current, ...blobUrls]);
+
     try {
       for (const file of list) {
         validateUploadFile(file);
       }
       setGalleryUploading(true);
       const results = await Promise.all(list.map((file) => uploadVenueMedia(file)));
-      setDetails((d) => ({ ...d, gallery: [...d.gallery, ...results] }));
+
+      let persistedGallery: string[] = [];
+      setGalleryUrls((current) => {
+        const next = [...current];
+        blobUrls.forEach((blobUrl, index) => {
+          const blobIndex = next.indexOf(blobUrl);
+          if (blobIndex >= 0) {
+            next[blobIndex] = results[index];
+          } else {
+            next.push(results[index]);
+          }
+        });
+        persistedGallery = next.filter((url) => !url.startsWith("blob:"));
+        return next;
+      });
+      blobUrls.forEach((blobUrl) => URL.revokeObjectURL(blobUrl));
+
+      if (effectiveVenueId && persistedGallery.length > 0) {
+        await updateVenue(effectiveVenueId, { gallery: persistedGallery });
+        queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(effectiveVenueId) });
+        queryClient.invalidateQueries({ queryKey: venueKeys.all });
+      }
+
       toast.success(
         list.length === 1
           ? t("galleryImageUploaded")
           : t("galleryImagesUploaded", { count: list.length }),
       );
     } catch (e) {
+      setGalleryUrls((current) => current.filter((url) => !blobUrls.includes(url)));
+      blobUrls.forEach((blobUrl) => URL.revokeObjectURL(blobUrl));
       toastApiError(e);
     } finally {
       setGalleryUploading(false);
     }
   };
 
-  const removeGalleryAt = (index: number) => {
-    setDetails((d) => ({
-      ...d,
-      gallery: d.gallery.filter((_, i) => i !== index),
-    }));
+  const removeGalleryAt = async (index: number) => {
+    const removedUrl = galleryUrls[index];
+    const nextGallery = galleryUrls.filter((_, i) => i !== index);
+    setGalleryUrls(nextGallery);
+
+    if (removedUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(removedUrl);
+    }
+
+    if (!effectiveVenueId) return;
+
+    const persistedGallery = nextGallery.filter((url) => !url.startsWith("blob:"));
+    try {
+      await updateVenue(effectiveVenueId, { gallery: persistedGallery });
+      queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(effectiveVenueId) });
+      queryClient.invalidateQueries({ queryKey: venueKeys.all });
+    } catch (e) {
+      toastApiError(e);
+      setGalleryUrls(galleryUrls);
+    }
   };
 
   const selectedVenueType = venueTypes.find((t) => t.id === details.venueTypeId);
@@ -505,11 +547,6 @@ export function VenueSetupWizard({
   function trySaveDetails() {
     setFieldAttempted((a) => ({ ...a, name: true, address: true }));
     if (isBlank(details.name) || isBlank(details.address)) return;
-    if (isAdminScope && !hasPersistedVenue && !selectedVendorId) {
-      setVendorAttempted(true);
-      toast.error(t("selectVendorError"));
-      return;
-    }
     saveDetails.mutate();
   }
 
@@ -529,41 +566,8 @@ export function VenueSetupWizard({
     savePricing.mutate();
   }
 
-  const vendorError =
-    vendorAttempted && isAdminScope && !hasPersistedVenue && !selectedVendorId
-      ? t("selectVendorHint")
-      : null;
-
-  const adminVendorField = isAdminScope && !hasPersistedVenue && (
-    <FormField
-      label={t("vendor")}
-      htmlFor="venue-vendor"
-      required
-      error={vendorError}
-      className="sm:col-span-2"
-    >
-      <Select value={selectedVendorId} onValueChange={setSelectedVendorId}>
-        <SelectTrigger
-          id="venue-vendor"
-          aria-invalid={!!vendorError}
-          className={fieldClassName(cn(inputClass, "w-full"), !!vendorError)}
-        >
-          <SelectValue placeholder={t("selectVendor")} />
-        </SelectTrigger>
-        <SelectContent>
-          {approvedVendors.map((vendor) => (
-            <SelectItem key={vendor.id} value={vendor.id}>
-              {vendor.vendorName} · {vendor.email}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </FormField>
-  );
-
   const basicsFields = (
     <>
-      {adminVendorField}
       <FormField
         label={t("venueName")}
         htmlFor="venue-name"
@@ -684,8 +688,7 @@ export function VenueSetupWizard({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           {details.coverImage ? (
             <div className="relative h-32 w-48 shrink-0 overflow-hidden rounded-lg border border-border">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <SecureStoredImage
                 src={details.coverImage}
                 alt={t("venueCoverAlt")}
                 className="h-full w-full object-cover"
@@ -727,7 +730,7 @@ export function VenueSetupWizard({
         </div>
       </div>
       <VenueGalleryUpload
-        urls={details.gallery}
+        urls={galleryUrls}
         uploading={galleryUploading}
         onUpload={onGalleryFiles}
         onRemove={removeGalleryAt}
@@ -793,7 +796,7 @@ export function VenueSetupWizard({
     </>
   );
 
-  if (venueId && isLoading && !existing) {
+  if (hasPersistedVenue && isLoading && !existing) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

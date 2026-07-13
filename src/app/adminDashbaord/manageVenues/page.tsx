@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Eye, Loader2, Pencil, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -57,7 +58,9 @@ const selectTriggerClass = cn("w-full sm:w-[180px]", dashboardSelectTriggerClass
 
 export default function ManageVenuesPage() {
   const paths = useDashboardPaths();
+  const pathname = usePathname();
   const isAdmin = paths.scope === "admin";
+  const isAdminOwnList = isAdmin && pathname.includes("/myVenues");
   const t = useTranslations(isAdmin ? "adminDashboard" : "vendorDashboard");
   const tPreview = useTranslations("adminDashboard");
   const tStatus = useTranslations("entityStatus");
@@ -80,7 +83,7 @@ export default function ManageVenuesPage() {
     limit: PAGE_SIZE,
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(statusFilter === "ALL" ? {} : { status: statusFilter }),
-    ...(isAdmin ? { allPlatform: true } : {}),
+    ...(isAdminOwnList ? { mine: true } : isAdmin ? { allPlatform: true } : {}),
     sortBy: "createdAt" as const,
     sortOrder: "desc" as const,
   };
@@ -107,8 +110,16 @@ export default function ManageVenuesPage() {
   const totalPages = meta?.totalPages ?? 1;
   const showPagination = !isLoading && (meta?.total ?? 0) > 0;
 
-  const pageTitle = isAdmin ? t("manageVenues") : t("myVenuesTitle");
-  const pageDesc = isAdmin ? t("manageVenuesDesc") : t("myVenuesDesc");
+  const pageTitle = isAdminOwnList
+    ? t("myVenues")
+    : isAdmin
+      ? t("manageVenues")
+      : t("myVenuesTitle");
+  const pageDesc = isAdminOwnList
+    ? t("myVenuesDesc")
+    : isAdmin
+      ? t("manageVenuesDesc")
+      : t("myVenuesDesc");
 
   return (
     <DashboardPageShell>
@@ -138,12 +149,14 @@ export default function ManageVenuesPage() {
                 <SelectItem value="REJECTED">{tStatus("rejected")}</SelectItem>
               </SelectContent>
             </Select>
-            <Button asChild className="w-full sm:w-auto">
-              <Link href={paths.addVenue}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t("addVenue")}
-              </Link>
-            </Button>
+            {isAdminOwnList || !isAdmin ? (
+              <Button asChild className="w-full sm:w-auto">
+                <Link href={paths.addVenue}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("addVenue")}
+                </Link>
+              </Button>
+            ) : null}
           </div>
         }
       >
@@ -193,7 +206,7 @@ export default function ManageVenuesPage() {
               <TableHead className="min-w-[220px] whitespace-nowrap text-muted-foreground">
                 {tCommon("name")}
               </TableHead>
-              {isAdmin ? (
+              {isAdmin && !isAdminOwnList ? (
                 <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
                   {t("vendorCol")}
                 </TableHead>
@@ -211,9 +224,9 @@ export default function ManageVenuesPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableSkeleton cols={isAdmin ? 5 : 4} />
+              <TableSkeleton cols={isAdmin && !isAdminOwnList ? 5 : 4} />
             ) : venues.length === 0 ? (
-              <TableEmptyRow colSpan={isAdmin ? 5 : 4}>
+              <TableEmptyRow colSpan={isAdmin && !isAdminOwnList ? 5 : 4}>
                 {isAdmin ? tVenues("noVenuesFound") : t("noVenuesYet")}
               </TableEmptyRow>
             ) : (
@@ -228,7 +241,7 @@ export default function ManageVenuesPage() {
                       <span className="truncate font-medium">{venue.name}</span>
                     </div>
                   </TableCell>
-                  {isAdmin ? (
+                  {isAdmin && !isAdminOwnList ? (
                     <TableCell className="text-muted-foreground">
                       {venue.vendor?.vendorName ?? "—"}
                     </TableCell>
@@ -277,7 +290,7 @@ export default function ManageVenuesPage() {
                           <Eye className="h-4 w-4" />
                         </Button>
                       )}
-                      {!isAdmin ? (
+                      {!isAdmin || isAdminOwnList ? (
                         <Button
                           type="button"
                           size="icon"
@@ -291,7 +304,7 @@ export default function ManageVenuesPage() {
                           </Link>
                         </Button>
                       ) : null}
-                      {isAdmin && venue.status !== "ACTIVE" && venue.status !== "DRAFT" ? (
+                      {isAdmin && !isAdminOwnList && venue.status !== "ACTIVE" && venue.status !== "DRAFT" ? (
                         <Button
                           type="button"
                           size="sm"
@@ -305,7 +318,7 @@ export default function ManageVenuesPage() {
                           {t("activate")}
                         </Button>
                       ) : null}
-                      {isAdmin && venue.status === "ACTIVE" ? (
+                      {isAdmin && !isAdminOwnList && venue.status === "ACTIVE" ? (
                         <Button
                           type="button"
                           size="sm"
@@ -332,7 +345,7 @@ export default function ManageVenuesPage() {
       <VenuePublicPreviewDialog
         venue={viewVenue}
         onClose={() => setViewVenue(null)}
-        editHref={!isAdmin && viewVenue ? paths.editVenue(viewVenue.id) : undefined}
+        editHref={(!isAdmin || isAdminOwnList) && viewVenue ? paths.editVenue(viewVenue.id) : undefined}
       />
     </DashboardPageShell>
   );

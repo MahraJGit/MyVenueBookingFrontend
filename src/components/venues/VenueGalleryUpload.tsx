@@ -5,12 +5,14 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { validateUploadFile } from "@/features/uploads/validation";
+import { SecureStoredImage } from "@/components/uploads/SecureStoredImage";
 import { toastApiError } from "@/lib/toasts";
 
 type VenueGalleryUploadProps = {
   urls: string[];
+  previewUrls?: Record<string, string>;
   uploading?: boolean;
-  onUpload: (files: FileList) => void | Promise<void>;
+  onUpload: (files: File[]) => void | Promise<void>;
   onRemove: (index: number) => void;
   inputId?: string;
   /** Override default optional gallery hint (e.g. required event gallery). */
@@ -19,6 +21,7 @@ type VenueGalleryUploadProps = {
 
 export function VenueGalleryUpload({
   urls,
+  previewUrls,
   uploading = false,
   onUpload,
   onRemove,
@@ -61,14 +64,15 @@ export function VenueGalleryUpload({
           multiple
           className="hidden"
           onChange={(e) => {
-            const files = e.target.files;
+            // Snapshot before clearing — FileList is live and empties when value is reset.
+            const selected = e.target.files ? Array.from(e.target.files) : [];
             e.target.value = "";
-            if (!files?.length) return;
+            if (!selected.length) return;
             try {
-              for (const file of Array.from(files)) {
+              for (const file of selected) {
                 validateUploadFile(file);
               }
-              void onUpload(files);
+              void onUpload(selected);
             } catch (error) {
               toastApiError(error);
             }
@@ -82,8 +86,12 @@ export function VenueGalleryUpload({
               key={`${url}-${index}`}
               className="relative overflow-hidden rounded-lg border border-border bg-muted/20"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="" className="aspect-video w-full object-cover" />
+              <SecureStoredImage
+                src={url}
+                previewSrc={previewUrls?.[url]}
+                alt=""
+                className="aspect-video w-full"
+              />
               <div className="flex items-center justify-between gap-2 border-t border-border p-2">
                 <span className="truncate font-mono text-[10px] text-muted-foreground">
                   {url.slice(-36)}

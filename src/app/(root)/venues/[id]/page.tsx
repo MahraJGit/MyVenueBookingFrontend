@@ -51,6 +51,7 @@ import {
   isPropertyStyleVenueType,
   parseVenuePropertyAttributes,
 } from "@/features/venues/utils";
+import { getMediaProxyUrl } from "@/features/uploads/media-url";
 import type { AvailabilitySlot, PricingModel, UnavailabilityReason } from "@/features/venues/types";
 import {
   combinedSlotRange,
@@ -151,23 +152,28 @@ function VenueGallery({
       </div>
       <Carousel opts={{ loop: true, align: "start" }} setApi={setApi} className="w-full">
         <CarouselContent className="-ml-3">
-          {images.map((img, i) => (
+          {images.map((img, i) => {
+            const imageSrc = getMediaProxyUrl(img);
+            const useProxy = imageSrc.startsWith("/api/media");
+            return (
             <CarouselItem
               key={`${img}-${i}`}
               className="basis-[85%] pl-3 sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
             >
               <div className="group relative aspect-[16/10] overflow-hidden rounded-xl border border-[#303030] sm:aspect-auto sm:h-[140px] md:h-[150px]">
                 <Image
-                  src={img}
+                  src={imageSrc}
                   alt={`${venueName} gallery ${i + 1}`}
                   fill
+                  unoptimized={useProxy}
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                   sizes="(max-width: 640px) 85vw, (max-width: 1024px) 50vw, 25vw"
                 />
                 <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
               </div>
             </CarouselItem>
-          ))}
+            );
+          })}
         </CarouselContent>
         {images.length > 1 && (
           <>
@@ -290,7 +296,7 @@ export default function VenueDetailPage({
     );
   }
 
-  const coverUrl = venue.coverImage?.trim() || getFallbackVenueImage(venue.id);
+  const coverUrl = getMediaProxyUrl(venue.coverImage?.trim() || getFallbackVenueImage(venue.id));
   const galleryImages = venue.gallery?.length ? venue.gallery : [];
   const hasGallery = galleryImages.length > 0;
   const currency = venue.pricing?.currency ?? "AED";

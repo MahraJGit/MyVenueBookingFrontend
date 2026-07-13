@@ -4,6 +4,7 @@ export const venueKeys = {
   publicDetail: (id: string) => [...venueKeys.all, "public", id] as const,
   managedList: (params: Record<string, unknown>) => [...venueKeys.all, "managed", params] as const,
   managedDetail: (id: string) => [...venueKeys.all, "managed", id] as const,
+  previewDetail: (id: string) => [...venueKeys.all, "preview", id] as const,
   types: () => [...venueKeys.all, "types"] as const,
   amenityCatalog: () => [...venueKeys.all, "amenity-catalog"] as const,
   monthAvailability: (venueId: string, year: number, month: number) =>

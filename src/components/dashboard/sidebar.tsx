@@ -86,6 +86,7 @@ export default function Sidebar({
 
           <SidebarSection title={t('venues')} value="venues">
             <SidebarLink icon="/svg/EventAccepted.svg" label={t('venueReviews')} href="/adminDashbaord/venueReviews" onClose={onClose} />
+            <SidebarLink icon="/svg/EventAccepted.svg" label={t('myVenues')} href="/adminDashbaord/myVenues" onClose={onClose} />
             <SidebarLink icon="/svg/EventAccepted.svg" label={t('manageVenues')} href="/adminDashbaord/manageVenues" onClose={onClose} />
             <SidebarLink icon="/svg/NewTicket.svg" label={t('venueBookings')} href="/adminDashbaord/venueBookings" onClose={onClose} />
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('venueTaxonomy')} href="/adminDashbaord/venueTaxonomy" onClose={onClose} />

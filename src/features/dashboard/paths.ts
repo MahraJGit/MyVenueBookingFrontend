@@ -19,6 +19,7 @@ export type DashboardPaths = {
   tickets: string;
   analytics: string;
   venues: string;
+  myVenues: string;
   addVenue: string;
   editVenue: (id: string) => string;
   venueBookings: string;
@@ -37,6 +38,7 @@ export function getDashboardPaths(scope: DashboardScope): DashboardPaths {
       tickets: `${VENDOR_DASHBOARD_PREFIX}/tickets`,
       analytics: `${VENDOR_DASHBOARD_PREFIX}/analytics`,
     venues: `${VENDOR_DASHBOARD_PREFIX}/venues`,
+    myVenues: `${VENDOR_DASHBOARD_PREFIX}/venues`,
     addVenue: `${VENDOR_DASHBOARD_PREFIX}/venues/new`,
     editVenue: (id: string) =>
       `${VENDOR_DASHBOARD_PREFIX}/venues/new?id=${encodeURIComponent(id)}`,
@@ -55,6 +57,7 @@ export function getDashboardPaths(scope: DashboardScope): DashboardPaths {
     tickets: `${ADMIN_DASHBOARD_PREFIX}/manageTickets`,
     analytics: `${ADMIN_DASHBOARD_PREFIX}/analytics`,
     venues: `${ADMIN_DASHBOARD_PREFIX}/manageVenues`,
+    myVenues: `${ADMIN_DASHBOARD_PREFIX}/myVenues`,
     addVenue: `${ADMIN_DASHBOARD_PREFIX}/venues/new`,
     editVenue: (id: string) =>
       `${ADMIN_DASHBOARD_PREFIX}/venues/new?id=${encodeURIComponent(id)}`,
