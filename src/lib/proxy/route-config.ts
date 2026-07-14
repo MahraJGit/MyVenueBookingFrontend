@@ -58,7 +58,7 @@ export function classifyRoute(pathname: string): RouteAccessRule {
   }
 
   if (isBookingCheckoutRoute(pathname)) {
-    return { type: "authenticated", allowedRoles: ["BUYER", "ADMIN"] };
+    return { type: "authenticated", allowedRoles: ["BUYER", "VENDOR", "ADMIN"] };
   }
 
   if (isAuthRoute(pathname)) {
