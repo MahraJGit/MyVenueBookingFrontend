@@ -416,7 +416,7 @@ function AddCardDialog({
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-zinc-800 bg-zinc-900 sm:max-w-md">
+        <DialogContent className="max-h-[90vh] overflow-y-auto border-zinc-800 bg-zinc-900 sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{tUserDashboard("addPaymentMethod")}</DialogTitle>
           </DialogHeader>

@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: frontendRoot,
   },  images: {
+    localPatterns: [
+      {
+        pathname: "/api/media",
+      },
+    ],
     remotePatterns: [
       {
         protocol: "https",
