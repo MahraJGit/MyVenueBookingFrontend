@@ -12,8 +12,15 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   turbopack: {
     root: frontendRoot,
-  },  images: {
+  },
+  images: {
     localPatterns: [
+      // Static assets in public/images (logos, blog cards, fallbacks, etc.)
+      {
+        pathname: "/images/**",
+        search: "",
+      },
+      // Auth cookie media proxy — query string carries the S3 URL
       {
         pathname: "/api/media",
       },
@@ -32,11 +39,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "picsum.photos",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
         pathname: "/**",
       },
     ],
