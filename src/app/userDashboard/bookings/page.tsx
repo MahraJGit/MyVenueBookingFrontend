@@ -54,7 +54,7 @@ export default function UserBookingsPage() {
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: bookingKeys.list(user?.id, { scope: "buyer" }),
-    queryFn: () => listBookings({ limit: 50 }),
+    queryFn: () => listBookings({ limit: 50, scope: "buyer" }),
     enabled: isAuthenticated && isReady && !!user?.id,
   });
 

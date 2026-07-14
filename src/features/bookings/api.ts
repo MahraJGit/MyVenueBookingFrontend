@@ -47,11 +47,14 @@ export async function listBookings(params?: {
   page?: number;
   limit?: number;
   status?: BookingStatus;
+  /** buyer = bookings you placed; omit/managed = role-based venue/admin list */
+  scope?: "buyer" | "managed";
 }): Promise<ListBookingsResult> {
   const sp = new URLSearchParams();
   sp.set("page", String(params?.page ?? 1));
   sp.set("limit", String(params?.limit ?? 10));
   if (params?.status) sp.set("status", params.status);
+  if (params?.scope) sp.set("scope", params.scope);
 
   return authJson<ListBookingsResult>(`/api/bookings?${sp.toString()}`, {
     method: "GET",
