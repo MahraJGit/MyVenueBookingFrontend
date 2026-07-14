@@ -2089,6 +2089,7 @@
     "noConversations": "Aucune conversation pour le moment. Les messages apparaissent ici après une réservation ou un achat de billets.",
     "messagePlaceholder": "Écrire un message…",
     "messageVendor": "Contacter le vendeur",
+    "messageBuyer": "Contacter l'acheteur",
     "contactAdmin": "Contacter l'admin",
     "typeBooking": "Réservation de lieu",
     "typeTicket": "Billets d'événement",

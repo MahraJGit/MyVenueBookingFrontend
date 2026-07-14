@@ -215,6 +215,7 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
                   allowReschedule
                   allowCancel
                   variant="vendor"
+                  showChat={!isAdmin}
                 />
               </div>
             ) : (

@@ -2089,6 +2089,7 @@
     "noConversations": "No conversations yet. Chats appear here after you book a venue or buy tickets.",
     "messagePlaceholder": "Type a message…",
     "messageVendor": "Message vendor",
+    "messageBuyer": "Message buyer",
     "contactAdmin": "Contact admin",
     "typeBooking": "Venue booking",
     "typeTicket": "Event tickets",

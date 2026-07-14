@@ -2089,6 +2089,7 @@
     "noConversations": "لا توجد محادثات بعد. تظهر الرسائل هنا بعد حجز مكان أو شراء تذاكر.",
     "messagePlaceholder": "اكتب رسالة…",
     "messageVendor": "مراسلة البائع",
+    "messageBuyer": "مراسلة المشتري",
     "contactAdmin": "التواصل مع المشرف",
     "typeBooking": "حجز مكان",
     "typeTicket": "تذاكر الفعالية",

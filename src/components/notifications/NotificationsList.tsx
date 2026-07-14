@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
@@ -203,16 +202,8 @@ export default function NotificationsList({ className, embedded }: Notifications
                 </button>
 
                 {isOpen && (
-                  <div className="px-5 pb-4 text-sm text-muted-foreground space-y-3">
+                  <div className="px-5 pb-4 text-sm text-muted-foreground">
                     <p>{notification.description}</p>
-                    {notification.link ? (
-                      <Link
-                        href={notification.link}
-                        className="text-primary hover:underline text-sm inline-block"
-                      >
-                        {t('viewDetails')}
-                      </Link>
-                    ) : null}
                   </div>
                 )}
               </div>

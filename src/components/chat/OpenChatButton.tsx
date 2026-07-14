@@ -20,6 +20,8 @@ type OpenChatButtonProps = {
   referenceId: string;
   messagesPath: string;
   chatContext?: ChatInboxContext;
+  /** Who the current user is messaging (default: vendor). */
+  labelKey?: "messageVendor" | "messageBuyer";
   disabled?: boolean;
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg";
@@ -30,6 +32,7 @@ export function OpenChatButton({
   referenceId,
   messagesPath,
   chatContext,
+  labelKey = "messageVendor",
   disabled,
   variant = "outline",
   size = "sm",
@@ -62,7 +65,7 @@ export function OpenChatButton({
       ) : (
         <MessageCircle className="mr-2 h-4 w-4" />
       )}
-      {t("messageVendor")}
+      {t(labelKey)}
     </Button>
   );
 }

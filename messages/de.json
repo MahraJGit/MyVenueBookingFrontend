@@ -2089,6 +2089,7 @@
     "noConversations": "Noch keine Unterhaltungen. Nachrichten erscheinen hier nach einer Venue-Buchung oder einem Ticketkauf.",
     "messagePlaceholder": "Nachricht eingeben…",
     "messageVendor": "Anbieter schreiben",
+    "messageBuyer": "Käufer schreiben",
     "contactAdmin": "Admin kontaktieren",
     "typeBooking": "Venue-Buchung",
     "typeTicket": "Event-Tickets",

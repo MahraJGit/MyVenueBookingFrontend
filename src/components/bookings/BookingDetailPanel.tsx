@@ -84,6 +84,8 @@ type BookingDetailPanelProps = {
   allowCancel?: boolean;
   allowReschedule?: boolean;
   variant?: "default" | "user" | "vendor";
+  /** Hide chat CTA (e.g. admin venue bookings). */
+  showChat?: boolean;
 };
 
 function isValidDatetimeLocalInTimezone(value: string, timezone: string): boolean {
@@ -128,6 +130,7 @@ export function BookingDetailPanel({
   allowCancel = true,
   allowReschedule = true,
   variant = "default",
+  showChat = true,
 }: BookingDetailPanelProps) {
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isReady } = useAuth();
@@ -214,6 +217,7 @@ export function BookingDetailPanel({
         onClose={onClose}
         allowCancel={allowCancel}
         allowReschedule={allowReschedule}
+        showChat={showChat}
         cancelMut={cancelMut}
         rescheduleMut={rescheduleMut}
         rescheduleOpen={rescheduleOpen}
@@ -280,6 +284,7 @@ type DetailBodyProps = {
   onClose?: () => void;
   allowCancel: boolean;
   allowReschedule: boolean;
+  showChat?: boolean;
   cancelMut: { mutate: () => void; isPending: boolean };
   rescheduleMut: { mutate: () => void; isPending: boolean };
   rescheduleOpen: boolean;
@@ -626,6 +631,7 @@ function DefaultBookingDetail({
               kind="booking"
               referenceId={booking.id}
               messagesPath="/vendorDashboard/messages"
+              labelKey="messageBuyer"
             />
           ) : null}
           {allowReschedule &&
@@ -679,6 +685,7 @@ function VendorBookingDetail({
   onClose,
   allowCancel,
   allowReschedule,
+  showChat = true,
   cancelMut,
   rescheduleMut,
   rescheduleOpen,
@@ -815,11 +822,13 @@ function VendorBookingDetail({
         <Separator className="bg-[#242424]" />
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {(booking.status === "CONFIRMED" || booking.status === "COMPLETED") ? (
+          {showChat &&
+          (booking.status === "CONFIRMED" || booking.status === "COMPLETED") ? (
             <OpenChatButton
               kind="booking"
               referenceId={booking.id}
               messagesPath="/vendorDashboard/messages"
+              labelKey="messageBuyer"
               variant="outline"
             />
           ) : null}
