@@ -101,10 +101,17 @@ export function VenueReadinessPanel({
           </div>
         )}
 
-        {isAdminMode && status && ["ACTIVE", "APPROVED"].includes(status) && (
+        {isAdminMode && status === "ACTIVE" && (
           <div className="mb-3 flex gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <p>{t("venueLiveHint")}</p>
+          </div>
+        )}
+
+        {isAdminMode && status === "APPROVED" && (
+          <div className="mb-3 flex gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>{t("venueApprovedNotLiveHint")}</p>
           </div>
         )}
 

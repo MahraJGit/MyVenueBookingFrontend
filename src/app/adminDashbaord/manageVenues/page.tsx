@@ -304,7 +304,7 @@ export default function ManageVenuesPage() {
                           </Link>
                         </Button>
                       ) : null}
-                      {isAdmin && !isAdminOwnList && venue.status !== "ACTIVE" && venue.status !== "DRAFT" ? (
+                      {isAdmin && venue.status !== "ACTIVE" && venue.status !== "DRAFT" ? (
                         <Button
                           type="button"
                           size="sm"
@@ -318,7 +318,7 @@ export default function ManageVenuesPage() {
                           {t("activate")}
                         </Button>
                       ) : null}
-                      {isAdmin && !isAdminOwnList && venue.status === "ACTIVE" ? (
+                      {isAdmin && venue.status === "ACTIVE" ? (
                         <Button
                           type="button"
                           size="sm"
