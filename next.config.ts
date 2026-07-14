@@ -14,13 +14,14 @@ const nextConfig: NextConfig = {
     root: frontendRoot,
   },
   images: {
+    // Restricting localPatterns to only `/api/media` blocks every public/
+    // asset (`/images/...`, `/_next/static/media/...`, etc.) with 400.
+    // Allow all no-query local paths; only the media proxy may carry a query.
     localPatterns: [
-      // Static assets in public/images (logos, blog cards, fallbacks, etc.)
       {
-        pathname: "/images/**",
+        pathname: "/**",
         search: "",
       },
-      // Auth cookie media proxy — query string carries the S3 URL
       {
         pathname: "/api/media",
       },
