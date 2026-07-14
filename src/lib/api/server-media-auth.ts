@@ -107,12 +107,29 @@ export async function resolveMediaAuth(
   return result;
 }
 
+function mediaCookieDomain(): string | undefined {
+  if (process.env.NODE_ENV !== "production") return undefined;
+  try {
+    const apiBase = getPublicApiBaseUrl();
+    // Derive parent domain from API host (api.myvenuebooking.com → .myvenuebooking.com)
+    const hostname = new URL(apiBase || "https://api.myvenuebooking.com").hostname
+      .replace(/^api\./i, "")
+      .replace(/^www\./i, "");
+    if (!hostname || hostname === "localhost") return undefined;
+    return `.${hostname}`;
+  } catch {
+    return ".myvenuebooking.com";
+  }
+}
+
 export function mediaRefreshCookieOptions() {
+  const domain = mediaCookieDomain();
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     path: "/api",
     maxAge: REFRESH_COOKIE_MAX_AGE_SECONDS,
+    ...(domain ? { domain } : {}),
   };
 }

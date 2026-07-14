@@ -164,6 +164,22 @@ export function VenueSetupWizard({
   });
 
   const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  /** Blob previews keyed by persisted S3 URL (avoid /api/media 401 before save). */
+  const [galleryPreviews, setGalleryPreviews] = useState<Record<string, string>>({});
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const coverPreviewRef = useRef<string | null>(null);
+  const galleryPreviewsRef = useRef<Record<string, string>>({});
+  coverPreviewRef.current = coverPreview;
+  galleryPreviewsRef.current = galleryPreviews;
+
+  useEffect(() => {
+    return () => {
+      if (coverPreviewRef.current) URL.revokeObjectURL(coverPreviewRef.current);
+      for (const url of Object.values(galleryPreviewsRef.current)) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, []);
   const [galleryUploading, setGalleryUploading] = useState(false);
 
   const [schedules, setSchedules] = useState(defaultWeeklySchedules());
@@ -431,12 +447,21 @@ export function VenueSetupWizard({
   });
 
   const uploadCover = async (file: File) => {
+    const blobUrl = URL.createObjectURL(file);
+    setCoverPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return blobUrl;
+    });
     try {
       validateUploadFile(file);
       const url = await uploadVenueMedia(file);
       setDetails((d) => ({ ...d, coverImage: url }));
       toast.success(t("coverUploaded"));
     } catch (e) {
+      setCoverPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
       toastApiError(e);
     }
   };
@@ -469,7 +494,14 @@ export function VenueSetupWizard({
         persistedGallery = next.filter((url) => !url.startsWith("blob:"));
         return next;
       });
-      blobUrls.forEach((blobUrl) => URL.revokeObjectURL(blobUrl));
+      // Keep blob previews mapped to S3 URLs until removed / unmount
+      setGalleryPreviews((prev) => {
+        const next = { ...prev };
+        blobUrls.forEach((blobUrl, index) => {
+          next[results[index]] = blobUrl;
+        });
+        return next;
+      });
 
       if (effectiveVenueId && persistedGallery.length > 0) {
         await updateVenue(effectiveVenueId, { gallery: persistedGallery });
@@ -498,6 +530,13 @@ export function VenueSetupWizard({
 
     if (removedUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(removedUrl);
+    } else if (removedUrl && galleryPreviews[removedUrl]) {
+      URL.revokeObjectURL(galleryPreviews[removedUrl]);
+      setGalleryPreviews((prev) => {
+        const next = { ...prev };
+        delete next[removedUrl];
+        return next;
+      });
     }
 
     if (!effectiveVenueId) return;
@@ -686,10 +725,11 @@ export function VenueSetupWizard({
       <div className="space-y-2 sm:col-span-2">
         <Label>{t("coverImage")}</Label>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          {details.coverImage ? (
+          {details.coverImage || coverPreview ? (
             <div className="relative h-32 w-48 shrink-0 overflow-hidden rounded-lg border border-border">
               <SecureStoredImage
-                src={details.coverImage}
+                src={details.coverImage || coverPreview || ""}
+                previewSrc={coverPreview ?? undefined}
                 alt={t("venueCoverAlt")}
                 className="h-full w-full object-cover"
               />
@@ -715,12 +755,18 @@ export function VenueSetupWizard({
               <ImagePlus className="mr-2 h-4 w-4" />
               {t("uploadPhoto")}
             </Button>
-            {details.coverImage && (
+            {(details.coverImage || coverPreview) && (
               <Button
                 type="button"
                 variant="ghost"
                 className="text-destructive"
-                onClick={() => setDetails({ ...details, coverImage: "" })}
+                onClick={() => {
+                  setCoverPreview((prev) => {
+                    if (prev) URL.revokeObjectURL(prev);
+                    return null;
+                  });
+                  setDetails({ ...details, coverImage: "" });
+                }}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 {tForms("removeCover")}
@@ -731,6 +777,7 @@ export function VenueSetupWizard({
       </div>
       <VenueGalleryUpload
         urls={galleryUrls}
+        previewUrls={galleryPreviews}
         uploading={galleryUploading}
         onUpload={onGalleryFiles}
         onRemove={removeGalleryAt}
