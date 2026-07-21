@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
 import { Banknote, ExternalLink, Loader2, Ticket } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -59,9 +58,16 @@ const PAGE_SIZE = 10;
 const selectTriggerClass = dashboardSelectTriggerClass;
 const selectContentClass = dashboardDropdownContentClass;
 
-function formatDateTime(iso: string) {
+function formatDateTime(iso: string, timeZone?: string | null) {
   try {
-    return format(new Date(iso), "MMM d, yyyy h:mm a");
+    return new Date(iso).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      ...(timeZone ? { timeZone } : {}),
+    });
   } catch {
     return iso;
   }
@@ -353,7 +359,7 @@ function ByEventTable({
                       </TableCell>
                     ) : null}
                     <TableCell className="text-muted-foreground">
-                      {idx === 0 ? formatDateTime(event.eventStartDateTime) : ""}
+                      {idx === 0 ? formatDateTime(event.eventStartDateTime, event.timezone) : ""}
                     </TableCell>
                     <TableCell>{tt.name}</TableCell>
                     <TableCell className="text-right">{tt.ticketsSoldInFilter}</TableCell>
@@ -388,7 +394,7 @@ function ByEventTable({
                       </TableCell>
                     ) : null}
                     <TableCell className="text-muted-foreground">
-                      {formatDateTime(event.eventStartDateTime)}
+                      {formatDateTime(event.eventStartDateTime, event.timezone)}
                     </TableCell>
                     <TableCell colSpan={4} className="text-muted-foreground">
                       {t("noTicketTypes")}

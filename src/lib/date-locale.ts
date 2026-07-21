@@ -1,5 +1,6 @@
 import { enUS, de, ar, fr, type Locale } from "date-fns/locale";
 import { getIntlLocale, resolveLocale, type AppLocale } from "@/i18n/locales";
+import { withTimezoneLabel } from "@/lib/timezones";
 
 // date-fns has no Urdu locale (`ur`); fall back to enUS for calendar/date-fns
 // formatters. Intl.DateTimeFormat still uses ur-PK via getIntlLocale().
@@ -25,8 +26,13 @@ export function formatLocalizedDateTime(
     hour: "numeric",
     minute: "2-digit",
   },
+  timeZone?: string,
 ): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat(getIntlLocale(locale), options).format(d);
+  const formatted = new Intl.DateTimeFormat(getIntlLocale(locale), {
+    ...options,
+    ...(timeZone ? { timeZone } : {}),
+  }).format(d);
+  return withTimezoneLabel(formatted, timeZone);
 }

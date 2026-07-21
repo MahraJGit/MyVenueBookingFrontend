@@ -263,7 +263,7 @@ const Tickets = () => {
                       {formatLocalizedDateTime(ticket.orderDate, locale)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {formatLocalizedDateTime(ticket.eventStartDateTime, locale)}
+                      {formatLocalizedDateTime(ticket.eventStartDateTime, locale, undefined, ticket.timezone ?? undefined)}
                     </TableCell>
                     <TableCell className="text-foreground">
                       <DisplayPrice amount={ticket.totalAmount} currency={ticket.currency} />

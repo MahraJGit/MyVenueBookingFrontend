@@ -1004,7 +1004,6 @@ export function BookingsTable({
 }: BookingsTableProps) {
   const t = useTranslations("booking");
   const { locale } = useLocaleContext();
-  const dateFnsLocale = getDateFnsLocale(locale);
   const resolvedEmptyMessage = emptyMessage ?? t("noBookingsFound");
   const colCount = showBuyer ? 5 : 4;
 
@@ -1048,12 +1047,12 @@ export function BookingsTable({
                   </TableCell>
                 ) : null}
                 <TableCell className="text-muted-foreground">
-                  {format(new Date(booking.startTime), "MMM d, yyyy h:mm a", {
-                    locale: dateFnsLocale,
-                  })}
+                  {formatInVenueTimezone(booking.startTime, booking.venue.timezone, locale)}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {format(new Date(booking.endTime), "h:mm a", { locale: dateFnsLocale })}
+                  {formatInVenueTimezone(booking.endTime, booking.venue.timezone, locale, {
+                    timeStyle: "short",
+                  })}
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={booking.status} />

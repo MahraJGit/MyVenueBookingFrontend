@@ -6,7 +6,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Eye, ExternalLink, Loader2 } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
-import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
@@ -78,17 +77,29 @@ function statusBadgeVariant(status: EventApprovalStatus | undefined) {
   return "secondary"
 }
 
-function formatDate(dateString: string) {
+function formatDate(dateString: string, timeZone?: string | null) {
   try {
-    return format(new Date(dateString), "MMM d, yyyy")
+    return new Date(dateString).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      ...(timeZone ? { timeZone } : {}),
+    })
   } catch {
     return dateString
   }
 }
 
-function formatDateTime(dateString: string) {
+function formatDateTime(dateString: string, timeZone?: string | null) {
   try {
-    return format(new Date(dateString), "MMM d, yyyy h:mm a")
+    return new Date(dateString).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      ...(timeZone ? { timeZone } : {}),
+    })
   } catch {
     return dateString
   }
@@ -326,7 +337,7 @@ export default function EventReviewsPage() {
                         {ev.city}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                        {formatDateTime(ev.startDateTime)}
+                        {formatDateTime(ev.startDateTime, ev.timezone)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <Badge variant={statusBadgeVariant(ev.status)}>
@@ -434,11 +445,11 @@ export default function EventReviewsPage() {
                 <DetailRow label={tForms("city")} value={activeDetails.city} />
                 <DetailRow
                   label={t("starts")}
-                  value={formatDateTime(activeDetails.startDateTime)}
+                  value={formatDateTime(activeDetails.startDateTime, activeDetails.timezone)}
                 />
                 <DetailRow
                   label={t("ends")}
-                  value={formatDateTime(activeDetails.endDateTime)}
+                  value={formatDateTime(activeDetails.endDateTime, activeDetails.timezone)}
                 />
                 <DetailRow label={tForms("venueName")} value={activeDetails.venueName ?? "—"} />
                 <DetailRow label={tForms("address")} value={activeDetails.address ?? "—"} />

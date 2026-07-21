@@ -1,4 +1,5 @@
 import type { PublicEvent, SalePhase, TicketTypeRow } from "@/features/events/api";
+import { withTimezoneLabel } from "@/lib/timezones";
 
 const FALLBACK_IMAGES = [
   "/images/card-img-2.jpg",
@@ -22,26 +23,54 @@ export function getFallbackEventImage(seed: string): string {
   return FALLBACK_IMAGES[hash] ?? FALLBACK_IMAGES[0];
 }
 
-export function formatEventDate(iso: string, locale?: string): string {
+export function formatEventDate(iso: string, locale?: string, timeZone?: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString(locale || undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
+    ...(timeZone ? { timeZone } : {}),
   });
 }
 
-export function formatEventDateTime(iso: string, locale?: string): string {
+export function formatEventDateTime(iso: string, locale?: string, timeZone?: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString(locale || undefined, {
+  const formatted = d.toLocaleString(locale || undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    ...(timeZone ? { timeZone } : {}),
   });
+  return withTimezoneLabel(formatted, timeZone);
+}
+
+export function formatEventTime(iso: string, locale?: string, timeZone?: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString(locale || undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    ...(timeZone ? { timeZone } : {}),
+  });
+}
+
+/** Format a start–end clock range with a single timezone suffix. */
+export function formatEventTimeRange(
+  startIso: string,
+  endIso: string,
+  locale?: string,
+  timeZone?: string,
+): string {
+  const start = formatEventTime(startIso, locale, timeZone);
+  const end = formatEventTime(endIso, locale, timeZone);
+  if (!start && !end) return "";
+  if (!end) return withTimezoneLabel(start, timeZone);
+  if (!start) return withTimezoneLabel(end, timeZone);
+  return withTimezoneLabel(`${start} - ${end}`, timeZone);
 }
 
 function toDate(value?: string | null): Date | null {

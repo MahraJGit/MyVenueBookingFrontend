@@ -146,7 +146,10 @@ export function VenueBookingDialog({
           <DialogTitle>{t("bookVenue", { name: venue.name })}</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          {dateStr} · {slot.startTime} – {slot.endTime} ({venue.timezone})
+          {dateStr} · {slot.startTime} – {slot.endTime}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {t("timezoneHint", { timezone: venue.timezone })}
         </p>
 
         <div className="space-y-4">

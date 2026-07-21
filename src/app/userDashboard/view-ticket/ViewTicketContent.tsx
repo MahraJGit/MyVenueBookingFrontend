@@ -13,13 +13,16 @@ import {
   Calendar,
   MapPin,
   Ticket,
-  // Download,
-  // RotateCcw,
+  Download,
   Loader2,
   ArrowLeft,
   Star,
 } from 'lucide-react'
 import { getMyTicketOrder, type MyTicketOrder } from '@/features/ticket-purchases/api'
+import {
+  downloadTicketPdfs,
+  flattenOrderSeats,
+} from '@/features/ticket-purchases/download-ticket-pdfs'
 import { myTicketOrderQueryKey, myTicketOrdersQueryKey } from '@/features/auth/auth-cache'
 import { useAuth } from '@/features/auth/auth-context'
 import { getTicketStatusLabel } from '@/features/ticket-purchases/order-display'
@@ -31,6 +34,7 @@ import { cn } from '@/lib/utils'
 import { dashboardSurfaceClass } from '@/components/dashboard/dashboard-ui'
 import { useLocaleContext } from '@/features/i18n/locale-context'
 import { formatLocalizedDateTime } from '@/lib/date-locale'
+import { toast } from 'sonner'
 import React from 'react'
 
 function formatLocation(order: {
@@ -63,6 +67,7 @@ export default function ViewTicketContent() {
   const queryClient = useQueryClient()
   const orderGroupId = searchParams.get('orderGroupId')
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   const { data: order, isLoading, isError, error } = useQuery({
     queryKey: myTicketOrderQueryKey(user?.id, orderGroupId ?? ''),
@@ -76,6 +81,39 @@ export default function ViewTicketContent() {
 
   const statusLabel = (ticketOrder: Pick<MyTicketOrder, 'attendancePhase' | 'paymentStatus'>) =>
     getTicketStatusLabel(ticketOrder, (key) => tDashboard(key))
+
+  const handleDownloadTickets = async () => {
+    if (!order || isDownloading) return
+
+    const seats = flattenOrderSeats(order.items)
+    if (seats.length === 0 || order.paymentStatus !== 'confirmed') {
+      toast.error(t('downloadUnavailable'))
+      return
+    }
+
+    setIsDownloading(true)
+    try {
+      await downloadTicketPdfs({
+        orderCode: order.orderCode,
+        orderGroupId: order.orderGroupId,
+        eventName: order.eventName,
+        eventStartDateTime: order.eventStartDateTime,
+        eventEndDateTime: order.eventEndDateTime,
+        timezone: order.timezone,
+        venueName: order.venueName,
+        address: order.address,
+        city: order.city,
+        state: order.state,
+        currency: order.currency,
+        seats,
+      })
+      toast.success(t('downloadSuccess', { count: seats.length }))
+    } catch {
+      toast.error(t('downloadError'))
+    } finally {
+      setIsDownloading(false)
+    }
+  }
 
   if (!orderGroupId) {
     return (
@@ -113,6 +151,9 @@ export default function ViewTicketContent() {
 
   const imageSrc =
     order.eventImage ?? getFallbackEventImage(order.eventId)
+  const seatCount = flattenOrderSeats(order.items).length
+  const canDownload =
+    order.paymentStatus === 'confirmed' && seatCount > 0
 
   return (
     <Card className={cn(dashboardSurfaceClass, "p-4 text-white sm:p-8")}>
@@ -158,16 +199,20 @@ export default function ViewTicketContent() {
               {tDashboard('reviewOrganizer')}
             </Button>
           ) : null}
-          {/* Temporarily hidden until refund/download flows are ready
-          <Button variant="outline" size="sm" className="w-full sm:w-auto" disabled>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            {t('refundTicket')}
+          <Button
+            type="button"
+            size="sm"
+            className="w-full sm:w-auto"
+            disabled={!canDownload || isDownloading}
+            onClick={() => void handleDownloadTickets()}
+          >
+            {isDownloading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            {isDownloading ? t('downloadingTickets') : t('downloadTicket')}
           </Button>
-          <Button size="sm" className="w-full sm:w-auto" disabled>
-            <Download className="mr-2 h-4 w-4" />
-            {t('downloadTicket')}
-          </Button>
-          */}
         </div>
       </div>
 
@@ -193,7 +238,7 @@ export default function ViewTicketContent() {
             <div>
               <p className="font-medium">{t('eventDate')}</p>
               <p className="text-muted-foreground">
-                {formatLocalizedDateTime(order.eventStartDateTime, locale)}
+                {formatLocalizedDateTime(order.eventStartDateTime, locale, undefined, order.timezone ?? undefined)}
               </p>
             </div>
           </div>
@@ -216,7 +261,7 @@ export default function ViewTicketContent() {
           <Separator className="bg-zinc-800 flex-1" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
           <div>
             <p className="text-muted-foreground">{t('ticketCount')}</p>
             <p className="font-medium">
@@ -235,12 +280,6 @@ export default function ViewTicketContent() {
             <p className="font-medium">
               <DisplayPrice amount={order.totalAmount} currency={order.currency} />
             </p>
-          </div>
-
-          <div className="flex justify-start md:col-span-1 md:row-span-2 md:justify-end">
-            <div className="flex h-32 w-32 items-center justify-center rounded-lg border border-pink-500/30 bg-pink-500/20 p-4 text-center text-xs text-muted-foreground">
-              {t('qrComingSoon')}
-            </div>
           </div>
 
           <div>

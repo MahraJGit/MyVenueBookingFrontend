@@ -86,22 +86,27 @@ import { venueKeys } from "@/features/venues/query-keys";
 import type { VenueAmenityPayload } from "@/features/venues/types";
 import { defaultWeeklySchedules, buildVenueCustomAttributes, evaluateVenueReadiness, isPropertyStyleVenueType, parseVenuePropertyAttributes } from "@/features/venues/utils";
 import { useDashboardPaths } from "@/features/dashboard/paths";
+import { listCitiesByCountryCode, listCountries } from "@/features/locations/api";
+import {
+  findActiveCountry,
+  findCatalogCity,
+  findCatalogCityFromHint,
+  MAP_LOCATION_TOAST_ID,
+  uniqueCityTimezones,
+  type PendingMapCity,
+} from "@/features/locations/match";
+import { locationKeys } from "@/features/locations/query-keys";
 import { toastApiError } from "@/lib/toasts";
+import { formatTimezoneLabel } from "@/lib/timezones";
+import {
+  dateInputToUtcDateIso,
+  utcDateIsoToDateInput,
+} from "@/features/venues/timezone";
 import { validateUploadFile } from "@/features/uploads/validation";
 import { SecureStoredImage } from "@/components/uploads/SecureStoredImage";
 import { validatePricingForm } from "@/features/venues/pricing-validation";
 import { cn } from "@/lib/utils";
 import { fieldClassName, isBlank } from "@/lib/form-validation";
-
-const TIMEZONES = [
-  "Asia/Dubai",
-  "Asia/Karachi",
-  "Asia/Riyadh",
-  "Asia/Qatar",
-  "Europe/London",
-  "America/New_York",
-  "UTC",
-];
 
 const inputClass = "bg-input/50 border-border";
 
@@ -146,10 +151,16 @@ export function VenueSetupWizard({
     queryFn: listAmenityCatalog,
   });
 
+  const { data: countries = [] } = useQuery({
+    queryKey: locationKeys.countries(true),
+    queryFn: () => listCountries({ activeOnly: true }),
+  });
+
   const [details, setDetails] = useState({
     name: "",
     description: "",
     address: "",
+    countryCode: "AE",
     city: "",
     latitude: "25.2048",
     longitude: "55.2708",
@@ -162,6 +173,52 @@ export function VenueSetupWizard({
     timezone: "Asia/Dubai",
     coverImage: "",
   });
+  const [pendingMapCity, setPendingMapCity] = useState<PendingMapCity | null>(null);
+
+  const {
+    data: cities = [],
+    isSuccess: citiesReady,
+    isFetching: citiesFetching,
+  } = useQuery({
+    queryKey: locationKeys.cities(details.countryCode, { activeOnly: true, featuredOnly: true }),
+    queryFn: () =>
+      listCitiesByCountryCode(details.countryCode, { activeOnly: true, featuredOnly: true }),
+    enabled: !!details.countryCode,
+  });
+
+  const timezoneOptions = uniqueCityTimezones(cities, details.timezone);
+
+  useEffect(() => {
+    if (
+      !pendingMapCity ||
+      pendingMapCity.countryCode !== details.countryCode ||
+      !citiesReady ||
+      citiesFetching
+    ) {
+      return;
+    }
+
+    const match = findCatalogCityFromHint(cities, pendingMapCity);
+    if (match) {
+      setDetails((prev) => ({
+        ...prev,
+        city: match.name,
+        timezone: match.timezone ?? prev.timezone,
+      }));
+    } else if (pendingMapCity.city || pendingMapCity.fullAddress) {
+      toast.error(
+        t("unsupportedCity", {
+          city: pendingMapCity.city?.trim() || pendingMapCity.fullAddress || "—",
+        }),
+        { id: MAP_LOCATION_TOAST_ID },
+      );
+      setDetails((prev) => ({
+        ...prev,
+        city: findCatalogCity(cities, prev.city) ? prev.city : "",
+      }));
+    }
+    setPendingMapCity(null);
+  }, [pendingMapCity, cities, citiesReady, citiesFetching, details.countryCode, t]);
 
   const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
   /** Blob previews keyed by persisted S3 URL (avoid /api/media 401 before save). */
@@ -244,6 +301,7 @@ export function VenueSetupWizard({
       name: existing.name,
       description: existing.description ?? "",
       address: existing.address,
+      countryCode: existing.countryCode ?? "AE",
       city: existing.city ?? "",
       latitude: String(existing.latitude ?? "25.2048"),
       longitude: String(existing.longitude ?? "55.2708"),
@@ -320,6 +378,7 @@ export function VenueSetupWizard({
         description: details.description || undefined,
         address: details.address,
         city: details.city || undefined,
+        countryCode: details.countryCode || undefined,
         latitude: Number(details.latitude),
         longitude: Number(details.longitude),
         capacityMin: details.capacityMin ? Number(details.capacityMin) : undefined,
@@ -425,7 +484,7 @@ export function VenueSetupWizard({
     mutationFn: () => {
       if (!effectiveVenueId) throw new Error(t("saveVenueDetailsFirst"));
       return addVenueBlock(effectiveVenueId, {
-        blockDate: new Date(blockForm.blockDate).toISOString(),
+        blockDate: dateInputToUtcDateIso(blockForm.blockDate),
         reason: blockForm.reason || undefined,
         customOpenTime: blockForm.customOpenTime,
         customCloseTime: blockForm.customCloseTime,
@@ -586,6 +645,10 @@ export function VenueSetupWizard({
   function trySaveDetails() {
     setFieldAttempted((a) => ({ ...a, name: true, address: true }));
     if (isBlank(details.name) || isBlank(details.address)) return;
+    if (!findCatalogCity(cities, details.city)) {
+      toast.error(t("selectCityError"));
+      return;
+    }
     saveDetails.mutate();
   }
 
@@ -804,39 +867,151 @@ export function VenueSetupWizard({
         />
       </FormField>
       <div className="space-y-2">
+        <Label htmlFor="venue-country">{tForms("country")}</Label>
+        <Select
+          value={details.countryCode}
+          onValueChange={(countryCode) => {
+            setPendingMapCity(null);
+            setDetails((prev) => ({ ...prev, countryCode, city: "" }));
+          }}
+        >
+          <SelectTrigger id="venue-country" className={inputClass}>
+            <SelectValue placeholder={tForms("country")} />
+          </SelectTrigger>
+          <SelectContent>
+            {countries.map((country) => (
+              <SelectItem key={country.id} value={country.code}>
+                {country.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="venue-city">{tForms("city")}</Label>
-        <Input
-          id="venue-city"
-          placeholder={tForms("city")}
+        <Select
           value={details.city}
-          onChange={(e) => setDetails({ ...details, city: e.target.value })}
-          className={inputClass}
-        />
+          onValueChange={(city) => {
+            const match = findCatalogCity(cities, city);
+            setDetails((prev) => ({
+              ...prev,
+              city,
+              timezone: match?.timezone ?? prev.timezone,
+            }));
+          }}
+          disabled={!details.countryCode}
+        >
+          <SelectTrigger id="venue-city" className={inputClass}>
+            <SelectValue placeholder={tForms("city")} />
+          </SelectTrigger>
+          <SelectContent>
+            {cities.map((city) => (
+              <SelectItem key={city.id} value={city.name}>
+                {city.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-2 sm:col-span-2">
         <Label htmlFor="venue-timezone">{tForms("timezone")}</Label>
         <Select
           value={details.timezone}
           onValueChange={(v) => setDetails({ ...details, timezone: v })}
+          disabled={timezoneOptions.length === 0}
         >
           <SelectTrigger className={inputClass}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {TIMEZONES.map((tz) => (
+            {timezoneOptions.map((tz) => (
               <SelectItem key={tz} value={tz}>
-                {tz}
+                {formatTimezoneLabel(tz)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        {details.timezone ? (
+          <p className="text-xs text-muted-foreground">
+            {t("timezoneHint", { timezone: details.timezone })}
+          </p>
+        ) : null}
       </div>
       <div className="sm:col-span-2">
         <LocationPickerMap
           latitude={details.latitude}
           longitude={details.longitude}
+          onAddressHint={(hint) => {
+            let countryAccepted = true;
+            let nextCountryCode = details.countryCode;
+
+            if (hint.countryCode) {
+              const matchedCountry = findActiveCountry(countries, hint.countryCode);
+              if (!matchedCountry) {
+                countryAccepted = false;
+                toast.error(t("unsupportedCountry"), { id: MAP_LOCATION_TOAST_ID });
+              } else {
+                nextCountryCode = matchedCountry.code;
+              }
+            }
+
+            if (!countryAccepted) {
+              setPendingMapCity(null);
+            } else if (
+              nextCountryCode === details.countryCode &&
+              citiesReady &&
+              !citiesFetching
+            ) {
+              const match = findCatalogCityFromHint(cities, hint);
+              if (match) {
+                setDetails((prev) => ({
+                  ...prev,
+                  city: match.name,
+                  timezone: match.timezone ?? prev.timezone,
+                  ...((hint.fullAddress ?? hint.addressLine)
+                    ? { address: hint.fullAddress ?? hint.addressLine ?? prev.address }
+                    : {}),
+                }));
+                setPendingMapCity(null);
+                return;
+              }
+              if (hint.city || hint.fullAddress) {
+                toast.error(
+                  t("unsupportedCity", {
+                    city: hint.city?.trim() || hint.fullAddress || "—",
+                  }),
+                  { id: MAP_LOCATION_TOAST_ID },
+                );
+              }
+              setPendingMapCity(null);
+            } else {
+              setPendingMapCity({
+                countryCode: nextCountryCode,
+                city: hint.city,
+                fullAddress: hint.fullAddress,
+                addressLine: hint.addressLine,
+              });
+            }
+
+            setDetails((prev) => ({
+              ...prev,
+              ...(hint.countryCode && countryAccepted
+                ? {
+                    countryCode: nextCountryCode,
+                    city: nextCountryCode === prev.countryCode ? prev.city : "",
+                  }
+                : {}),
+              ...((hint.fullAddress ?? hint.addressLine)
+                ? { address: hint.fullAddress ?? hint.addressLine ?? prev.address }
+                : {}),
+            }));
+          }}
           onPositionChange={(lat, lng) =>
-            setDetails({ ...details, latitude: String(lat), longitude: String(lng) })
+            setDetails((prev) => ({
+              ...prev,
+              latitude: String(lat),
+              longitude: String(lng),
+            }))
           }
         />
       </div>
@@ -1186,7 +1361,7 @@ export function VenueSetupWizard({
                   >
                     <div className="flex items-center gap-2 text-sm">
                       <span className="font-medium text-foreground">
-                        {new Date(b.blockDate).toLocaleDateString()}
+                        {utcDateIsoToDateInput(String(b.blockDate)) || String(b.blockDate)}
                       </span>
                       <Separator orientation="vertical" className="h-4" />
                       <Badge variant={b.isBlocked ? "destructive" : "secondary"}>

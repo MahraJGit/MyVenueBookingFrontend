@@ -97,7 +97,7 @@ export function EventCard({ event }: EventCardProps) {
 
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs">
-                {formatEventDate(event.startDateTime, intlLocale)}
+                {formatEventDate(event.startDateTime, intlLocale, event.timezone)}
               </span>
               <span className="line-clamp-1 text-end text-xs" dir="auto">
                 {location || "—"}

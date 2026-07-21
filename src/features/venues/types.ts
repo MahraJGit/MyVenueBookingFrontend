@@ -107,6 +107,7 @@ export type PublicVenue = {
   name: string;
   description?: string | null;
   address: string;
+  countryCode?: string | null;
   city?: string | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
@@ -179,6 +180,7 @@ export type CreateVenuePayload = {
   name: string;
   description?: string;
   address: string;
+  countryCode?: string;
   city?: string;
   latitude?: number;
   longitude?: number;

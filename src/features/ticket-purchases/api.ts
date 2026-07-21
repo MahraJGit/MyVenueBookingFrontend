@@ -78,6 +78,7 @@ export type MyTicketOrder = {
   eventSlug: string;
   eventStartDateTime: string;
   eventEndDateTime: string;
+  timezone?: string | null;
   eventImage: string | null;
   venueName: string | null;
   city: string;
@@ -98,6 +99,13 @@ export type MyTicketOrder = {
     unitPrice: number;
     totalAmount: number;
     status: string;
+    tickets?: Array<{
+      id: string;
+      qrToken: string;
+      fullName: string;
+      checkedIn: boolean;
+      checkInTime: string | null;
+    }>;
   }>;
 };
 
@@ -137,6 +145,7 @@ export type EventTicketSalesSummary = {
   eventName: string;
   eventSlug: string;
   eventStartDateTime: string;
+  timezone?: string | null;
   vendorName: string | null;
   totalTicketsSold: number;
   totalRevenue: number;

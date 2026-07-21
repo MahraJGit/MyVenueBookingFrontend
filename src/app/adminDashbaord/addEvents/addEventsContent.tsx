@@ -39,7 +39,22 @@ import {
     listEventCategories,
     toEventCategoryOption,
 } from "@/features/event-categories/api"
+import { listCitiesByCountryCode, listCountries } from "@/features/locations/api"
+import {
+    findActiveCountry,
+    findCatalogCity,
+    findCatalogCityFromHint,
+    MAP_LOCATION_TOAST_ID,
+    uniqueCityTimezones,
+    type PendingMapCity,
+} from "@/features/locations/match"
+import { locationKeys } from "@/features/locations/query-keys"
+import {
+    datetimeLocalValueToUtcIso,
+    utcIsoToDatetimeLocalValue,
+} from "@/features/venues/timezone"
 import { toastApiError } from "@/lib/toasts"
+import { formatTimezoneLabel } from "@/lib/timezones"
 import { validateUploadFile } from "@/features/uploads/validation"
 import Link from "next/link"
 import dynamic from "next/dynamic"
@@ -51,16 +66,6 @@ import { cn } from "@/lib/utils"
 const inputClass = "bg-input/50 border-border"
 const selectTriggerClass = cn(inputClass, "w-full")
 const EVENT_GALLERY_MIN_IMAGES = 3
-
-const TIMEZONES = [
-    "Asia/Dubai",
-    "Asia/Karachi",
-    "Asia/Riyadh",
-    "Asia/Qatar",
-    "Europe/London",
-    "America/New_York",
-    "UTC",
-] as const
 
 function defaultBrowserTimezone() {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Dubai"
@@ -125,27 +130,38 @@ function defaultSchedule() {
     return { start: toDatetimeLocalValue(start), end: toDatetimeLocalValue(end) }
 }
 
-function parseLocalDateTime(value: string): Date | null {
-    if (!value) return null
-    const d = new Date(value)
-    return Number.isNaN(d.getTime()) ? null : d
+function getCalendarDateKeyInTimezone(date: Date, timeZone: string): string {
+    return new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).format(date)
 }
 
-
-function getLocalCalendarDateKey(date: Date): string {
-    const pad = (n: number) => String(n).padStart(2, "0")
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+/** Interpret a datetime-local wall clock in the given IANA timezone as a UTC Date. */
+function parseDatetimeLocalInTimezone(value: string, timeZone: string): Date | null {
+    if (!value.trim()) return null
+    try {
+        const iso = datetimeLocalValueToUtcIso(value, timeZone)
+        const d = new Date(iso)
+        return Number.isNaN(d.getTime()) ? null : d
+    } catch {
+        return null
+    }
 }
 
 function validateEventAndTicketTiming(
     startLocal: string,
     endLocal: string,
     tickets: TicketForm[],
+    timeZone: string,
     isEditMode = false,
 ): TimingValidationResult {
-    const start = parseLocalDateTime(startLocal)
-    const end = parseLocalDateTime(endLocal)
-    const todayKey = getLocalCalendarDateKey(new Date())
+    const tz = timeZone.trim() || "UTC"
+    const start = parseDatetimeLocalInTimezone(startLocal, tz)
+    const end = parseDatetimeLocalInTimezone(endLocal, tz)
+    const todayKey = getCalendarDateKeyInTimezone(new Date(), tz)
     let eventStartError: string | null = null
     let eventEndError: string | null = null
 
@@ -153,7 +169,7 @@ function validateEventAndTicketTiming(
         if (!start) eventStartError = "Please select a valid start date/time."
         if (!end) eventEndError = "Please select a valid end date/time."
     } else {
-        const startKey = getLocalCalendarDateKey(start)
+        const startKey = getCalendarDateKeyInTimezone(start, tz)
         if (!isEditMode && startKey <= todayKey) {
             eventStartError = "Event must start after today."
         } else if (end <= start) {
@@ -164,11 +180,11 @@ function validateEventAndTicketTiming(
     const ticketTimeErrors: TicketTimeError[] = tickets.map(() => ({}))
     if (start) {
         tickets.forEach((ticket, index) => {
-            const salesStart = parseLocalDateTime(ticket.salesStart)
-            const salesEnd = parseLocalDateTime(ticket.salesEnd)
+            const salesStart = parseDatetimeLocalInTimezone(ticket.salesStart, tz)
+            const salesEnd = parseDatetimeLocalInTimezone(ticket.salesEnd, tz)
 
             if (salesStart) {
-                const salesStartKey = getLocalCalendarDateKey(salesStart)
+                const salesStartKey = getCalendarDateKeyInTimezone(salesStart, tz)
                 if (!isEditMode && salesStartKey < todayKey) {
                     ticketTimeErrors[index].salesStart =
                         "Sales start cannot be before today."
@@ -178,7 +194,7 @@ function validateEventAndTicketTiming(
                 }
             }
             if (salesEnd) {
-                const salesEndKey = getLocalCalendarDateKey(salesEnd)
+                const salesEndKey = getCalendarDateKeyInTimezone(salesEnd, tz)
                 if (!isEditMode && salesEndKey < todayKey) {
                     ticketTimeErrors[index].salesEnd =
                         "Sales end cannot be before today."
@@ -246,6 +262,7 @@ export default function AddEventsContentPage() {
     const [venueWebsite, setVenueWebsite] = React.useState("https://example.com")
     const [countryCode, setCountryCode] = React.useState("AE")
     const [city, setCity] = React.useState("")
+    const [pendingMapCity, setPendingMapCity] = React.useState<PendingMapCity | null>(null)
     const [state, setState] = React.useState("")
     const [address, setAddress] = React.useState("")
     const [zipCode, setZipCode] = React.useState("")
@@ -277,20 +294,62 @@ export default function AddEventsContentPage() {
         queryFn: () => listEventCategories({ isActive: true }),
     })
 
+    const { data: countries = [] } = useQuery({
+        queryKey: locationKeys.countries(true),
+        queryFn: () => listCountries({ activeOnly: true }),
+    })
+
+    const {
+        data: cities = [],
+        isSuccess: citiesReady,
+        isFetching: citiesFetching,
+    } = useQuery({
+        queryKey: locationKeys.cities(countryCode, { activeOnly: true, featuredOnly: true }),
+        queryFn: () =>
+            listCitiesByCountryCode(countryCode, { activeOnly: true, featuredOnly: true }),
+        enabled: !!countryCode,
+    })
+
     const savedCategory = existing?.category?.trim() ?? ""
     const savedTimezone = existing?.timezone?.trim() ?? ""
     const category = categoryOverride ?? savedCategory
-    const timezone = timezoneOverride ?? (savedTimezone || defaultBrowserTimezone())
+    const selectedCity = findCatalogCity(cities, city)
+    const timezone =
+        timezoneOverride ??
+        savedTimezone ??
+        selectedCity?.timezone ??
+        defaultBrowserTimezone()
 
-    const timezoneOptions = React.useMemo(() => {
-        const base: string[] = [...TIMEZONES]
-        for (const tz of [timezone, savedTimezone]) {
-            if (tz && !base.includes(tz)) {
-                base.unshift(tz)
-            }
+    const timezoneOptions = React.useMemo(
+        () => uniqueCityTimezones(cities, timezone, savedTimezone),
+        [cities, timezone, savedTimezone],
+    )
+
+    React.useEffect(() => {
+        if (
+            !pendingMapCity ||
+            pendingMapCity.countryCode !== countryCode ||
+            !citiesReady ||
+            citiesFetching
+        ) {
+            return
         }
-        return base
-    }, [timezone, savedTimezone])
+
+        const match = findCatalogCityFromHint(cities, pendingMapCity)
+        if (match) {
+            setCity(match.name)
+            if (match.timezone) setTimezoneOverride(match.timezone)
+        } else if (pendingMapCity.city || pendingMapCity.fullAddress) {
+            toast.error(
+                t("unsupportedCity", {
+                    city: pendingMapCity.city?.trim() || pendingMapCity.fullAddress || "—",
+                }),
+                { id: MAP_LOCATION_TOAST_ID },
+            )
+            setCity((current) => (findCatalogCity(cities, current) ? current : ""))
+        }
+        setPendingMapCity(null)
+    }, [pendingMapCity, cities, citiesReady, citiesFetching, countryCode, t])
 
     const categoryOptions = React.useMemo(() => {
         const options = eventCategories.map(toEventCategoryOption)
@@ -308,8 +367,15 @@ export default function AddEventsContentPage() {
     }, [category, categoryOptions])
 
     const timingValidation = React.useMemo(
-        () => validateEventAndTicketTiming(startLocal, endLocal, tickets, Boolean(editId)),
-        [startLocal, endLocal, tickets, editId],
+        () =>
+            validateEventAndTicketTiming(
+                startLocal,
+                endLocal,
+                tickets,
+                timezone,
+                Boolean(editId),
+            ),
+        [startLocal, endLocal, tickets, timezone, editId],
     )
 
     React.useEffect(() => {
@@ -337,12 +403,8 @@ export default function AddEventsContentPage() {
         setLongitude(String(existing.longitude))
         setLocationSource(existing.locationSource)
 
-        const toLocal = (iso: string) => {
-            const d = new Date(iso)
-            if (Number.isNaN(d.getTime())) return ""
-            const pad = (n: number) => String(n).padStart(2, "0")
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-        }
+        const eventTz = existing.timezone?.trim() || "UTC"
+        const toLocal = (iso: string) => utcIsoToDatetimeLocalValue(iso, eventTz)
         setStartLocal(toLocal(existing.startDateTime))
         setEndLocal(toLocal(existing.endDateTime))
 
@@ -388,6 +450,7 @@ export default function AddEventsContentPage() {
 
     function buildPayload(): CreateEventPayload | Partial<CreateEventPayload> {
         const gallery = galleryUrls
+        const eventTz = timezone.trim() || "UTC"
 
         const ticketPayload = tickets.map((ticket) => {
             const row: CreateEventPayload["ticketTypes"][0] = {
@@ -397,10 +460,10 @@ export default function AddEventsContentPage() {
                 quantityTotal: Number(ticket.quantityTotal),
             }
             if (ticket.salesStart) {
-                row.salesStart = new Date(ticket.salesStart).toISOString()
+                row.salesStart = datetimeLocalValueToUtcIso(ticket.salesStart, eventTz)
             }
             if (ticket.salesEnd) {
-                row.salesEnd = new Date(ticket.salesEnd).toISOString()
+                row.salesEnd = datetimeLocalValueToUtcIso(ticket.salesEnd, eventTz)
             }
             return row
         })
@@ -408,9 +471,9 @@ export default function AddEventsContentPage() {
         const base = {
             eventName: eventName.trim(),
             eventDescription: eventDescription.trim(),
-            startDateTime: new Date(startLocal).toISOString(),
-            endDateTime: new Date(endLocal).toISOString(),
-            timezone: timezone.trim(),
+            startDateTime: datetimeLocalValueToUtcIso(startLocal, eventTz),
+            endDateTime: datetimeLocalValueToUtcIso(endLocal, eventTz),
+            timezone: eventTz,
             category: category.trim(),
             tags,
             coverImage: coverImage.trim(),
@@ -439,13 +502,70 @@ export default function AddEventsContentPage() {
     }
 
     function applyAddressHint(hint: AddressHint) {
-        if (hint.countryCode) setCountryCode(hint.countryCode)
-        if (hint.city) setCity(hint.city)
+        let nextCountryCode = countryCode
+        let countryAccepted = true
+
+        if (hint.countryCode) {
+            const matchedCountry = findActiveCountry(countries, hint.countryCode)
+            if (!matchedCountry) {
+                countryAccepted = false
+                toast.error(t("unsupportedCountry"), { id: MAP_LOCATION_TOAST_ID })
+            } else {
+                nextCountryCode = matchedCountry.code
+                if (matchedCountry.code !== countryCode) {
+                    setCountryCode(matchedCountry.code)
+                    setCity("")
+                    setTimezoneOverride(null)
+                }
+            }
+        }
+
+        if (!countryAccepted) {
+            setPendingMapCity(null)
+        } else if (
+            nextCountryCode === countryCode &&
+            citiesReady &&
+            !citiesFetching
+        ) {
+            // Same country and cities already loaded — apply immediately.
+            const match = findCatalogCityFromHint(cities, hint)
+            if (match) {
+                setCity(match.name)
+                if (match.timezone) setTimezoneOverride(match.timezone)
+                setPendingMapCity(null)
+            } else if (hint.city || hint.fullAddress) {
+                setCity("")
+                toast.error(
+                    t("unsupportedCity", {
+                        city: hint.city?.trim() || hint.fullAddress || "—",
+                    }),
+                    { id: MAP_LOCATION_TOAST_ID },
+                )
+                setPendingMapCity(null)
+            } else {
+                setPendingMapCity(null)
+            }
+        } else {
+            // Country changed or cities still loading — resolve when ready.
+            setPendingMapCity({
+                countryCode: nextCountryCode,
+                city: hint.city,
+                fullAddress: hint.fullAddress,
+                addressLine: hint.addressLine,
+            })
+        }
+
         if (hint.state) setState(hint.state)
         if (hint.zipCode) setZipCode(hint.zipCode)
         if (hint.fullAddress ?? hint.addressLine) {
             setAddress(hint.fullAddress ?? hint.addressLine ?? "")
         }
+    }
+
+    function handleCityChange(nextCity: string) {
+        setCity(nextCity)
+        const match = findCatalogCity(cities, nextCity)
+        if (match?.timezone) setTimezoneOverride(match.timezone)
     }
 
     function handleSubmit(e: React.FormEvent) {
@@ -456,6 +576,10 @@ export default function AddEventsContentPage() {
         }
         if (!category.trim()) {
             toast.error(t("selectCategoryError"))
+            return
+        }
+        if (!findCatalogCity(cities, city)) {
+            toast.error(t("selectCityError"))
             return
         }
         if (!coverImage.trim()) {
@@ -676,6 +800,7 @@ export default function AddEventsContentPage() {
                                 key={`timezone-${editId ?? "new"}-${timezone}`}
                                 value={timezone}
                                 onValueChange={setTimezoneOverride}
+                                disabled={timezoneOptions.length === 0}
                             >
                                 <SelectTrigger id="event-timezone" className={selectTriggerClass}>
                                     <SelectValue />
@@ -683,11 +808,16 @@ export default function AddEventsContentPage() {
                                 <SelectContent>
                                     {timezoneOptions.map((tz) => (
                                         <SelectItem key={tz} value={tz}>
-                                            {tz}
+                                            {formatTimezoneLabel(tz)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {timezone ? (
+                                <p className="text-xs text-muted-foreground">
+                                    {t("eventTimezoneHint", { timezone })}
+                                </p>
+                            ) : null}
                         </div>
                         <div className="space-y-2">
                             <Label>{tForms("startDate")}</Label>
@@ -909,23 +1039,45 @@ export default function AddEventsContentPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="country-code">{t("countryCode")}</Label>
-                            <Input
-                                id="country-code"
-                                required
+                            <Select
                                 value={countryCode}
-                                onChange={(e) => setCountryCode(e.target.value)}
-                                className={inputClass}
-                            />
+                                onValueChange={(nextCountryCode) => {
+                                    setCountryCode(nextCountryCode)
+                                    setCity("")
+                                    setTimezoneOverride(null)
+                                    setPendingMapCity(null)
+                                }}
+                            >
+                                <SelectTrigger id="country-code" className={selectTriggerClass}>
+                                    <SelectValue placeholder={tForms("country")} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {countries.map((country) => (
+                                        <SelectItem key={country.id} value={country.code}>
+                                            {country.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="event-city">{tForms("city")}</Label>
-                            <Input
-                                id="event-city"
-                                required
+                            <Select
                                 value={city}
-                                onChange={(e) => setCity(e.target.value)}
-                                className={inputClass}
-                            />
+                                onValueChange={handleCityChange}
+                                disabled={!countryCode}
+                            >
+                                <SelectTrigger id="event-city" className={selectTriggerClass}>
+                                    <SelectValue placeholder={tForms("city")} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {cities.map((item) => (
+                                        <SelectItem key={item.id} value={item.name}>
+                                            {item.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="event-state">{t("stateRegion")}</Label>

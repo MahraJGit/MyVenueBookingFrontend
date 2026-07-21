@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   TrendingUp,
   MessageCircle,
+  ShieldCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -94,6 +95,7 @@ export default function VendorSidebar({
           <SidebarSection title={t('eventsSection')} value="events">
             <SidebarLink icon={Clapperboard} label={t('myEvents')} href={paths.events} onClose={onClose} />
             <SidebarLink icon={Ticket} label={t('ticketSales')} href={paths.tickets} onClose={onClose} />
+            <SidebarLink icon={ShieldCheck} label={t('verifiers')} href={paths.verifiers} onClose={onClose} />
           </SidebarSection>
 
           <SidebarSection title={t('venuesSection')} value="venues">

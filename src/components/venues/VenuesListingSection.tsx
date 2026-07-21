@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { listPublicVenues, listVenueTypes } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
+import { listCitiesByCountryCode, listCountries } from "@/features/locations/api";
+import { locationKeys } from "@/features/locations/query-keys";
 import { useLocaleContext } from "@/features/i18n/locale-context";
 import {
   useListingLabels,
@@ -117,6 +119,17 @@ export function VenuesListingSection() {
     queryFn: listVenueTypes,
   });
 
+  const { data: countries = [] } = useQuery({
+    queryKey: locationKeys.countries(true),
+    queryFn: () => listCountries({ activeOnly: true }),
+  });
+
+  const countryCode = searchParams.get("countryCode")?.trim() ?? "";
+  const { data: cities = [] } = useQuery({
+    queryKey: locationKeys.cities(countryCode || "AE", { activeOnly: true, featuredOnly: true }),
+    queryFn: () => listCitiesByCountryCode(countryCode || "AE", { activeOnly: true, featuredOnly: true }),
+  });
+
   const activeTypeName =
     types.find((type) => type.id === venueTypeIdFromUrl)?.name ?? null;
 
@@ -194,15 +207,22 @@ export function VenuesListingSection() {
                 }}
                 className="w-full border-[#303030] bg-black text-white"
               />
-              <Input
-                placeholder={labels.city}
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") applyFilters();
-                }}
-                className="w-full border-[#303030] bg-black text-white"
-              />
+              <Select
+                value={city || "__all__"}
+                onValueChange={(v) => setCity(v === "__all__" ? "" : v)}
+              >
+                <SelectTrigger className="w-full border-[#303030] bg-black text-white">
+                  <SelectValue placeholder={labels.city} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{labels.city}</SelectItem>
+                  {cities.map((c) => (
+                    <SelectItem key={c.id} value={c.name}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={sortValue} onValueChange={handleSortChange}>
                 <SelectTrigger className="w-full border-[#303030] bg-black text-white hover:bg-black dark:hover:bg-black data-[state=open]:border-ring data-[state=open]:ring-ring/50 data-[state=open]:ring-[3px]">
                   <SelectValue placeholder={labels.sortBy} />

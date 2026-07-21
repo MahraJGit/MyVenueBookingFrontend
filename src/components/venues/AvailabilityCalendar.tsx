@@ -7,6 +7,7 @@ import type { MonthAvailabilityDay } from "@/features/venues/types";
 import { cn } from "@/lib/utils";
 import { useLocaleContext } from "@/features/i18n/locale-context";
 import { getDateFnsLocale } from "@/lib/date-locale";
+import { todayDateKeyInTimezone } from "@/features/venues/timezone";
 
 type AvailabilityCalendarProps = {
   month: Date;
@@ -14,16 +15,13 @@ type AvailabilityCalendarProps = {
   availability: MonthAvailabilityDay[];
   selected?: Date;
   onSelect?: (date: Date | undefined) => void;
-  disabledBefore?: Date;
+  /** IANA timezone used to decide "today" / past days for the venue. */
+  timezone?: string;
   className?: string;
 };
 
 function formatDateKeyLocal(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function VenueDayButton({
@@ -75,14 +73,17 @@ export function AvailabilityCalendar({
   availability,
   selected,
   onSelect,
-  disabledBefore = new Date(),
+  timezone,
   className,
 }: AvailabilityCalendarProps) {
   const t = useTranslations("venues");
   const tCommon = useTranslations("common");
   const { locale } = useLocaleContext();
   const dateFnsLocale = getDateFnsLocale(locale);
-  const today = useMemo(() => startOfDay(disabledBefore), [disabledBefore]);
+  const todayKey = useMemo(
+    () => (timezone ? todayDateKeyInTimezone(timezone) : formatDateKeyLocal(new Date())),
+    [timezone],
+  );
 
   const availabilityMap = useMemo(() => {
     const map = new Map<string, MonthAvailabilityDay>();
@@ -93,8 +94,8 @@ export function AvailabilityCalendar({
   }, [availability]);
 
   const isPast = useMemo(() => {
-    return (date: Date) => startOfDay(date) < today;
-  }, [today]);
+    return (date: Date) => formatDateKeyLocal(date) < todayKey;
+  }, [todayKey]);
 
   const isUnavailable = useMemo(() => {
     return (date: Date) => {

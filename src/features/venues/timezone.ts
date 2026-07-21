@@ -1,5 +1,6 @@
 import { TZDate } from "@date-fns/tz";
 import { getIntlLocale } from "@/i18n/locales";
+import { withTimezoneLabel } from "@/lib/timezones";
 
 /**
  * Convert a local date (YYYY-MM-DD) + time (HH:mm) in a venue timezone to UTC ISO string.
@@ -45,10 +46,11 @@ export function formatInVenueTimezone(
 ): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return new Intl.DateTimeFormat(getIntlLocale(locale), {
+  const formatted = new Intl.DateTimeFormat(getIntlLocale(locale), {
     ...options,
     timeZone: timezone,
   }).format(d);
+  return withTimezoneLabel(formatted, timezone);
 }
 
 export function formatDateKey(date: Date): string {
@@ -56,6 +58,42 @@ export function formatDateKey(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+/** Civil YYYY-MM-DD for an instant in an IANA timezone. */
+export function formatDateKeyInTimezone(isoOrDate: string | Date, timezone: string): string {
+  const d = typeof isoOrDate === "string" ? new Date(isoOrDate) : isoOrDate;
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+/** "Today" as YYYY-MM-DD in the given timezone. */
+export function todayDateKeyInTimezone(timezone: string, now = new Date()): string {
+  return formatDateKeyInTimezone(now, timezone);
+}
+
+/** Parse a YYYY-MM-DD (or date input value) into a stable UTC midnight ISO for `@db.Date`. */
+export function dateInputToUtcDateIso(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  if (!y || !m || !d) {
+    throw new Error("Invalid date");
+  }
+  return new Date(Date.UTC(y, m - 1, d)).toISOString();
+}
+
+/** Display a `@db.Date` / UTC-midnight ISO as YYYY-MM-DD (calendar date, not browser-local). */
+export function utcDateIsoToDateInput(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 /** Format a UTC ISO instant as `YYYY-MM-DDTHH:mm` in the venue timezone (for datetime-local inputs). */

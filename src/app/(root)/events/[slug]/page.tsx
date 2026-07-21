@@ -7,19 +7,14 @@ import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { CalendarDays, Clock, MapPin, Phone, Globe, Share2, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
-} from "@/components/ui/carousel";
+import { DetailGallerySlider } from "@/components/gallery/DetailGallerySlider";
 import { getPublicEventBySlug, getPreviewEventBySlug, type PublicEvent } from "@/features/events/api";
 import {
   formatEventDate,
   computeEventSalePhase,
   computeTicketSalePhase,
   formatEventDateTime,
+  formatEventTimeRange,
   getEarliestSalesStart,
   getPurchasableTicketTypes,
 } from "@/features/events/utils";
@@ -35,16 +30,6 @@ import { VendorReviewsSection } from "@/components/reviews/VendorReviewsSection"
 import { useAuth } from "@/features/auth/auth-context";
 import { useLocaleContext } from "@/features/i18n/locale-context";
 import { getIntlLocale } from "@/i18n/locales";
-
-function formatTime(iso: string, locale: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
 
 function TicketProgress({ sold, total }: { sold: number; total: number }) {
   const t = useTranslations("events");
@@ -192,7 +177,7 @@ export default function EventDetailPage() {
           <div className="flex w-full max-w-3xl flex-col items-center justify-center gap-2 text-xs text-zinc-300 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3 sm:text-sm">
             <span className="flex items-center gap-2">
               <CalendarDays size={16} className="text-primary" />
-              {formatEventDate(event.startDateTime, intlLocale)}
+              {formatEventDate(event.startDateTime, intlLocale, event.timezone)}
             </span>
             <span className="flex items-center gap-2">
               <MapPin size={16} className="shrink-0 text-primary" />
@@ -200,7 +185,12 @@ export default function EventDetailPage() {
             </span>
             <span className="flex items-center gap-2">
               <Clock size={16} className="text-primary" />
-              {formatTime(event.startDateTime, intlLocale)} - {formatTime(event.endDateTime, intlLocale)}
+              {formatEventTimeRange(
+                event.startDateTime,
+                event.endDateTime,
+                intlLocale,
+                event.timezone,
+              )}
             </span>
             {event.category && (
               <span className="flex items-center gap-2">
@@ -214,26 +204,15 @@ export default function EventDetailPage() {
 
       {/* Gallery Slider */}
       {hasGallery && (
-        <section className="container mx-auto px-4 -mt-4 relative z-10">
-          <Carousel opts={{ loop: true, align: "start" }} className="w-full">
-            <CarouselContent className="-ml-3">
-              {galleryImages.map((img, i) => (
-                <CarouselItem key={i} className="pl-3 basis-1/2 sm:basis-1/3 md:basis-1/4">
-                  <div className="relative h-[120px] md:h-[150px] rounded-xl overflow-hidden">
-                    <Image
-                      src={img}
-                      alt={t("galleryImageAlt", { index: i + 1 })}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="left-2 h-9 w-9 border-white/20 bg-black/60 text-white hover:bg-black/80 hover:text-white" />
-            <CarouselNext className="right-2 h-9 w-9 border-white/20 bg-black/60 text-white hover:bg-black/80 hover:text-white" />
-          </Carousel>
-        </section>
+        <DetailGallerySlider
+          className="container mx-auto -mt-4 px-4"
+          images={galleryImages}
+          lightboxTitle={event.eventName}
+          getAlt={(i) => t("galleryImageAlt", { index: i + 1 })}
+          showDots={false}
+          itemClassName="pl-3 basis-1/2 sm:basis-1/3 md:basis-1/4"
+          thumbnailClassName="h-[120px] md:h-[150px]"
+        />
       )}
 
       {/* Event Description */}
@@ -359,7 +338,12 @@ export default function EventDetailPage() {
       {/* Tickets */}
       {event.ticketTypes?.length > 0 && (
         <section className="container mx-auto px-4 py-12">
-          <h2 className="text-xl font-bold text-primary mb-8">{tTickets("title")}</h2>
+          <h2 className="text-xl font-bold text-primary mb-2">{tTickets("title")}</h2>
+          {event.timezone ? (
+            <p className="mb-6 text-xs text-zinc-500">
+              {t("timezoneHint", { timezone: event.timezone })}
+            </p>
+          ) : null}
           <CurrencyBrowseNotice className="mb-6" chargeLabel="event" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {event.ticketTypes.map((ticketType) => {
@@ -391,10 +375,10 @@ export default function EventDetailPage() {
                   {(ticketType.salesStart || ticketType.salesEnd) && (
                     <div className="text-xs text-zinc-500 space-y-1">
                       {ticketType.salesStart ? (
-                        <p>{t("saleStartsAt", { date: formatEventDateTime(ticketType.salesStart, intlLocale) })}</p>
+                        <p>{t("saleStartsAt", { date: formatEventDateTime(ticketType.salesStart, intlLocale, event.timezone) })}</p>
                       ) : null}
                       {ticketType.salesEnd ? (
-                        <p>{t("saleEndsAt", { date: formatEventDateTime(ticketType.salesEnd, intlLocale) })}</p>
+                        <p>{t("saleEndsAt", { date: formatEventDateTime(ticketType.salesEnd, intlLocale, event.timezone) })}</p>
                       ) : null}
                     </div>
                   )}
@@ -415,7 +399,7 @@ export default function EventDetailPage() {
               {canBuyTickets
                 ? tTickets("selectTicketsPrompt")
                 : salePhase === "not_started" && earliestSalesStart
-                  ? t("saleStartsAt", { date: formatEventDateTime(earliestSalesStart, intlLocale) })
+                  ? t("saleStartsAt", { date: formatEventDateTime(earliestSalesStart, intlLocale, event.timezone) })
                   : t(
                       salePhase === "not_started"
                         ? "saleNotStarted"

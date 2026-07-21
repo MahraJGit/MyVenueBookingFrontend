@@ -21,6 +21,7 @@ export type AddressHint = {
   state?: string
   zipCode?: string
   countryCode?: string
+  timezone?: string
 }
 
 export function suggestionToAddressHint(

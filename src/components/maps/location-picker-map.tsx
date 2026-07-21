@@ -108,6 +108,8 @@ export function LocationPickerMap({
   const [suggestionsOpen, setSuggestionsOpen] = React.useState(false)
   const [activeSuggestion, setActiveSuggestion] = React.useState(-1)
   const [loadingSuggestions, setLoadingSuggestions] = React.useState(false)
+  /** Ignore autocomplete while a selection is applying (query + map bias both update). */
+  const suppressAutocompleteUntilRef = React.useRef(0)
 
   const mapRootRef = React.useRef<HTMLDivElement | null>(null)
   const searchWrapRef = React.useRef<HTMLDivElement | null>(null)
@@ -211,6 +213,15 @@ export function LocationPickerMap({
     const q = query.trim()
     if (q.length < 2) {
       setSuggestions([])
+      setSuggestionsOpen(false)
+      setLoadingSuggestions(false)
+      return
+    }
+
+    // Selecting a suggestion updates query + map bias; don't re-open the dropdown.
+    if (Date.now() < suppressAutocompleteUntilRef.current) {
+      setSuggestions([])
+      setSuggestionsOpen(false)
       setLoadingSuggestions(false)
       return
     }
@@ -219,6 +230,12 @@ export function LocationPickerMap({
     setLoadingSuggestions(true)
 
     const timer = window.setTimeout(async () => {
+      if (Date.now() < suppressAutocompleteUntilRef.current) {
+        setSuggestions([])
+        setSuggestionsOpen(false)
+        setLoadingSuggestions(false)
+        return
+      }
       try {
         const hits = await fetchGeocodeSearch(
           q,
@@ -227,6 +244,11 @@ export function LocationPickerMap({
           controller.signal,
           t("searchFailed"),
         )
+        if (Date.now() < suppressAutocompleteUntilRef.current) {
+          setSuggestions([])
+          setSuggestionsOpen(false)
+          return
+        }
         setSuggestions(hits)
         setSuggestionsOpen(hits.length > 0)
         setActiveSuggestion(-1)
@@ -273,14 +295,21 @@ export function LocationPickerMap({
       }
     }
 
+    suppressAutocompleteUntilRef.current = Date.now() + 800
+    setSuggestionsOpen(false)
+    setSuggestions([])
+    setActiveSuggestion(-1)
+
     if (!applySuggestion(resolved, true, !!onAddressHintRef.current)) {
+      suppressAutocompleteUntilRef.current = 0
       toast.error(t("invalidResult"))
       return
     }
 
-    setSuggestionsOpen(false)
-    setSuggestions([])
-    toast.success(t("locationUpdated"))
+    // Parents that validate country/city show their own feedback; avoid a success toast pile-up.
+    if (!onAddressHintRef.current) {
+      toast.success(t("locationUpdated"))
+    }
   }
 
   async function selectSuggestion(item: GeocodeSuggestion) {

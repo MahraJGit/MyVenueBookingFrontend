@@ -46,7 +46,6 @@ import {
 } from "@/features/events/api";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { useDashboardPaths } from "@/features/dashboard/paths";
 
 const PAGE_SIZE = 10;
@@ -186,7 +185,7 @@ export default function ManageEvents() {
                       </div>
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                      {formatDateSafe(ev.startDateTime)}
+                      {formatDateSafe(ev.startDateTime, ev.timezone)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{ev.city}</TableCell>
                     <TableCell className="whitespace-nowrap">
@@ -276,9 +275,16 @@ function EventThumb({ event }: { event: ManagedEvent }) {
   );
 }
 
-function formatDateSafe(iso: string) {
+function formatDateSafe(iso: string, timeZone?: string | null) {
   try {
-    return format(new Date(iso), "MMM d, yyyy h:mm a");
+    return new Date(iso).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      ...(timeZone ? { timeZone } : {}),
+    });
   } catch {
     return iso;
   }

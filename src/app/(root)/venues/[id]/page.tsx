@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useMemo, useState } from "react";
+import { use, useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -20,14 +20,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from "@/components/ui/carousel";
+import { DetailGallerySlider } from "@/components/gallery/DetailGallerySlider";
 import { AvailabilityCalendar } from "@/components/venues/AvailabilityCalendar";
 import { VenueReviewsSection } from "@/components/reviews/VenueReviewsSection";
 import { SlotPicker } from "@/components/venues/SlotPicker";
@@ -112,97 +105,6 @@ function VenueDetailSkeleton() {
         </div>
       </div>
     </div>
-  );
-}
-
-function VenueGallery({
-  images,
-  venueName,
-  photoCountLabel,
-  swipeHint,
-}: {
-  images: string[];
-  venueName: string;
-  photoCountLabel: string;
-  swipeHint: string;
-}) {
-  const t = useTranslations("venues");
-  const [api, setApi] = useState<CarouselApi>();
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    if (!api) return;
-    const onSelect = () => setActiveIndex(api.selectedScrollSnap());
-    onSelect();
-    api.on("select", onSelect);
-    api.on("reInit", onSelect);
-    return () => {
-      api.off("select", onSelect);
-      api.off("reInit", onSelect);
-    };
-  }, [api]);
-
-  return (
-    <section className="container relative z-10 mx-auto -mt-4 px-4 sm:px-6">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
-          {t("gallery")}
-        </h2>
-        <span className="shrink-0 text-xs text-zinc-500">{photoCountLabel}</span>
-      </div>
-      <Carousel opts={{ loop: true, align: "start" }} setApi={setApi} className="w-full">
-        <CarouselContent className="-ml-3">
-          {images.map((img, i) => {
-            const imageSrc = getMediaProxyUrl(img);
-            const useProxy = imageSrc.startsWith("/api/media");
-            return (
-            <CarouselItem
-              key={`${img}-${i}`}
-              className="basis-[85%] pl-3 sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
-            >
-              <div className="group relative aspect-[16/10] overflow-hidden rounded-xl border border-[#303030] sm:aspect-auto sm:h-[140px] md:h-[150px]">
-                <Image
-                  src={imageSrc}
-                  alt={`${venueName} gallery ${i + 1}`}
-                  fill
-                  unoptimized={useProxy}
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  sizes="(max-width: 640px) 85vw, (max-width: 1024px) 50vw, 25vw"
-                />
-                <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
-              </div>
-            </CarouselItem>
-            );
-          })}
-        </CarouselContent>
-        {images.length > 1 && (
-          <>
-            <CarouselPrevious className="left-1 h-8 w-8 border-white/20 bg-black/60 text-white hover:bg-black/80 hover:text-white sm:left-2 sm:h-9 sm:w-9" />
-            <CarouselNext className="right-1 h-8 w-8 border-white/20 bg-black/60 text-white hover:bg-black/80 hover:text-white sm:right-2 sm:h-9 sm:w-9" />
-          </>
-        )}
-      </Carousel>
-      {images.length > 1 && (
-        <div className="mt-3 flex flex-col items-center gap-2">
-          <div className="flex items-center gap-1.5" role="tablist" aria-label={photoCountLabel}>
-            {images.map((img, i) => (
-              <button
-                key={`dot-${img}-${i}`}
-                type="button"
-                role="tab"
-                aria-selected={i === activeIndex}
-                aria-label={`${i + 1} / ${images.length}`}
-                onClick={() => api?.scrollTo(i)}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === activeIndex ? "w-5 bg-primary" : "w-1.5 bg-zinc-600 hover:bg-zinc-500"
-                }`}
-              />
-            ))}
-          </div>
-          <p className="text-[11px] text-zinc-500 sm:hidden">{swipeHint}</p>
-        </div>
-      )}
-    </section>
   );
 }
 
@@ -397,15 +299,24 @@ export default function VenueDetailPage({
 
       {/* Gallery Slider */}
       {hasGallery && (
-        <VenueGallery
+        <DetailGallerySlider
+          className="container mx-auto -mt-4 px-4 sm:px-6"
           images={galleryImages}
-          venueName={venue.name}
-          photoCountLabel={
-            galleryImages.length === 1
-              ? t("photoCount", { count: galleryImages.length })
-              : t("photosCount", { count: galleryImages.length })
-          }
+          lightboxTitle={venue.name}
+          getAlt={(i) => t("galleryImageAlt", { index: i + 1 })}
           swipeHint={t("swipeForMorePhotos")}
+          header={
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
+                {t("gallery")}
+              </h2>
+              <span className="shrink-0 text-xs text-zinc-500">
+                {galleryImages.length === 1
+                  ? t("photoCount", { count: galleryImages.length })
+                  : t("photosCount", { count: galleryImages.length })}
+              </span>
+            </div>
+          }
         />
       )}
 
@@ -615,6 +526,7 @@ export default function VenueDetailPage({
                     onMonthChange={setCalendarMonth}
                     availability={monthAvailability}
                     selected={selectedDate}
+                    timezone={venue.timezone}
                     onSelect={(d) => {
                       setSelectedDate(d);
                       setSelectedSlots([]);
@@ -637,6 +549,11 @@ export default function VenueDetailPage({
                     <h3 className="text-xs font-medium text-zinc-300 sm:text-sm">
                       {t("availableSlots", { date: formatDateKey(selectedDate) })}
                     </h3>
+                    {venue.timezone ? (
+                      <p className="text-[11px] text-zinc-500">
+                        {t("timezoneHint", { timezone: venue.timezone })}
+                      </p>
+                    ) : null}
                     {dayLoading ? (
                       <div className="flex flex-col items-center justify-center gap-2 py-6">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
@@ -657,6 +574,7 @@ export default function VenueDetailPage({
                                 start: daySlot.startTime,
                                 end: daySlot.endTime,
                               })}
+                              {venue.timezone ? ` · ${venue.timezone}` : ""}
                             </p>
                             <Button
                               className="h-auto min-h-11 w-full whitespace-normal rounded-full bg-primary px-4 py-2.5 text-sm shadow-lg shadow-primary/20 hover:bg-primary/90"
@@ -691,6 +609,7 @@ export default function VenueDetailPage({
                           <div className="space-y-2">
                             <p className="text-center text-xs text-zinc-400">
                               {combinedRange.startTime} – {combinedRange.endTime}
+                              {venue.timezone ? ` · ${venue.timezone}` : ""}
                               {selectedSlots.length > 1
                                 ? ` · ${t("slotsSelected", { count: selectedSlots.length })}`
                                 : ""}

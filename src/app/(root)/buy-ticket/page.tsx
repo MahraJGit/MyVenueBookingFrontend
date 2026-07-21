@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useTranslations } from 'next-intl';
-import "@/styles/buyTicket.css"
+// import "@/styles/buyTicket.css"
 import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid"
 import {
   Select,
@@ -24,6 +24,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ModalHeroBanner } from "@/components/ui/modal-hero-banner";
 import { Checkbox } from '@/components/ui/checkbox';
 
 const NEARBY_CONCERTS = [
@@ -109,12 +110,18 @@ const buyTicket = () => {
       <Dialog open={ticketModalOpen} onOpenChange={setTicketModalOpen}>
         <DialogContent
           showCloseButton={true}
-          className="bg-[#1B1B1B] border-[#303030] rounded-2xl p-0 gap-0 max-w-md overflow-hidden text-white"
-        >
-          <div className="p-6 pt-8 flex flex-col gap-6">
+          className="flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-2xl border-[#303030] bg-[#1B1B1B] p-0 text-white sm:max-w-2xl"
+          closeButtonClassName="rounded-full border border-white/20 bg-black/40 text-white opacity-100 backdrop-blur-md hover:bg-black/60 hover:opacity-100"
+          >
+          <div className="flex flex-1 flex-col overflow-y-auto">
+            <ModalHeroBanner
+              src="/images/buyticket-bg.jpg"
+              alt={t('selectTickets')}
+              title="Adele"
+            />
             <DialogTitle className="sr-only">{t('selectTickets')}</DialogTitle>
-            {/* Seat layout image */}
-            <div className="w-full rounded-xl overflow-hidden border border-[#303030]">
+            {/* Seat layout image — overlaps hero */}
+            <div className="relative z-10 mx-6 -mt-8 overflow-hidden rounded-xl border border-[#303030] bg-[#1B1B1B] shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:-mt-10">
               <Image
                 src="/images/seats.png"
                 alt={t('seatLayoutAlt')}
@@ -123,6 +130,7 @@ const buyTicket = () => {
                 className="w-full h-auto object-cover"
               />
             </div>
+            <div className="flex flex-col gap-6 p-6 pt-4">
             {/* How many tickets */}
             <div className='flex flex-col gap-3 justify-center items-center'>
               <h3 className="font-bold text-white mb-3">{t('howManyTickets')}</h3>
@@ -165,6 +173,7 @@ const buyTicket = () => {
             >
               {t('start')}
             </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

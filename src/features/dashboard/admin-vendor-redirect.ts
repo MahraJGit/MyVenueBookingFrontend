@@ -17,6 +17,9 @@ export function getVendorRedirectForAdminPath(
   if (pathname === `${ADMIN_DASHBOARD_PREFIX}/manageTickets`) {
     return `${VENDOR_DASHBOARD_PREFIX}/tickets`;
   }
+  if (pathname === `${ADMIN_DASHBOARD_PREFIX}/verifiers`) {
+    return `${VENDOR_DASHBOARD_PREFIX}/verifiers`;
+  }
   if (pathname === `${ADMIN_DASHBOARD_PREFIX}/analytics`) {
     return `${VENDOR_DASHBOARD_PREFIX}/analytics`;
   }

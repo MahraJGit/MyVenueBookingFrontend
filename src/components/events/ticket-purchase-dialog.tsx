@@ -8,10 +8,9 @@ import { Minus, Plus, Loader2, CreditCard, Ticket } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
+import { ModalHeroBanner } from "@/components/ui/modal-hero-banner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/auth-context";
 import { listPaymentMethods } from "@/features/payments/api";
@@ -217,19 +216,24 @@ export function TicketPurchaseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto border-zinc-800 bg-zinc-900 text-white sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{tTicket("title")}</DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              {event.eventName}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent
+          className="flex max-h-[90vh] flex-col gap-0 overflow-hidden border-zinc-800 bg-zinc-900 p-0 text-white sm:max-w-3xl"
+          closeButtonClassName="rounded-full border border-white/20 bg-black/40 text-white opacity-100 backdrop-blur-md hover:bg-black/60 hover:opacity-100"
+        >
+          <DialogTitle className="sr-only">{tTicket("title")}</DialogTitle>
 
+          <div className="flex-1 overflow-y-auto">
+          <ModalHeroBanner
+            src={event.coverImage?.trim() || "/images/card-img-2.jpg"}
+            alt={event.eventName}
+            title={event.eventName}
+            gradientClassName="from-zinc-900 via-zinc-900/55"
+          />
           {ticketTypes.length === 0 ? (
-            <p className="text-sm text-zinc-400">{tTicket("noTicketsAvailable")}</p>
+            <p className="px-6 pb-6 text-sm text-zinc-400">{tTicket("noTicketsAvailable")}</p>
           ) : (
-            <div className="space-y-4">
-              <ul className="space-y-4">
+            <>
+              <ul className="relative z-10 -mt-8 space-y-4 px-6 sm:-mt-10">
                 {ticketTypes.map((ticket) => {
                   const id = ticket.id!;
                   const max = availableCount(ticket);
@@ -240,7 +244,7 @@ export function TicketPurchaseDialog({
                   return (
                     <li
                       key={id}
-                      className="rounded-xl border border-zinc-700 bg-zinc-800/60 p-4"
+                      className="rounded-xl border border-zinc-700 bg-zinc-800 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
@@ -293,6 +297,7 @@ export function TicketPurchaseDialog({
                 })}
               </ul>
 
+              <div className="space-y-4 px-6 pb-6 pt-4">
               <div className="border-t border-zinc-700 pt-4">
                 <div className="flex items-start justify-between gap-4">
                   <span className="text-lg font-semibold">{tCommon("total")}</span>
@@ -349,8 +354,10 @@ export function TicketPurchaseDialog({
                   tTicket("payAmount", { amount: chargeFormatted })
                 )}
               </Button>
-            </div>
+              </div>
+            </>
           )}
+          </div>
         </DialogContent>
     </Dialog>
   );
