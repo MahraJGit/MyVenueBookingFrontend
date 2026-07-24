@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { CalendarDays, Eye, Pencil, Trash2, Plus } from "lucide-react";
+import { CalendarDays, Eye, Pencil, Trash2, Plus, Armchair, Ticket } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
@@ -189,7 +189,9 @@ export default function ManageEvents() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">{ev.city}</TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {ev.status ? (
+                      {ev.isDeleted ? (
+                        <StatusBadge status="DELETED" />
+                      ) : ev.status ? (
                         <StatusBadge status={ev.status} />
                       ) : (
                         tCommon("notAvailable")
@@ -207,37 +209,70 @@ export default function ManageEvents() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="text-muted-foreground hover:text-foreground"
-                          aria-label={t("editEvent")}
-                          asChild
-                        >
-                          <Link href={paths.editEvent(ev.id)}>
-                            <Pencil className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="text-muted-foreground hover:text-destructive"
-                          aria-label={t("deleteEvent")}
-                          disabled={deleteMutation.isPending}
-                          onClick={() => {
-                            if (
-                              !confirm(
-                                t("deleteEventConfirm", { name: ev.eventName }),
-                              )
-                            )
-                              return;
-                            deleteMutation.mutate(ev.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {!ev.isDeleted ? (
+                          <>
+                            {ev.seatingEnabled ? (
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="text-muted-foreground hover:text-foreground"
+                                aria-label="Manage seating"
+                                asChild
+                              >
+                                <Link href={paths.manageEventSeating(ev.id)}>
+                                  <Armchair className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            ) : (
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="text-muted-foreground hover:text-foreground"
+                                aria-label="Manage ticket quantity"
+                                asChild
+                              >
+                                <Link href={paths.manageEventQuantity(ev.id)}>
+                                  <Ticket className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            )}
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="text-muted-foreground hover:text-foreground"
+                              aria-label={t("editEvent")}
+                              asChild
+                            >
+                              <Link href={paths.editEvent(ev.id)}>
+                                <Pencil className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="text-muted-foreground hover:text-destructive"
+                              aria-label={t("deleteEvent")}
+                              disabled={deleteMutation.isPending}
+                              onClick={() => {
+                                if (
+                                  !confirm(
+                                    t("deleteEventConfirm", {
+                                      name: ev.eventName,
+                                    }),
+                                  )
+                                )
+                                  return;
+                                deleteMutation.mutate(ev.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        ) : null}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -251,7 +286,11 @@ export default function ManageEvents() {
       <EventPublicPreviewDialog
         event={viewEvent}
         onClose={() => setViewEvent(null)}
-        editHref={viewEvent ? paths.editEvent(viewEvent.id) : undefined}
+        editHref={
+          viewEvent && !viewEvent.isDeleted
+            ? paths.editEvent(viewEvent.id)
+            : undefined
+        }
       />
     </DashboardPageShell>
   );

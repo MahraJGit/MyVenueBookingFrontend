@@ -168,18 +168,18 @@ export function evaluateVenueReadiness(venue: VenueReadinessSource) {
       message: "Name and address are required",
     },
     {
-      id: "pricing",
-      label: "Pricing configured",
-      required: true,
-      met: Boolean(venue.pricing),
-      message: "Save pricing before submitting for review",
-    },
-    {
       id: "schedule",
       label: "Weekly schedule",
       required: true,
       met: schedules.some((schedule) => schedule.isOpen),
       message: "At least one open day is required",
+    },
+    {
+      id: "pricing",
+      label: "Pricing configured",
+      required: true,
+      met: Boolean(venue.pricing),
+      message: "Save pricing before submitting for review",
     },
     {
       id: "amenities",

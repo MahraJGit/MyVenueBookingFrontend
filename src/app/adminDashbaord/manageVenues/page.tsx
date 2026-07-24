@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Eye, Loader2, Pencil, Plus } from "lucide-react";
+import { Building2, CalendarDays, Eye, Loader2, Pencil, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/venues/StatusBadge";
@@ -291,18 +291,32 @@ export default function ManageVenuesPage() {
                         </Button>
                       )}
                       {!isAdmin || isAdminOwnList ? (
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="text-muted-foreground hover:text-foreground"
-                          aria-label={tCommon("edit")}
-                          asChild
-                        >
-                          <Link href={paths.editVenue(venue.id)}>
-                            <Pencil className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-foreground"
+                            aria-label="Manage schedule"
+                            asChild
+                          >
+                            <Link href={paths.manageVenueSchedule(venue.id)}>
+                              <CalendarDays className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-foreground"
+                            aria-label={tCommon("edit")}
+                            asChild
+                          >
+                            <Link href={paths.editVenue(venue.id)}>
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </>
                       ) : null}
                       {isAdmin && venue.status !== "ACTIVE" && venue.status !== "DRAFT" ? (
                         <Button

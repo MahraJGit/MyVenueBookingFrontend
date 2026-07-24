@@ -46,6 +46,7 @@ import {
     findCatalogCityFromHint,
     MAP_LOCATION_TOAST_ID,
     uniqueCityTimezones,
+    withSavedCityOption,
     type PendingMapCity,
 } from "@/features/locations/match"
 import { locationKeys } from "@/features/locations/query-keys"
@@ -62,10 +63,21 @@ import type { AddressHint } from "@/components/maps/location-picker-map"
 import { useDashboardPaths } from "@/features/dashboard/paths"
 import { DashboardPageShell } from "@/components/dashboard/dashboard-ui"
 import { cn } from "@/lib/utils"
+import { SeatingLayoutEditor, type SeatingEditorSection } from "@/components/seating/SeatingLayoutEditor"
+import { getManagedSeating, putManagedSeating } from "@/features/seating/api"
 
 const inputClass = "bg-input/50 border-border"
 const selectTriggerClass = cn(inputClass, "w-full")
 const EVENT_GALLERY_MIN_IMAGES = 3
+const LOCATION_CURRENCY_LABELS = new Set([
+    "AED",
+    "PKR",
+    "USD",
+    "EUR",
+    "GBP",
+    "SAR",
+    "QAR",
+])
 
 function defaultBrowserTimezone() {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Dubai"
@@ -88,9 +100,9 @@ const LocationPickerMap = dynamic(
 )
 
 type TicketForm = {
+    id?: string
     name: string
     price: string
-    currency: string
     quantityTotal: string
     salesStart: string
     salesEnd: string
@@ -111,7 +123,6 @@ type TimingValidationResult = {
 const defaultTicket = (ticketName: string): TicketForm => ({
     name: "",
     price: "",
-    currency: "PKR",
     quantityTotal: "",
     salesStart: "",
     salesEnd: "",
@@ -137,6 +148,14 @@ function getCalendarDateKeyInTimezone(date: Date, timeZone: string): string {
         month: "2-digit",
         day: "2-digit",
     }).format(date)
+}
+
+function addCalendarDaysToDateKey(dateKey: string, days: number): string {
+    const [year, month, day] = dateKey.split("-").map(Number)
+    const utc = new Date(Date.UTC(year, month - 1, day))
+    utc.setUTCDate(utc.getUTCDate() + days)
+    const pad = (n: number) => String(n).padStart(2, "0")
+    return `${utc.getUTCFullYear()}-${pad(utc.getUTCMonth() + 1)}-${pad(utc.getUTCDate())}`
 }
 
 /** Interpret a datetime-local wall clock in the given IANA timezone as a UTC Date. */
@@ -170,8 +189,9 @@ function validateEventAndTicketTiming(
         if (!end) eventEndError = "Please select a valid end date/time."
     } else {
         const startKey = getCalendarDateKeyInTimezone(start, tz)
-        if (!isEditMode && startKey <= todayKey) {
-            eventStartError = "Event must start after today."
+        const minStartKey = addCalendarDaysToDateKey(todayKey, 3)
+        if (!isEditMode && startKey < minStartKey) {
+            eventStartError = "Event must start at least 3 days after today."
         } else if (end <= start) {
             eventEndError = "End date must be after start date."
         }
@@ -184,10 +204,9 @@ function validateEventAndTicketTiming(
             const salesEnd = parseDatetimeLocalInTimezone(ticket.salesEnd, tz)
 
             if (salesStart) {
-                const salesStartKey = getCalendarDateKeyInTimezone(salesStart, tz)
-                if (!isEditMode && salesStartKey < todayKey) {
+                if (!isEditMode && salesStart < new Date()) {
                     ticketTimeErrors[index].salesStart =
-                        "Sales start cannot be before today."
+                        "Sales start cannot be before now."
                 } else if (salesStart >= start) {
                     ticketTimeErrors[index].salesStart =
                         "Sales start must be before the event start."
@@ -274,6 +293,9 @@ export default function AddEventsContentPage() {
     const [startLocal, setStartLocal] = React.useState(() => defaultSchedule().start)
     const [endLocal, setEndLocal] = React.useState(() => defaultSchedule().end)
     const [tickets, setTickets] = React.useState<TicketForm[]>([defaultTicket(t("generalTicket"))])
+    const [seatingEnabled, setSeatingEnabled] = React.useState(false)
+    const [seatingSections, setSeatingSections] = React.useState<SeatingEditorSection[]>([])
+    const [seatingLoaded, setSeatingLoaded] = React.useState(false)
 
     const coverInputRef = React.useRef<HTMLInputElement>(null)
     const thumbnailInputRef = React.useRef<HTMLInputElement>(null)
@@ -312,6 +334,7 @@ export default function AddEventsContentPage() {
 
     const savedCategory = existing?.category?.trim() ?? ""
     const savedTimezone = existing?.timezone?.trim() ?? ""
+    const savedCity = existing?.city?.trim() ?? ""
     const category = categoryOverride ?? savedCategory
     const selectedCity = findCatalogCity(cities, city)
     const timezone =
@@ -320,9 +343,24 @@ export default function AddEventsContentPage() {
         selectedCity?.timezone ??
         defaultBrowserTimezone()
 
+    const selectedCountry = React.useMemo(
+        () => findActiveCountry(countries, countryCode),
+        [countries, countryCode],
+    )
+    const locationCurrency = selectedCountry?.defaultCurrency?.trim() || ""
+
     const timezoneOptions = React.useMemo(
         () => uniqueCityTimezones(cities, timezone, savedTimezone),
         [cities, timezone, savedTimezone],
+    )
+
+    const cityOptions = React.useMemo(
+        () =>
+            withSavedCityOption(cities, city || savedCity, {
+                countryId: cities[0]?.countryId,
+                timezone: savedTimezone || selectedCity?.timezone,
+            }),
+        [cities, city, savedCity, savedTimezone, selectedCity?.timezone],
     )
 
     React.useEffect(() => {
@@ -411,9 +449,9 @@ export default function AddEventsContentPage() {
         setTickets(
             existing.ticketTypes.length > 0
                 ? existing.ticketTypes.map((ticket) => ({
+                    id: ticket.id,
                     name: ticket.name,
                     price: String(ticket.price),
-                    currency: ticket.currency || "PKR",
                     quantityTotal: String(ticket.quantityTotal),
                     salesStart: ticket.salesStart
                         ? toLocal(typeof ticket.salesStart === "string" ? ticket.salesStart : String(ticket.salesStart))
@@ -424,21 +462,146 @@ export default function AddEventsContentPage() {
                 }))
                 : [defaultTicket(t("generalTicket"))],
         )
+        setSeatingLoaded(false)
     }, [existing, t])
+
+    React.useEffect(() => {
+        if (!editId || !existing?.id || seatingLoaded) return
+        let cancelled = false
+        void getManagedSeating(existing.id)
+            .then((layout) => {
+                if (cancelled) return
+                setSeatingEnabled(layout.seatingEnabled)
+                setSeatingSections(
+                    layout.sections.map((section) => {
+                        const seats = section.seats ?? []
+                        const rowCount = seats.length
+                            ? Math.max(...seats.map((s) => s.rowIndex)) + 1
+                            : 1
+                        const seatsPerRow = seats.length
+                            ? Math.max(...seats.map((s) => s.colIndex)) + 1
+                            : 1
+                        return {
+                            ticketTypeId: section.ticketTypeId,
+                            name: section.name,
+                            color: section.color,
+                            sortOrder: section.sortOrder,
+                            rowCount: Math.max(1, rowCount),
+                            seatsPerRow: Math.max(1, seatsPerRow),
+                            rowLabelStart: seats[0]?.rowLabel?.[0] ?? "A",
+                        }
+                    }),
+                )
+                setSeatingLoaded(true)
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setSeatingEnabled(false)
+                    setSeatingSections([])
+                    setSeatingLoaded(true)
+                }
+            })
+        return () => {
+            cancelled = true
+        }
+    }, [editId, existing?.id, seatingLoaded])
 
     React.useEffect(() => {
         setCategoryOverride(null)
         setTimezoneOverride(null)
         hydratedEventIdRef.current = null
+        setSeatingEnabled(false)
+        setSeatingSections([])
+        setSeatingLoaded(false)
     }, [editId])
+
+    const seatingTicketOptions = React.useMemo(
+        () =>
+            tickets.map((ticket, index) => ({
+                id: ticket.id ?? `pending:${index}`,
+                name: ticket.name.trim() || `Ticket ${index + 1}`,
+            })),
+        [tickets],
+    )
 
     const saveMutation = useMutation({
         mutationFn: async () => {
-            const payload = buildPayload()
-            if (editId) {
-                return updateEvent(editId, payload)
+            if (!locationCurrency) {
+                throw new Error(
+                    "Selected country has no currency configured. Set a default currency in Locations first.",
+                )
             }
-            return createEvent(payload as CreateEventPayload)
+
+            const contentOnlyEdit = Boolean(editId && existing?.contentOnlyEdit)
+            if (contentOnlyEdit && editId) {
+                return updateEvent(editId, {
+                    eventDescription: eventDescription.trim(),
+                    category: category.trim(),
+                    tags,
+                    coverImage: coverImage.trim(),
+                    thumbnail: thumbnail.trim() || undefined,
+                    gallery: galleryUrls,
+                    venueName: venueName.trim(),
+                    venuePhone: venuePhone.trim(),
+                    venueWebsite: venueWebsite.trim(),
+                })
+            }
+
+            if (seatingEnabled) {
+                if (seatingSections.length === 0) {
+                    throw new Error("Add at least one seating section.")
+                }
+                for (const section of seatingSections) {
+                    if (!section.name.trim()) {
+                        throw new Error("Each seating section needs a name.")
+                    }
+                    if (!section.ticketTypeId) {
+                        throw new Error("Each seating section needs a ticket type.")
+                    }
+                }
+            }
+
+            const payload = buildPayload()
+            const saved = editId
+                ? await updateEvent(editId, payload)
+                : await createEvent(payload as CreateEventPayload)
+
+            const resolvedSections = seatingSections.map((section, index) => {
+                let ticketTypeId = section.ticketTypeId
+                if (ticketTypeId.startsWith("pending:")) {
+                    const idx = Number(ticketTypeId.slice("pending:".length))
+                    ticketTypeId = saved.ticketTypes[idx]?.id ?? ""
+                } else if (!saved.ticketTypes.some((tt) => tt.id === ticketTypeId)) {
+                    const ticketName =
+                        tickets.find((t) => t.id === section.ticketTypeId)?.name ?? ""
+                    const byName = saved.ticketTypes.find(
+                        (tt) =>
+                            tt.name.trim().toLowerCase() === ticketName.trim().toLowerCase(),
+                    )
+                    ticketTypeId =
+                        byName?.id ??
+                        saved.ticketTypes[index]?.id ??
+                        saved.ticketTypes[0]?.id ??
+                        ""
+                }
+                return {
+                    ...section,
+                    ticketTypeId,
+                    name: section.name.trim(),
+                    sortOrder: index,
+                }
+            })
+
+            if (seatingEnabled && resolvedSections.some((s) => !s.ticketTypeId)) {
+                throw new Error("Could not link seating sections to ticket types.")
+            }
+
+            await putManagedSeating(saved.id, {
+                seatingEnabled,
+                sections: seatingEnabled ? resolvedSections : [],
+            })
+
+            return saved
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["managed-events"] })
@@ -452,12 +615,33 @@ export default function AddEventsContentPage() {
         const gallery = galleryUrls
         const eventTz = timezone.trim() || "UTC"
 
-        const ticketPayload = tickets.map((ticket) => {
+        const seatCountByIndex = new Map<number, number>()
+        if (seatingEnabled) {
+            for (const section of seatingSections) {
+                const seats =
+                    Math.max(1, section.rowCount) * Math.max(1, section.seatsPerRow)
+                if (section.ticketTypeId.startsWith("pending:")) {
+                    const idx = Number(section.ticketTypeId.slice("pending:".length))
+                    seatCountByIndex.set(idx, (seatCountByIndex.get(idx) ?? 0) + seats)
+                } else {
+                    const idx = tickets.findIndex((t) => t.id === section.ticketTypeId)
+                    if (idx >= 0) {
+                        seatCountByIndex.set(idx, (seatCountByIndex.get(idx) ?? 0) + seats)
+                    }
+                }
+            }
+        }
+
+        const ticketPayload = tickets.map((ticket, index) => {
+            const seatedQty = seatCountByIndex.get(index)
             const row: CreateEventPayload["ticketTypes"][0] = {
                 name: ticket.name.trim(),
                 price: Number(ticket.price),
-                currency: ticket.currency.trim() || "PKR",
-                quantityTotal: Number(ticket.quantityTotal),
+                currency: locationCurrency,
+                quantityTotal:
+                    seatingEnabled && seatedQty != null && seatedQty > 0
+                        ? seatedQty
+                        : Math.max(1, Number(ticket.quantityTotal) || 1),
             }
             if (ticket.salesStart) {
                 row.salesStart = datetimeLocalValueToUtcIso(ticket.salesStart, eventTz)
@@ -578,7 +762,7 @@ export default function AddEventsContentPage() {
             toast.error(t("selectCategoryError"))
             return
         }
-        if (!findCatalogCity(cities, city)) {
+        if (!findCatalogCity(cityOptions, city)) {
             toast.error(t("selectCityError"))
             return
         }
@@ -658,8 +842,6 @@ export default function AddEventsContentPage() {
         setTagInput("")
     }
 
-    const currencyOptions = ["PKR", "USD", "EUR", "GBP", "AED", "SAR"] as const
-
     if (editId && (loadingEvent || loadingEventCategories || !existing)) {
         return (
             <div className="flex justify-center py-20">
@@ -701,6 +883,11 @@ export default function AddEventsContentPage() {
                         <h1 className="text-xl font-bold text-white">
                             {editId ? t("editEventTitle") : t("createEventTitle")}
                         </h1>
+                        {editId && existing?.contentOnlyEdit ? (
+                            <p className="max-w-2xl text-sm text-amber-500/90">
+                                {t("contentOnlyEditBanner")}
+                            </p>
+                        ) : null}
                     </div>
                 </div>
 
@@ -729,7 +916,7 @@ export default function AddEventsContentPage() {
                                 className={cn(inputClass, "min-h-24")}
                             />
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 sm:col-span-2">
                             <Label>{t("categoryLabel").replace(":", "")}</Label>
                             <Select
                                 key={`category-${editId ?? "new"}-${category}`}
@@ -791,31 +978,6 @@ export default function AddEventsContentPage() {
                                                 {t("firstSuffix")}
                                             </>
                                         )}
-                                </p>
-                            ) : null}
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="event-timezone">{tForms("timezone")}</Label>
-                            <Select
-                                key={`timezone-${editId ?? "new"}-${timezone}`}
-                                value={timezone}
-                                onValueChange={setTimezoneOverride}
-                                disabled={timezoneOptions.length === 0}
-                            >
-                                <SelectTrigger id="event-timezone" className={selectTriggerClass}>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {timezoneOptions.map((tz) => (
-                                        <SelectItem key={tz} value={tz}>
-                                            {formatTimezoneLabel(tz)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {timezone ? (
-                                <p className="text-xs text-muted-foreground">
-                                    {t("eventTimezoneHint", { timezone })}
                                 </p>
                             ) : null}
                         </div>
@@ -1061,6 +1223,41 @@ export default function AddEventsContentPage() {
                             </Select>
                         </div>
                         <div className="space-y-2">
+                            <Label htmlFor="event-currency">{tCurrency("currency")}</Label>
+                            <Input
+                                id="event-currency"
+                                value={
+                                    locationCurrency
+                                        ? `${locationCurrency} — ${
+                                              LOCATION_CURRENCY_LABELS.has(locationCurrency)
+                                                  ? tCurrency(
+                                                        locationCurrency as
+                                                            | "AED"
+                                                            | "PKR"
+                                                            | "USD"
+                                                            | "EUR"
+                                                            | "GBP"
+                                                            | "SAR"
+                                                            | "QAR",
+                                                    )
+                                                  : locationCurrency
+                                          }`
+                                        : ""
+                                }
+                                disabled
+                                readOnly
+                                placeholder={
+                                    countryCode
+                                        ? t("countryCurrencyMissing")
+                                        : t("selectCountryForCurrency")
+                                }
+                                className={inputClass}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                {t("countryCurrencyHint")}
+                            </p>
+                        </div>
+                        <div className="space-y-2">
                             <Label htmlFor="event-city">{tForms("city")}</Label>
                             <Select
                                 value={city}
@@ -1071,13 +1268,38 @@ export default function AddEventsContentPage() {
                                     <SelectValue placeholder={tForms("city")} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {cities.map((item) => (
+                                    {cityOptions.map((item) => (
                                         <SelectItem key={item.id} value={item.name}>
                                             {item.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="event-timezone">{tForms("timezone")}</Label>
+                            <Select
+                                key={`timezone-${editId ?? "new"}-${timezone}`}
+                                value={timezone}
+                                onValueChange={setTimezoneOverride}
+                                disabled={timezoneOptions.length === 0}
+                            >
+                                <SelectTrigger id="event-timezone" className={selectTriggerClass}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {timezoneOptions.map((tz) => (
+                                        <SelectItem key={tz} value={tz}>
+                                            {formatTimezoneLabel(tz)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {timezone ? (
+                                <p className="text-xs text-muted-foreground">
+                                    {t("eventTimezoneHint", { timezone })}
+                                </p>
+                            ) : null}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="event-state">{t("stateRegion")}</Label>
@@ -1251,38 +1473,39 @@ export default function AddEventsContentPage() {
                                         }
                                         className={inputClass}
                                     />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{tCurrency("displayCurrency")}</Label>
-                                    <Select
-                                        value={ticket.currency || "PKR"}
-                                        onValueChange={(value) =>
-                                            setTickets((rows) =>
-                                                rows.map((r, j) =>
-                                                    j === i ? { ...r, currency: value } : r,
-                                                ),
-                                            )
-                                        }
-                                    >
-                                        <SelectTrigger className={selectTriggerClass}>
-                                            <SelectValue placeholder={tCurrency("displayCurrency")} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {currencyOptions.map((code) => (
-                                                <SelectItem key={code} value={code}>
-                                                    {code} — {tCurrency(code)}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    {locationCurrency ? (
+                                        <p className="text-xs text-muted-foreground">
+                                            {tCurrency("chargeCurrency", {
+                                                currency: locationCurrency,
+                                            })}
+                                        </p>
+                                    ) : null}
                                 </div>
                                 <div className="space-y-2">
                                     <Label>{t("quantityTotal")}</Label>
                                     <Input
-                                        required
+                                        required={!seatingEnabled}
                                         type="number"
                                         min={1}
-                                        value={ticket.quantityTotal}
+                                        disabled={seatingEnabled}
+                                        value={
+                                            seatingEnabled
+                                                ? String(
+                                                      seatingSections
+                                                          .filter((s) => {
+                                                              const key = tickets[i]?.id ?? `pending:${i}`
+                                                              return s.ticketTypeId === key
+                                                          })
+                                                          .reduce(
+                                                              (sum, s) =>
+                                                                  sum +
+                                                                  Math.max(1, s.rowCount) *
+                                                                      Math.max(1, s.seatsPerRow),
+                                                              0,
+                                                          ) || Number(ticket.quantityTotal) || 0,
+                                                  )
+                                                : ticket.quantityTotal
+                                        }
                                         onChange={(e) =>
                                             setTickets((rows) =>
                                                 rows.map((r, j) =>
@@ -1292,6 +1515,11 @@ export default function AddEventsContentPage() {
                                         }
                                         className={inputClass}
                                     />
+                                    {seatingEnabled ? (
+                                        <p className="text-xs text-muted-foreground">
+                                            Quantity is calculated from the seating layout.
+                                        </p>
+                                    ) : null}
                                 </div>
                                 <div className="space-y-2 sm:col-span-2">
                                     <Label>{t("salesStart")}</Label>
@@ -1337,6 +1565,29 @@ export default function AddEventsContentPage() {
                                 </div>
                             </div>
                         ))}
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border bg-card">
+                    <CardHeader>
+                        <CardTitle>Seating</CardTitle>
+                        <CardDescription>
+                            Optional reserved seating map for this event. Buyers pick seats
+                            instead of a free quantity.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <SeatingLayoutEditor
+                            enabled={seatingEnabled}
+                            onEnabledChange={setSeatingEnabled}
+                            sections={seatingSections}
+                            onSectionsChange={setSeatingSections}
+                            ticketOptions={seatingTicketOptions}
+                            disabled={
+                                saveMutation.isPending ||
+                                Boolean(editId && existing?.contentOnlyEdit)
+                            }
+                        />
                     </CardContent>
                     <CardFooter className="border-t justify-end">
                         {formActions}

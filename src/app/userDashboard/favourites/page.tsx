@@ -8,6 +8,7 @@ import { ArrowRight, Heart, Loader2 } from "lucide-react";
 import { EventCard } from "@/components/events/EventCard";
 import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
 import { VenueCard } from "@/components/venues/VenueCard";
+import { AttractionCard } from "@/components/attractions/AttractionCard";
 import { Button } from "@/components/ui/button";
 import {
   DashboardContentPanel,
@@ -22,9 +23,15 @@ import { favoriteKeys } from "@/features/favorites/query-keys";
 import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
 
-type FavouritesTab = "events" | "venues";
+type FavouritesTab = "events" | "venues" | "attractions";
 
-const TAB_VALUES: FavouritesTab[] = ["events", "venues"];
+const TAB_VALUES: FavouritesTab[] = ["events", "venues", "attractions"];
+
+const BROWSE_HREF: Record<FavouritesTab, string> = {
+  events: "/events",
+  venues: "/venues",
+  attractions: "/attractions",
+};
 
 export default function FavouritesPage() {
   const t = useTranslations("userDashboard");
@@ -41,14 +48,25 @@ export default function FavouritesPage() {
 
   const events = data?.events ?? [];
   const venues = data?.venues ?? [];
-  const isEventsTab = activeTab === "events";
-  const items = isEventsTab ? events : venues;
-  const isEmpty = items.length === 0;
+  const attractions = data?.attractions ?? [];
+  const isEmpty =
+    activeTab === "events"
+      ? events.length === 0
+      : activeTab === "venues"
+        ? venues.length === 0
+        : attractions.length === 0;
 
   const tabLabels = {
     events: `${tFav("events")} (${events.length})`,
     venues: `${tFav("venues")} (${venues.length})`,
+    attractions: `${tFav("attractions")} (${attractions.length})`,
   } as const;
+
+  const browseLabels: Record<FavouritesTab, string> = {
+    events: t("browseEvents"),
+    venues: t("browseVenues"),
+    attractions: tFav("browseAttractions"),
+  };
 
   return (
     <DashboardContentPanel>
@@ -87,17 +105,21 @@ export default function FavouritesPage() {
           <h3 className="text-lg font-semibold">{t("noFavourites")}</h3>
           <p className="max-w-sm text-muted-foreground">{t("noFavouritesDesc")}</p>
           <Button asChild>
-            <Link href={isEventsTab ? "/events" : "/venues"} className="inline-flex items-center gap-2">
-              {isEventsTab ? t("browseEvents") : t("browseVenues")}
+            <Link href={BROWSE_HREF[activeTab]} className="inline-flex items-center gap-2">
+              {browseLabels[activeTab]}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
         </div>
       ) : (
         <ResponsiveEventCardsGrid>
-          {isEventsTab
+          {activeTab === "events"
             ? events.map((event) => <EventCard key={event.id} event={event} />)
-            : venues.map((venue) => <VenueCard key={venue.id} venue={venue} />)}
+            : activeTab === "venues"
+              ? venues.map((venue) => <VenueCard key={venue.id} venue={venue} />)
+              : attractions.map((attraction) => (
+                  <AttractionCard key={attraction.id} attraction={attraction} />
+                ))}
         </ResponsiveEventCardsGrid>
       )}
     </DashboardContentPanel>

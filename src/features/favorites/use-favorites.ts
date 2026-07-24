@@ -7,7 +7,7 @@ import { favoriteKeys } from "@/features/favorites/query-keys";
 import type { FavoriteIds, FavoritableType } from "@/features/favorites/types";
 import { toastApiError } from "@/lib/toasts";
 
-const EMPTY_IDS: FavoriteIds = { eventIds: [], venueIds: [] };
+const EMPTY_IDS: FavoriteIds = { eventIds: [], venueIds: [], attractionIds: [] };
 
 export function useFavoriteIds() {
   const { isAuthenticated, isReady, user } = useAuth();
@@ -21,10 +21,16 @@ export function useFavoriteIds() {
   });
 }
 
+function idsKeyForType(type: FavoritableType): keyof FavoriteIds {
+  if (type === "event") return "eventIds";
+  if (type === "venue") return "venueIds";
+  return "attractionIds";
+}
+
 export function useIsFavorited(type: FavoritableType, id: string) {
   const { data } = useFavoriteIds();
   const ids = data ?? EMPTY_IDS;
-  return type === "event" ? ids.eventIds.includes(id) : ids.venueIds.includes(id);
+  return ids[idsKeyForType(type)].includes(id);
 }
 
 export function useToggleFavorite() {
@@ -47,7 +53,7 @@ export function useToggleFavorite() {
 
       queryClient.setQueryData<FavoriteIds>(idsKey, (current) => {
         const base = current ?? EMPTY_IDS;
-        const key = type === "event" ? "eventIds" : "venueIds";
+        const key = idsKeyForType(type);
         const isFavorited = base[key].includes(id);
         return {
           ...base,

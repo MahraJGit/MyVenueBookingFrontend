@@ -51,10 +51,21 @@ function formatLocation(order: {
 }
 
 function ticketTypesSummary(
-  items: Array<{ ticketName: string; quantity: number }>,
+  items: Array<{
+    ticketName: string
+    quantity: number
+    tickets?: Array<{ seatLabel?: string | null }>
+  }>,
 ) {
   return items
-    .map((item) => `${item.quantity}× ${item.ticketName}`)
+    .map((item) => {
+      const seats = (item.tickets ?? [])
+        .map((t) => t.seatLabel)
+        .filter(Boolean)
+        .join(', ')
+      const base = `${item.quantity}× ${item.ticketName}`
+      return seats ? `${base} (${seats})` : base
+    })
     .join(', ')
 }
 

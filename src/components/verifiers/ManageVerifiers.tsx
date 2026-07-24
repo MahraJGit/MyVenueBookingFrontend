@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Loader2, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -53,6 +54,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import {
   createVerifier,
   deleteVerifier,
+  listAssignableAttractions,
   listAssignableEvents,
   listVerifierVendors,
   listVerifiers,
@@ -72,6 +74,7 @@ type FormState = {
   displayName: string;
   vendorProfileId: string;
   eventIds: string[];
+  attractionIds: string[];
 };
 
 const emptyForm = (): FormState => ({
@@ -80,6 +83,7 @@ const emptyForm = (): FormState => ({
   displayName: "",
   vendorProfileId: "",
   eventIds: [],
+  attractionIds: [],
 });
 
 export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
@@ -87,13 +91,27 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = scope === "admin";
+  const searchParams = useSearchParams();
+  const initialTab =
+    searchParams.get("tab") === "attractions" ? "attractions" : "events";
 
   const [search, setSearch] = useState("");
   const [eventSearch, setEventSearch] = useState("");
+  const [attractionSearch, setAttractionSearch] = useState("");
+  const [assignmentTab, setAssignmentTab] = useState<"events" | "attractions">(
+    initialTab,
+  );
+
+  useEffect(() => {
+    setAssignmentTab(initialTab);
+  }, [initialTab]);
+
   const [vendorFilter, setVendorFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<VerifierRow | null>(null);
   const [viewingEvents, setViewingEvents] = useState<VerifierRow | null>(null);
+  const [viewingAttractions, setViewingAttractions] =
+    useState<VerifierRow | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
 
   const listParams = useMemo(
@@ -130,12 +148,24 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
       (!isAdmin || Boolean(assignVendorId)),
   });
 
+  const attractionsQuery = useQuery({
+    queryKey: [
+      "verifiers-assignable-attractions",
+      user?.id,
+      assignVendorId ?? "self",
+    ],
+    queryFn: () => listAssignableAttractions(assignVendorId),
+    enabled:
+      Boolean(user?.id) &&
+      dialogOpen &&
+      (!isAdmin || Boolean(assignVendorId)),
+  });
+
   const assignableEvents = useMemo(() => {
     const byId = new Map(
       (eventsQuery.data ?? []).map((event) => [event.id, event]),
     );
 
-    // Keep currently assigned events visible when editing (even if past).
     if (editing) {
       for (const event of editing.events) {
         if (!byId.has(event.id)) {
@@ -166,6 +196,41 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
           new Date(b.startDateTime).getTime(),
       );
   }, [eventsQuery.data, editing, eventSearch]);
+
+  const assignableAttractions = useMemo(() => {
+    const byId = new Map(
+      (attractionsQuery.data ?? []).map((attraction) => [
+        attraction.id,
+        attraction,
+      ]),
+    );
+
+    if (editing) {
+      for (const attraction of editing.attractions ?? []) {
+        if (!byId.has(attraction.id)) {
+          byId.set(attraction.id, {
+            id: attraction.id,
+            name: attraction.name,
+            slug: attraction.slug,
+            scheduleStartDate: attraction.scheduleStartDate,
+            scheduleEndDate: null,
+            status: attraction.status,
+            city: attraction.city ?? "",
+          });
+        }
+      }
+    }
+
+    const term = attractionSearch.trim().toLowerCase();
+    return Array.from(byId.values())
+      .filter((attraction) =>
+        term
+          ? attraction.name.toLowerCase().includes(term) ||
+            attraction.city.toLowerCase().includes(term)
+          : true,
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [attractionsQuery.data, editing, attractionSearch]);
 
   useEffect(() => {
     if (verifiersQuery.isError) {
@@ -233,18 +298,23 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
     setEditing(null);
     setForm(emptyForm());
     setEventSearch("");
+    setAttractionSearch("");
+    setAssignmentTab(initialTab);
     setDialogOpen(true);
   };
 
   const openEdit = (row: VerifierRow) => {
     setEditing(row);
     setEventSearch("");
+    setAttractionSearch("");
+    setAssignmentTab(initialTab);
     setForm({
       username: row.username,
       password: "",
       displayName: row.displayName ?? "",
       vendorProfileId: row.vendorProfileId,
       eventIds: row.events.map((event) => event.id),
+      attractionIds: (row.attractions ?? []).map((attraction) => attraction.id),
     });
     setDialogOpen(true);
   };
@@ -255,6 +325,15 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
       eventIds: checked
         ? [...new Set([...prev.eventIds, eventId])]
         : prev.eventIds.filter((id) => id !== eventId),
+    }));
+  };
+
+  const toggleAttraction = (attractionId: string, checked: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      attractionIds: checked
+        ? [...new Set([...prev.attractionIds, attractionId])]
+        : prev.attractionIds.filter((id) => id !== attractionId),
     }));
   };
 
@@ -269,6 +348,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
         id: editing.id,
         displayName: form.displayName.trim(),
         eventIds: form.eventIds,
+        attractionIds: form.attractionIds,
         ...(form.password.trim() ? { password: form.password } : {}),
       });
       return;
@@ -292,6 +372,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
       password: form.password,
       displayName: form.displayName.trim(),
       eventIds: form.eventIds,
+      attractionIds: form.attractionIds,
       ...(isAdmin ? { vendorProfileId: form.vendorProfileId } : {}),
     });
   };
@@ -345,15 +426,16 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
                 <TableHead>{t("colName")}</TableHead>
                 {isAdmin ? <TableHead>{t("colVendor")}</TableHead> : null}
                 <TableHead>{t("colEvents")}</TableHead>
+                <TableHead>{t("colAttractions")}</TableHead>
                 <TableHead>{t("colStatus")}</TableHead>
                 <TableHead className="text-right">{t("colActions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {verifiersQuery.isLoading ? (
-                <TableSkeleton cols={isAdmin ? 6 : 5} rows={5} />
+                <TableSkeleton cols={isAdmin ? 7 : 6} rows={5} />
               ) : rows.length === 0 ? (
-                <TableEmptyRow colSpan={isAdmin ? 6 : 5}>
+                <TableEmptyRow colSpan={isAdmin ? 7 : 6}>
                   {t("empty")}
                 </TableEmptyRow>
               ) : (
@@ -383,6 +465,31 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
                           >
                             <Eye className="mr-1.5 h-3.5 w-3.5" />
                             {t("viewEvents")}
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {(row.attractions ?? []).length === 0 ? (
+                        <span className="text-sm text-muted-foreground">
+                          {t("noAttractions")}
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            {t("attractionCount", {
+                              count: row.attractions.length,
+                            })}
+                          </span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2"
+                            onClick={() => setViewingAttractions(row)}
+                          >
+                            <Eye className="mr-1.5 h-3.5 w-3.5" />
+                            {t("viewAttractions")}
                           </Button>
                         </div>
                       )}
@@ -518,6 +625,76 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
       </Dialog>
 
       <Dialog
+        open={Boolean(viewingAttractions)}
+        onOpenChange={(open) => {
+          if (!open) setViewingAttractions(null);
+        }}
+      >
+        <DialogContent
+          className={cn(
+            dashboardSurfaceBorderClass,
+            "flex max-h-[85vh] w-full flex-col gap-3 overflow-hidden p-5 sm:max-w-md",
+          )}
+        >
+          <DialogHeader className="shrink-0 space-y-1">
+            <DialogTitle>{t("viewAttractionsTitle")}</DialogTitle>
+            <DialogDescription>
+              {viewingAttractions
+                ? t("viewAttractionsDescription", {
+                    name: viewingAttractions.displayName,
+                    username: viewingAttractions.username,
+                  })
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+            {(viewingAttractions?.attractions ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("noAttractions")}</p>
+            ) : (
+              (viewingAttractions?.attractions ?? []).map((attraction) => (
+                <div
+                  key={attraction.id}
+                  className="rounded-md border border-white/10 px-3 py-2.5"
+                >
+                  <p className="text-sm font-medium text-white">
+                    {attraction.name}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {[attraction.city, t("eventStatus", { status: attraction.status.toLowerCase() })]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+
+          <DialogFooter className="shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setViewingAttractions(null)}
+            >
+              {t("close")}
+            </Button>
+            {viewingAttractions ? (
+              <Button
+                type="button"
+                onClick={() => {
+                  const row = viewingAttractions;
+                  setViewingAttractions(null);
+                  openEdit(row);
+                }}
+              >
+                {t("editAssignments")}
+              </Button>
+            ) : null}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
@@ -525,6 +702,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
             setEditing(null);
             setForm(emptyForm());
             setEventSearch("");
+            setAttractionSearch("");
           }
         }}
       >
@@ -558,6 +736,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
                       ...prev,
                       vendorProfileId: value,
                       eventIds: [],
+                      attractionIds: [],
                     }))
                   }
                 >
@@ -621,67 +800,130 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label>{t("assignEvents")}</Label>
-              <Input
-                value={eventSearch}
-                onChange={(e) => setEventSearch(e.target.value)}
-                placeholder={t("searchEventsPlaceholder")}
-                disabled={
-                  eventsQuery.isLoading ||
-                  (isAdmin && !assignVendorId)
-                }
-              />
-              <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-white/10 p-2">
-                {eventsQuery.isLoading ? (
-                  <div className="flex items-center gap-2 py-1 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t("loadingEvents")}
+              <Label>
+                {assignmentTab === "attractions"
+                  ? t("assignAttractions")
+                  : t("assignEvents")}
+              </Label>
+              {assignmentTab === "events" ? (
+                <>
+                  <Input
+                    value={eventSearch}
+                    onChange={(e) => setEventSearch(e.target.value)}
+                    placeholder={t("searchEventsPlaceholder")}
+                    disabled={
+                      eventsQuery.isLoading ||
+                      (isAdmin && !assignVendorId)
+                    }
+                  />
+                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-white/10 p-2">
+                    {eventsQuery.isLoading ? (
+                      <div className="flex items-center gap-2 py-1 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {t("loadingEvents")}
+                      </div>
+                    ) : isAdmin && !assignVendorId ? (
+                      <p className="py-1 text-sm text-muted-foreground">
+                        {t("selectVendorFirst")}
+                      </p>
+                    ) : assignableEvents.length === 0 ? (
+                      <p className="py-1 text-sm text-muted-foreground">
+                        {eventSearch.trim()
+                          ? t("noEventsMatchSearch")
+                          : t("noAssignableEvents")}
+                      </p>
+                    ) : (
+                      assignableEvents.map((event) => {
+                        const checked = form.eventIds.includes(event.id);
+                        return (
+                          <label
+                            key={event.id}
+                            className="flex cursor-pointer items-start gap-3 rounded-md p-1.5 hover:bg-white/5"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(value) =>
+                                toggleEvent(event.id, value === true)
+                              }
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-medium">
+                                {event.eventName}
+                              </span>
+                              <span className="block text-xs text-muted-foreground">
+                                {new Date(event.startDateTime).toLocaleString(undefined, {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  ...(event.timezone ? { timeZone: event.timezone } : {}),
+                                })}
+                                {event.city ? ` · ${event.city}` : ""}
+                              </span>
+                            </span>
+                          </label>
+                        );
+                      })
+                    )}
                   </div>
-                ) : isAdmin && !assignVendorId ? (
-                  <p className="py-1 text-sm text-muted-foreground">
-                    {t("selectVendorFirst")}
-                  </p>
-                ) : assignableEvents.length === 0 ? (
-                  <p className="py-1 text-sm text-muted-foreground">
-                    {eventSearch.trim()
-                      ? t("noEventsMatchSearch")
-                      : t("noAssignableEvents")}
-                  </p>
-                ) : (
-                  assignableEvents.map((event) => {
-                    const checked = form.eventIds.includes(event.id);
-                    return (
-                      <label
-                        key={event.id}
-                        className="flex cursor-pointer items-start gap-3 rounded-md p-1.5 hover:bg-white/5"
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={(value) =>
-                            toggleEvent(event.id, value === true)
-                          }
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-medium">
-                            {event.eventName}
-                          </span>
-                          <span className="block text-xs text-muted-foreground">
-                            {new Date(event.startDateTime).toLocaleString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              ...(event.timezone ? { timeZone: event.timezone } : {}),
-                            })}
-                            {event.city ? ` · ${event.city}` : ""}
-                          </span>
-                        </span>
-                      </label>
-                    );
-                  })
-                )}
-              </div>
+                </>
+              ) : (
+                <>
+                  <Input
+                    value={attractionSearch}
+                    onChange={(e) => setAttractionSearch(e.target.value)}
+                    placeholder={t("searchAttractionsPlaceholder")}
+                    disabled={
+                      attractionsQuery.isLoading ||
+                      (isAdmin && !assignVendorId)
+                    }
+                  />
+                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-white/10 p-2">
+                    {attractionsQuery.isLoading ? (
+                      <div className="flex items-center gap-2 py-1 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {t("loadingAttractions")}
+                      </div>
+                    ) : isAdmin && !assignVendorId ? (
+                      <p className="py-1 text-sm text-muted-foreground">
+                        {t("selectVendorFirst")}
+                      </p>
+                    ) : assignableAttractions.length === 0 ? (
+                      <p className="py-1 text-sm text-muted-foreground">
+                        {attractionSearch.trim()
+                          ? t("noAttractionsMatchSearch")
+                          : t("noAssignableAttractions")}
+                      </p>
+                    ) : (
+                      assignableAttractions.map((attraction) => {
+                        const checked = form.attractionIds.includes(attraction.id);
+                        return (
+                          <label
+                            key={attraction.id}
+                            className="flex cursor-pointer items-start gap-3 rounded-md p-1.5 hover:bg-white/5"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(value) =>
+                                toggleAttraction(attraction.id, value === true)
+                              }
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-medium">
+                                {attraction.name}
+                              </span>
+                              <span className="block text-xs text-muted-foreground">
+                                {attraction.city || "—"}
+                              </span>
+                            </span>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             <DialogFooter className="shrink-0 pt-1">

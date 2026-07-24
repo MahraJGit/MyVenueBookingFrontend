@@ -19,6 +19,7 @@ const STATUS_KEY_MAP: Record<string, string> = {
   INACTIVE: "inactive",
   CANCELLED: "cancelled",
   COMPLETED: "completed",
+  DELETED: "deleted",
   HOLD: "hold",
   CONFIRMED: "confirmed",
 };
@@ -27,7 +28,12 @@ function variantForStatus(status: string) {
   if (status === "ACTIVE" || status === "APPROVED" || status === "CONFIRMED" || status === "COMPLETED") {
     return "default" as const;
   }
-  if (status === "REJECTED" || status === "CANCELLED" || status === "INACTIVE") {
+  if (
+    status === "REJECTED" ||
+    status === "CANCELLED" ||
+    status === "INACTIVE" ||
+    status === "DELETED"
+  ) {
     return "destructive" as const;
   }
   if (status === "HOLD" || status === "PENDING") {

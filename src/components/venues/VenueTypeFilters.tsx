@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { CollapsibleChipRow } from "@/components/filters/CollapsibleChipRow";
 
 export const ALL_VENUE_TYPES = "all";
 
@@ -30,8 +31,8 @@ export function VenueTypeFilters({
   ];
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {pills.map((type) => {
+    <CollapsibleChipRow
+      items={pills.map((type) => {
         const isActive =
           type.id === ALL_VENUE_TYPES
             ? !activeTypeId
@@ -56,6 +57,6 @@ export function VenueTypeFilters({
           </button>
         );
       })}
-    </div>
+    />
   );
 }

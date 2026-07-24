@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type Context,
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -57,7 +58,19 @@ type AuthContextValue = {
   logout: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+declare global {
+  // Survives Turbopack/Webpack HMR so Provider and useAuth share one context object.
+  // eslint-disable-next-line no-var
+  var __MVB_AUTH_CONTEXT__: Context<AuthContextValue | null> | undefined;
+}
+
+const AuthContext =
+  globalThis.__MVB_AUTH_CONTEXT__ ??
+  createContext<AuthContextValue | null>(null);
+
+if (process.env.NODE_ENV !== "production") {
+  globalThis.__MVB_AUTH_CONTEXT__ = AuthContext;
+}
 
 type AuthSession =
   | { user: null; isAuthenticated: false }

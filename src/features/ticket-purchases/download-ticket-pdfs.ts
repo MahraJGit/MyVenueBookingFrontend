@@ -7,6 +7,7 @@ export type TicketPdfSeat = {
   qrToken: string;
   ticketName: string;
   fullName: string;
+  seatLabel?: string | null;
 };
 
 export type TicketPdfOrder = {
@@ -165,11 +166,14 @@ async function drawTicketPage(
   doc.setFont("helvetica", "normal");
   doc.text("SEAT", cardX + stubW / 2, cardY + 88, { align: "center" });
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(28);
-  doc.text(String(index), cardX + stubW / 2, cardY + 122, { align: "center" });
+  doc.setFontSize(seat.seatLabel ? 16 : 28);
+  const seatDisplay = seat.seatLabel?.trim() || String(index);
+  doc.text(seatDisplay, cardX + stubW / 2, cardY + 122, { align: "center" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`OF ${total}`, cardX + stubW / 2, cardY + 142, { align: "center" });
+  if (!seat.seatLabel) {
+    doc.text(`OF ${total}`, cardX + stubW / 2, cardY + 142, { align: "center" });
+  }
 
   doc.setFontSize(7.5);
   doc.text("TICKET TYPE", cardX + stubW / 2, cardY + 190, { align: "center" });
@@ -514,6 +518,8 @@ export function flattenOrderSeats(
       fullName: string;
       checkedIn: boolean;
       checkInTime: string | null;
+      seatId?: string | null;
+      seatLabel?: string | null;
     }>;
   }>,
 ): TicketPdfSeat[] {
@@ -523,6 +529,7 @@ export function flattenOrderSeats(
       qrToken: ticket.qrToken,
       ticketName: item.ticketName,
       fullName: ticket.fullName,
+      seatLabel: ticket.seatLabel ?? null,
     })),
   );
 }

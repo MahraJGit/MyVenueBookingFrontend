@@ -2,6 +2,7 @@ import { ApiError } from "@/lib/api/errors";
 import { authFetch } from "@/lib/api/auth-fetch";
 import type { PublicEvent } from "@/features/events/api";
 import type { PublicVenue } from "@/features/venues/types";
+import type { PublicAttraction } from "@/features/attractions/api";
 
 async function parseJson<T>(res: Response): Promise<T> {
   const text = await res.text();
@@ -53,4 +54,24 @@ export async function getRecommendedVenues(
   }
 
   return (data as SuccessEnvelope<PublicVenue[]>).data;
+}
+
+export async function getRecommendedAttractions(
+  limit = 8,
+): Promise<PublicAttraction[]> {
+  const res = await authFetch(
+    `/api/recommendations/attractions?limit=${encodeURIComponent(String(limit))}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while loading recommendations.",
+    },
+  );
+
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, data);
+  }
+
+  return (data as SuccessEnvelope<PublicAttraction[]>).data;
 }

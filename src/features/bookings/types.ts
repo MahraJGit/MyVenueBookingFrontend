@@ -6,6 +6,8 @@ export type BookingStatus =
   | "CANCELLED"
   | "COMPLETED";
 
+export type BookingSource = "ONLINE" | "OFFLINE";
+
 export type BookingAmenityLine = {
   id: string;
   venueAmenityId: string;
@@ -49,12 +51,15 @@ export type Booking = {
   startTime: string;
   endTime: string;
   status: BookingStatus;
+  source?: BookingSource;
   totalAmount: number | string;
   baseAmount: number | string;
   pricingSnapshot?: Record<string, unknown> | null;
   expiresAt?: string | null;
   numGuests?: number | null;
   specialRequests?: string | null;
+  guestName?: string | null;
+  guestPhone?: string | null;
   createdAt: string;
   updatedAt: string;
   venue: BookingVenueSummary;

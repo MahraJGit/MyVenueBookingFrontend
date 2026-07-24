@@ -94,7 +94,8 @@ export function AvailabilityCalendar({
   }, [availability]);
 
   const isPast = useMemo(() => {
-    return (date: Date) => formatDateKeyLocal(date) < todayKey;
+    // Today and earlier are not bookable — earliest day is tomorrow.
+    return (date: Date) => formatDateKeyLocal(date) <= todayKey;
   }, [todayKey]);
 
   const isUnavailable = useMemo(() => {

@@ -2,11 +2,10 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
   X,
-  Plus,
   Building2,
   CalendarDays,
   Ticket,
@@ -70,23 +69,8 @@ export default function VendorSidebar({
         </Link>
       </div>
 
-      <div className="mb-6 grid gap-2">
-        <Link href={paths.addEvent} onClick={onClose}>
-          <Button className="flex w-full gap-2 bg-primary text-white hover:bg-primary/80">
-            <Plus size={18} />
-            {t('createEvent')}
-          </Button>
-        </Link>
-        <Link href={paths.addVenue} onClick={onClose}>
-          <Button variant="outline" className="flex w-full gap-2 border-[#303030] text-white hover:bg-primary/20">
-            <Plus size={18} />
-            {t('addVenue')}
-          </Button>
-        </Link>
-      </div>
-
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <Accordion type="multiple" defaultValue={['overview', 'events', 'venues', 'account']} className="space-y-2">
+        <Accordion type="multiple" defaultValue={['overview', 'events', 'attractions', 'venues', 'account']} className="space-y-2">
           <SidebarSection title={t('overview')} value="overview">
             <SidebarLink icon={LayoutDashboard} label={t('dashboard')} href={paths.root} onClose={onClose} />
             <SidebarLink icon={TrendingUp} label={t('analytics')} href={paths.analytics} onClose={onClose} />
@@ -96,6 +80,12 @@ export default function VendorSidebar({
             <SidebarLink icon={Clapperboard} label={t('myEvents')} href={paths.events} onClose={onClose} />
             <SidebarLink icon={Ticket} label={t('ticketSales')} href={paths.tickets} onClose={onClose} />
             <SidebarLink icon={ShieldCheck} label={t('verifiers')} href={paths.verifiers} onClose={onClose} />
+          </SidebarSection>
+
+          <SidebarSection title={t('attractionsSection')} value="attractions">
+            <SidebarLink icon={Clapperboard} label={t('myAttractions')} href={paths.attractions} onClose={onClose} />
+            <SidebarLink icon={Ticket} label={t('attractionTickets')} href={paths.attractionTickets} onClose={onClose} />
+            <SidebarLink icon={ShieldCheck} label={t('attractionVerifiers')} href={`${paths.verifiers}?tab=attractions`} onClose={onClose} />
           </SidebarSection>
 
           <SidebarSection title={t('venuesSection')} value="venues">
@@ -155,9 +145,26 @@ function SidebarLink({
   unreadContext?: "buyer" | "vendor" | "admin"
 }) {
   const pathname = usePathname()
-  const isActive =
-    pathname === href ||
-    (href !== paths.root && pathname.startsWith(`${href}/`))
+  const searchParams = useSearchParams()
+  const [hrefPath, hrefQuery = ''] = href.split('?')
+  const hrefParams = new URLSearchParams(hrefQuery)
+  const pathMatches =
+    pathname === hrefPath ||
+    (hrefPath !== paths.root && pathname.startsWith(`${hrefPath}/`))
+
+  let isActive = pathMatches
+  if (isActive) {
+    for (const [key, value] of hrefParams.entries()) {
+      if (searchParams.get(key) !== value) {
+        isActive = false
+        break
+      }
+    }
+    // Plain verifiers link should not stay active on ?tab=attractions
+    if (isActive && !hrefParams.has('tab') && searchParams.get('tab')) {
+      isActive = false
+    }
+  }
 
   return (
     <Link

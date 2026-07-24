@@ -3,8 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { Minus, Plus, Loader2, CreditCard, Ticket } from "lucide-react";
+import { Minus, Plus, Loader2, CreditCard, Ticket, Clock3 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,14 @@ import {
 } from "@/features/ticket-purchases/api";
 import type { PublicEvent, TicketTypeRow } from "@/features/events/api";
 import { getPurchasableTicketTypes } from "@/features/events/utils";
+import {
+  getPublicSeatingMap,
+  holdSeats,
+  releaseSeats,
+  type PublicSeat,
+  type PublicSeatSection,
+} from "@/features/seating/api";
+import { SeatMap } from "@/components/seating/SeatMap";
 import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
 import { toast } from "sonner";
@@ -38,6 +47,11 @@ type TicketPurchaseDialogProps = {
 
 type Quantities = Record<string, number>;
 
+type SelectedSeat = {
+  seat: PublicSeat;
+  section: PublicSeatSection;
+};
+
 function ticketPrice(price: number | string) {
   const n = typeof price === "number" ? price : Number(price);
   return Number.isFinite(n) ? n : 0;
@@ -46,6 +60,16 @@ function ticketPrice(price: number | string) {
 function availableCount(t: TicketTypeRow) {
   const sold = t.quantitySold ?? 0;
   return Math.max(0, t.quantityTotal - sold);
+}
+
+function formatHoldCountdown(expiresAt: string | null) {
+  if (!expiresAt) return null;
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (ms <= 0) return "0:00";
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export function TicketPurchaseDialog({
@@ -62,11 +86,25 @@ export function TicketPurchaseDialog({
   const { isAuthenticated, isReady } = useAuth();
   const { formatChargePrice } = useCurrency();
   const [quantities, setQuantities] = React.useState<Quantities>({});
+  const [selectedSeats, setSelectedSeats] = React.useState<SelectedSeat[]>([]);
+  const [holdId, setHoldId] = React.useState<string | null>(null);
+  const [holdExpiresAt, setHoldExpiresAt] = React.useState<string | null>(null);
+  const [holding, setHolding] = React.useState(false);
+  const [nowTick, setNowTick] = React.useState(0);
   const [checkingPayment, setCheckingPayment] = React.useState(false);
   const [purchasing, setPurchasing] = React.useState(false);
   const [paymentBlocked, setPaymentBlocked] = React.useState(false);
   const [defaultCardLabel, setDefaultCardLabel] = React.useState<string | null>(null);
   const [disclaimerAccepted, setDisclaimerAccepted] = React.useState(false);
+
+  const seatingEnabled = Boolean(event.seatingEnabled);
+
+  const seatingQuery = useQuery({
+    queryKey: ["event-seating", event.slug],
+    queryFn: () => getPublicSeatingMap(event.slug),
+    enabled: open && seatingEnabled,
+    refetchInterval: open && seatingEnabled ? 15_000 : false,
+  });
 
   const ticketTypes = React.useMemo(
     () => getPurchasableTicketTypes(event),
@@ -76,40 +114,61 @@ export function TicketPurchaseDialog({
   React.useEffect(() => {
     if (!open) {
       setQuantities({});
+      setSelectedSeats([]);
+      setHoldId(null);
+      setHoldExpiresAt(null);
       setPaymentBlocked(false);
       setDefaultCardLabel(null);
       setDisclaimerAccepted(false);
+    }
+  }, [open]);
+
+  React.useEffect(() => {
+    if (!holdExpiresAt) return;
+    const id = window.setInterval(() => setNowTick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [holdExpiresAt]);
+
+  React.useEffect(() => {
+    if (!holdExpiresAt) return;
+    if (new Date(holdExpiresAt).getTime() <= Date.now()) {
+      setHoldId(null);
+      setHoldExpiresAt(null);
+      setSelectedSeats([]);
+      toast.error("Your seat hold expired. Please select seats again.");
+      void seatingQuery.refetch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nowTick, holdExpiresAt]);
+
+  React.useEffect(() => {
+    if (!open || !isReady) return;
+    if (!isAuthenticated) {
+      setPaymentBlocked(true);
       return;
     }
 
-    const initial: Quantities = {};
-    for (const t of ticketTypes) {
-      if (t.id) initial[t.id] = 0;
-    }
-    setQuantities(initial);
-  }, [open, ticketTypes]);
-
-  React.useEffect(() => {
-    if (!open || !isReady || !isAuthenticated) return;
-
     let cancelled = false;
     setCheckingPayment(true);
-
-    listPaymentMethods()
+    void listPaymentMethods()
       .then((methods) => {
         if (cancelled) return;
-        const def = methods.find((m) => m.isDefault) ?? methods[0];
-        if (!def) {
+        const defaultMethod = methods.find((m) => m.isDefault) ?? methods[0];
+        if (!defaultMethod) {
           setPaymentBlocked(true);
           setDefaultCardLabel(null);
-        } else {
-          setPaymentBlocked(false);
-          const brand = def.brand ? def.brand.toUpperCase() : tTicket("cardLabel");
-          setDefaultCardLabel(`${brand} •••• ${def.last4}`);
+          return;
         }
+        setPaymentBlocked(false);
+        setDefaultCardLabel(
+          `${defaultMethod.brand ?? "Card"} •••• ${defaultMethod.last4}`,
+        );
       })
       .catch(() => {
-        if (!cancelled) setPaymentBlocked(true);
+        if (!cancelled) {
+          setPaymentBlocked(true);
+          setDefaultCardLabel(null);
+        }
       })
       .finally(() => {
         if (!cancelled) setCheckingPayment(false);
@@ -118,52 +177,117 @@ export function TicketPurchaseDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, isReady, isAuthenticated, tTicket]);
+  }, [open, isAuthenticated, isReady]);
 
   const lineItems = React.useMemo(() => {
+    if (seatingEnabled) {
+      const byType = new Map<string, { ticketTypeId: string; name: string; quantity: number; unitPrice: number; currency: string }>();
+      for (const selected of selectedSeats) {
+        const tt = selected.section.ticketType;
+        const existing = byType.get(tt.id);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          byType.set(tt.id, {
+            ticketTypeId: tt.id,
+            name: tt.name,
+            quantity: 1,
+            unitPrice: ticketPrice(tt.price),
+            currency: tt.currency,
+          });
+        }
+      }
+      return [...byType.values()];
+    }
+
     return ticketTypes
-      .filter((t) => t.id && (quantities[t.id] ?? 0) > 0)
+      .filter((t) => (quantities[t.id!] ?? 0) > 0)
       .map((t) => {
         const qty = quantities[t.id!] ?? 0;
-        const price = ticketPrice(t.price);
         return {
           ticketTypeId: t.id!,
           name: t.name,
           quantity: qty,
-          unitPrice: price,
-          subtotal: price * qty,
-          currency: t.currency,
-          available: availableCount(t),
+          unitPrice: ticketPrice(t.price),
+          currency: t.currency || "USD",
         };
       });
-  }, [ticketTypes, quantities]);
+  }, [seatingEnabled, selectedSeats, ticketTypes, quantities]);
 
-  const orderTotal = lineItems.reduce((sum, l) => sum + l.subtotal, 0);
+  const orderTotal = lineItems.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
   const currency = lineItems[0]?.currency ?? ticketTypes[0]?.currency ?? "USD";
-  const { chargeFormatted } = useDisplayPrice(orderTotal, currency);
+  const { formatted: chargeFormatted } = useDisplayPrice(orderTotal, currency);
 
   const setQty = (ticketTypeId: string, delta: number, max: number) => {
     setQuantities((prev) => {
       const current = prev[ticketTypeId] ?? 0;
-      const next = Math.min(max, Math.max(0, current + delta));
+      const next = Math.max(0, Math.min(max, current + delta));
       return { ...prev, [ticketTypeId]: next };
     });
   };
 
-  const handlePurchase = async () => {
-    if (!isAuthenticated) {
-      const redirect = encodeURIComponent(pathname || `/events/${event.slug}`);
-      router.push(`/login?redirect=${redirect}`);
+  const handleToggleSeat = async (seat: PublicSeat, section: PublicSeatSection) => {
+    const already = selectedSeats.some((s) => s.seat.id === seat.id);
+    let nextSelected: SelectedSeat[];
+    if (already) {
+      nextSelected = selectedSeats.filter((s) => s.seat.id !== seat.id);
+    } else {
+      if (selectedSeats.length >= 10) {
+        toast.error("You can select up to 10 seats per order.");
+        return;
+      }
+      if (seat.status !== "available" && seat.status !== "held_by_me") {
+        return;
+      }
+      nextSelected = [...selectedSeats, { seat, section }];
+    }
+
+    setSelectedSeats(nextSelected);
+    const seatIds = nextSelected.map((s) => s.seat.id);
+
+    if (seatIds.length === 0) {
+      if (holdId) {
+        void releaseSeats(event.id, { holdId }).catch(() => undefined);
+      }
+      setHoldId(null);
+      setHoldExpiresAt(null);
+      void seatingQuery.refetch();
       return;
     }
 
+    setHolding(true);
+    try {
+      if (holdId) {
+        await releaseSeats(event.id, { holdId }).catch(() => undefined);
+      }
+      const hold = await holdSeats(event.id, seatIds);
+      setHoldId(hold.holdId);
+      setHoldExpiresAt(hold.expiresAt);
+      void seatingQuery.refetch();
+    } catch (err) {
+      setSelectedSeats(selectedSeats);
+      toastApiError(err);
+      void seatingQuery.refetch();
+    } finally {
+      setHolding(false);
+    }
+  };
+
+  const handlePurchase = async () => {
     if (paymentBlocked) {
       toast.error(tTicket("addPaymentBeforePurchase"));
       return;
     }
 
     if (lineItems.length === 0) {
-      toast.error(tTicket("selectAtLeastOne"));
+      toast.error(
+        seatingEnabled ? "Select at least one seat." : tTicket("selectAtLeastOne"),
+      );
+      return;
+    }
+
+    if (seatingEnabled && !holdId) {
+      toast.error("Please wait for your seats to be held, then try again.");
       return;
     }
 
@@ -179,6 +303,7 @@ export function TicketPurchaseDialog({
           ticketTypeId: l.ticketTypeId,
           quantity: l.quantity,
         })),
+        seatingEnabled ? selectedSeats.map((s) => s.seat.id) : undefined,
       );
 
       if (result.status === "requires_action") {
@@ -207,6 +332,12 @@ export function TicketPurchaseDialog({
           toast.error(tTicket("salesEnded"));
           return;
         }
+        if (code === "HOLD_EXPIRED" || code === "SEAT_HELD" || code === "SEAT_SOLD") {
+          setSelectedSeats([]);
+          setHoldId(null);
+          setHoldExpiresAt(null);
+          void seatingQuery.refetch();
+        }
       }
       toastApiError(err);
     } finally {
@@ -214,90 +345,131 @@ export function TicketPurchaseDialog({
     }
   };
 
+  const holdCountdown = formatHoldCountdown(holdExpiresAt);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent
-          className="flex max-h-[90vh] flex-col gap-0 overflow-hidden border-zinc-800 bg-zinc-900 p-0 text-white sm:max-w-3xl"
-          closeButtonClassName="rounded-full border border-white/20 bg-black/40 text-white opacity-100 backdrop-blur-md hover:bg-black/60 hover:opacity-100"
-        >
-          <DialogTitle className="sr-only">{tTicket("title")}</DialogTitle>
+      <DialogContent
+        className="flex max-h-[90vh] flex-col gap-0 overflow-hidden border-zinc-800 bg-zinc-900 p-0 text-white sm:max-w-3xl"
+        closeButtonClassName="rounded-full border border-white/20 bg-black/40 text-white opacity-100 backdrop-blur-md hover:bg-black/60 hover:opacity-100"
+      >
+        <DialogTitle className="sr-only">{tTicket("title")}</DialogTitle>
 
-          <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           <ModalHeroBanner
             src={event.coverImage?.trim() || "/images/card-img-2.jpg"}
             alt={event.eventName}
             title={event.eventName}
             gradientClassName="from-zinc-900 via-zinc-900/55"
           />
-          {ticketTypes.length === 0 ? (
+
+          {seatingEnabled ? (
+            <div className="relative z-10 space-y-4 px-6 pb-4 pt-2 sm:-mt-6">
+              {seatingQuery.isLoading ? (
+                <p className="flex items-center gap-2 text-sm text-zinc-400">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading seating map…
+                </p>
+              ) : seatingQuery.isError ? (
+                <p className="text-sm text-red-300">Could not load the seating map.</p>
+              ) : (
+                <SeatMap
+                  sections={seatingQuery.data?.sections ?? []}
+                  selectedIds={selectedSeats.map((s) => s.seat.id)}
+                  onToggleSeat={(seat, section) => {
+                    void handleToggleSeat(seat, section);
+                  }}
+                  disabled={purchasing || holding}
+                />
+              )}
+
+              {selectedSeats.length > 0 ? (
+                <div className="rounded-xl border border-zinc-700 bg-zinc-800/80 p-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium text-white">
+                      Selected:{" "}
+                      {selectedSeats.map((s) => s.seat.label).join(", ")}
+                    </p>
+                    {holdCountdown ? (
+                      <p className="inline-flex items-center gap-1.5 text-amber-200">
+                        <Clock3 className="h-3.5 w-3.5" />
+                        Hold {holdCountdown}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : ticketTypes.length === 0 ? (
             <p className="px-6 pb-6 text-sm text-zinc-400">{tTicket("noTicketsAvailable")}</p>
           ) : (
-            <>
-              <ul className="relative z-10 -mt-8 space-y-4 px-6 sm:-mt-10">
-                {ticketTypes.map((ticket) => {
-                  const id = ticket.id!;
-                  const max = availableCount(ticket);
-                  const qty = quantities[id] ?? 0;
-                  const price = ticketPrice(ticket.price);
-                  const ticketCurrency = ticket.currency || currency;
+            <ul className="relative z-10 -mt-8 space-y-4 px-6 sm:-mt-10">
+              {ticketTypes.map((ticket) => {
+                const id = ticket.id!;
+                const max = availableCount(ticket);
+                const qty = quantities[id] ?? 0;
+                const price = ticketPrice(ticket.price);
+                const ticketCurrency = ticket.currency || currency;
 
-                  return (
-                    <li
-                      key={id}
-                      className="rounded-xl border border-zinc-700 bg-zinc-800 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2 font-medium">
-                            <Ticket className="h-4 w-4 text-primary" />
-                            {ticket.name}
-                          </div>
-                          <p className="mt-1 text-sm text-zinc-400">
-                            {tTicket("eachLeft", {
-                              price: formatChargePrice(price, ticketCurrency),
-                              count: max,
-                            })}
-                          </p>
+                return (
+                  <li
+                    key={id}
+                    className="rounded-xl border border-zinc-700 bg-zinc-800 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <Ticket className="h-4 w-4 text-primary" />
+                          {ticket.name}
                         </div>
-                        <span className="text-sm font-semibold text-primary">
-                          <DisplayPrice amount={price * qty} currency={ticketCurrency} />
-                        </span>
+                        <p className="mt-1 text-sm text-zinc-400">
+                          {tTicket("eachLeft", {
+                            price: formatChargePrice(price, ticketCurrency),
+                            count: max,
+                          })}
+                        </p>
                       </div>
+                      <span className="text-sm font-semibold text-primary">
+                        <DisplayPrice amount={price * qty} currency={ticketCurrency} />
+                      </span>
+                    </div>
 
-                      <div className="mt-3 flex items-center justify-between">
-                        <span className="text-xs text-zinc-500">{tEvents("quantity")}</span>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 border-zinc-600"
-                            disabled={qty <= 0 || purchasing}
-                            onClick={() => setQty(id, -1, max)}
-                            aria-label={tTicket("decreaseQuantity", { name: ticket.name })}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-8 text-center text-sm font-medium">{qty}</span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 border-zinc-600"
-                            disabled={qty >= max || purchasing}
-                            onClick={() => setQty(id, 1, max)}
-                            aria-label={tTicket("increaseQuantity", { name: ticket.name })}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-xs text-zinc-500">{tEvents("quantity")}</span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 border-zinc-600"
+                          disabled={qty <= 0 || purchasing}
+                          onClick={() => setQty(id, -1, max)}
+                          aria-label={tTicket("decreaseQuantity", { name: ticket.name })}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center text-sm font-medium">{qty}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 border-zinc-600"
+                          disabled={qty >= max || purchasing}
+                          onClick={() => setQty(id, 1, max)}
+                          aria-label={tTicket("increaseQuantity", { name: ticket.name })}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </li>
-                  );
-                })}
-              </ul>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
 
-              <div className="space-y-4 px-6 pb-6 pt-4">
+          {(seatingEnabled || ticketTypes.length > 0) && (
+            <div className="space-y-4 px-6 pb-6 pt-4">
               <div className="border-t border-zinc-700 pt-4">
                 <div className="flex items-start justify-between gap-4">
                   <span className="text-lg font-semibold">{tCommon("total")}</span>
@@ -338,6 +510,7 @@ export function TicketPurchaseDialog({
                 className="w-full bg-pink-500 hover:bg-pink-600"
                 disabled={
                   purchasing ||
+                  holding ||
                   checkingPayment ||
                   paymentBlocked ||
                   lineItems.length === 0 ||
@@ -345,20 +518,19 @@ export function TicketPurchaseDialog({
                 }
                 onClick={() => void handlePurchase()}
               >
-                {purchasing ? (
+                {purchasing || holding ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {tTicket("processing")}
+                    {holding ? "Holding seats…" : tTicket("processing")}
                   </>
                 ) : (
                   tTicket("payAmount", { amount: chargeFormatted })
                 )}
               </Button>
-              </div>
-            </>
+            </div>
           )}
-          </div>
-        </DialogContent>
+        </div>
+      </DialogContent>
     </Dialog>
   );
 }

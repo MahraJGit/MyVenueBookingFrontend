@@ -75,6 +75,33 @@ export function uniqueCityTimezones(cities: City[], ...extras: Array<string | nu
   return [...new Set(values)];
 }
 
+/**
+ * Ensure a saved/current city name appears in Select options even when it is
+ * missing from the featured/active catalog list (common on edit forms).
+ */
+export function withSavedCityOption(
+  cities: City[],
+  savedCityName: string | undefined | null,
+  extras?: { countryId?: string; timezone?: string | null },
+): City[] {
+  const name = savedCityName?.trim();
+  if (!name) return cities;
+  if (cities.some((city) => normalizePlaceName(city.name) === normalizePlaceName(name))) {
+    return cities;
+  }
+  return [
+    {
+      id: `__saved-city-${normalizePlaceName(name)}`,
+      countryId: extras?.countryId ?? cities[0]?.countryId ?? "",
+      name,
+      timezone: extras?.timezone ?? null,
+      isFeatured: false,
+      isActive: true,
+    },
+    ...cities,
+  ];
+}
+
 /** Shared sonner id so map location errors replace each other instead of stacking. */
 export const MAP_LOCATION_TOAST_ID = "map-location-feedback";
 

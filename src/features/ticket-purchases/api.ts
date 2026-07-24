@@ -105,6 +105,8 @@ export type MyTicketOrder = {
       fullName: string;
       checkedIn: boolean;
       checkInTime: string | null;
+      seatId?: string | null;
+      seatLabel?: string | null;
     }>;
   }>;
 };
@@ -250,14 +252,22 @@ export async function getMyTicketOrders() {
   return (data as ApiEnvelope<MyTicketOrder[]>).data;
 }
 
-export async function checkoutTickets(eventId: string, items: CheckoutLineItem[]) {
+export async function checkoutTickets(
+  eventId: string,
+  items: CheckoutLineItem[],
+  seatIds?: string[],
+) {
   const res = await authFetch("/api/ticket-purchases/checkout", {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ eventId, items }),
+    body: JSON.stringify(
+      seatIds?.length
+        ? { eventId, seatIds }
+        : { eventId, items },
+    ),
     networkErrorMessage: "Network error while processing checkout.",
   });
 

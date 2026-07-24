@@ -20,9 +20,11 @@ import { getIntlLocale } from "@/i18n/locales";
 
 type EventCardProps = {
   event: PublicEvent;
+  href?: string;
+  hideFavorite?: boolean;
 };
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, href, hideFavorite }: EventCardProps) {
   const tEvents = useTranslations("events");
   const tCommon = useTranslations("common");
   const { locale } = useLocaleContext();
@@ -32,6 +34,7 @@ export function EventCard({ event }: EventCardProps) {
   const minTicket = getMinTicketPrice(event);
   const location = [event.city, event.state].filter(Boolean).join(", ");
   const tags = (event.tags ?? []).filter((tag) => tag.trim()).slice(0, 3);
+  const linkHref = href ?? `/events/${event.slug}`;
 
   useEffect(() => {
     const tick = () =>
@@ -43,13 +46,15 @@ export function EventCard({ event }: EventCardProps) {
 
   return (
     <div className="card group relative flex h-full flex-col items-center">
-      <FavoriteButton
-        type="event"
-        id={event.id}
-        className="absolute top-3 right-3 z-20"
-      />
+      {!hideFavorite ? (
+        <FavoriteButton
+          type="event"
+          id={event.id}
+          className="absolute top-3 right-3 z-20"
+        />
+      ) : null}
       <Link
-        href={`/events/${event.slug}`}
+        href={linkHref}
         className="relative flex h-full w-full cursor-pointer flex-col items-center"
       >
         <EventCoverImage

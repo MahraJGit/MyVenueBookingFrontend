@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { X, Plus } from 'lucide-react'
+import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Accordion,
@@ -19,8 +19,27 @@ import {
 import { ChatUnreadBadge } from '@/components/chat/ChatUnreadBadge'
 import { cn } from '@/lib/utils'
 
-function isActivePath(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`)
+function isSidebarLinkActive(pathname: string, search: string, href: string) {
+  const [hrefPath, hrefQuery = ''] = href.split('?')
+  const pathMatches =
+    pathname === hrefPath || pathname.startsWith(`${hrefPath}/`)
+  if (!pathMatches) return false
+
+  const hrefParams = new URLSearchParams(hrefQuery)
+  const currentParams = new URLSearchParams(
+    search.startsWith('?') ? search.slice(1) : search,
+  )
+
+  for (const [key, value] of hrefParams.entries()) {
+    if (currentParams.get(key) !== value) return false
+  }
+
+  // Plain link (no tab) should not stay active when a tabbed sibling is open
+  if (!hrefParams.has('tab') && currentParams.get('tab')) {
+    return false
+  }
+
+  return true
 }
 
 export default function Sidebar({
@@ -58,28 +77,10 @@ export default function Sidebar({
         </Link>
       </div>
 
-      <div className="mb-6 grid gap-2">
-        <Link href="/adminDashbaord/addEvents" onClick={onClose}>
-          <Button className="flex w-full gap-2 bg-primary text-white hover:bg-primary/80">
-            <Plus size={18} />
-            {t('addQuickEvent')}
-          </Button>
-        </Link>
-        <Link href="/adminDashbaord/venues/new" onClick={onClose}>
-          <Button
-            variant="outline"
-            className="flex w-full gap-2 border-[#303030] text-white hover:bg-primary/20 hover:text-white"
-          >
-            <Plus size={18} />
-            {t('addQuickVenue')}
-          </Button>
-        </Link>
-      </div>
-
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Accordion
           type="multiple"
-          defaultValue={['users', 'events', 'venues', 'settings']}
+          defaultValue={['users', 'events', 'attractions', 'venues', 'settings']}
           className="space-y-2"
         >
           <SidebarSection title={t('users')} value="users">
@@ -102,6 +103,14 @@ export default function Sidebar({
             <SidebarLink icon="/svg/NewTicket.svg" label={t('bookingTickets')} href="/adminDashbaord/manageTickets" onClose={onClose} />
             <SidebarLink icon="/svg/Collaborating.svg" label={t('verifiers')} href="/adminDashbaord/verifiers" onClose={onClose} />
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('eventCategories')} href="/adminDashbaord/events" onClose={onClose} />
+          </SidebarSection>
+
+          <SidebarSection title={t('attractionsSection')} value="attractions">
+            <SidebarLink icon="/svg/EventAccepted.svg" label={t('attractionReviews')} href="/adminDashbaord/attractionReviews" onClose={onClose} />
+            <SidebarLink icon="/svg/EventAccepted.svg" label={t('myAttractions')} href="/adminDashbaord/manageAttractions" onClose={onClose} />
+            <SidebarLink icon="/svg/NewTicket.svg" label={t('attractionTickets')} href="/adminDashbaord/manageAttractionTickets" onClose={onClose} />
+            <SidebarLink icon="/svg/Collaborating.svg" label={t('attractionVerifiers')} href="/adminDashbaord/verifiers?tab=attractions" onClose={onClose} />
+            <SidebarLink icon="/svg/OpenedFolder.svg" label={t('attractionCategories')} href="/adminDashbaord/attractionCategories" onClose={onClose} />
           </SidebarSection>
 
           <SidebarSection title={t('settings')} value="settings">
@@ -153,7 +162,12 @@ function SidebarLink({
   unreadContext?: "buyer" | "vendor" | "admin"
 }) {
   const pathname = usePathname()
-  const isActive = isActivePath(pathname, href)
+  const searchParams = useSearchParams()
+  const isActive = isSidebarLinkActive(
+    pathname,
+    searchParams.toString(),
+    href,
+  )
 
   return (
     <Link

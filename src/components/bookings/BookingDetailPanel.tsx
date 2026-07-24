@@ -607,7 +607,18 @@ function DefaultBookingDetail({
               <dd className="text-foreground">{booking.numGuests}</dd>
             </div>
           ) : null}
-          {booking.buyer ? (
+          {booking.source === "OFFLINE" ? (
+            <div className="sm:col-span-2">
+              <dt className="text-muted-foreground">Local guest</dt>
+              <dd className="text-foreground">
+                {booking.guestName?.trim() || "—"}
+                {booking.guestPhone?.trim()
+                  ? ` · ${booking.guestPhone.trim()}`
+                  : ""}
+                <span className="ml-2 text-xs text-amber-200">(Offline)</span>
+              </dd>
+            </div>
+          ) : booking.buyer ? (
             <div className="sm:col-span-2">
               <dt className="text-muted-foreground">{t("buyer")}</dt>
               <dd className="text-foreground">
@@ -626,7 +637,8 @@ function DefaultBookingDetail({
         <BookingLineItems booking={booking} className="rounded-lg border border-border bg-muted/20 p-4" />
 
         <div className="flex flex-wrap gap-2">
-          {(booking.status === "CONFIRMED" || booking.status === "COMPLETED") ? (
+          {(booking.status === "CONFIRMED" || booking.status === "COMPLETED") &&
+          booking.source !== "OFFLINE" ? (
             <OpenChatButton
               kind="booking"
               referenceId={booking.id}

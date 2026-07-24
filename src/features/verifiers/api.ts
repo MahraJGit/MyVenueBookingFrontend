@@ -24,6 +24,16 @@ export type VerifierEvent = {
   status: string;
 };
 
+export type VerifierAttraction = {
+  id: string;
+  name: string;
+  slug: string;
+  scheduleStartDate: string;
+  timezone?: string;
+  status: string;
+  city?: string;
+};
+
 export type VerifierRow = {
   id: string;
   username: string;
@@ -34,6 +44,7 @@ export type VerifierRow = {
   createdAt: string;
   updatedAt: string;
   events: VerifierEvent[];
+  attractions: VerifierAttraction[];
 };
 
 export type AssignableEvent = {
@@ -42,6 +53,17 @@ export type AssignableEvent = {
   slug: string;
   startDateTime: string;
   endDateTime: string;
+  timezone?: string;
+  status: string;
+  city: string;
+};
+
+export type AssignableAttraction = {
+  id: string;
+  name: string;
+  slug: string;
+  scheduleStartDate: string;
+  scheduleEndDate: string | null;
   timezone?: string;
   status: string;
   city: string;
@@ -58,6 +80,7 @@ export type CreateVerifierInput = {
   displayName: string;
   vendorProfileId?: string;
   eventIds: string[];
+  attractionIds: string[];
 };
 
 export type UpdateVerifierInput = {
@@ -65,6 +88,7 @@ export type UpdateVerifierInput = {
   password?: string;
   status?: VerifierStatus;
   eventIds?: string[];
+  attractionIds?: string[];
 };
 
 export async function listVerifiers(params: {
@@ -102,6 +126,24 @@ export async function listAssignableEvents(vendorProfileId?: string) {
   const data = await parseJson<unknown>(res);
   if (!res.ok) throw ApiError.fromUnknown(res.status, data);
   return (data as ApiEnvelope<AssignableEvent[]>).data;
+}
+
+export async function listAssignableAttractions(vendorProfileId?: string) {
+  const search = new URLSearchParams();
+  if (vendorProfileId) search.set("vendorProfileId", vendorProfileId);
+  const qs = search.toString();
+
+  const res = await authFetch(
+    `/api/verifiers/assignable-attractions${qs ? `?${qs}` : ""}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while loading attractions.",
+    },
+  );
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) throw ApiError.fromUnknown(res.status, data);
+  return (data as ApiEnvelope<AssignableAttraction[]>).data;
 }
 
 export async function listVerifierVendors() {

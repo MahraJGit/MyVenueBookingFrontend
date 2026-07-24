@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { EventCategoryOption } from "@/features/event-categories/api";
 import { ALL_EVENTS_CATEGORY } from "@/features/events/utils";
+import { CollapsibleChipRow } from "@/components/filters/CollapsibleChipRow";
 
 type EventCategoryFiltersProps = {
   categories: EventCategoryOption[];
@@ -25,8 +26,8 @@ export function EventCategoryFilters({
   ];
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {buttons.map((button) => {
+    <CollapsibleChipRow
+      items={buttons.map((button) => {
         const isActive = activeCategory === button.value;
         return (
           <button
@@ -45,6 +46,6 @@ export function EventCategoryFilters({
           </button>
         );
       })}
-    </div>
+    />
   );
 }

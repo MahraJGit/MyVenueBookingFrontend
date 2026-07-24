@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -84,7 +84,7 @@ import {
 } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
 import type { VenueAmenityPayload } from "@/features/venues/types";
-import { defaultWeeklySchedules, buildVenueCustomAttributes, evaluateVenueReadiness, isPropertyStyleVenueType, parseVenuePropertyAttributes } from "@/features/venues/utils";
+import { defaultWeeklySchedules, buildVenueCustomAttributes, evaluateVenueReadiness, isPropertyStyleVenueType, parseVenuePropertyAttributes, DAY_NAMES } from "@/features/venues/utils";
 import { useDashboardPaths } from "@/features/dashboard/paths";
 import { listCitiesByCountryCode, listCountries } from "@/features/locations/api";
 import {
@@ -93,6 +93,7 @@ import {
   findCatalogCityFromHint,
   MAP_LOCATION_TOAST_ID,
   uniqueCityTimezones,
+  withSavedCityOption,
   type PendingMapCity,
 } from "@/features/locations/match";
 import { locationKeys } from "@/features/locations/query-keys";
@@ -104,7 +105,10 @@ import {
 } from "@/features/venues/timezone";
 import { validateUploadFile } from "@/features/uploads/validation";
 import { SecureStoredImage } from "@/components/uploads/SecureStoredImage";
-import { validatePricingForm } from "@/features/venues/pricing-validation";
+import {
+  validateNamedSlotsAgainstSchedules,
+  validatePricingForm,
+} from "@/features/venues/pricing-validation";
 import { cn } from "@/lib/utils";
 import { fieldClassName, isBlank } from "@/lib/form-validation";
 
@@ -187,6 +191,14 @@ export function VenueSetupWizard({
   });
 
   const timezoneOptions = uniqueCityTimezones(cities, details.timezone);
+  const cityOptions = useMemo(
+    () =>
+      withSavedCityOption(cities, details.city, {
+        countryId: cities[0]?.countryId,
+        timezone: details.timezone,
+      }),
+    [cities, details.city, details.timezone],
+  );
 
   useEffect(() => {
     if (
@@ -368,6 +380,24 @@ export function VenueSetupWizard({
 
   const saveDetails = useMutation({
     mutationFn: async () => {
+      const contentOnlyEdit = Boolean(existing?.contentOnlyEdit);
+      if (contentOnlyEdit && effectiveVenueId) {
+        const propertyPayload = {
+          floorArea: details.floorArea ? Number(details.floorArea) : undefined,
+          bedrooms: details.bedrooms ? Number(details.bedrooms) : undefined,
+          bathrooms: details.bathrooms ? Number(details.bathrooms) : undefined,
+        };
+        return updateVenue(effectiveVenueId, {
+          description: details.description || undefined,
+          coverImage: details.coverImage || undefined,
+          gallery: galleryUrls.filter((url) => !url.startsWith("blob:")),
+          customAttributes: buildVenueCustomAttributes(
+            propertyPayload,
+            existing?.customAttributes,
+          ),
+        });
+      }
+
       const propertyPayload = {
         floorArea: details.floorArea ? Number(details.floorArea) : undefined,
         bedrooms: details.bedrooms ? Number(details.bedrooms) : undefined,
@@ -410,7 +440,7 @@ export function VenueSetupWizard({
       if (wasCreate) {
         setCreatedVenueId(venue.id);
         queryClient.invalidateQueries({ queryKey: venueKeys.all });
-        const nextTab = "pricing";
+        const nextTab = "schedules";
         setActiveTab(nextTab);
         const params = new URLSearchParams({ id: venue.id, tab: nextTab });
         router.replace(`${paths.addVenue}?${params.toString()}`);
@@ -431,6 +461,9 @@ export function VenueSetupWizard({
   const savePricing = useMutation({
     mutationFn: () => {
       if (!effectiveVenueId) throw new Error(t("saveVenueDetailsFirst"));
+      if (existing?.contentOnlyEdit) {
+        throw new Error(t("contentOnlyEditBanner"));
+      }
       return upsertVenuePricing(effectiveVenueId, normalizePricingForSave(pricing));
     },
     onSuccess: () => {
@@ -444,6 +477,9 @@ export function VenueSetupWizard({
   const saveSchedules = useMutation({
     mutationFn: () => {
       if (!effectiveVenueId) throw new Error(t("saveVenueDetailsFirst"));
+      if (existing?.contentOnlyEdit) {
+        throw new Error(t("contentOnlyEditBanner"));
+      }
       return replaceVenueSchedules(effectiveVenueId, { schedules });
     },
     onSuccess: () => {
@@ -471,6 +507,9 @@ export function VenueSetupWizard({
   const saveAmenity = useMutation({
     mutationFn: (payload: VenueAmenityPayload) => {
       if (!effectiveVenueId) throw new Error(t("saveVenueDetailsFirst"));
+      if (existing?.contentOnlyEdit) {
+        throw new Error(t("contentOnlyEditBanner"));
+      }
       return upsertVenueAmenity(effectiveVenueId, payload);
     },
     onSuccess: () => {
@@ -645,7 +684,7 @@ export function VenueSetupWizard({
   function trySaveDetails() {
     setFieldAttempted((a) => ({ ...a, name: true, address: true }));
     if (isBlank(details.name) || isBlank(details.address)) return;
-    if (!findCatalogCity(cities, details.city)) {
+    if (!findCatalogCity(cityOptions, details.city)) {
       toast.error(t("selectCityError"));
       return;
     }
@@ -660,12 +699,37 @@ export function VenueSetupWizard({
 
   function trySavePricing() {
     setFieldAttempted((a) => ({ ...a, pricing: true }));
-    const validationError = validatePricingForm(pricing, tPricing);
+    const validationError = validatePricingForm(pricing, tPricing, {
+      schedules,
+      dayNames: DAY_NAMES,
+    });
     if (validationError) {
       toast.error(validationError);
       return;
     }
     savePricing.mutate();
+  }
+
+  function trySaveSchedules() {
+    if (pricing.modelType === "NAMED_SLOTS") {
+      const slots = (pricing.config.slots as Array<{
+        name?: string;
+        startTime: string;
+        endTime: string;
+        price?: number;
+      }>) ?? [];
+      const scheduleError = validateNamedSlotsAgainstSchedules(
+        slots,
+        schedules,
+        tPricing,
+        DAY_NAMES,
+      );
+      if (scheduleError) {
+        toast.error(scheduleError);
+        return;
+      }
+    }
+    saveSchedules.mutate();
   }
 
   const basicsFields = (
@@ -905,7 +969,7 @@ export function VenueSetupWizard({
             <SelectValue placeholder={tForms("city")} />
           </SelectTrigger>
           <SelectContent>
-            {cities.map((city) => (
+            {cityOptions.map((city) => (
               <SelectItem key={city.id} value={city.name}>
                 {city.name}
               </SelectItem>
@@ -1039,6 +1103,11 @@ export function VenueSetupWizard({
           <p className="text-sm text-muted-foreground">
             {!hasPersistedVenue ? t("createIntro") : t("editIntro")}
           </p>
+          {existing?.contentOnlyEdit ? (
+            <p className="max-w-2xl text-sm text-amber-500/90">
+              {t("contentOnlyEditBanner")}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -1071,19 +1140,19 @@ export function VenueSetupWizard({
           </TabsTrigger>
           {hasPersistedVenue && (
             <>
-              <TabsTrigger value="pricing" className="gap-1.5">
-                <DollarSign className="h-4 w-4" />
-                {t("pricing")}
-                {!existing?.pricing && (
+              <TabsTrigger value="schedules" className="gap-1.5">
+                <Clock className="h-4 w-4" />
+                {t("schedule")}
+                {existing?.schedules && !existing.schedules.some((s) => s.isOpen) && (
                   <Badge variant="outline" className="ml-1 text-[10px]">
                     {t("setupBadge")}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="schedules" className="gap-1.5">
-                <Clock className="h-4 w-4" />
-                {t("schedule")}
-                {existing?.schedules && !existing.schedules.some((s) => s.isOpen) && (
+              <TabsTrigger value="pricing" className="gap-1.5">
+                <DollarSign className="h-4 w-4" />
+                {t("pricing")}
+                {!existing?.pricing && (
                   <Badge variant="outline" className="ml-1 text-[10px]">
                     {t("setupBadge")}
                   </Badge>
@@ -1192,6 +1261,29 @@ export function VenueSetupWizard({
 
         {hasPersistedVenue && (
           <>
+        <TabsContent value="schedules">
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle>{t("weeklySchedule")}</CardTitle>
+              <CardDescription>{t("weeklyScheduleDesc")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <VenueScheduleEditor schedules={schedules} onChange={setSchedules} />
+            </CardContent>
+            <CardFooter className="border-t justify-end">
+              <Button
+                onClick={trySaveSchedules}
+                disabled={saveSchedules.isPending}
+              >
+                {saveSchedules.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {t("saveSchedule")}
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="pricing">
           <Card className="border-border bg-card">
             <CardHeader>
@@ -1216,29 +1308,6 @@ export function VenueSetupWizard({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 {t("savePricing")}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="schedules">
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle>{t("weeklySchedule")}</CardTitle>
-              <CardDescription>{t("weeklyScheduleDesc")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <VenueScheduleEditor schedules={schedules} onChange={setSchedules} />
-            </CardContent>
-            <CardFooter className="border-t justify-end">
-              <Button
-                onClick={() => saveSchedules.mutate()}
-                disabled={saveSchedules.isPending}
-              >
-                {saveSchedules.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {t("saveSchedule")}
               </Button>
             </CardFooter>
           </Card>

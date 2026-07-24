@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
-import { EventCard } from "@/components/events/EventCard";
 import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
 import { VenueCard } from "@/components/venues/VenueCard";
 import { Button } from "@/components/ui/button";
@@ -17,17 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listPublicEvents, type PublicEvent } from "@/features/events/api";
 import { listPublicVenues, listVenueTypes } from "@/features/venues/api";
 import type { PublicVenue } from "@/features/venues/types";
 import {
-  ATTRACTIONS_ENTERTAINMENT_CATEGORY,
   isCorporateHubVenueType,
 } from "@/features/market-segments/constants";
-import { buildEventsPageHref } from "@/features/events/utils";
 import { venueKeys } from "@/features/venues/query-keys";
 import {
-  useEventSortOptions,
   useListingLabels,
   useVenueSortOptions,
 } from "@/features/i18n/use-listing-filters";
@@ -79,19 +74,16 @@ function CardSkeletonGrid({ count = PAGE_SIZE }: { count?: number }) {
 }
 
 type SegmentHubPageProps = {
-  variant: "attractions" | "corporate";
+  variant: "corporate";
 };
 
-export function SegmentHubPage({ variant }: SegmentHubPageProps) {
+export function SegmentHubPage({ variant: _variant }: SegmentHubPageProps) {
   const t = useTranslations("marketSegments");
   const { locale } = useLocaleContext();
   const labels = useListingLabels();
-  const eventSortOptions = useEventSortOptions();
-  const venueSortOptions = useVenueSortOptions();
+  const sortOptions = useVenueSortOptions();
 
-  const isAttractions = variant === "attractions";
-  const basePath = isAttractions ? "/attractions" : "/corporate";
-  const sortOptions = isAttractions ? eventSortOptions : venueSortOptions;
+  const basePath = "/corporate";
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -146,45 +138,11 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
     });
   };
 
-  const description = isAttractions
-    ? t("attractionsDescription")
-    : t("corporateDescription");
-
-  const {
-    data: eventsResult,
-    isLoading: loadingEvents,
-    isFetching: fetchingEvents,
-    isError: eventsError,
-    error: eventsErr,
-  } = useQuery({
-    queryKey: [
-      "public-events",
-      "hub",
-      locale,
-      variant,
-      page,
-      searchFromUrl,
-      cityFromUrl,
-      sortBy,
-      sortOrder,
-    ],
-    queryFn: () =>
-      listPublicEvents({
-        page,
-        limit: PAGE_SIZE,
-        search: searchFromUrl || undefined,
-        city: cityFromUrl || undefined,
-        sortBy: sortBy as "createdAt" | "startDateTime" | "eventName",
-        sortOrder: sortOrder as "asc" | "desc",
-        category: ATTRACTIONS_ENTERTAINMENT_CATEGORY,
-      }),
-    enabled: isAttractions,
-  });
+  const description = t("corporateDescription");
 
   const { data: venueTypes = [], isLoading: loadingTypes } = useQuery({
     queryKey: [...venueKeys.types(), locale],
     queryFn: listVenueTypes,
-    enabled: !isAttractions,
   });
 
   const corporateTypeIds = venueTypes
@@ -202,7 +160,6 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
       "public-venues",
       "hub",
       locale,
-      variant,
       page,
       corporateTypeIds,
       searchFromUrl,
@@ -253,51 +210,35 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
         },
       };
     },
-    enabled: !isAttractions && corporateTypeIds.length > 0,
+    enabled: corporateTypeIds.length > 0,
   });
 
-  const events: PublicEvent[] = eventsResult?.data ?? [];
   const venues: PublicVenue[] = venuesResult?.data ?? [];
-  const isLoading = isAttractions
-    ? loadingEvents
-    : loadingTypes || loadingVenues;
-  const isFetching = isAttractions ? fetchingEvents : fetchingVenues;
-  const isError = isAttractions ? eventsError : venuesError;
-  const error = isAttractions ? eventsErr : venuesErr;
-  const meta = isAttractions ? eventsResult?.meta : venuesResult?.meta;
+  const isLoading = loadingTypes || loadingVenues;
+  const isFetching = fetchingVenues;
+  const isError = venuesError;
+  const error = venuesErr;
+  const meta = venuesResult?.meta;
   const totalPages = meta?.totalPages ?? 1;
   const showPagination = !isLoading && totalPages > 1;
-  const items = isAttractions ? events : venues;
+  const items = venues;
 
   return (
     <section className="eventslist public-listing-section">
       <div className="container mx-auto px-4">
         <div className="section-header mb-10 max-w-3xl text-start">
           <h1 className="page-title mb-3 text-white">
-            {isAttractions ? (
-              <>
-                {t("attractionsTitle")}{" "}
-                <span className="text-gradient-accent">
-                  {t("attractionsHighlight")}
-                </span>
-              </>
-            ) : (
-              <>
-                {t("corporateTitle")}{" "}
-                <span className="text-gradient-accent">
-                  {t("corporateHighlight")}
-                </span>
-              </>
-            )}
+            {t("corporateTitle")}{" "}
+            <span className="text-gradient-accent">
+              {t("corporateHighlight")}
+            </span>
           </h1>
           <p className="text-muted-foreground">{description}</p>
         </div>
 
         <div className="mb-8 flex flex-col gap-3 rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 sm:flex-row sm:flex-wrap sm:items-center">
           <Input
-            placeholder={
-              isAttractions ? labels.searchEvents : labels.searchVenues
-            }
+            placeholder={labels.searchVenues}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -348,18 +289,12 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
         </div>
 
         <div className="mb-6 flex flex-col gap-3 border-b border-[#1F1F1F] pb-5 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-start">
-            {isAttractions ? t("eventsSection") : t("venuesSection")}
-          </h2>
+          <h2 className="text-start">{t("venuesSection")}</h2>
           <Link
-            href={
-              isAttractions
-                ? buildEventsPageHref(ATTRACTIONS_ENTERTAINMENT_CATEGORY)
-                : "/venues"
-            }
+            href="/venues"
             className="w-full shrink-0 rounded-full border border-primary px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:text-primary sm:w-auto"
           >
-            {isAttractions ? t("viewAllEvents") : t("viewAllVenues")}
+            {t("viewAllVenues")}
           </Link>
         </div>
 
@@ -369,7 +304,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
           </p>
         ) : null}
 
-        {!isAttractions && !loadingTypes && corporateTypeIds.length === 0 ? (
+        {!loadingTypes && corporateTypeIds.length === 0 ? (
           <p className="py-8 text-sm text-[#B3B3B3]">
             {t("corporateTypesNotConfigured")}
           </p>
@@ -377,27 +312,13 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
           <CardSkeletonGrid />
         ) : items.length === 0 ? (
           <p className="mb-8 py-8 text-sm text-[#B3B3B3]">
-            {isAttractions ? (
-              <>
-                {t("noAttractionsEvents")}
-                {searchFromUrl ? ` ${labels.matching(searchFromUrl)}` : ""}
-                {cityFromUrl ? ` ${labels.inCity(cityFromUrl)}` : ""}.{" "}
-                <Link href="/events" className="text-primary hover:underline">
-                  {t("browseAllEvents")}
-                </Link>
-                .
-              </>
-            ) : (
-              <>
-                {t("noCorporateVenues")}
-                {searchFromUrl ? ` ${labels.matching(searchFromUrl)}` : ""}
-                {cityFromUrl ? ` ${labels.inCity(cityFromUrl)}` : ""}.{" "}
-                <Link href="/venues" className="text-primary hover:underline">
-                  {t("browseAllVenues")}
-                </Link>
-                .
-              </>
-            )}
+            {t("noCorporateVenues")}
+            {searchFromUrl ? ` ${labels.matching(searchFromUrl)}` : ""}
+            {cityFromUrl ? ` ${labels.inCity(cityFromUrl)}` : ""}.{" "}
+            <Link href="/venues" className="text-primary hover:underline">
+              {t("browseAllVenues")}
+            </Link>
+            .
           </p>
         ) : (
           <div className="relative mb-8">
@@ -406,19 +327,11 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : null}
-            {isAttractions ? (
-              <ResponsiveEventCardsGrid key={`attractions-events-${locale}`}>
-                {events.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
-              </ResponsiveEventCardsGrid>
-            ) : (
-              <ResponsiveEventCardsGrid key={`corporate-venues-${locale}`}>
-                {venues.map((venue) => (
-                  <VenueCard key={venue.id} venue={venue} />
-                ))}
-              </ResponsiveEventCardsGrid>
-            )}
+            <ResponsiveEventCardsGrid key={`corporate-venues-${locale}`}>
+              {venues.map((venue) => (
+                <VenueCard key={venue.id} venue={venue} />
+              ))}
+            </ResponsiveEventCardsGrid>
           </div>
         )}
 
@@ -436,12 +349,7 @@ export function SegmentHubPage({ variant }: SegmentHubPageProps) {
             </Button>
             <span className="flex items-center justify-center px-2 text-center text-sm text-muted-foreground sm:px-4">
               {meta?.total != null
-                ? labels.pageOfWithCount(
-                    page,
-                    totalPages,
-                    meta.total,
-                    isAttractions ? "events" : "venues",
-                  )
+                ? labels.pageOfWithCount(page, totalPages, meta.total, "venues")
                 : labels.pageOf(page, totalPages)}
             </span>
             <Button

@@ -76,6 +76,9 @@ export function useListingLabels() {
 
   return useMemo(
     () => ({
+      country: t("country"),
+      allCountries: t("allCountries"),
+      selectCountryFirst: t("selectCountryFirst"),
       city: t("city"),
       sortBy: t("sortBy"),
       searchEvents: t("searchEvents"),

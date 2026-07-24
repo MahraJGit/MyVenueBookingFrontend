@@ -7,6 +7,13 @@ export type NamedPricingSlot = {
   price?: number;
 };
 
+export type ScheduleHours = {
+  dayOfWeek: number;
+  openTime: string;
+  closeTime: string;
+  isOpen: boolean;
+};
+
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 
 function parseTimeToMinutes(time: string): number {
@@ -26,6 +33,27 @@ export function timeRangesOverlapMinutes(
   endB: number,
 ): boolean {
   return startA < endB && endA > startB;
+}
+
+export function slotWithinOperatingHours(
+  startTime: string,
+  endTime: string,
+  openTime: string,
+  closeTime: string,
+): boolean {
+  const startMinutes = parseTimeToMinutes(startTime);
+  const endMinutes = parseTimeToMinutes(endTime);
+  const openMinutes = parseTimeToMinutes(openTime);
+  const closeMinutes = parseTimeToMinutes(closeTime);
+  return (
+    Number.isFinite(startMinutes) &&
+    Number.isFinite(endMinutes) &&
+    Number.isFinite(openMinutes) &&
+    Number.isFinite(closeMinutes) &&
+    startMinutes >= openMinutes &&
+    endMinutes <= closeMinutes &&
+    startMinutes < endMinutes
+  );
 }
 
 export function getNamedSlotRowErrors(
@@ -72,9 +100,53 @@ export function getNamedSlotRowErrors(
   return rowErrors;
 }
 
+/**
+ * Named slots must fit inside every open schedule day.
+ * Skips when there are no open days yet (schedule not configured).
+ */
+export function validateNamedSlotsAgainstSchedules(
+  slots: NamedPricingSlot[],
+  schedules: ScheduleHours[],
+  t: Translate,
+  dayNames: readonly string[],
+): string | null {
+  const openDays = schedules.filter((day) => day.isOpen);
+  if (openDays.length === 0 || slots.length === 0) {
+    return null;
+  }
+
+  for (const [index, slot] of slots.entries()) {
+    for (const day of openDays) {
+      if (
+        !slotWithinOperatingHours(
+          String(slot.startTime ?? ""),
+          String(slot.endTime ?? ""),
+          day.openTime,
+          day.closeTime,
+        )
+      ) {
+        return t("slotOutsideScheduleHours", {
+          name: namedSlotLabel(slot, index),
+          start: String(slot.startTime ?? ""),
+          end: String(slot.endTime ?? ""),
+          day: dayNames[day.dayOfWeek] ?? `day ${day.dayOfWeek}`,
+          open: day.openTime,
+          close: day.closeTime,
+        });
+      }
+    }
+  }
+
+  return null;
+}
+
 export function validatePricingForm(
   pricing: PricingFormState,
   t: Translate,
+  options?: {
+    schedules?: ScheduleHours[];
+    dayNames?: readonly string[];
+  },
 ): string | null {
   if (pricing.basePrice <= 0) {
     return t("priceMustBePositive");
@@ -89,6 +161,16 @@ export function validatePricingForm(
     const rowErrors = getNamedSlotRowErrors(slots, t);
     const firstError = Object.values(rowErrors).flat()[0];
     if (firstError) return firstError;
+
+    if (options?.schedules && options.dayNames) {
+      const scheduleError = validateNamedSlotsAgainstSchedules(
+        slots,
+        options.schedules,
+        t,
+        options.dayNames,
+      );
+      if (scheduleError) return scheduleError;
+    }
   }
 
   if (pricing.modelType === "DAILY_BLOCK") {

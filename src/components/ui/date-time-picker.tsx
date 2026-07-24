@@ -162,7 +162,7 @@ export function TimePicker({
             variant="outline"
             disabled={disabled}
             className={cn(
-              "justify-start border-border text-left font-normal tabular-nums",
+              "w-full justify-start border-border text-left font-normal tabular-nums",
               !parsed && "text-muted-foreground",
               triggerClassName,
             )}
@@ -197,6 +197,117 @@ export function TimePicker({
                 onSelect={(nextMinute) => updateTime(hour, nextMinute)}
               />
             </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+type DatePickerProps = {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  /** Matcher for calendar days that cannot be selected (react-day-picker). */
+  disabledDates?: React.ComponentProps<typeof Calendar>["disabled"];
+  className?: string;
+  triggerClassName?: string;
+  popoverClassName?: string;
+  formatLabel?: (date: Date) => string;
+};
+
+export function parseDateValue(value: string): Date | null {
+  const trimmed = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+  const [year, month, day] = trimmed.split("-").map(Number);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    return null;
+  }
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return date;
+}
+
+export function toDateValue(date: Date): string {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+export function DatePicker({
+  value,
+  onChange,
+  placeholder,
+  required,
+  disabled,
+  disabledDates,
+  className,
+  triggerClassName,
+  popoverClassName,
+  formatLabel,
+}: DatePickerProps) {
+  const tCommon = useTranslations("common");
+  const [open, setOpen] = React.useState(false);
+  const selected = parseDateValue(value);
+
+  const displayLabel = selected
+    ? formatLabel
+      ? formatLabel(selected)
+      : selected.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+    : placeholder ?? tCommon("pickDate");
+
+  return (
+    <div className={className}>
+      <input
+        required={required}
+        value={value}
+        readOnly
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+      />
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disabled}
+            className={cn(
+              "w-full justify-start border-border text-left font-normal",
+              !selected && "text-muted-foreground",
+              triggerClassName,
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="truncate">{displayLabel}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className={cn("w-auto overflow-hidden p-0 shadow-lg", popoverClassName)}
+        >
+          <div className="p-2">
+            <Calendar
+              mode="single"
+              selected={selected ?? undefined}
+              disabled={disabledDates}
+              onSelect={(date) => {
+                if (!date) return;
+                onChange(toDateValue(date));
+                setOpen(false);
+              }}
+              className="rounded-md border border-border bg-transparent"
+            />
           </div>
         </PopoverContent>
       </Popover>

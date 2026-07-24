@@ -72,7 +72,11 @@ export type ManagedEvent = {
   latitude: string | number;
   longitude: string | number;
   locationSource: "VENUE" | "CUSTOM";
+  seatingEnabled?: boolean;
   status?: EventApprovalStatus;
+  isDeleted?: boolean;
+  /** True when active ticket sales lock structural edits. */
+  contentOnlyEdit?: boolean;
   createdAt?: string;
   vendorProfileId?: string | null;
   vendorProfile?: {
@@ -127,6 +131,7 @@ export type PublicEvent = {
   zipCode: string | null;
   latitude: string | number;
   longitude: string | number;
+  seatingEnabled?: boolean;
   vendorProfile: PublicVendorProfile | null;
   salePhase?: SalePhase;
   ticketTypes: TicketTypeRow[];
@@ -148,6 +153,7 @@ export type ListPublicEventsParams = {
   search?: string;
   category?: string;
   city?: string;
+  countryCode?: string;
   startDate?: string;
   endDate?: string;
   sortBy?: "createdAt" | "startDateTime" | "eventName";
@@ -163,6 +169,7 @@ export type CreateEventPayload = {
   category: string;
   tags: string[];
   coverImage: string;
+  thumbnail?: string | null;
   gallery: string[];
   /** Optional link to an existing venue row */
   venueId?: string;
@@ -196,6 +203,7 @@ export async function listPublicEvents(
   if (params?.search) sp.set("search", params.search);
   if (params?.category) sp.set("category", params.category);
   if (params?.city) sp.set("city", params.city);
+  if (params?.countryCode) sp.set("countryCode", params.countryCode);
   if (params?.startDate) sp.set("startDate", params.startDate);
   if (params?.endDate) sp.set("endDate", params.endDate);
   if (params?.sortBy) sp.set("sortBy", params.sortBy);
@@ -265,6 +273,30 @@ export async function getManagedEvent(id: string): Promise<ManagedEvent> {
     headers: { Accept: "application/json" },
     networkErrorMessage: "Network error while loading event.",
   });
+
+  const json = await parseJson<SuccessEnvelope<ManagedEvent>>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, json as unknown);
+  }
+  return unwrapEnvelope(json);
+}
+
+export async function updateTicketQuantities(
+  eventId: string,
+  updates: Array<{ ticketTypeId: string; quantityTotal: number }>,
+): Promise<ManagedEvent> {
+  const res = await authFetch(
+    `/api/events/manage/${encodeURIComponent(eventId)}/ticket-quantities`,
+    {
+      method: "PATCH",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ updates }),
+      networkErrorMessage: "Network error while updating ticket quantities.",
+    },
+  );
 
   const json = await parseJson<SuccessEnvelope<ManagedEvent>>(res);
   if (!res.ok) {

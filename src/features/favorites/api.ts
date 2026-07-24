@@ -35,7 +35,7 @@ export async function getFavoriteIds(): Promise<FavoriteIds> {
 }
 
 export async function listFavorites(
-  type: "all" | "event" | "venue" = "all",
+  type: "all" | "event" | "venue" | "attraction" = "all",
 ): Promise<FavoritesList> {
   const res = await authFetch(
     `/api/favorites?type=${encodeURIComponent(type)}`,

@@ -62,9 +62,15 @@ function VendorBookingCard({
   const { locale } = useLocaleContext();
   const bookingStatusLabel = useBookingStatusLabel();
   const tz = booking.venue.timezone;
-  const buyerName = booking.buyer
-    ? `${booking.buyer.firstName} ${booking.buyer.lastName}`.trim()
-    : null;
+  const isOffline = booking.source === "OFFLINE";
+  const buyerName = isOffline
+    ? booking.guestName?.trim() ||
+      (booking.buyer
+        ? `${booking.buyer.firstName} ${booking.buyer.lastName}`.trim()
+        : "Local booking")
+    : booking.buyer
+      ? `${booking.buyer.firstName} ${booking.buyer.lastName}`.trim()
+      : null;
 
   return (
     <div
@@ -111,12 +117,22 @@ function VendorBookingCard({
                 </p>
               ) : null}
             </div>
-            <Badge
-              variant="outline"
-              className={cn("shrink-0 capitalize", bookingStatusBadgeClass(booking.status))}
-            >
-              {bookingStatusLabel(booking.status)}
-            </Badge>
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+              {isOffline ? (
+                <Badge
+                  variant="outline"
+                  className="border-amber-500/40 bg-amber-500/10 text-amber-200"
+                >
+                  Offline
+                </Badge>
+              ) : null}
+              <Badge
+                variant="outline"
+                className={cn("capitalize", bookingStatusBadgeClass(booking.status))}
+              >
+                {bookingStatusLabel(booking.status)}
+              </Badge>
+            </div>
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">

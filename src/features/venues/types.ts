@@ -135,6 +135,8 @@ export type ManagedVenue = PublicVenue & {
   createdAt?: string;
   updatedAt?: string;
   readiness?: VenueReadiness;
+  /** True when active bookings lock structural edits. */
+  contentOnlyEdit?: boolean;
 };
 
 export type PaginatedMeta = {
@@ -174,6 +176,53 @@ export type DayAvailability = {
   price: number;
   reason?: UnavailabilityReason;
   slots: AvailabilitySlot[];
+};
+
+export type VenueOpsDayBooking = {
+  id: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  source: "ONLINE" | "OFFLINE";
+  guestName?: string | null;
+  guestPhone?: string | null;
+  specialRequests?: string | null;
+  numGuests?: number | null;
+  buyerLabel: string;
+};
+
+export type VenueOpsDay = {
+  venueId: string;
+  date: string;
+  timezone: string;
+  modelType: PricingModel;
+  available: boolean;
+  reason?: UnavailabilityReason;
+  dayHours: {
+    isAvailable: boolean;
+    openTime: string | null;
+    closeTime: string | null;
+    reason: string | null;
+  };
+  block: {
+    id: string;
+    blockDate: string;
+    reason?: string | null;
+    isBlocked: boolean;
+    customOpenTime: string;
+    customCloseTime: string;
+  } | null;
+  slots: AvailabilitySlot[];
+  bookings: VenueOpsDayBooking[];
+};
+
+export type VenueOfflineBookingPayload = {
+  startTime: string;
+  endTime: string;
+  guestName?: string | null;
+  guestPhone?: string | null;
+  specialRequests?: string | null;
+  numGuests?: number | null;
 };
 
 export type CreateVenuePayload = {

@@ -147,9 +147,11 @@ export function DashboardStatCard({
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
           {icon}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="truncate text-2xl font-semibold">{value}</p>
+          <p className="break-words text-lg font-semibold tabular-nums leading-tight sm:text-xl">
+            {value}
+          </p>
         </div>
       </div>
     </div>

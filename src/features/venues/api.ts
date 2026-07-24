@@ -16,6 +16,8 @@ import type {
   VenueAmenityPayload,
   VenueBlock,
   VenueBlockPayload,
+  VenueOfflineBookingPayload,
+  VenueOpsDay,
   VenuePricing,
   VenuePricingPayload,
   VenueSchedule,
@@ -75,6 +77,7 @@ export async function listPublicVenues(params?: {
   limit?: number;
   search?: string;
   city?: string;
+  countryCode?: string;
   venueTypeId?: string;
   capacityMin?: number;
   capacityMax?: number;
@@ -86,6 +89,7 @@ export async function listPublicVenues(params?: {
   sp.set("limit", String(params?.limit ?? 10));
   if (params?.search) sp.set("search", params.search);
   if (params?.city) sp.set("city", params.city);
+  if (params?.countryCode) sp.set("countryCode", params.countryCode);
   if (params?.venueTypeId) sp.set("venueTypeId", params.venueTypeId);
   if (params?.capacityMin !== undefined) sp.set("capacityMin", String(params.capacityMin));
   if (params?.capacityMax !== undefined) sp.set("capacityMax", String(params.capacityMax));
@@ -295,6 +299,67 @@ export async function removeVenueBlock(venueId: string, blockId: string): Promis
       method: "DELETE",
       headers: { Accept: "application/json" },
       networkErrorMessage: "Network error while removing block date.",
+    },
+  );
+}
+
+export async function getVenueOpsDay(
+  venueId: string,
+  date: string,
+): Promise<VenueOpsDay> {
+  const sp = new URLSearchParams({ date });
+  return authJson<VenueOpsDay>(
+    `/api/venues/${encodeURIComponent(venueId)}/ops/day?${sp.toString()}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while loading venue schedule day.",
+    },
+  );
+}
+
+export async function closeVenueScheduleDay(
+  venueId: string,
+  date: string,
+  reason?: string,
+): Promise<VenueBlock> {
+  return authJson<VenueBlock>(
+    `/api/venues/${encodeURIComponent(venueId)}/schedule/close-day`,
+    {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ date, reason }),
+      networkErrorMessage: "Network error while closing venue day.",
+    },
+  );
+}
+
+export async function openVenueScheduleDay(
+  venueId: string,
+  date: string,
+): Promise<{ opened: boolean; removedBlockId: string | null }> {
+  return authJson<{ opened: boolean; removedBlockId: string | null }>(
+    `/api/venues/${encodeURIComponent(venueId)}/schedule/open-day`,
+    {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ date }),
+      networkErrorMessage: "Network error while opening venue day.",
+    },
+  );
+}
+
+export async function createVenueOfflineBooking(
+  venueId: string,
+  body: VenueOfflineBookingPayload,
+): Promise<unknown> {
+  return authJson<unknown>(
+    `/api/venues/${encodeURIComponent(venueId)}/offline-bookings`,
+    {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      networkErrorMessage: "Network error while recording local booking.",
     },
   );
 }

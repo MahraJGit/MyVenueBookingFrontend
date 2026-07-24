@@ -64,13 +64,17 @@ export function VenuesListingSection() {
 
   const sortValue = sortValueFromParams(sortBy, sortOrder, sortOptions);
 
+  const countryCodeFromUrl = searchParams.get("countryCode")?.trim() ?? "";
+
   const [search, setSearch] = useState(searchFromUrl);
   const [city, setCity] = useState(cityFromUrl);
+  const [countryCode, setCountryCode] = useState(countryCodeFromUrl);
 
   useEffect(() => {
     setSearch(searchFromUrl);
     setCity(cityFromUrl);
-  }, [searchFromUrl, cityFromUrl]);
+    setCountryCode(countryCodeFromUrl);
+  }, [searchFromUrl, cityFromUrl, countryCodeFromUrl]);
 
   const pushParams = useCallback(
     (patch: Record<string, string | undefined>, replace = false) => {
@@ -98,8 +102,15 @@ export function VenuesListingSection() {
     pushParams({
       search: search || undefined,
       city: city || undefined,
+      countryCode: countryCode || undefined,
       page: undefined,
     });
+  };
+
+  const handleCountryChange = (value: string) => {
+    const next = value === "__all__" ? "" : value;
+    setCountryCode(next);
+    setCity("");
   };
 
   const handleSortChange = (value: string) => {
@@ -124,10 +135,10 @@ export function VenuesListingSection() {
     queryFn: () => listCountries({ activeOnly: true }),
   });
 
-  const countryCode = searchParams.get("countryCode")?.trim() ?? "";
   const { data: cities = [] } = useQuery({
-    queryKey: locationKeys.cities(countryCode || "AE", { activeOnly: true, featuredOnly: true }),
-    queryFn: () => listCitiesByCountryCode(countryCode || "AE", { activeOnly: true, featuredOnly: true }),
+    queryKey: locationKeys.cities(countryCode, { activeOnly: true, featuredOnly: true }),
+    queryFn: () => listCitiesByCountryCode(countryCode, { activeOnly: true, featuredOnly: true }),
+    enabled: Boolean(countryCode),
   });
 
   const activeTypeName =
@@ -145,6 +156,7 @@ export function VenuesListingSection() {
       locale,
       search: searchFromUrl,
       city: cityFromUrl,
+      countryCode: countryCodeFromUrl,
       venueTypeId: venueTypeIdFromUrl,
       sortBy,
       sortOrder,
@@ -155,6 +167,7 @@ export function VenuesListingSection() {
         limit: PAGE_SIZE,
         search: searchFromUrl || undefined,
         city: cityFromUrl || undefined,
+        countryCode: countryCodeFromUrl || undefined,
         venueTypeId: venueTypeIdFromUrl || undefined,
         sortBy: sortBy as "createdAt" | "name",
         sortOrder: sortOrder as "asc" | "desc",
@@ -208,11 +221,32 @@ export function VenuesListingSection() {
                 className="w-full border-[#303030] bg-black text-white"
               />
               <Select
-                value={city || "__all__"}
-                onValueChange={(v) => setCity(v === "__all__" ? "" : v)}
+                value={countryCode || "__all__"}
+                onValueChange={handleCountryChange}
               >
                 <SelectTrigger className="w-full border-[#303030] bg-black text-white">
-                  <SelectValue placeholder={labels.city} />
+                  <SelectValue placeholder={labels.country} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{labels.allCountries}</SelectItem>
+                  {countries.map((c) => (
+                    <SelectItem key={c.id} value={c.code}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={city || "__all__"}
+                onValueChange={(v) => setCity(v === "__all__" ? "" : v)}
+                disabled={!countryCode}
+              >
+                <SelectTrigger className="w-full border-[#303030] bg-black text-white">
+                  <SelectValue
+                    placeholder={
+                      countryCode ? labels.city : labels.selectCountryFirst
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">{labels.city}</SelectItem>
@@ -239,14 +273,20 @@ export function VenuesListingSection() {
                 <Search className="me-2 h-4 w-4" />
                 {labels.search}
               </Button>
-              {(searchFromUrl || cityFromUrl) && (
+              {(searchFromUrl || cityFromUrl || countryCodeFromUrl) && (
                 <Button
                   variant="outline"
                   className="w-full border-[#303030] text-muted-foreground"
                   onClick={() => {
                     setSearch("");
                     setCity("");
-                    pushParams({ search: undefined, city: undefined, page: undefined });
+                    setCountryCode("");
+                    pushParams({
+                      search: undefined,
+                      city: undefined,
+                      countryCode: undefined,
+                      page: undefined,
+                    });
                   }}
                 >
                   {labels.clearFilters}
