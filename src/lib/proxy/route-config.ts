@@ -30,6 +30,8 @@ const AUTH_ROUTE_PREFIXES = [
 ] as const;
 
 const BOOKING_CHECKOUT_PATTERN = /^\/venues\/booking\/[^/]+\/checkout\/?$/;
+const SERVICE_BOOKING_CHECKOUT_PATTERN =
+  /^\/marketplace\/booking\/[^/]+\/checkout\/?$/;
 
 export function isAuthRoute(pathname: string): boolean {
   return AUTH_ROUTE_PREFIXES.some(
@@ -39,6 +41,10 @@ export function isAuthRoute(pathname: string): boolean {
 
 export function isBookingCheckoutRoute(pathname: string): boolean {
   return BOOKING_CHECKOUT_PATTERN.test(pathname);
+}
+
+export function isServiceBookingCheckoutRoute(pathname: string): boolean {
+  return SERVICE_BOOKING_CHECKOUT_PATTERN.test(pathname);
 }
 
 export function classifyRoute(pathname: string): RouteAccessRule {
@@ -57,7 +63,10 @@ export function classifyRoute(pathname: string): RouteAccessRule {
     };
   }
 
-  if (isBookingCheckoutRoute(pathname)) {
+  if (
+    isBookingCheckoutRoute(pathname) ||
+    isServiceBookingCheckoutRoute(pathname)
+  ) {
     return { type: "authenticated", allowedRoles: ["BUYER", "VENDOR", "ADMIN"] };
   }
 

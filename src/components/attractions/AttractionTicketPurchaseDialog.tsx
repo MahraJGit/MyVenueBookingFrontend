@@ -400,6 +400,7 @@ export function AttractionTicketPurchaseDialog({
               ) : (
                 <SeatMap
                   sections={seatingQuery.data?.sections ?? []}
+                  focalPoint={seatingQuery.data?.focalPoint ?? null}
                   selectedIds={selectedSeats.map((s) => s.seat.id)}
                   onToggleSeat={(seat, section) => {
                     void handleToggleSeat(seat, section);

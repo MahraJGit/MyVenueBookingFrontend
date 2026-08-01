@@ -95,7 +95,7 @@ export function SecureStoredImage({
     return (
       <div
         className={cn(
-          "flex min-h-[120px] items-center justify-center bg-muted/30 text-xs text-muted-foreground",
+          "flex items-center justify-center bg-muted/30 text-xs text-muted-foreground",
           className,
         )}
       >
@@ -105,12 +105,12 @@ export function SecureStoredImage({
   }
 
   return (
-    <div className={cn("relative min-h-[120px] overflow-hidden bg-muted/20", className)}>
+    <div className={cn("relative overflow-hidden bg-muted/20", className)}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={resolvedSrc}
         alt={alt}
-        className="h-full min-h-[120px] w-full object-cover"
+        className="h-full w-full object-cover"
         onError={(e) => {
           const img = e.currentTarget;
           if (previewSrc && img.src !== previewSrc) {

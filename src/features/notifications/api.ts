@@ -17,15 +17,24 @@ async function parseJson<T>(res: Response): Promise<T> {
 
 type SuccessEnvelope<T> = { success: boolean; data: T };
 
-export async function listNotifications(filter: "all" | "read" | "unread" = "all") {
-  const res = await authFetch(
-    `/api/notifications?filter=${encodeURIComponent(filter)}`,
-    {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      networkErrorMessage: "Network error while loading notifications.",
-    },
-  );
+export type NotificationAudience = "USER" | "VENDOR" | "ADMIN";
+
+function audienceQuery(audience?: NotificationAudience) {
+  return audience ? `audience=${encodeURIComponent(audience)}` : "";
+}
+
+export async function listNotifications(
+  filter: "all" | "read" | "unread" = "all",
+  audience?: NotificationAudience,
+) {
+  const params = [`filter=${encodeURIComponent(filter)}`, audienceQuery(audience)]
+    .filter(Boolean)
+    .join("&");
+  const res = await authFetch(`/api/notifications?${params}`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    networkErrorMessage: "Network error while loading notifications.",
+  });
 
   const data = await parseJson<unknown>(res);
   if (!res.ok) {
@@ -35,12 +44,18 @@ export async function listNotifications(filter: "all" | "read" | "unread" = "all
   return (data as SuccessEnvelope<NotificationItem[]>).data;
 }
 
-export async function getUnreadNotificationCount() {
-  const res = await authFetch("/api/notifications/unread-count", {
-    method: "GET",
-    headers: { Accept: "application/json" },
-    networkErrorMessage: "Network error while loading notification count.",
-  });
+export async function getUnreadNotificationCount(
+  audience?: NotificationAudience,
+) {
+  const suffix = audienceQuery(audience);
+  const res = await authFetch(
+    `/api/notifications/unread-count${suffix ? `?${suffix}` : ""}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while loading notification count.",
+    },
+  );
 
   const data = await parseJson<unknown>(res);
   if (!res.ok) {
@@ -63,12 +78,18 @@ export async function markNotificationRead(id: string) {
   }
 }
 
-export async function markAllNotificationsRead() {
-  const res = await authFetch("/api/notifications/read-all", {
-    method: "PATCH",
-    headers: { Accept: "application/json" },
-    networkErrorMessage: "Network error while updating notifications.",
-  });
+export async function markAllNotificationsRead(
+  audience?: NotificationAudience,
+) {
+  const suffix = audienceQuery(audience);
+  const res = await authFetch(
+    `/api/notifications/read-all${suffix ? `?${suffix}` : ""}`,
+    {
+      method: "PATCH",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while updating notifications.",
+    },
+  );
 
   const data = await parseJson<unknown>(res);
   if (!res.ok) {

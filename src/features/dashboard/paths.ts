@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
@@ -36,7 +36,21 @@ export type DashboardPaths = {
   editVenue: (id: string) => string;
   manageVenueSchedule: (id: string) => string;
   venueBookings: string;
+  marketplace: string;
+  myMarketplaceServices: string;
+  addMarketplaceService: string;
+  editMarketplaceService: (id: string) => string;
+  manageMarketplaceSchedule: (id: string) => string;
+  marketplaceInquiries: string;
+  marketplaceInquiry: (id: string) => string;
+  marketplaceProposals: string;
+  marketplaceProposal: (id: string) => string;
+  newMarketplaceProposal: (inquiryId: string) => string;
+  reviseMarketplaceProposal: (id: string) => string;
+  marketplaceBookings: string;
+  marketplaceBooking: (id: string) => string;
   eventCategories: string;
+  serviceCategories: string;
 };
 
 export function getDashboardPaths(scope: DashboardScope): DashboardPaths {
@@ -72,7 +86,28 @@ export function getDashboardPaths(scope: DashboardScope): DashboardPaths {
       manageVenueSchedule: (id: string) =>
         `${VENDOR_DASHBOARD_PREFIX}/venues/${encodeURIComponent(id)}/schedule`,
       venueBookings: `${VENDOR_DASHBOARD_PREFIX}/bookings`,
+      marketplace: `${VENDOR_DASHBOARD_PREFIX}/marketplace`,
+      myMarketplaceServices: `${VENDOR_DASHBOARD_PREFIX}/marketplace`,
+      addMarketplaceService: `${VENDOR_DASHBOARD_PREFIX}/marketplace/new`,
+      editMarketplaceService: (id: string) =>
+        `${VENDOR_DASHBOARD_PREFIX}/marketplace/new?id=${encodeURIComponent(id)}`,
+      manageMarketplaceSchedule: (id: string) =>
+        `${VENDOR_DASHBOARD_PREFIX}/marketplace/${encodeURIComponent(id)}/schedule`,
+      marketplaceInquiries: `${VENDOR_DASHBOARD_PREFIX}/marketplace/inquiries`,
+      marketplaceInquiry: (id: string) =>
+        `${VENDOR_DASHBOARD_PREFIX}/marketplace/inquiries/${encodeURIComponent(id)}`,
+      marketplaceProposals: `${VENDOR_DASHBOARD_PREFIX}/marketplace/proposals`,
+      marketplaceProposal: (id: string) =>
+        `${VENDOR_DASHBOARD_PREFIX}/marketplace/proposals/${encodeURIComponent(id)}`,
+      newMarketplaceProposal: (inquiryId: string) =>
+        `${VENDOR_DASHBOARD_PREFIX}/marketplace/proposals/new?inquiryId=${encodeURIComponent(inquiryId)}`,
+      reviseMarketplaceProposal: (id: string) =>
+        `${VENDOR_DASHBOARD_PREFIX}/marketplace/proposals/${encodeURIComponent(id)}/revise`,
+      marketplaceBookings: `${VENDOR_DASHBOARD_PREFIX}/marketplace/bookings`,
+      marketplaceBooking: (id: string) =>
+        `${VENDOR_DASHBOARD_PREFIX}/marketplace/bookings/${encodeURIComponent(id)}`,
       eventCategories: `${ADMIN_DASHBOARD_PREFIX}/events`,
+      serviceCategories: `${ADMIN_DASHBOARD_PREFIX}/serviceCategories`,
     };
   }
 
@@ -107,7 +142,28 @@ export function getDashboardPaths(scope: DashboardScope): DashboardPaths {
     manageVenueSchedule: (id: string) =>
       `${ADMIN_DASHBOARD_PREFIX}/manageVenues/${encodeURIComponent(id)}/schedule`,
     venueBookings: `${ADMIN_DASHBOARD_PREFIX}/venueBookings`,
+    marketplace: `${ADMIN_DASHBOARD_PREFIX}/marketplaceReviews`,
+    myMarketplaceServices: `${ADMIN_DASHBOARD_PREFIX}/marketplaceReviews`,
+    addMarketplaceService: `${VENDOR_DASHBOARD_PREFIX}/marketplace/new`,
+    editMarketplaceService: (id: string) =>
+      `${VENDOR_DASHBOARD_PREFIX}/marketplace/new?id=${encodeURIComponent(id)}`,
+    manageMarketplaceSchedule: (id: string) =>
+      `${VENDOR_DASHBOARD_PREFIX}/marketplace/${encodeURIComponent(id)}/schedule`,
+    marketplaceInquiries: `${VENDOR_DASHBOARD_PREFIX}/marketplace/inquiries`,
+    marketplaceInquiry: (id: string) =>
+      `${VENDOR_DASHBOARD_PREFIX}/marketplace/inquiries/${encodeURIComponent(id)}`,
+    marketplaceProposals: `${VENDOR_DASHBOARD_PREFIX}/marketplace/proposals`,
+    marketplaceProposal: (id: string) =>
+      `${VENDOR_DASHBOARD_PREFIX}/marketplace/proposals/${encodeURIComponent(id)}`,
+    newMarketplaceProposal: (inquiryId: string) =>
+      `${VENDOR_DASHBOARD_PREFIX}/marketplace/proposals/new?inquiryId=${encodeURIComponent(inquiryId)}`,
+    reviseMarketplaceProposal: (id: string) =>
+      `${VENDOR_DASHBOARD_PREFIX}/marketplace/proposals/${encodeURIComponent(id)}/revise`,
+    marketplaceBookings: `${VENDOR_DASHBOARD_PREFIX}/marketplace/bookings`,
+    marketplaceBooking: (id: string) =>
+      `${VENDOR_DASHBOARD_PREFIX}/marketplace/bookings/${encodeURIComponent(id)}`,
     eventCategories: `${ADMIN_DASHBOARD_PREFIX}/events`,
+    serviceCategories: `${ADMIN_DASHBOARD_PREFIX}/serviceCategories`,
   };
 }
 

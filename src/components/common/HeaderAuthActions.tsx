@@ -227,7 +227,7 @@ export function HeaderAuthActions({
             </DropdownMenuItem>
           );
         })}
-        <DropdownMenuItem
+        {/* <DropdownMenuItem
           onSelect={() => {
             onNavigate?.();
             router.push("/userDashboard/profile");
@@ -239,7 +239,7 @@ export function HeaderAuthActions({
         >
           <Settings className="size-4" />
           {tNav("profileSettings")}
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         <DropdownMenuItem
           onSelect={() => {
             onNavigate?.();
@@ -303,7 +303,7 @@ export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void 
           </button>
         );
       })}
-      <button
+      {/* <button
         type="button"
         className={cn(
           "flex w-full items-center rounded-xl px-3 py-3 text-start text-[15px] font-medium transition-colors hover:bg-white/5 hover:text-primary",
@@ -317,7 +317,7 @@ export function HeaderAuthMobileLinks({ onNavigate }: { onNavigate?: () => void 
         }}
       >
         {tNav("profileSettings")}
-      </button>
+      </button> */}
       <button
         type="button"
         className="flex w-full items-center rounded-xl px-3 py-3 text-start text-[15px] font-medium text-foreground/90 transition-colors hover:bg-white/5 hover:text-primary"

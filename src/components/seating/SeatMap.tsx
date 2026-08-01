@@ -2,8 +2,15 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import type { PublicSeat, PublicSeatSection, SeatStatus } from "@/features/seating/api";
+import type {
+  PublicSeat,
+  PublicSeatSection,
+  SeatMapFocalPoint,
+  SeatStatus,
+} from "@/features/seating/api";
 import { SeatIcon } from "@/components/seating/SeatIcon";
+import { VenueSeatMap } from "@/components/seating/VenueSeatMap";
+import { hasCustomGeometry } from "@/lib/seating/geometry";
 
 const STATUS_CLASS: Record<SeatStatus, string> = {
   available:
@@ -18,6 +25,7 @@ const STATUS_CLASS: Record<SeatStatus, string> = {
 
 type SeatMapProps = {
   sections: PublicSeatSection[];
+  focalPoint?: SeatMapFocalPoint | null;
   selectedIds: string[];
   onToggleSeat: (seat: PublicSeat, section: PublicSeatSection) => void;
   disabled?: boolean;
@@ -26,12 +34,30 @@ type SeatMapProps = {
 
 export function SeatMap({
   sections,
+  focalPoint,
   selectedIds,
   onToggleSeat,
   disabled,
   className,
 }: SeatMapProps) {
   const selectedSet = React.useMemo(() => new Set(selectedIds), [selectedIds]);
+  const isVenueShaped = React.useMemo(
+    () => hasCustomGeometry(sections, focalPoint),
+    [sections, focalPoint],
+  );
+
+  if (isVenueShaped) {
+    return (
+      <VenueSeatMap
+        sections={sections}
+        focalPoint={focalPoint}
+        selectedIds={selectedIds}
+        onToggleSeat={onToggleSeat}
+        disabled={disabled}
+        className={className}
+      />
+    );
+  }
 
   if (sections.length === 0) {
     return (

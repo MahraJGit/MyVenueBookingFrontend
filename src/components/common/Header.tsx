@@ -60,6 +60,7 @@ const Header = () => {
       { href: '/', label: tNav('home') },
       { href: '/events', label: tNav('events') },
       { href: '/attractions', label: tNav('attractions') },
+      { href: '/marketplace', label: tNav('marketplace') },
       { href: '/corporate', label: tNav('corporate') },
       { href: '/venues', label: tNav('venueBooking') },
       { href: '/affiliate', label: tNav('listYourVenue') },
@@ -70,7 +71,11 @@ const Header = () => {
 
   const primaryNavItems = navItems.slice(0, PRIMARY_NAV_COUNT);
   const moreNavItems = navItems.slice(PRIMARY_NAV_COUNT);
-  const moreIsActive = moreNavItems.some((item) => pathname === item.href);
+  const isItemActive = (href: string) =>
+    href === '/'
+      ? pathname === '/'
+      : pathname === href || pathname.startsWith(`${href}/`);
+  const moreIsActive = moreNavItems.some((item) => isItemActive(item.href));
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
@@ -151,7 +156,7 @@ const Header = () => {
             >
               <ul className="flex max-w-full items-center justify-center gap-0.5">
                 {primaryNavItems.map((item) => {
-                  const isActive = pathname === item.href;
+                  const isActive = isItemActive(item.href);
                   return (
                     <li key={item.href} className="min-w-0 shrink">
                       <Link
@@ -178,7 +183,7 @@ const Header = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="center" className="min-w-[12rem]">
                         {moreNavItems.map((item) => {
-                          const isActive = pathname === item.href;
+                          const isActive = isItemActive(item.href);
                           return (
                             <DropdownMenuItem
                               key={item.href}
@@ -257,7 +262,7 @@ const Header = () => {
           <DrawerSection title={tCommon('menu')}>
             <ul className="space-y-1">
               {navItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = isItemActive(item.href);
                 return (
                   <li key={item.href}>
                     <Link

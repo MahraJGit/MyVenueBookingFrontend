@@ -89,7 +89,7 @@ export {
 export { DashboardDataTable } from './dashboard-data-table'
 
 export const dashboardSidebarClass =
-  'fixed top-0 left-0 z-50 flex h-full w-[280px] flex-col border-r border-white/10 bg-[#1B1B1B] p-4 text-white transition-transform duration-300 lg:static lg:m-4 lg:min-h-[calc(100vh-2rem)] lg:rounded-2xl lg:border-r-0'
+  'fixed top-0 left-0 z-50 flex h-dvh max-h-dvh w-[280px] flex-col overflow-hidden border-r border-white/10 bg-[#1B1B1B] p-4 text-white transition-transform duration-300 lg:sticky lg:top-4 lg:m-4 lg:h-[calc(100vh-2rem)] lg:max-h-[calc(100vh-2rem)] lg:self-start lg:rounded-2xl lg:border-r-0'
 
 export function DashboardMobileHeader({
   onMenuClick,

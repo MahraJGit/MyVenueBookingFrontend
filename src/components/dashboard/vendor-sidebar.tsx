@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
   X,
+  Bell,
   Building2,
   CalendarDays,
   Ticket,
@@ -15,6 +16,10 @@ import {
   TrendingUp,
   MessageCircle,
   ShieldCheck,
+  Store,
+  Inbox,
+  FileText,
+  CalendarCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -70,7 +75,7 @@ export default function VendorSidebar({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <Accordion type="multiple" defaultValue={['overview', 'events', 'attractions', 'venues', 'account']} className="space-y-2">
+        <Accordion type="multiple" defaultValue={['overview', 'events', 'attractions', 'venues', 'marketplace', 'account']} className="space-y-2">
           <SidebarSection title={t('overview')} value="overview">
             <SidebarLink icon={LayoutDashboard} label={t('dashboard')} href={paths.root} onClose={onClose} />
             <SidebarLink icon={TrendingUp} label={t('analytics')} href={paths.analytics} onClose={onClose} />
@@ -93,8 +98,23 @@ export default function VendorSidebar({
             <SidebarLink icon={CalendarDays} label={t('venueBookings')} href={paths.venueBookings} onClose={onClose} />
           </SidebarSection>
 
+          <SidebarSection title={t('marketplaceSection')} value="marketplace">
+            <SidebarLink
+              icon={Store}
+              label={t('myServices')}
+              href={paths.marketplace}
+              onClose={onClose}
+              exact
+            />
+            <SidebarLink icon={Store} label={t('newService')} href={paths.addMarketplaceService} onClose={onClose} />
+            <SidebarLink icon={Inbox} label={t('serviceInquiries')} href={paths.marketplaceInquiries} onClose={onClose} />
+            <SidebarLink icon={FileText} label={t('serviceProposals')} href={paths.marketplaceProposals} onClose={onClose} />
+            <SidebarLink icon={CalendarCheck} label={t('serviceBookings')} href={paths.marketplaceBookings} onClose={onClose} />
+          </SidebarSection>
+
           <SidebarSection title={t('account')} value="account">
             <SidebarLink icon={MessageCircle} label={t('messages')} href={`${paths.root}/messages`} onClose={onClose} showUnreadBadge unreadContext="vendor" />
+            <SidebarLink icon={Bell} label={t('notifications')} href={`${paths.root}/notifications`} onClose={onClose} />
             <SidebarLink icon={Calendar} label={tNav('customerDashboard')} href="/userDashboard/tickets" onClose={onClose} />
           </SidebarSection>
         </Accordion>
@@ -136,6 +156,7 @@ function SidebarLink({
   onClose,
   showUnreadBadge = false,
   unreadContext = "vendor",
+  exact = false,
 }: {
   icon: React.ComponentType<{ className?: string; size?: number }>
   label: string
@@ -143,14 +164,16 @@ function SidebarLink({
   onClose: () => void
   showUnreadBadge?: boolean
   unreadContext?: "buyer" | "vendor" | "admin"
+  exact?: boolean
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [hrefPath, hrefQuery = ''] = href.split('?')
   const hrefParams = new URLSearchParams(hrefQuery)
-  const pathMatches =
-    pathname === hrefPath ||
-    (hrefPath !== paths.root && pathname.startsWith(`${hrefPath}/`))
+  const pathMatches = exact
+    ? pathname === hrefPath
+    : pathname === hrefPath ||
+      (hrefPath !== paths.root && pathname.startsWith(`${hrefPath}/`))
 
   let isActive = pathMatches
   if (isActive) {

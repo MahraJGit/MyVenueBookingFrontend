@@ -7,23 +7,32 @@ import { Bell } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useAuth } from '@/features/auth/auth-context'
 import { notificationsQueryKey } from '@/features/auth/auth-cache'
-import { getUnreadNotificationCount } from '@/features/notifications/api'
+import {
+  getUnreadNotificationCount,
+  type NotificationAudience,
+} from '@/features/notifications/api'
 
 type NotificationBellProps = {
   href: string
   variant?: 'user' | 'admin'
+  /** When set, the unread badge only counts notifications for this audience. */
+  audience?: NotificationAudience
 }
 
 export default function NotificationBell({
   href,
   variant = 'user',
+  audience,
 }: NotificationBellProps) {
   const t = useTranslations('notifications')
   const { isAuthenticated, isReady, user } = useAuth()
 
   const { data: unreadCount = 0 } = useQuery({
-    queryKey: notificationsQueryKey(user?.id, 'unread-count'),
-    queryFn: getUnreadNotificationCount,
+    queryKey: notificationsQueryKey(
+      user?.id,
+      `unread-count:${audience ?? 'any'}`,
+    ),
+    queryFn: () => getUnreadNotificationCount(audience),
     enabled: isReady && isAuthenticated && !!user?.id,
     refetchInterval: 60_000,
   })

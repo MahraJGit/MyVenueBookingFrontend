@@ -150,7 +150,8 @@
     "customerDashboard": "کسٹمر ڈیش بورڈ",
     "attractions": "تفریح",
     "corporate": "کارپوریٹ",
-    "mainNav": "مرکزی نیویگیشن"
+    "mainNav": "مرکزی نیویگیشن",
+    "marketplace": "وینڈر مارکیٹ پلیس"
   },
   "footer": {
     "copyright": "© {year} MyVenueBooking۔ تمام حقوق محفوظ ہیں۔"
@@ -847,7 +848,12 @@
     "bookingConfirmed": "Booking confirmed!",
     "bookingConfirmedDesc": "Your payment was successful. Your reservation at {venue} is confirmed.",
     "paymentPending": "Payment pending",
-    "paymentPendingDesc": "Complete payment to secure your booking before the hold expires."
+    "paymentPendingDesc": "Complete payment to secure your booking before the hold expires.",
+    "noPackagesAvailable": "اس سروس کے لیے کوئی پیکج دستیاب نہیں۔",
+    "selectCountry": "ملک منتخب کریں",
+    "selectCity": "شہر منتخب کریں",
+    "selectCountryFirst": "پہلے ملک منتخب کریں",
+    "noCities": "اس ملک کے لیے کوئی شہر دستیاب نہیں۔"
   },
   "vendorDashboard": {
     "title": "وینڈر ڈیش بورڈ",
@@ -1173,7 +1179,10 @@
     "slotOverlapError": "\"{nameA}\" and \"{nameB}\" have overlapping times.",
     "bookingHorizonLabel": "How far ahead can guests book? (days)",
     "bookingHorizonHint": "Dates beyond this window stay blocked on the calendar until they come into range. Shows are prepared automatically within this window.",
-    "bookingHorizonInvalid": "Booking window must be between 1 and 365 days."
+    "bookingHorizonInvalid": "Booking window must be between 1 and 365 days.",
+    "marketplaceSection": "Marketplace",
+    "marketplaceReviews": "Service Request",
+    "serviceCategories": "Service Categories"
   },
   "affiliate": {
     "title": "اپنا وینو لسٹ کریں",
@@ -2420,5 +2429,71 @@
     "unavailOutOfWindow": "This date is outside the booking window.",
     "unavailBlocked": "This date is blocked.",
     "unavailClosed": "No shows on this day."
+  },
+  "adminServiceCategories": {
+    "title": "Service categories",
+    "description": "Create and manage categories used when listing and filtering marketplace services.",
+    "addCategory": "Add category",
+    "searchPlaceholder": "Search by name or description",
+    "searchHint": "Results update as you type (short delay to limit requests).",
+    "noCategories": "No categories found. Add one to get started.",
+    "slug": "Slug",
+    "addTitle": "Add category",
+    "addDesc": "Categories appear when vendors create marketplace services and can be used for filtering.",
+    "nameHint": "2–80 characters. A URL-friendly slug is generated automatically.",
+    "descriptionOptional": "Description (optional)",
+    "activeLabel": "Active",
+    "activeHint": "Inactive categories stay in the database but can be hidden in UIs.",
+    "editTitle": "Edit category",
+    "editDesc": "If you change the name, the system updates the internal identifier used for URLs when needed.",
+    "saveChanges": "Save changes",
+    "detailsTitle": "Category details",
+    "detailsDesc": "Read-only view of this category.",
+    "deleteTitle": "Delete category?",
+    "deleteDesc": "This action cannot be undone. You can only delete a category if no marketplace services are still using it.",
+    "deleteConfirm": "Are you sure you want to permanently delete this category?",
+    "yesDelete": "Yes, delete",
+    "categoryCreated": "Category created",
+    "categoryUpdated": "Category updated",
+    "categoryDeleted": "Category deleted",
+    "couldNotCreate": "Could not create category.",
+    "couldNotUpdate": "Could not update category.",
+    "couldNotDelete": "Could not delete category.",
+    "failedLoad": "Failed to load categories."
+  },
+  "marketplace": {
+    "previewModeBanner": "پریویو موڈ — آپ کی سروس گاہکوں کو یوں نظر آتی ہے۔",
+    "previewInquireDisabled": "پریویو موڈ میں انکوائری غیر فعال ہے۔",
+    "discoverTitle": "دریافت کریں",
+    "title": "وینڈر مارکیٹ پلیس",
+    "listingSubtitle": "اپنے اگلے ایونٹ کے لیے فوٹوگرافر، کیٹررز، ڈی جیز اور مزید دیکھیں۔",
+    "allCategory": "سب",
+    "category": "زمرہ",
+    "badge": "وینڈر مارکیٹ پلیس",
+    "vendorFallback": "وینڈر",
+    "noDescription": "ابھی کوئی تفصیل نہیں۔",
+    "notFoundDesc": "یہ سروس نہیں ملی یا دستیاب نہیں۔",
+    "backToMarketplace": "وینڈر مارکیٹ پلیس پر واپس",
+    "noServicesInCategory": "{category} میں کوئی سروس نہیں ملی۔",
+    "pageOfWithCount": "صفحہ {page} از {totalPages} ({total})",
+    "galleryImageAlt": "پورٹ فولیو تصویر {index}",
+    "sortNewest": "نیا پہلے",
+    "sortOldest": "پرانا پہلے",
+    "sortTitleAsc": "عنوان ا–ے",
+    "sortTitleDesc": "عنوان ے–ا",
+    "sortPriceAsc": "قیمت: کم سے زیادہ",
+    "sortPriceDesc": "قیمت: زیادہ سے کم",
+    "couldNotLoad": "وینڈر مارکیٹ پلیس لوڈ نہیں ہو سکی۔"
+  },
+  "vendorMarketplace": {
+    "preview": "پیش نظارہ",
+    "publicPreviewDesc": "عوامی فہرست کی پیش نظارہ",
+    "openInNewTab": "نئی ٹیب میں کھولیں",
+    "editService": "سروس میں ترمیم",
+    "previewService": "پیش نظارہ {title}",
+    "scheduleOpenDayRequired": "کم از کم ایک دن کھلا نشان زد کریں۔",
+    "noOtherCities": "بیس شہر کے علاوہ کوئی اور شہر دستیاب نہیں۔",
+    "citiesServedHint": "اضافی شہر جو آپ کور کرتے ہیں (بیس شہر شامل نہیں)۔",
+    "serviceFormDesc": "بنیادی معلومات، پورٹ فولیو، ہفتہ وار شیڈول، پیکجز اور قیمتیں شامل کریں۔ ڈرافٹ محفوظ کریں یا جائزے کے لیے جمع کروائیں۔"
   }
 }

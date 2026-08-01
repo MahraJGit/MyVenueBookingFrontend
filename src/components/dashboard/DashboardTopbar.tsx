@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { HeaderAuthActions } from "@/components/common/HeaderAuthActions";
 import { LanguageSelect } from "@/components/i18n/LanguageSelect";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import type { NotificationAudience } from "@/features/notifications/api";
 import {
   dashboardInputClass,
   dashboardSurfaceClass,
@@ -24,6 +25,8 @@ type DashboardTopbarProps = {
   /** When set, shows the notification bell. */
   notificationsHref?: string;
   notificationsVariant?: "user" | "admin";
+  /** Scopes the unread badge to one notification audience. */
+  notificationsAudience?: NotificationAudience;
   className?: string;
 };
 
@@ -36,6 +39,7 @@ export function DashboardTopbar({
   searchPlaceholder,
   notificationsHref,
   notificationsVariant = "user",
+  notificationsAudience,
   className,
 }: DashboardTopbarProps) {
   const tCommon = useTranslations("common");
@@ -94,6 +98,7 @@ export function DashboardTopbar({
           <NotificationBell
             href={notificationsHref}
             variant={notificationsVariant}
+            audience={notificationsAudience}
           />
         ) : null}
         <HeaderAuthActions />

@@ -66,6 +66,7 @@ import {
 import {
   getManagedAttractionSeating,
   putManagedAttractionSeating,
+  type SeatMapFocalPoint,
 } from "@/features/attraction-seating/api"
 
 const inputClass = "bg-input/50 border-border"
@@ -162,6 +163,7 @@ export default function AddAttractionsContentPage() {
   ])
   const [seatingEnabled, setSeatingEnabled] = React.useState(false)
   const [seatingSections, setSeatingSections] = React.useState<SeatingEditorSection[]>([])
+  const [seatingFocal, setSeatingFocal] = React.useState<SeatMapFocalPoint | null>(null)
   const [seatingLoaded, setSeatingLoaded] = React.useState(false)
 
   const coverInputRef = React.useRef<HTMLInputElement>(null)
@@ -325,6 +327,7 @@ export default function AddAttractionsContentPage() {
       .then((layout) => {
         if (cancelled) return
         setSeatingEnabled(layout.seatingEnabled)
+        setSeatingFocal(layout.focalPoint ?? null)
         setSeatingSections(
           layout.sections.map((section) => {
             const seats = section.seats ?? []
@@ -342,6 +345,12 @@ export default function AddAttractionsContentPage() {
               rowCount: Math.max(1, rowCount),
               seatsPerRow: Math.max(1, seatsPerRow),
               rowLabelStart: seats[0]?.rowLabel?.[0] ?? "A",
+              shape: section.shape ?? "GRID",
+              posX: section.posX ?? 0,
+              posY: section.posY ?? 0,
+              rotation: section.rotation ?? 0,
+              curve: section.curve ?? 0,
+              arcRadius: section.arcRadius ?? 0,
             }
           }),
         )
@@ -351,6 +360,7 @@ export default function AddAttractionsContentPage() {
         if (!cancelled) {
           setSeatingEnabled(false)
           setSeatingSections([])
+          setSeatingFocal(null)
           setSeatingLoaded(true)
         }
       })
@@ -365,6 +375,7 @@ export default function AddAttractionsContentPage() {
     hydratedIdRef.current = null
     setSeatingEnabled(false)
     setSeatingSections([])
+    setSeatingFocal(null)
     setSeatingLoaded(false)
   }, [editId])
 
@@ -453,6 +464,7 @@ export default function AddAttractionsContentPage() {
       const seatingResult = await putManagedAttractionSeating(saved.id, {
         seatingEnabled,
         sections: seatingEnabled ? resolvedSections : [],
+        focalPoint: seatingEnabled ? seatingFocal : null,
       })
 
       return { saved, seatingResult }
@@ -1553,6 +1565,8 @@ export default function AddAttractionsContentPage() {
                 onEnabledChange={setSeatingEnabled}
                 sections={seatingSections}
                 onSectionsChange={setSeatingSections}
+                focalPoint={seatingFocal}
+                onFocalPointChange={setSeatingFocal}
                 ticketOptions={seatingTicketOptions}
                 disabled={
                   saveMutation.isPending ||

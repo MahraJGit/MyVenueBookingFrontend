@@ -12,6 +12,7 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
       onMenuClick={onMenuClick}
       notificationsHref="/userDashboard/notifications"
       notificationsVariant="user"
+      notificationsAudience="USER"
     />
   );
 };

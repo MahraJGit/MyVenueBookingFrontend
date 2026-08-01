@@ -37,6 +37,30 @@ export type InventorySeatStatus =
   | "sold_offline"
   | "held";
 
+export type SectionShape = "GRID" | "ARC";
+
+/** Venue-map placement of a section. GRID: pos = section center. ARC: pos = center of curvature. */
+export type SectionGeometry = {
+  shape?: SectionShape;
+  posX?: number;
+  posY?: number;
+  /** Degrees. GRID: rotation about center. ARC: facing angle of the wedge. */
+  rotation?: number;
+  /** ARC only: sweep angle of the wedge in degrees. */
+  curve?: number;
+  /** ARC only: distance from center of curvature to the first row (0 = auto). */
+  arcRadius?: number;
+};
+
+export type SeatMapFocalPoint = {
+  kind: "stage" | "field" | "court" | "screen" | "none";
+  label?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+};
+
 export type PublicSeat = {
   id: string;
   label: string;
@@ -47,7 +71,7 @@ export type PublicSeat = {
   status: SeatStatus;
 };
 
-export type PublicSeatSection = {
+export type PublicSeatSection = SectionGeometry & {
   id: string;
   name: string;
   color: string;
@@ -69,10 +93,11 @@ export type PublicSeatingMap = {
   eventName: string;
   seatingEnabled: boolean;
   holdTtlSeconds: number;
+  focalPoint?: SeatMapFocalPoint | null;
   sections: PublicSeatSection[];
 };
 
-export type SeatingSectionInput = {
+export type SeatingSectionInput = SectionGeometry & {
   ticketTypeId: string;
   name: string;
   color: string;
@@ -100,6 +125,7 @@ export type ManagedSeatingLayout = {
   eventName?: string;
   slug?: string;
   seatingEnabled: boolean;
+  focalPoint?: SeatMapFocalPoint | null;
   stats?: {
     available: number;
     blocked: number;
@@ -107,14 +133,16 @@ export type ManagedSeatingLayout = {
     soldOffline: number;
     held: number;
   };
-  sections: Array<{
-    id: string;
-    ticketTypeId: string;
-    name: string;
-    color: string;
-    sortOrder: number;
-    seats: ManagedInventorySeat[];
-  }>;
+  sections: Array<
+    SectionGeometry & {
+      id: string;
+      ticketTypeId: string;
+      name: string;
+      color: string;
+      sortOrder: number;
+      seats: ManagedInventorySeat[];
+    }
+  >;
 };
 
 export type SeatingInventoryAction =
@@ -170,7 +198,11 @@ export async function getManagedSeating(eventId: string): Promise<ManagedSeating
 
 export async function putManagedSeating(
   eventId: string,
-  body: { seatingEnabled: boolean; sections: SeatingSectionInput[] },
+  body: {
+    seatingEnabled: boolean;
+    sections: SeatingSectionInput[];
+    focalPoint?: SeatMapFocalPoint | null;
+  },
 ): Promise<ManagedSeatingLayout> {
   const res = await authFetch(`/api/events/manage/${encodeURIComponent(eventId)}/seating`, {
     method: "PUT",

@@ -10,10 +10,13 @@ import {
   CreditCard,
   Bell,
   CalendarDays,
+  CalendarCheck,
   Settings,
   Heart,
   X,
   MessageCircle,
+  Briefcase,
+  FileText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -45,6 +48,21 @@ export default function UserSidebar({ isOpen, onClose }: UserSidebarProps) {
       labelKey: 'venueBookings' as const,
       href: '/userDashboard/bookings',
       icon: CalendarDays,
+    },
+    {
+      labelKey: 'myServiceInquiries' as const,
+      href: '/userDashboard/service-inquiries',
+      icon: Briefcase,
+    },
+    {
+      labelKey: 'myServiceProposals' as const,
+      href: '/userDashboard/service-proposals',
+      icon: FileText,
+    },
+    {
+      labelKey: 'myServiceBookings' as const,
+      href: '/userDashboard/service-bookings',
+      icon: CalendarCheck,
     },
     {
       labelKey: 'favourites' as const,

@@ -98,12 +98,22 @@ export function AvailabilityCalendar({
     return (date: Date) => formatDateKeyLocal(date) <= todayKey;
   }, [todayKey]);
 
+  const isOutsideMonth = useMemo(() => {
+    const monthIndex = month.getMonth();
+    const yearValue = month.getFullYear();
+    return (date: Date) =>
+      date.getMonth() !== monthIndex || date.getFullYear() !== yearValue;
+  }, [month]);
+
   const isUnavailable = useMemo(() => {
     return (date: Date) => {
+      // Days from adjacent months have no availability row — never selectable.
+      if (isOutsideMonth(date)) return true;
       const entry = availabilityMap.get(formatDateKeyLocal(date));
-      return entry ? !entry.available : false;
+      // Only explicitly available days are selectable (missing = blocked).
+      return entry ? !entry.available : true;
     };
-  }, [availabilityMap]);
+  }, [availabilityMap, isOutsideMonth]);
 
   const disabledDays = useMemo(() => {
     return (date: Date) => isPast(date) || isUnavailable(date);
@@ -111,15 +121,16 @@ export function AvailabilityCalendar({
 
   const isBookable = useMemo(() => {
     return (date: Date) => {
-      if (isPast(date)) return false;
+      if (isPast(date) || isOutsideMonth(date)) return false;
       const entry = availabilityMap.get(formatDateKeyLocal(date));
       return entry?.available ?? false;
     };
-  }, [availabilityMap, isPast]);
+  }, [availabilityMap, isPast, isOutsideMonth]);
 
   const isClosed = useMemo(() => {
-    return (date: Date) => !isPast(date) && isUnavailable(date);
-  }, [isPast, isUnavailable]);
+    return (date: Date) =>
+      !isPast(date) && !isOutsideMonth(date) && isUnavailable(date);
+  }, [isPast, isOutsideMonth, isUnavailable]);
 
   return (
     <div className={cn("relative isolate w-full max-w-full min-w-0 overflow-hidden", className)}>

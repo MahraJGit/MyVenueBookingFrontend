@@ -80,7 +80,7 @@ export default function Sidebar({
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Accordion
           type="multiple"
-          defaultValue={['users', 'events', 'attractions', 'venues', 'settings']}
+          defaultValue={['users', 'events', 'attractions', 'venues', 'marketplace', 'settings']}
           className="space-y-2"
         >
           <SidebarSection title={t('users')} value="users">
@@ -111,6 +111,11 @@ export default function Sidebar({
             <SidebarLink icon="/svg/NewTicket.svg" label={t('attractionTickets')} href="/adminDashbaord/manageAttractionTickets" onClose={onClose} />
             <SidebarLink icon="/svg/Collaborating.svg" label={t('attractionVerifiers')} href="/adminDashbaord/verifiers?tab=attractions" onClose={onClose} />
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('attractionCategories')} href="/adminDashbaord/attractionCategories" onClose={onClose} />
+          </SidebarSection>
+
+          <SidebarSection title={t('marketplaceSection')} value="marketplace">
+            <SidebarLink icon="/svg/EventAccepted.svg" label={t('marketplaceReviews')} href="/adminDashbaord/marketplaceReviews" onClose={onClose} />
+            <SidebarLink icon="/svg/OpenedFolder.svg" label={t('serviceCategories')} href="/adminDashbaord/serviceCategories" onClose={onClose} />
           </SidebarSection>
 
           <SidebarSection title={t('settings')} value="settings">

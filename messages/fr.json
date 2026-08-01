@@ -150,7 +150,8 @@
     "customerDashboard": "Tableau de bord client",
     "attractions": "Attractions",
     "corporate": "Entreprise",
-    "mainNav": "Navigation principale"
+    "mainNav": "Navigation principale",
+    "marketplace": "Marketplace vendeur"
   },
   "footer": {
     "copyright": "© {year} MyVenueBooking. Tous droits réservés."
@@ -847,7 +848,12 @@
     "bookingConfirmed": "Booking confirmed!",
     "bookingConfirmedDesc": "Your payment was successful. Your reservation at {venue} is confirmed.",
     "paymentPending": "Payment pending",
-    "paymentPendingDesc": "Complete payment to secure your booking before the hold expires."
+    "paymentPendingDesc": "Complete payment to secure your booking before the hold expires.",
+    "noPackagesAvailable": "Aucun forfait disponible pour ce service.",
+    "selectCountry": "Sélectionner un pays",
+    "selectCity": "Sélectionner une ville",
+    "selectCountryFirst": "Sélectionnez d’abord un pays",
+    "noCities": "Aucune ville disponible pour ce pays."
   },
   "vendorDashboard": {
     "title": "Tableau de bord fournisseur",
@@ -1173,7 +1179,10 @@
     "slotOverlapError": "\"{nameA}\" and \"{nameB}\" have overlapping times.",
     "bookingHorizonLabel": "How far ahead can guests book? (days)",
     "bookingHorizonHint": "Dates beyond this window stay blocked on the calendar until they come into range. Shows are prepared automatically within this window.",
-    "bookingHorizonInvalid": "Booking window must be between 1 and 365 days."
+    "bookingHorizonInvalid": "Booking window must be between 1 and 365 days.",
+    "marketplaceSection": "Marketplace",
+    "marketplaceReviews": "Service Request",
+    "serviceCategories": "Service Categories"
   },
   "affiliate": {
     "title": "Référencer votre lieu",
@@ -2420,5 +2429,71 @@
     "unavailOutOfWindow": "This date is outside the booking window.",
     "unavailBlocked": "This date is blocked.",
     "unavailClosed": "No shows on this day."
+  },
+  "adminServiceCategories": {
+    "title": "Service categories",
+    "description": "Create and manage categories used when listing and filtering marketplace services.",
+    "addCategory": "Add category",
+    "searchPlaceholder": "Search by name or description",
+    "searchHint": "Results update as you type (short delay to limit requests).",
+    "noCategories": "No categories found. Add one to get started.",
+    "slug": "Slug",
+    "addTitle": "Add category",
+    "addDesc": "Categories appear when vendors create marketplace services and can be used for filtering.",
+    "nameHint": "2–80 characters. A URL-friendly slug is generated automatically.",
+    "descriptionOptional": "Description (optional)",
+    "activeLabel": "Active",
+    "activeHint": "Inactive categories stay in the database but can be hidden in UIs.",
+    "editTitle": "Edit category",
+    "editDesc": "If you change the name, the system updates the internal identifier used for URLs when needed.",
+    "saveChanges": "Save changes",
+    "detailsTitle": "Category details",
+    "detailsDesc": "Read-only view of this category.",
+    "deleteTitle": "Delete category?",
+    "deleteDesc": "This action cannot be undone. You can only delete a category if no marketplace services are still using it.",
+    "deleteConfirm": "Are you sure you want to permanently delete this category?",
+    "yesDelete": "Yes, delete",
+    "categoryCreated": "Category created",
+    "categoryUpdated": "Category updated",
+    "categoryDeleted": "Category deleted",
+    "couldNotCreate": "Could not create category.",
+    "couldNotUpdate": "Could not update category.",
+    "couldNotDelete": "Could not delete category.",
+    "failedLoad": "Failed to load categories."
+  },
+  "marketplace": {
+    "previewModeBanner": "Mode aperçu — voici comment votre service apparaît aux clients.",
+    "previewInquireDisabled": "Les demandes sont désactivées en mode aperçu.",
+    "discoverTitle": "Découvrir",
+    "title": "Marketplace vendeur",
+    "listingSubtitle": "Photographes, traiteurs, DJs et plus pour votre prochain événement.",
+    "allCategory": "Tous",
+    "category": "Catégorie",
+    "badge": "Marketplace vendeur",
+    "vendorFallback": "Vendeur",
+    "noDescription": "Aucune description pour le moment.",
+    "notFoundDesc": "Ce service est introuvable ou n’est plus disponible.",
+    "backToMarketplace": "Retour à la marketplace vendeur",
+    "noServicesInCategory": "Aucun service trouvé dans {category}.",
+    "pageOfWithCount": "Page {page} sur {totalPages} ({total})",
+    "galleryImageAlt": "Image du portfolio {index}",
+    "sortNewest": "Plus récents",
+    "sortOldest": "Plus anciens",
+    "sortTitleAsc": "Titre A–Z",
+    "sortTitleDesc": "Titre Z–A",
+    "sortPriceAsc": "Prix : croissant",
+    "sortPriceDesc": "Prix : décroissant",
+    "couldNotLoad": "Impossible de charger la marketplace vendeur."
+  },
+  "vendorMarketplace": {
+    "preview": "Aperçu",
+    "publicPreviewDesc": "Aperçu de la fiche publique",
+    "openInNewTab": "Ouvrir dans un nouvel onglet",
+    "editService": "Modifier le service",
+    "previewService": "Aperçu {title}",
+    "scheduleOpenDayRequired": "Marquez au moins un jour comme ouvert.",
+    "noOtherCities": "Aucune autre ville disponible en plus de votre ville de base.",
+    "citiesServedHint": "Villes supplémentaires couvertes (ville de base exclue).",
+    "serviceFormDesc": "Ajoutez les bases, le portfolio, le planning hebdomadaire, les forfaits et les tarifs. Enregistrez en brouillon ou soumettez pour examen."
   }
 }

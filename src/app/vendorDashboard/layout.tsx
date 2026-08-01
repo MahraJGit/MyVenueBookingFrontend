@@ -35,7 +35,12 @@ export default function VendorDashboardLayout({
 
       <div className={dashboardMainClass}>
         <main className={dashboardContentClass}>
-          <DashboardTopbar onMenuClick={() => setSidebarOpen(true)} />
+          <DashboardTopbar
+            onMenuClick={() => setSidebarOpen(true)}
+            notificationsHref="/vendorDashboard/notifications"
+            notificationsVariant="user"
+            notificationsAudience="VENDOR"
+          />
           {children}
         </main>
       </div>

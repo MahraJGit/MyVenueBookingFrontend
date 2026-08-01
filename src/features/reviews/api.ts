@@ -162,3 +162,78 @@ export async function getVenueReviews(venueId: string, page = 1, limit = 10) {
     meta: { total: number; page: number; limit: number; totalPages: number };
   }>(json);
 }
+
+export type MarketplaceServiceReview = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  reviewer: {
+    id: string;
+    name: string;
+  };
+};
+
+export type MarketplaceServiceReviewSummary = {
+  averageRating: number | null;
+  count: number;
+};
+
+export type CreateMarketplaceServiceReviewInput = {
+  serviceId: string;
+  bookingId: string;
+  rating: number;
+  comment?: string;
+};
+
+export type CreateMarketplaceServiceReviewResult = {
+  id: string;
+  serviceId: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+};
+
+export async function createMarketplaceServiceReview(
+  input: CreateMarketplaceServiceReviewInput,
+): Promise<CreateMarketplaceServiceReviewResult> {
+  const res = await authFetch("/api/reviews/marketplace-service", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+    networkErrorMessage: "Network error while submitting your review.",
+  });
+
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, data);
+  }
+
+  return (data as ApiEnvelope<CreateMarketplaceServiceReviewResult>).data;
+}
+
+export async function getMarketplaceServiceReviewSummary(
+  serviceId: string,
+): Promise<MarketplaceServiceReviewSummary> {
+  const json = await apiGet<unknown>(
+    `/api/reviews/marketplace-services/${encodeURIComponent(serviceId)}/summary`,
+  );
+  return unwrapApiGet<MarketplaceServiceReviewSummary>(json);
+}
+
+export async function getMarketplaceServiceReviews(
+  serviceId: string,
+  page = 1,
+  limit = 10,
+) {
+  const json = await apiGet<unknown>(
+    `/api/reviews/marketplace-services/${encodeURIComponent(serviceId)}?page=${page}&limit=${limit}`,
+  );
+  return unwrapApiGet<{
+    data: MarketplaceServiceReview[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+  }>(json);
+}

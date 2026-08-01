@@ -26,6 +26,7 @@ import {
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  type NotificationAudience,
 } from '@/features/notifications/api'
 import { notificationsQueryKey } from '@/features/auth/auth-cache'
 import { useAuth } from '@/features/auth/auth-context'
@@ -58,9 +59,15 @@ function formatNotificationTime(createdAt: string) {
 type NotificationsListProps = {
   className?: string
   embedded?: boolean
+  /** When set, only notifications for this audience are shown / marked read. */
+  audience?: NotificationAudience
 }
 
-export default function NotificationsList({ className, embedded }: NotificationsListProps) {
+export default function NotificationsList({
+  className,
+  embedded,
+  audience,
+}: NotificationsListProps) {
   const t = useTranslations('notifications')
   const { user, isAuthenticated, isReady } = useAuth()
   const queryClient = useQueryClient()
@@ -68,8 +75,8 @@ export default function NotificationsList({ className, embedded }: Notifications
   const [openId, setOpenId] = useState<string | null>(null)
 
   const { data: allNotifications = [], isLoading, isError } = useQuery({
-    queryKey: notificationsQueryKey(user?.id, 'all'),
-    queryFn: () => listNotifications('all'),
+    queryKey: notificationsQueryKey(user?.id, `all:${audience ?? 'any'}`),
+    queryFn: () => listNotifications('all', audience),
     enabled: isAuthenticated && isReady && !!user?.id,
   })
 
@@ -84,7 +91,7 @@ export default function NotificationsList({ className, embedded }: Notifications
   const readCount = allNotifications.filter((n) => n.isRead).length
 
   const markAllMutation = useMutation({
-    mutationFn: markAllNotificationsRead,
+    mutationFn: () => markAllNotificationsRead(audience),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },

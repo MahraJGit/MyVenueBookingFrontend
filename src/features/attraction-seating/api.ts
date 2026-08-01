@@ -7,6 +7,8 @@ import type {
   PublicSeatSection,
   SeatingInventoryAction,
   SeatingSectionInput,
+  SeatMapFocalPoint,
+  SectionGeometry,
 } from "@/features/seating/api";
 
 async function parseJson<T>(res: Response): Promise<T> {
@@ -29,7 +31,14 @@ function unwrapEnvelope<T>(json: SuccessEnvelope<T>): T {
   return json.data;
 }
 
-export type { SeatingSectionInput, HoldSeatsResult, PublicSeat, PublicSeatSection };
+export type {
+  SeatingSectionInput,
+  HoldSeatsResult,
+  PublicSeat,
+  PublicSeatSection,
+  SeatMapFocalPoint,
+  SectionGeometry,
+};
 
 export type AttractionPublicSeatingMap = {
   occurrenceId: string;
@@ -38,6 +47,7 @@ export type AttractionPublicSeatingMap = {
   name: string;
   seatingEnabled: boolean;
   holdTtlSeconds: number;
+  focalPoint?: SeatMapFocalPoint | null;
   sections: PublicSeatSection[];
 };
 
@@ -46,6 +56,7 @@ export type AttractionManagedSeatingLayout = {
   name?: string;
   slug?: string;
   seatingEnabled: boolean;
+  focalPoint?: SeatMapFocalPoint | null;
   stats?: {
     available: number;
     blocked: number;
@@ -57,25 +68,27 @@ export type AttractionManagedSeatingLayout = {
     updatedShows: number;
     preservedShows: number;
   };
-  sections: Array<{
-    id: string;
-    ticketTypeId: string;
-    name: string;
-    color: string;
-    sortOrder: number;
-    seats: Array<{
+  sections: Array<
+    SectionGeometry & {
       id: string;
-      label: string;
-      rowLabel: string;
-      seatNumber: number;
-      rowIndex: number;
-      colIndex: number;
-      isActive: boolean;
-      status: string;
-      offlineSold?: boolean;
-      offlineSoldNote?: string | null;
-    }>;
-  }>;
+      ticketTypeId: string;
+      name: string;
+      color: string;
+      sortOrder: number;
+      seats: Array<{
+        id: string;
+        label: string;
+        rowLabel: string;
+        seatNumber: number;
+        rowIndex: number;
+        colIndex: number;
+        isActive: boolean;
+        status: string;
+        offlineSold?: boolean;
+        offlineSoldNote?: string | null;
+      }>;
+    }
+  >;
 };
 
 export async function getAttractionOccurrenceSeating(
@@ -122,7 +135,11 @@ export async function getManagedAttractionSeating(
 
 export async function putManagedAttractionSeating(
   attractionId: string,
-  body: { seatingEnabled: boolean; sections: SeatingSectionInput[] },
+  body: {
+    seatingEnabled: boolean;
+    sections: SeatingSectionInput[];
+    focalPoint?: SeatMapFocalPoint | null;
+  },
 ): Promise<AttractionManagedSeatingLayout> {
   const res = await authFetch(
     `/api/attractions/manage/${encodeURIComponent(attractionId)}/seating`,
