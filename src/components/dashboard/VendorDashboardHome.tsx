@@ -39,16 +39,21 @@ function StatCard({
   viewAllLabel: string;
 }) {
   return (
-    <Card className="border-[#303030] bg-[#1B1B1B]">
+    <Card className="flex h-full flex-col border-[#303030] bg-[#1B1B1B]">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="flex flex-1 flex-col gap-2">
         <p className="text-3xl font-bold text-white">{value}</p>
         <p className="text-xs text-muted-foreground">{hint}</p>
-        <Button asChild size="sm" variant="outline" className="border-[#303030]">
+        <Button
+          asChild
+          size="sm"
+          variant="outline"
+          className="mt-auto w-fit border-[#303030]"
+        >
           <Link href={href}>{viewAllLabel}</Link>
         </Button>
       </CardContent>

@@ -180,6 +180,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
         >
           <NumberInput
             min={0}
+            integer
             value={value.basePrice}
             onValueChange={(price) => {
               const next = price ?? 0;
@@ -326,6 +327,7 @@ export function PricingModelFields({ value, onChange, showErrors }: PricingModel
               <div className="flex gap-2">
                 <NumberInput
                   min={0}
+                  integer
                   placeholder={t("pricePlaceholder")}
                   value={Number(slot.price) || 0}
                   onValueChange={(price) => {

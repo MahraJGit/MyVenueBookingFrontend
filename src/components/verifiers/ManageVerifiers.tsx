@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Loader2, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { ChevronsUpDown, Eye, EyeOff, Loader2, Pencil, Plus, ShieldCheck, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -77,6 +81,12 @@ type FormState = {
   attractionIds: string[];
 };
 
+type AssignmentOption = {
+  id: string;
+  title: string;
+  subtitle?: string;
+};
+
 const emptyForm = (): FormState => ({
   username: "",
   password: "",
@@ -86,26 +96,154 @@ const emptyForm = (): FormState => ({
   attractionIds: [],
 });
 
+function AssignmentMultiSelect({
+  label,
+  placeholder,
+  searchPlaceholder,
+  options,
+  selectedIds,
+  onToggle,
+  loading,
+  disabled,
+  emptyLabel,
+  noMatchLabel,
+  selectedCountLabel,
+}: {
+  label: string;
+  placeholder: string;
+  searchPlaceholder: string;
+  options: AssignmentOption[];
+  selectedIds: string[];
+  onToggle: (id: string, checked: boolean) => void;
+  loading?: boolean;
+  disabled?: boolean;
+  emptyLabel: string;
+  noMatchLabel: string;
+  selectedCountLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return options;
+    return options.filter(
+      (option) =>
+        option.title.toLowerCase().includes(term) ||
+        (option.subtitle?.toLowerCase().includes(term) ?? false),
+    );
+  }, [options, search]);
+
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Popover
+        modal
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setSearch("");
+        }}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            disabled={disabled || loading}
+            className="h-auto min-h-9 w-full justify-between border-white/10 bg-transparent px-3 py-2 text-left font-normal hover:bg-white/5"
+          >
+            <span className="truncate text-sm">
+              {loading
+                ? "…"
+                : selectedIds.length > 0
+                  ? selectedCountLabel
+                  : placeholder}
+            </span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="z-[90] w-[var(--radix-popover-trigger-width)] border-white/10 bg-[#1B1B1B] p-2"
+          align="start"
+        >
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={searchPlaceholder}
+            className="mb-2 h-8"
+            disabled={disabled || loading}
+          />
+          <div className="max-h-48 space-y-1 overflow-y-auto">
+            {loading ? (
+              <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <p className="py-2 text-sm text-muted-foreground">
+                {search.trim() ? noMatchLabel : emptyLabel}
+              </p>
+            ) : (
+              filtered.map((option) => {
+                const checked = selectedIds.includes(option.id);
+                return (
+                  <label
+                    key={option.id}
+                    className="flex cursor-pointer items-start gap-3 rounded-md p-1.5 hover:bg-white/5"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(value) =>
+                        onToggle(option.id, value === true)
+                      }
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium">
+                        {option.title}
+                      </span>
+                      {option.subtitle ? (
+                        <span className="block text-xs text-muted-foreground">
+                          {option.subtitle}
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+      {selectedIds.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {options
+            .filter((option) => selectedIds.includes(option.id))
+            .map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className="inline-flex max-w-full items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-muted-foreground hover:text-white"
+                onClick={() => onToggle(option.id, false)}
+              >
+                <span className="truncate">{option.title}</span>
+                <X className="h-3 w-3 shrink-0" />
+              </button>
+            ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
   const t = useTranslations("verifiers");
+  const tAuth = useTranslations("auth");
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = scope === "admin";
-  const searchParams = useSearchParams();
-  const initialTab =
-    searchParams.get("tab") === "attractions" ? "attractions" : "events";
 
   const [search, setSearch] = useState("");
-  const [eventSearch, setEventSearch] = useState("");
-  const [attractionSearch, setAttractionSearch] = useState("");
-  const [assignmentTab, setAssignmentTab] = useState<"events" | "attractions">(
-    initialTab,
-  );
-
-  useEffect(() => {
-    setAssignmentTab(initialTab);
-  }, [initialTab]);
-
   const [vendorFilter, setVendorFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<VerifierRow | null>(null);
@@ -113,6 +251,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
   const [viewingAttractions, setViewingAttractions] =
     useState<VerifierRow | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [showPassword, setShowPassword] = useState(false);
 
   const listParams = useMemo(
     () => ({
@@ -182,20 +321,12 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
       }
     }
 
-    const term = eventSearch.trim().toLowerCase();
-    return Array.from(byId.values())
-      .filter((event) =>
-        term
-          ? event.eventName.toLowerCase().includes(term) ||
-            event.city.toLowerCase().includes(term)
-          : true,
-      )
-      .sort(
-        (a, b) =>
-          new Date(a.startDateTime).getTime() -
-          new Date(b.startDateTime).getTime(),
-      );
-  }, [eventsQuery.data, editing, eventSearch]);
+    return Array.from(byId.values()).sort(
+      (a, b) =>
+        new Date(a.startDateTime).getTime() -
+        new Date(b.startDateTime).getTime(),
+    );
+  }, [eventsQuery.data, editing]);
 
   const assignableAttractions = useMemo(() => {
     const byId = new Map(
@@ -221,16 +352,44 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
       }
     }
 
-    const term = attractionSearch.trim().toLowerCase();
-    return Array.from(byId.values())
-      .filter((attraction) =>
-        term
-          ? attraction.name.toLowerCase().includes(term) ||
-            attraction.city.toLowerCase().includes(term)
-          : true,
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [attractionsQuery.data, editing, attractionSearch]);
+    return Array.from(byId.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+  }, [attractionsQuery.data, editing]);
+
+  const eventOptions = useMemo<AssignmentOption[]>(
+    () =>
+      assignableEvents.map((event) => ({
+        id: event.id,
+        title: event.eventName,
+        subtitle: [
+          new Date(event.startDateTime).toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            ...("timezone" in event && event.timezone
+              ? { timeZone: event.timezone as string }
+              : {}),
+          }),
+          event.city || null,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      })),
+    [assignableEvents],
+  );
+
+  const attractionOptions = useMemo<AssignmentOption[]>(
+    () =>
+      assignableAttractions.map((attraction) => ({
+        id: attraction.id,
+        title: attraction.name,
+        subtitle: attraction.city || undefined,
+      })),
+    [assignableAttractions],
+  );
 
   useEffect(() => {
     if (verifiersQuery.isError) {
@@ -297,17 +456,13 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm());
-    setEventSearch("");
-    setAttractionSearch("");
-    setAssignmentTab(initialTab);
+    setShowPassword(false);
     setDialogOpen(true);
   };
 
   const openEdit = (row: VerifierRow) => {
     setEditing(row);
-    setEventSearch("");
-    setAttractionSearch("");
-    setAssignmentTab(initialTab);
+    setShowPassword(false);
     setForm({
       username: row.username,
       password: "",
@@ -358,8 +513,12 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
       toast.error(t("vendorRequired"));
       return;
     }
-    if (!form.username.trim() || !form.password.trim()) {
-      toast.error(t("credentialsRequired"));
+    if (!form.username.trim()) {
+      toast.error(t("usernameRequired"));
+      return;
+    }
+    if (!form.password.trim()) {
+      toast.error(t("passwordRequired"));
       return;
     }
     if (!form.displayName.trim()) {
@@ -701,8 +860,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
           if (!open) {
             setEditing(null);
             setForm(emptyForm());
-            setEventSearch("");
-            setAttractionSearch("");
+            setShowPassword(false);
           }
         }}
       >
@@ -772,18 +930,35 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
               <Label htmlFor="verifier-password">
                 {editing ? t("passwordOptional") : t("password")}
               </Label>
-              <Input
-                id="verifier-password"
-                type="password"
-                value={form.password}
-                autoComplete="new-password"
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, password: e.target.value }))
-                }
-                placeholder={
-                  editing ? t("passwordLeaveBlank") : t("passwordPlaceholder")
-                }
-              />
+              <div className="relative">
+                <Input
+                  id="verifier-password"
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  autoComplete="new-password"
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, password: e.target.value }))
+                  }
+                  placeholder={
+                    editing ? t("passwordLeaveBlank") : t("passwordPlaceholder")
+                  }
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={
+                    showPassword ? tAuth("hidePassword") : tAuth("showPassword")
+                  }
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" aria-hidden />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden />
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -799,132 +974,42 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label>
-                {assignmentTab === "attractions"
-                  ? t("assignAttractions")
-                  : t("assignEvents")}
-              </Label>
-              {assignmentTab === "events" ? (
-                <>
-                  <Input
-                    value={eventSearch}
-                    onChange={(e) => setEventSearch(e.target.value)}
-                    placeholder={t("searchEventsPlaceholder")}
-                    disabled={
-                      eventsQuery.isLoading ||
-                      (isAdmin && !assignVendorId)
-                    }
-                  />
-                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-white/10 p-2">
-                    {eventsQuery.isLoading ? (
-                      <div className="flex items-center gap-2 py-1 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {t("loadingEvents")}
-                      </div>
-                    ) : isAdmin && !assignVendorId ? (
-                      <p className="py-1 text-sm text-muted-foreground">
-                        {t("selectVendorFirst")}
-                      </p>
-                    ) : assignableEvents.length === 0 ? (
-                      <p className="py-1 text-sm text-muted-foreground">
-                        {eventSearch.trim()
-                          ? t("noEventsMatchSearch")
-                          : t("noAssignableEvents")}
-                      </p>
-                    ) : (
-                      assignableEvents.map((event) => {
-                        const checked = form.eventIds.includes(event.id);
-                        return (
-                          <label
-                            key={event.id}
-                            className="flex cursor-pointer items-start gap-3 rounded-md p-1.5 hover:bg-white/5"
-                          >
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={(value) =>
-                                toggleEvent(event.id, value === true)
-                              }
-                            />
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-sm font-medium">
-                                {event.eventName}
-                              </span>
-                              <span className="block text-xs text-muted-foreground">
-                                {new Date(event.startDateTime).toLocaleString(undefined, {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  ...(event.timezone ? { timeZone: event.timezone } : {}),
-                                })}
-                                {event.city ? ` · ${event.city}` : ""}
-                              </span>
-                            </span>
-                          </label>
-                        );
-                      })
-                    )}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <Input
-                    value={attractionSearch}
-                    onChange={(e) => setAttractionSearch(e.target.value)}
-                    placeholder={t("searchAttractionsPlaceholder")}
-                    disabled={
-                      attractionsQuery.isLoading ||
-                      (isAdmin && !assignVendorId)
-                    }
-                  />
-                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-white/10 p-2">
-                    {attractionsQuery.isLoading ? (
-                      <div className="flex items-center gap-2 py-1 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {t("loadingAttractions")}
-                      </div>
-                    ) : isAdmin && !assignVendorId ? (
-                      <p className="py-1 text-sm text-muted-foreground">
-                        {t("selectVendorFirst")}
-                      </p>
-                    ) : assignableAttractions.length === 0 ? (
-                      <p className="py-1 text-sm text-muted-foreground">
-                        {attractionSearch.trim()
-                          ? t("noAttractionsMatchSearch")
-                          : t("noAssignableAttractions")}
-                      </p>
-                    ) : (
-                      assignableAttractions.map((attraction) => {
-                        const checked = form.attractionIds.includes(attraction.id);
-                        return (
-                          <label
-                            key={attraction.id}
-                            className="flex cursor-pointer items-start gap-3 rounded-md p-1.5 hover:bg-white/5"
-                          >
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={(value) =>
-                                toggleAttraction(attraction.id, value === true)
-                              }
-                            />
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-sm font-medium">
-                                {attraction.name}
-                              </span>
-                              <span className="block text-xs text-muted-foreground">
-                                {attraction.city || "—"}
-                              </span>
-                            </span>
-                          </label>
-                        );
-                      })
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+            {isAdmin && !assignVendorId ? (
+              <p className="text-sm text-muted-foreground">
+                {t("selectVendorFirst")}
+              </p>
+            ) : (
+              <>
+                <AssignmentMultiSelect
+                  label={t("assignEvents")}
+                  placeholder={t("selectEventsPlaceholder")}
+                  searchPlaceholder={t("searchEventsPlaceholder")}
+                  options={eventOptions}
+                  selectedIds={form.eventIds}
+                  onToggle={toggleEvent}
+                  loading={eventsQuery.isLoading}
+                  emptyLabel={t("noAssignableEvents")}
+                  noMatchLabel={t("noEventsMatchSearch")}
+                  selectedCountLabel={t("eventCount", {
+                    count: form.eventIds.length,
+                  })}
+                />
+                <AssignmentMultiSelect
+                  label={t("assignAttractions")}
+                  placeholder={t("selectAttractionsPlaceholder")}
+                  searchPlaceholder={t("searchAttractionsPlaceholder")}
+                  options={attractionOptions}
+                  selectedIds={form.attractionIds}
+                  onToggle={toggleAttraction}
+                  loading={attractionsQuery.isLoading}
+                  emptyLabel={t("noAssignableAttractions")}
+                  noMatchLabel={t("noAttractionsMatchSearch")}
+                  selectedCountLabel={t("attractionCount", {
+                    count: form.attractionIds.length,
+                  })}
+                />
+              </>
+            )}
 
             <DialogFooter className="shrink-0 pt-1">
               <Button

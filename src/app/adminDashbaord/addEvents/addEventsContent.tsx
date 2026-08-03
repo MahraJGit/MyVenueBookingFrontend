@@ -45,8 +45,10 @@ import {
     findCatalogCity,
     findCatalogCityFromHint,
     MAP_LOCATION_TOAST_ID,
+    resolveCitySelectValue,
     uniqueCityTimezones,
     withSavedCityOption,
+    withSavedCountryOption,
     type PendingMapCity,
 } from "@/features/locations/match"
 import { locationKeys } from "@/features/locations/query-keys"
@@ -305,6 +307,7 @@ export default function AddEventsContentPage() {
     const coverInputRef = React.useRef<HTMLInputElement>(null)
     const thumbnailInputRef = React.useRef<HTMLInputElement>(null)
     const hydratedEventIdRef = React.useRef<string | null>(null)
+    const [hasHydratedEdit, setHasHydratedEdit] = React.useState(!editId)
 
     const { data: existing, isLoading: loadingEvent } = useQuery({
         queryKey: ["managed-event", editId],
@@ -321,7 +324,7 @@ export default function AddEventsContentPage() {
         queryFn: () => listEventCategories({ isActive: true }),
     })
 
-    const { data: countries = [] } = useQuery({
+    const { data: countries = [], isLoading: loadingCountries, isSuccess: countriesReady } = useQuery({
         queryKey: locationKeys.countries(true),
         queryFn: () => listCountries({ activeOnly: true }),
     })
@@ -357,6 +360,11 @@ export default function AddEventsContentPage() {
     const timezoneOptions = React.useMemo(
         () => uniqueCityTimezones(cities, timezone, savedTimezone),
         [cities, timezone, savedTimezone],
+    )
+
+    const countryOptions = React.useMemo(
+        () => withSavedCountryOption(countries, countryCode || existing?.countryCode),
+        [countries, countryCode, existing?.countryCode],
     )
 
     const cityOptions = React.useMemo(
@@ -437,14 +445,15 @@ export default function AddEventsContentPage() {
         setVenueName(existing.venueName ?? "")
         setVenuePhone(existing.venuePhone ?? "")
         setVenueWebsite(existing.venueWebsite ?? "https://example.com")
-        setCountryCode(existing.countryCode)
-        setCity(existing.city)
+        setCountryCode(existing.countryCode?.trim().toUpperCase() || "AE")
+        setCity(existing.city?.trim() ?? "")
         setState(existing.state ?? "")
         setAddress(existing.address ?? "")
         setZipCode(existing.zipCode ?? "")
         setLatitude(String(existing.latitude))
         setLongitude(String(existing.longitude))
         setLocationSource(existing.locationSource)
+        setPendingMapCity(null)
 
         const eventTz = existing.timezone?.trim() || "UTC"
         const toLocal = (iso: string) => utcIsoToDatetimeLocalValue(iso, eventTz)
@@ -468,7 +477,16 @@ export default function AddEventsContentPage() {
                 : [defaultTicket(t("generalTicket"))],
         )
         setSeatingLoaded(false)
+        setHasHydratedEdit(true)
     }, [existing, t])
+
+    React.useEffect(() => {
+        if (!editId || !city.trim() || !citiesReady || citiesFetching) return
+        const resolved = resolveCitySelectValue(cityOptions, city)
+        if (resolved && resolved !== city) {
+            setCity(resolved)
+        }
+    }, [editId, city, cityOptions, citiesReady, citiesFetching])
 
     React.useEffect(() => {
         if (!editId || !existing?.id || seatingLoaded) return
@@ -523,6 +541,7 @@ export default function AddEventsContentPage() {
         setCategoryOverride(null)
         setTimezoneOverride(null)
         hydratedEventIdRef.current = null
+        setHasHydratedEdit(!editId)
         setSeatingEnabled(false)
         setSeatingSections([])
         setSeatingFocal(null)
@@ -857,7 +876,15 @@ export default function AddEventsContentPage() {
         setTagInput("")
     }
 
-    if (editId && (loadingEvent || loadingEventCategories || !existing)) {
+    if (
+        editId &&
+        (loadingEvent ||
+            loadingEventCategories ||
+            loadingCountries ||
+            !countriesReady ||
+            !existing ||
+            !hasHydratedEdit)
+    ) {
         return (
             <div className="flex justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -1217,7 +1244,8 @@ export default function AddEventsContentPage() {
                         <div className="space-y-2">
                             <Label htmlFor="country-code">{t("countryCode")}</Label>
                             <Select
-                                value={countryCode}
+                                key={`event-country-${countryOptions.length}-${countryCode}`}
+                                value={countryCode || undefined}
                                 onValueChange={(nextCountryCode) => {
                                     setCountryCode(nextCountryCode)
                                     setCity("")
@@ -1229,7 +1257,7 @@ export default function AddEventsContentPage() {
                                     <SelectValue placeholder={tForms("country")} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {countries.map((country) => (
+                                    {countryOptions.map((country) => (
                                         <SelectItem key={country.id} value={country.code}>
                                             {country.name}
                                         </SelectItem>
@@ -1275,7 +1303,8 @@ export default function AddEventsContentPage() {
                         <div className="space-y-2">
                             <Label htmlFor="event-city">{tForms("city")}</Label>
                             <Select
-                                value={city}
+                                key={`event-city-${cityOptions.length}-${city}`}
+                                value={city || undefined}
                                 onValueChange={handleCityChange}
                                 disabled={!countryCode}
                             >
@@ -1477,7 +1506,7 @@ export default function AddEventsContentPage() {
                                         required
                                         type="number"
                                         min={0}
-                                        step="0.01"
+                                        step={1}
                                         value={ticket.price}
                                         onChange={(e) =>
                                             setTickets((rows) =>

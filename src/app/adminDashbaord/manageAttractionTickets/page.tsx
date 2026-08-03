@@ -453,11 +453,11 @@ function SalesLogTable({
   tAdmin: ReturnType<typeof useTranslations<"adminDashboard">>;
   tCommon: ReturnType<typeof useTranslations<"common">>;
 }) {
-  const colSpan = isAdmin ? 9 : 8;
+  const colSpan = isAdmin ? 10 : 9;
 
   return (
     <Table
-      className={cn(dashboardTableClass, "min-w-[1100px]")}
+      className={cn(dashboardTableClass, "min-w-[1200px]")}
       containerClassName={dashboardTableContainerClass}
     >
       <TableHeader>
@@ -467,6 +467,9 @@ function SalesLogTable({
           </TableHead>
           <TableHead className="min-w-[180px] whitespace-nowrap text-muted-foreground">
             {tAdmin("tableAttraction")}
+          </TableHead>
+          <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
+            {t("showDate")}
           </TableHead>
           <TableHead className="min-w-[140px] whitespace-nowrap text-muted-foreground">
             {t("ticketType")}
@@ -505,6 +508,11 @@ function SalesLogTable({
                 {row.orderCode ?? "—"}
               </TableCell>
               <TableCell className="font-medium">{row.attractionName}</TableCell>
+              <TableCell className="whitespace-nowrap text-muted-foreground">
+                {row.occurrenceStartDateTime
+                  ? formatDateTime(row.occurrenceStartDateTime, row.timezone)
+                  : "—"}
+              </TableCell>
               <TableCell>{row.ticketTypeName}</TableCell>
               <TableCell>
                 <div className="text-sm">

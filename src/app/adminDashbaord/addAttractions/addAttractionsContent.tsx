@@ -47,8 +47,10 @@ import {
   findCatalogCity,
   findCatalogCityFromHint,
   MAP_LOCATION_TOAST_ID,
+  resolveCitySelectValue,
   uniqueCityTimezones,
   withSavedCityOption,
+  withSavedCountryOption,
   type PendingMapCity,
 } from "@/features/locations/match"
 import { locationKeys } from "@/features/locations/query-keys"
@@ -169,6 +171,7 @@ export default function AddAttractionsContentPage() {
   const coverInputRef = React.useRef<HTMLInputElement>(null)
   const thumbnailInputRef = React.useRef<HTMLInputElement>(null)
   const hydratedIdRef = React.useRef<string | null>(null)
+  const [hasHydratedEdit, setHasHydratedEdit] = React.useState(!editId)
 
   const { data: existing, isLoading: loadingAttraction } = useQuery({
     queryKey: ["managed-attraction", editId],
@@ -185,7 +188,7 @@ export default function AddAttractionsContentPage() {
     queryFn: () => listAttractionCategories({ isActive: true }),
   })
 
-  const { data: countries = [] } = useQuery({
+  const { data: countries = [], isLoading: loadingCountries, isSuccess: countriesReady } = useQuery({
     queryKey: locationKeys.countries(true),
     queryFn: () => listCountries({ activeOnly: true }),
   })
@@ -218,6 +221,11 @@ export default function AddAttractionsContentPage() {
   const timezoneOptions = React.useMemo(
     () => uniqueCityTimezones(cities, timezone, savedTimezone),
     [cities, timezone, savedTimezone],
+  )
+
+  const countryOptions = React.useMemo(
+    () => withSavedCountryOption(countries, countryCode || existing?.countryCode),
+    [countries, countryCode, existing?.countryCode],
   )
 
   const cityOptions = React.useMemo(
@@ -270,6 +278,11 @@ export default function AddAttractionsContentPage() {
   }, [pendingMapCity, cities, citiesReady, citiesFetching, countryCode, t])
 
   React.useEffect(() => {
+    setHasHydratedEdit(!editId)
+    hydratedIdRef.current = null
+  }, [editId])
+
+  React.useEffect(() => {
     if (!existing?.id) return
     if (hydratedIdRef.current === existing.id) return
     hydratedIdRef.current = existing.id
@@ -285,14 +298,15 @@ export default function AddAttractionsContentPage() {
     setVenueName(existing.venueName ?? "")
     setVenuePhone(existing.venuePhone ?? "")
     setVenueWebsite(existing.venueWebsite ?? "https://example.com")
-    setCountryCode(existing.countryCode)
-    setCity(existing.city)
+    setCountryCode(existing.countryCode?.trim().toUpperCase() || "AE")
+    setCity(existing.city?.trim() ?? "")
     setState(existing.state ?? "")
     setAddress(existing.address ?? "")
     setZipCode(existing.zipCode ?? "")
     setLatitude(String(existing.latitude))
     setLongitude(String(existing.longitude))
     setLocationSource(existing.locationSource)
+    setPendingMapCity(null)
     setDaysOfWeek(existing.daysOfWeek?.length ? existing.daysOfWeek : [1, 2, 3, 4, 5])
     setMaterializeHorizonDays(
       Math.min(365, Math.max(1, existing.materializeHorizonDays ?? 60)),
@@ -318,7 +332,17 @@ export default function AddAttractionsContentPage() {
     )
     setSeatingEnabled(Boolean(existing.seatingEnabled))
     setSeatingLoaded(false)
+    setHasHydratedEdit(true)
   }, [existing, t])
+
+  // Align city Select value to catalog spelling once options are loaded.
+  React.useEffect(() => {
+    if (!editId || !city.trim() || !citiesReady || citiesFetching) return
+    const resolved = resolveCitySelectValue(cityOptions, city)
+    if (resolved && resolved !== city) {
+      setCity(resolved)
+    }
+  }, [editId, city, cityOptions, citiesReady, citiesFetching])
 
   React.useEffect(() => {
     if (!editId || !existing?.id || seatingLoaded) return
@@ -790,7 +814,15 @@ export default function AddAttractionsContentPage() {
     setGalleryUrls((prev) => prev.filter((_, i) => i !== index))
   }
 
-  if (editId && (loadingAttraction || loadingAttractionCategories || !existing)) {
+  if (
+    editId &&
+    (loadingAttraction ||
+      loadingAttractionCategories ||
+      loadingCountries ||
+      !countriesReady ||
+      !existing ||
+      !hasHydratedEdit)
+  ) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -1150,7 +1182,8 @@ export default function AddAttractionsContentPage() {
               <div className="space-y-2">
                 <Label htmlFor="country-code">{t("countryCode")}</Label>
                 <Select
-                  value={countryCode}
+                  key={`attraction-country-${countryOptions.length}-${countryCode}`}
+                  value={countryCode || undefined}
                   onValueChange={(nextCountryCode) => {
                     setCountryCode(nextCountryCode)
                     setCity("")
@@ -1162,7 +1195,7 @@ export default function AddAttractionsContentPage() {
                     <SelectValue placeholder={tForms("country")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {countries.map((country) => (
+                    {countryOptions.map((country) => (
                       <SelectItem key={country.id} value={country.code}>
                         {country.name}
                       </SelectItem>
@@ -1208,7 +1241,8 @@ export default function AddAttractionsContentPage() {
               <div className="space-y-2">
                 <Label htmlFor="attraction-city">{tForms("city")}</Label>
                 <Select
-                  value={city}
+                  key={`attraction-city-${cityOptions.length}-${city}`}
+                  value={city || undefined}
                   onValueChange={handleCityChange}
                   disabled={!countryCode}
                 >
@@ -1483,7 +1517,7 @@ export default function AddAttractionsContentPage() {
                       required
                       type="number"
                       min={0}
-                      step="0.01"
+                      step={1}
                       value={ticket.price}
                       onChange={(e) =>
                         setTickets((rows) =>

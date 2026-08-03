@@ -63,6 +63,8 @@ export type AttractionTicketSaleRecord = {
   currency: string;
   status: string;
   purchasedAt: string;
+  occurrenceStartDateTime: string | null;
+  timezone: string | null;
   vendorName: string | null;
   buyer: {
     id: string;

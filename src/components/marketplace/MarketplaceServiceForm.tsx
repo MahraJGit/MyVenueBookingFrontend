@@ -586,6 +586,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                   value={basePrice ?? undefined}
                   onValueChange={(v) => setBasePrice(v ?? null)}
                   min={0}
+                  integer
                 />
               </div>
               <div className="flex items-start justify-between gap-4 rounded-lg border border-border/60 p-3 sm:col-span-2">
@@ -877,6 +878,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                           className={inputClass}
                           value={pkg.price}
                           min={0}
+                          integer
                           onValueChange={(v) =>
                             setPackages((prev) =>
                               prev.map((p, i) =>
@@ -979,6 +981,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                         className={inputClass}
                         value={item.price}
                         min={0}
+                        integer
                         onValueChange={(v) =>
                           setAddOns((prev) =>
                             prev.map((p, i) =>
@@ -1080,6 +1083,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                           className={inputClass}
                           value={item.price ?? undefined}
                           min={0}
+                          integer
                           onValueChange={(v) =>
                             setMenuItems((prev) =>
                               prev.map((p, i) =>

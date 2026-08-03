@@ -86,6 +86,7 @@ export default function Sidebar({
           <SidebarSection title={t('users')} value="users">
             <SidebarLink icon="/svg/AddUserMale.svg" label={t('manageUsers')} href="/adminDashbaord/users" onClose={onClose} />
             <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorRequests')} href="/adminDashbaord/vendorRequests" onClose={onClose} />
+            <SidebarLink icon="/svg/Collaborating.svg" label={t('verifiers')} href="/adminDashbaord/verifiers" onClose={onClose} />
             <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorMessages')} href="/adminDashbaord/messages" onClose={onClose} showUnreadBadge unreadContext="admin" />
           </SidebarSection>
 
@@ -101,7 +102,6 @@ export default function Sidebar({
             <SidebarLink icon="/svg/EventAccepted.svg" label={t('eventReviews')} href="/adminDashbaord/eventReviews" onClose={onClose} />
             <SidebarLink icon="/svg/EventAccepted.svg" label={t('myEvents')} href="/adminDashbaord/manageEvents" onClose={onClose} />
             <SidebarLink icon="/svg/NewTicket.svg" label={t('bookingTickets')} href="/adminDashbaord/manageTickets" onClose={onClose} />
-            <SidebarLink icon="/svg/Collaborating.svg" label={t('verifiers')} href="/adminDashbaord/verifiers" onClose={onClose} />
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('eventCategories')} href="/adminDashbaord/events" onClose={onClose} />
           </SidebarSection>
 
@@ -109,7 +109,6 @@ export default function Sidebar({
             <SidebarLink icon="/svg/EventAccepted.svg" label={t('attractionReviews')} href="/adminDashbaord/attractionReviews" onClose={onClose} />
             <SidebarLink icon="/svg/EventAccepted.svg" label={t('myAttractions')} href="/adminDashbaord/manageAttractions" onClose={onClose} />
             <SidebarLink icon="/svg/NewTicket.svg" label={t('attractionTickets')} href="/adminDashbaord/manageAttractionTickets" onClose={onClose} />
-            <SidebarLink icon="/svg/Collaborating.svg" label={t('attractionVerifiers')} href="/adminDashbaord/verifiers?tab=attractions" onClose={onClose} />
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('attractionCategories')} href="/adminDashbaord/attractionCategories" onClose={onClose} />
           </SidebarSection>
 

@@ -97,7 +97,8 @@ export function NumberInput({
   return (
     <Input
       {...props}
-      type="text"
+      type={integer ? "number" : "text"}
+      step={integer ? 1 : undefined}
       inputMode={integer ? "numeric" : "decimal"}
       className={cn(className)}
       value={draft}
@@ -118,6 +119,12 @@ export function NumberInput({
         setDraft(raw);
         const parsed = parseDraft(raw);
         onValueChange(parsed);
+      }}
+      onKeyDown={(event) => {
+        if (integer && (event.key === "." || event.key === "," || event.key === "e" || event.key === "E" || event.key === "+")) {
+          event.preventDefault();
+        }
+        props.onKeyDown?.(event);
       }}
     />
   );

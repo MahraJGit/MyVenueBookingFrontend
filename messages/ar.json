@@ -893,7 +893,7 @@
     "endDate": "End date",
     "eventDateLockedHint": "Date is set from the availability calendar.",
     "selectPackage": "Select package",
-    "noPackagesAvailable": "No packages are available for this service.",
+    "noPackagesAvailable": "لا توجد باقات متاحة لهذه الخدمة.",
     "customizeMenu": "Customize your menu",
     "customizeMenuHint": "Pick the required number of dishes for each course in your package.",
     "noMenuRules": "This package has no menu rules configured yet.",
@@ -902,10 +902,10 @@
     "selectAddOnsHint": "Optional extras for your event. Tap to select.",
     "serviceAreaOnlyHint": "Only locations this vendor serves are listed.",
     "noServiceCities": "This vendor has no service cities listed.",
-    "selectCountry": "Select country",
-    "selectCity": "Select city",
-    "selectCountryFirst": "Select a country first",
-    "noCities": "No cities available for this country.",
+    "selectCountry": "اختر الدولة",
+    "selectCity": "اختر المدينة",
+    "selectCountryFirst": "اختر الدولة أولاً",
+    "noCities": "لا توجد مدن لهذا البلد.",
     "hours": "Hours",
     "guests": "الضيوف",
     "city": "City",
@@ -980,12 +980,7 @@
       "CANCELLED": "Cancelled",
       "COMPLETED": "Completed",
       "EXPIRED": "Expired"
-    },
-    "noPackagesAvailable": "لا توجد باقات متاحة لهذه الخدمة.",
-    "selectCountry": "اختر الدولة",
-    "selectCity": "اختر المدينة",
-    "selectCountryFirst": "اختر الدولة أولاً",
-    "noCities": "لا توجد مدن لهذا البلد."
+    }
   },
   "vendorDashboard": {
     "title": "لوحة تحكم المزود",
@@ -1271,9 +1266,9 @@
     "noAttractionsYet": "لا توجد معالم بعد.",
     "editAttraction": "تعديل المعلم",
     "editAttractionTitle": "Edit attraction",
-    "createAttractionTitle": "Create attraction",
+    "createAttractionTitle": "Create Attraction",
     "updateAttraction": "Update attraction",
-    "createAttractionBtn": "Create attraction",
+    "createAttractionBtn": "Create Attraction",
     "attractionUpdated": "Attraction updated",
     "attractionCreated": "Attraction created",
     "couldNotSaveAttraction": "Could not save attraction.",
@@ -1986,7 +1981,7 @@
     "deleteConfirm": "Delete this verifier? They will no longer be able to scan tickets.",
     "vendor": "Vendor",
     "selectVendor": "Select vendor",
-    "selectVendorFirst": "Select a vendor to load their events.",
+    "selectVendorFirst": "Select a vendor to load their events and attractions.",
     "username": "Username",
     "usernamePlaceholder": "e.g. gate1",
     "password": "Password",
@@ -2017,7 +2012,10 @@
     "saveError": "Could not save verifier.",
     "deleteError": "Could not delete verifier.",
     "vendorRequired": "Select a vendor.",
-    "credentialsRequired": "Username and password are required."
+    "usernameRequired": "Username is required.",
+    "passwordRequired": "Password is required.",
+    "selectEventsPlaceholder": "Select events…",
+    "selectAttractionsPlaceholder": "Select attractions…"
   },
   "viewTicket": {
     "noOrderSelected": "لم يتم اختيار طلب",
@@ -2262,6 +2260,7 @@
     "noTicketTypes": "No ticket types",
     "noSalesRecords": "No sales records on this page.",
     "buyer": "Buyer",
+    "showDate": "تاريخ العرض",
     "couldNotLoad": "Could not load attraction ticket sales.",
     "groupByAttraction": "Group by attraction"
   },

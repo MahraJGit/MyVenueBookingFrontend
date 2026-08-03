@@ -4,7 +4,7 @@ import { useDisplayPrice } from "@/features/currency/currency-context";
 import { cn } from "@/lib/utils";
 
 type DisplayPriceProps = {
-  amount: number;
+  amount: number | string;
   currency: string;
   className?: string;
   as?: "span" | "p";

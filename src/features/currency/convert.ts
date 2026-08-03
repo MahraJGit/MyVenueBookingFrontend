@@ -27,19 +27,25 @@ export function fromBaseAmount(
   return amount * rate;
 }
 
+/** Coerce API Decimal strings (e.g. "50.00") to a finite number. */
+export function toFiniteAmount(amount: number | string): number {
+  const n = typeof amount === "number" ? amount : Number(amount);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export function convertAmount(
-  amount: number,
+  amount: number | string,
   from: string,
   to: string,
   rates: ExchangeRates,
   base: string = RATE_BASE_CURRENCY,
 ): number | null {
-  if (!Number.isFinite(amount)) return 0;
-  if (from === to) return amount;
+  const value = toFiniteAmount(amount);
+  if (from === to) return value;
   if (!rates || Object.keys(rates).length === 0) return null;
   if (from !== base && (!rates[from] || rates[from] <= 0)) return null;
   if (to !== base && (!rates[to] || rates[to] <= 0)) return null;
-  const inBase = toBaseAmount(amount, from, rates, base);
+  const inBase = toBaseAmount(value, from, rates, base);
   return fromBaseAmount(inBase, to, rates, base);
 }
 

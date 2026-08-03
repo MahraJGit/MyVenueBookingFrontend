@@ -84,13 +84,11 @@ export default function VendorSidebar({
           <SidebarSection title={t('eventsSection')} value="events">
             <SidebarLink icon={Clapperboard} label={t('myEvents')} href={paths.events} onClose={onClose} />
             <SidebarLink icon={Ticket} label={t('ticketSales')} href={paths.tickets} onClose={onClose} />
-            <SidebarLink icon={ShieldCheck} label={t('verifiers')} href={paths.verifiers} onClose={onClose} />
           </SidebarSection>
 
           <SidebarSection title={t('attractionsSection')} value="attractions">
             <SidebarLink icon={Clapperboard} label={t('myAttractions')} href={paths.attractions} onClose={onClose} />
             <SidebarLink icon={Ticket} label={t('attractionTickets')} href={paths.attractionTickets} onClose={onClose} />
-            <SidebarLink icon={ShieldCheck} label={t('attractionVerifiers')} href={`${paths.verifiers}?tab=attractions`} onClose={onClose} />
           </SidebarSection>
 
           <SidebarSection title={t('venuesSection')} value="venues">
@@ -112,6 +110,7 @@ export default function VendorSidebar({
           </SidebarSection>
 
           <SidebarSection title={t('account')} value="account">
+            <SidebarLink icon={ShieldCheck} label={t('verifiers')} href={paths.verifiers} onClose={onClose} />
             <SidebarLink icon={MessageCircle} label={t('messages')} href={`${paths.root}/messages`} onClose={onClose} showUnreadBadge unreadContext="vendor" />
             <SidebarLink icon={Bell} label={t('notifications')} href={`${paths.root}/notifications`} onClose={onClose} />
             <SidebarLink icon={Calendar} label={tNav('customerDashboard')} href="/userDashboard/tickets" onClose={onClose} />
@@ -175,16 +174,12 @@ function SidebarLink({
       (hrefPath !== paths.root && pathname.startsWith(`${hrefPath}/`))
 
   let isActive = pathMatches
-  if (isActive) {
+  if (isActive && hrefParams.size > 0) {
     for (const [key, value] of hrefParams.entries()) {
       if (searchParams.get(key) !== value) {
         isActive = false
         break
       }
-    }
-    // Plain verifiers link should not stay active on ?tab=attractions
-    if (isActive && !hrefParams.has('tab') && searchParams.get('tab')) {
-      isActive = false
     }
   }
 

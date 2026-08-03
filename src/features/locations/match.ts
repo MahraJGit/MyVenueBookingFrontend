@@ -102,6 +102,45 @@ export function withSavedCityOption(
   ];
 }
 
+/**
+ * Ensure a saved country code appears in Select options when it is missing from
+ * the active countries list (so edit forms do not render a blank country).
+ */
+export function withSavedCountryOption(
+  countries: Country[],
+  savedCountryCode: string | undefined | null,
+): Country[] {
+  const code = savedCountryCode?.trim().toUpperCase();
+  if (!code) return countries;
+  if (countries.some((country) => country.code.toUpperCase() === code)) {
+    return countries;
+  }
+  return [
+    {
+      id: `__saved-country-${code}`,
+      code,
+      name: code,
+      isActive: true,
+    },
+    ...countries,
+  ];
+}
+
+/**
+ * Canonical Select value for a saved city: prefer catalog spelling when the
+ * name matches exactly (case/spacing-insensitive). Avoids fuzzy remapping.
+ */
+export function resolveCitySelectValue(
+  cities: City[],
+  cityName: string | undefined | null,
+): string {
+  const trimmed = cityName?.trim() ?? "";
+  if (!trimmed) return "";
+  const normalized = normalizePlaceName(trimmed);
+  const exact = cities.find((city) => normalizePlaceName(city.name) === normalized);
+  return exact?.name ?? trimmed;
+}
+
 /** Shared sonner id so map location errors replace each other instead of stacking. */
 export const MAP_LOCATION_TOAST_ID = "map-location-feedback";
 

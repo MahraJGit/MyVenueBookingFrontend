@@ -1263,9 +1263,9 @@
     "noAttractionsYet": "ابھی کوئی تفریح نہیں۔",
     "editAttraction": "تفریح میں ترمیم",
     "editAttractionTitle": "Edit attraction",
-    "createAttractionTitle": "Create attraction",
+    "createAttractionTitle": "Create Attraction",
     "updateAttraction": "Update attraction",
-    "createAttractionBtn": "Create attraction",
+    "createAttractionBtn": "Create Attraction",
     "attractionUpdated": "Attraction updated",
     "attractionCreated": "Attraction created",
     "couldNotSaveAttraction": "Could not save attraction.",
@@ -1981,7 +1981,7 @@
     "deleteConfirm": "Delete this verifier? They will no longer be able to scan tickets.",
     "vendor": "Vendor",
     "selectVendor": "Select vendor",
-    "selectVendorFirst": "Select a vendor to load their events.",
+    "selectVendorFirst": "Select a vendor to load their events and attractions.",
     "username": "Username",
     "usernamePlaceholder": "e.g. gate1",
     "password": "Password",
@@ -2012,7 +2012,10 @@
     "saveError": "Could not save verifier.",
     "deleteError": "Could not delete verifier.",
     "vendorRequired": "Select a vendor.",
-    "credentialsRequired": "Username and password are required."
+    "usernameRequired": "Username is required.",
+    "passwordRequired": "Password is required.",
+    "selectEventsPlaceholder": "Select events…",
+    "selectAttractionsPlaceholder": "Select attractions…"
   },
   "viewTicket": {
     "noOrderSelected": "کوئی آرڈر منتخب نہیں",
@@ -2257,6 +2260,7 @@
     "noTicketTypes": "No ticket types",
     "noSalesRecords": "No sales records on this page.",
     "buyer": "Buyer",
+    "showDate": "شو کی تاریخ",
     "couldNotLoad": "Could not load attraction ticket sales.",
     "groupByAttraction": "Group by attraction"
   },

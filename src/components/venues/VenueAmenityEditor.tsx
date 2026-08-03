@@ -302,11 +302,12 @@ export function VenueAmenityEditor({
                 <FormField label={tCommon("price")} required={isAddon} error={priceError}>
                   <NumberInput
                     min={0}
+                    integer
                     value={form.price}
                     onValueChange={(price) => setForm({ ...form, price: price ?? 0 })}
                     aria-invalid={!!priceError}
                     className={fieldClassName(inputClass, !!priceError)}
-                    placeholder="0.00"
+                    placeholder="0"
                   />
                 </FormField>
                 {form.addonPricingType === "PER_UNIT" && (
@@ -374,6 +375,7 @@ export function VenueAmenityEditor({
                 <FormField label={t("unitPrice")} className="min-w-[100px] flex-1">
                   <NumberInput
                     min={0}
+                    integer
                     value={tier.unitPrice}
                     onValueChange={(unitPrice) => {
                       const bulkTiers = [...form.bulkTiers];
@@ -471,6 +473,7 @@ export function VenueAmenityEditor({
                   <FormField label={t("pricePerGuest")}>
                     <NumberInput
                       min={0}
+                      integer
                       value={pkg.pricePerHead}
                       onValueChange={(pricePerHead) => {
                         const packages = [...form.packages];

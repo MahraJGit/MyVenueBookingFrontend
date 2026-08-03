@@ -331,7 +331,7 @@ export function ServiceProposalForm({
                 className={dashboardInputClass}
                 type="number"
                 min={0}
-                step="any"
+                step={1}
                 placeholder={t("quantity")}
                 value={line.quantity}
                 onChange={(e) =>
@@ -341,7 +341,8 @@ export function ServiceProposalForm({
               <Input
                 className={dashboardInputClass}
                 type="number"
-                step="any"
+                min={0}
+                step={1}
                 placeholder={t("unitPrice")}
                 value={line.unitPrice}
                 onChange={(e) =>
