@@ -99,6 +99,7 @@ export type MarketplaceService = {
   baseCity?: string | null;
   status: EntityStatus;
   rejectionReason?: string | null;
+  instantBookingEnabled?: boolean;
   cancellationPolicy?: Record<string, unknown> | null;
   createdAt?: string;
   updatedAt?: string;
@@ -178,6 +179,7 @@ export type CreateMarketplaceServicePayload = {
   citiesServed?: string[];
   baseCity?: string | null;
   cancellationPolicy?: Record<string, unknown> | null;
+  instantBookingEnabled?: boolean;
   packages?: ServicePackagePayload[];
   addOns?: ServiceAddOnPayload[];
   menuItems?: ServiceMenuItemPayload[];
@@ -270,6 +272,7 @@ export type ServiceInquirySelection = {
   addOnIds?: string[];
   menuSelections?: Array<{ course: string; menuItemIds: string[] }>;
   hours?: number | null;
+  instantBooking?: boolean;
 };
 
 export type ServiceInquiry = {
@@ -391,7 +394,11 @@ export type ServiceBooking = {
     slug: string;
     coverImage?: string | null;
     currency?: string;
+    pricingModel?: ServicePricingModel | string;
+    customizationMode?: ServiceCustomizationMode | string;
     vendor?: { id: string; vendorName: string; userId?: string; email?: string } | null;
+    addOns?: ServiceAddOn[];
+    menuItems?: ServiceMenuItem[];
   } | null;
   buyer?: {
     id: string;
@@ -399,12 +406,16 @@ export type ServiceBooking = {
     lastName: string;
     email?: string;
   } | null;
-  vendor?: { id: string; vendorName: string; userId?: string } | null;
+  vendor?: { id: string; vendorName: string; userId?: string; email?: string } | null;
   proposal?: ServiceProposal | null;
   inquiry?: {
     id: string;
+    guestCount?: number | null;
+    notes?: string | null;
+    createdAt?: string;
     location?: ServiceLocation | Record<string, unknown>;
     selection?: ServiceInquirySelection | Record<string, unknown>;
+    package?: { id: string; name: string; price?: number | string } | null;
     conversation?: { id: string } | null;
   } | null;
 };
@@ -418,6 +429,13 @@ export type CreateServiceInquiryPayload = {
   location?: ServiceLocation;
   selection?: ServiceInquirySelection;
   notes?: string | null;
+};
+
+export type CreateInstantServiceBookingPayload = CreateServiceInquiryPayload;
+
+export type InstantServiceBookingResult = {
+  booking: ServiceBooking;
+  expiresAt: string;
 };
 
 export type CreateServiceProposalLinePayload = {

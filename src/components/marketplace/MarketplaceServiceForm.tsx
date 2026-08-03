@@ -34,6 +34,7 @@ import {
 import { SecureStoredImage } from "@/components/uploads/SecureStoredImage";
 import { ServicePublicPreviewDialog } from "@/components/marketplace/ServicePublicPreviewDialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   DashboardPageShell,
   DashboardPanel,
@@ -116,6 +117,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
   const [schedules, setSchedules] = useState<ScheduleRow[]>(
     defaultWeeklyServiceSchedules(),
   );
+  const [instantBookingEnabled, setInstantBookingEnabled] = useState(false);
   const [previewService, setPreviewService] =
     useState<ManagedMarketplaceService | null>(null);
 
@@ -183,32 +185,42 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
     );
     setCoverImage(existing.coverImage ?? "");
     setPortfolio(existing.portfolio ?? []);
+    setInstantBookingEnabled(Boolean(existing.instantBookingEnabled));
     setPackages(
-      (existing.packages ?? []).map((p, i) => ({
+      (existing.packages ?? []).map((p) => ({
         name: p.name,
         description: p.description ?? "",
         price: decimalToNumber(p.price),
         isActive: p.isActive !== false,
-        sortOrder: p.sortOrder ?? i,
+        sortOrder: p.sortOrder ?? 0,
+        menuRules: (p.menuRules ?? []).map((rule) => ({
+          course: rule.course,
+          chooseCount: rule.chooseCount,
+          menuItemIds: rule.menuItemIds ?? [],
+          extraPerGuest:
+            rule.extraPerGuest == null
+              ? null
+              : decimalToNumber(rule.extraPerGuest),
+        })),
       })),
     );
     setAddOns(
-      (existing.addOns ?? []).map((a, i) => ({
+      (existing.addOns ?? []).map((a) => ({
         name: a.name,
         description: a.description ?? "",
         price: decimalToNumber(a.price),
         isActive: a.isActive !== false,
-        sortOrder: a.sortOrder ?? i,
+        sortOrder: a.sortOrder ?? 0,
       })),
     );
     setMenuItems(
-      (existing.menuItems ?? []).map((m, i) => ({
+      (existing.menuItems ?? []).map((m) => ({
         name: m.name,
         description: m.description ?? "",
         course: m.course ?? "",
         price: m.price == null ? null : decimalToNumber(m.price),
         isActive: m.isActive !== false,
-        sortOrder: m.sortOrder ?? i,
+        sortOrder: m.sortOrder ?? 0,
       })),
     );
     if (existing.schedules && existing.schedules.length > 0) {
@@ -229,20 +241,25 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
     }
   }, [existingQuery.data]);
 
+  const prevCountryCodeRef = useRef<string>("");
   useEffect(() => {
     if (!countryCode || citiesFetching || cities.length === 0) return;
+    const prev = prevCountryCodeRef.current;
+    prevCountryCodeRef.current = countryCode;
+    // On first load / edit hydrate, keep stored cities even if not in featured list
+    if (!prev || prev === countryCode) return;
     const allowed = new Set(cities.map((c) => c.name));
-    setCitiesServed((prev) =>
-      prev.filter(
+    setCitiesServed((prevCities) =>
+      prevCities.filter(
         (name) =>
           allowed.has(name) &&
           name.trim().toLowerCase() !== baseCity.trim().toLowerCase(),
       ),
     );
-    setBaseCity((prev) => (prev && allowed.has(prev) ? prev : ""));
-    // Intentionally omit baseCity: changing it is handled by onBaseCityChange.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-filter when country/cities change
-  }, [countryCode, cities, citiesFetching]);
+    setBaseCity((prevBase) =>
+      prevBase && allowed.has(prevBase) ? prevBase : "",
+    );
+  }, [countryCode, cities, citiesFetching, baseCity]);
 
   const toggleCityServed = (cityName: string, checked: boolean) => {
     if (
@@ -273,11 +290,11 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
     () => findActiveCountry(countries, countryCode),
     [countries, countryCode],
   );
-  const locationCurrency = (selectedCountry?.defaultCurrency?.trim() ||
-    currency ||
+  const locationCurrency = (currency ||
+    selectedCountry?.defaultCurrency?.trim() ||
     "") as Currency | "";
   const locationTimezone =
-    selectedCountry?.defaultTimezone?.trim() || timezone || "";
+    timezone || selectedCountry?.defaultTimezone?.trim() || "";
   const citiesForServed = useMemo(
     () =>
       cities.filter(
@@ -287,24 +304,36 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
     [cities, baseCity],
   );
 
+  // For new services only: sync currency/timezone from the selected country.
+  // On edit, keep hydrated values unless the vendor changes country.
+  const prevSelectedCountryRef = useRef<string>("");
   useEffect(() => {
     if (!selectedCountry) return;
+    const code = selectedCountry.code;
+    const prev = prevSelectedCountryRef.current;
+    prevSelectedCountryRef.current = code;
+    if (isEdit && prev && prev === code) return;
+    if (isEdit && !prev) return; // initial hydrate — don't overwrite
     if (selectedCountry.defaultCurrency) {
       setCurrency(selectedCountry.defaultCurrency);
     }
     setTimezone(selectedCountry.defaultTimezone?.trim() || "");
-  }, [selectedCountry]);
+  }, [selectedCountry, isEdit]);
 
   const buildPayload = () => {
     const base = baseCity.trim().toLowerCase();
-    return {
+    const existingMode = existingQuery.data?.customizationMode;
+    const payload: Parameters<typeof updateMarketplaceService>[1] = {
       title: title.trim(),
       description: description.trim() || null,
       categoryId,
       pricingModel,
       customizationMode,
-      currency: (locationCurrency || currency || "AED") as Currency,
-      timezone: locationTimezone || null,
+      currency: (currency ||
+        selectedCountry?.defaultCurrency ||
+        "AED") as Currency,
+      timezone:
+        timezone || selectedCountry?.defaultTimezone?.trim() || null,
       basePrice,
       countryCode: countryCode || null,
       baseCity: baseCity.trim() || null,
@@ -313,12 +342,8 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
       ),
       coverImage: coverImage || null,
       portfolio,
-      packages:
-        customizationMode === "PACKAGE" || customizationMode === "MENU_BUILDER"
-          ? packages
-          : [],
+      instantBookingEnabled,
       addOns,
-      menuItems: customizationMode === "MENU_BUILDER" ? menuItems : [],
       schedules: schedules.map((s) => ({
         dayOfWeek: s.dayOfWeek,
         openTime: s.openTime,
@@ -326,6 +351,27 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
         isOpen: s.isOpen,
       })),
     };
+
+    if (
+      customizationMode === "PACKAGE" ||
+      customizationMode === "MENU_BUILDER"
+    ) {
+      payload.packages = packages;
+    } else if (
+      existingMode === "PACKAGE" ||
+      existingMode === "MENU_BUILDER"
+    ) {
+      // Mode switched away — clear leftover packages
+      payload.packages = [];
+    }
+
+    if (customizationMode === "MENU_BUILDER") {
+      payload.menuItems = menuItems;
+    } else if (existingMode === "MENU_BUILDER") {
+      payload.menuItems = [];
+    }
+
+    return payload;
   };
 
   const saveMut = useMutation({
@@ -341,19 +387,19 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
       }
       if (
         payload.customizationMode === "PACKAGE" &&
-        payload.packages.length === 0
+        (payload.packages?.length ?? 0) === 0
       ) {
         toast.error(t("packageRequired"));
         throw new ApiError(400, t("packageRequired"));
       }
       if (
         payload.customizationMode === "MENU_BUILDER" &&
-        payload.menuItems.length === 0
+        (payload.menuItems?.length ?? 0) === 0
       ) {
         toast.error(t("menuRequired"));
         throw new ApiError(400, t("menuRequired"));
       }
-      if (!payload.schedules.some((s) => s.isOpen)) {
+      if (!payload.schedules?.some((s) => s.isOpen)) {
         toast.error(t("scheduleOpenDayRequired"));
         throw new ApiError(400, t("scheduleOpenDayRequired"));
       }
@@ -362,14 +408,19 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
         ? await updateMarketplaceService(serviceId, payload)
         : await createMarketplaceService(payload);
 
-      if (opts.submit) {
+      // ACTIVE structural edits already become PENDING on update — skip /submit
+      if (
+        opts.submit &&
+        (saved.status === "DRAFT" || saved.status === "REJECTED")
+      ) {
         return submitMarketplaceServiceForReview(saved.id);
       }
       return saved;
     },
     onSuccess: (saved, vars) => {
       queryClient.invalidateQueries({ queryKey: marketplaceKeys.all });
-      toast.success(vars.submit ? t("submittedForReview") : t("saved"));
+      const submitted = Boolean(vars.submit && saved.status === "PENDING");
+      toast.success(submitted ? t("submittedForReview") : t("saved"));
       if (!serviceId) {
         router.replace(paths.editMarketplaceService(saved.id));
       }
@@ -534,6 +585,19 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                   value={basePrice ?? undefined}
                   onValueChange={(v) => setBasePrice(v ?? null)}
                   min={0}
+                />
+              </div>
+              <div className="flex items-start justify-between gap-4 rounded-lg border border-border/60 p-3 sm:col-span-2">
+                <div className="space-y-1">
+                  <Label htmlFor="instant-booking">{t("instantBooking")}</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("instantBookingHint")}
+                  </p>
+                </div>
+                <Switch
+                  id="instant-booking"
+                  checked={instantBookingEnabled}
+                  onCheckedChange={setInstantBookingEnabled}
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">

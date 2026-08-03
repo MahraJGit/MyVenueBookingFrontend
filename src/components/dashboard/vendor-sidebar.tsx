@@ -106,7 +106,6 @@ export default function VendorSidebar({
               onClose={onClose}
               exact
             />
-            <SidebarLink icon={Store} label={t('newService')} href={paths.addMarketplaceService} onClose={onClose} />
             <SidebarLink icon={Inbox} label={t('serviceInquiries')} href={paths.marketplaceInquiries} onClose={onClose} />
             <SidebarLink icon={FileText} label={t('serviceProposals')} href={paths.marketplaceProposals} onClose={onClose} />
             <SidebarLink icon={CalendarCheck} label={t('serviceBookings')} href={paths.marketplaceBookings} onClose={onClose} />

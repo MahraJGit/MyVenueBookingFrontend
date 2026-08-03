@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-time-picker";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
-import { createServiceInquiry } from "@/features/marketplace/api";
+import { createInstantServiceBooking, createServiceInquiry } from "@/features/marketplace/api";
 import type {
   PublicMarketplaceService,
   ServicePackage,
@@ -56,6 +56,8 @@ type ServiceInquiryDialogProps = {
   initialEndDate?: string;
   /** When true, event date comes from the detail calendar and cannot be changed. */
   lockEventDate?: boolean;
+  /** inquire = proposal flow; instant = pay now via listed pricing */
+  mode?: "inquire" | "instant";
 };
 
 function serviceAreaCities(service: PublicMarketplaceService): string[] {
@@ -85,12 +87,15 @@ export function ServiceInquiryDialog({
   initialStartDate = "",
   initialEndDate = "",
   lockEventDate = false,
+  mode = "inquire",
 }: ServiceInquiryDialogProps) {
   const t = useTranslations("userDashboard");
+  const tMarketplace = useTranslations("marketplace");
   const tCommon = useTranslations("common");
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, isReady } = useAuth();
+  const isInstant = mode === "instant";
 
   const packages = useMemo(
     () =>
@@ -243,7 +248,7 @@ export function ServiceInquiryDialog({
       if (textContainsContactInfo(address)) {
         throw new Error(contactInfoBlockedMessage(t("eventAddress")));
       }
-      return createServiceInquiry({
+      const body = {
         serviceId: service.id,
         packageId: packageId || null,
         startDate: eventDate,
@@ -264,19 +269,35 @@ export function ServiceInquiryDialog({
           hours: hours ? Number(hours) : null,
         },
         notes: notes || null,
-      });
+      };
+      if (isInstant) {
+        return createInstantServiceBooking(body);
+      }
+      return createServiceInquiry(body);
     },
-    onSuccess: (inquiry) => {
-      toast.success(t("inquirySubmitted"));
+    onSuccess: (result) => {
       onOpenChange(false);
-      router.push(`/userDashboard/service-inquiries/${inquiry.id}`);
+      if (isInstant && "booking" in result) {
+        toast.success(tMarketplace("instantBookSuccess"));
+        router.push(`/marketplace/booking/${result.booking.id}/checkout`);
+        return;
+      }
+      toast.success(t("inquirySubmitted"));
+      if ("id" in result) {
+        router.push(`/userDashboard/service-inquiries/${result.id}`);
+      }
     },
     onError: (e) => {
       if (e instanceof Error && e.message.includes("cannot include")) {
         toast.error(e.message);
         return;
       }
-      toastApiError(e, t("inquirySubmitFailed"));
+      toastApiError(
+        e,
+        isInstant
+          ? tMarketplace("instantBookFailed")
+          : t("inquirySubmitFailed"),
+      );
     },
   });
 
@@ -312,12 +333,30 @@ export function ServiceInquiryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto border-[#303030] bg-[#1B1B1B] text-white sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle className="text-left">{t("newServiceInquiry")}</DialogTitle>
+          <DialogTitle className="text-left">
+            {isInstant
+              ? tMarketplace("instantBookTitle")
+              : t("newServiceInquiry")}
+          </DialogTitle>
           <DialogDescription className="text-left text-zinc-400">
-            {service.title}
-            {service.vendor?.vendorName
-              ? ` · ${service.vendor.vendorName}`
-              : ""}
+            {isInstant ? (
+              <>
+                <span className="block">{tMarketplace("instantBookDesc")}</span>
+                <span className="mt-1 block text-zinc-500">
+                  {service.title}
+                  {service.vendor?.vendorName
+                    ? ` · ${service.vendor.vendorName}`
+                    : ""}
+                </span>
+              </>
+            ) : (
+              <>
+                {service.title}
+                {service.vendor?.vendorName
+                  ? ` · ${service.vendor.vendorName}`
+                  : ""}
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -671,7 +710,7 @@ export function ServiceInquiryDialog({
                 {tCommon("loading")}
               </>
             ) : (
-              t("submitInquiry")
+              isInstant ? tMarketplace("instantBookCta") : t("submitInquiry")
             )}
           </Button>
         </form>

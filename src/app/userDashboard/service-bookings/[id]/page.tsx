@@ -8,8 +8,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   Loader2,
-  Lock,
-  MapPin,
   MessageCircle,
   Star,
 } from "lucide-react";
@@ -17,21 +15,16 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DashboardContentPanel } from "@/components/dashboard/dashboard-shared";
+import { ServiceBookingDetails } from "@/components/marketplace/ServiceBookingDetails";
 import {
   cancelServiceBooking,
   createMarketplaceServiceReview,
   getServiceBooking,
 } from "@/features/marketplace/api";
 import { marketplaceKeys } from "@/features/marketplace/query-keys";
-import type { ServiceLocation } from "@/features/marketplace/types";
+import { isInstantServiceBooking } from "@/features/marketplace/booking-display";
 import { useAuth } from "@/features/auth/auth-context";
-import { decimalToNumber } from "@/features/venues/utils";
 import { toastApiError } from "@/lib/toasts";
-
-function asLocation(value: unknown): ServiceLocation {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return value as ServiceLocation;
-}
 
 export default function UserServiceBookingDetailPage({
   params,
@@ -77,7 +70,6 @@ export default function UserServiceBookingDetailPage({
     onError: (e) => toastApiError(e),
   });
 
-  const location = asLocation(booking?.locationSnapshot);
   const addressUnlocked = Boolean(booking?.addressUnlocked);
   const canReview = booking?.status === "COMPLETED" && !reviewed;
   const canPay = booking?.status === "PAYMENT_PENDING";
@@ -147,34 +139,9 @@ export default function UserServiceBookingDetailPage({
               {String(booking.startDate).slice(0, 10)} →{" "}
               {String(booking.endDate).slice(0, 10)}
             </p>
-            <p className="mt-2 text-lg font-semibold text-white">
-              {decimalToNumber(booking.totalAmount).toLocaleString()}{" "}
-              {booking.currency}
-            </p>
           </div>
 
-          <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-300">
-              <MapPin className="h-4 w-4" />
-              {t("eventLocation")}
-            </h2>
-            <div className="space-y-1 text-sm text-muted-foreground">
-              {location.venueName ? <p>{location.venueName}</p> : null}
-              {location.city || location.country ? (
-                <p>
-                  {[location.city, location.country].filter(Boolean).join(", ")}
-                </p>
-              ) : null}
-              {addressUnlocked && location.address ? (
-                <p className="text-white">{location.address}</p>
-              ) : (
-                <p className="inline-flex items-center gap-1.5 text-amber-200/90">
-                  <Lock className="h-3.5 w-3.5" />
-                  {t("addressLockedUntilConfirmed")}
-                </p>
-              )}
-            </div>
-          </section>
+          <ServiceBookingDetails booking={booking} showVendor />
 
           <div className="flex flex-wrap gap-3">
             {addressUnlocked && booking.inquiry?.conversation?.id ? (
@@ -187,14 +154,14 @@ export default function UserServiceBookingDetailPage({
                 </Link>
               </Button>
             ) : null}
-            {booking.inquiryId ? (
+            {!isInstantServiceBooking(booking) && booking.inquiryId ? (
               <Button asChild variant="outline" size="sm">
                 <Link href={`/userDashboard/service-inquiries/${booking.inquiryId}`}>
                   {t("viewInquiry")}
                 </Link>
               </Button>
             ) : null}
-            {booking.proposalId ? (
+            {!isInstantServiceBooking(booking) && booking.proposalId ? (
               <Button asChild variant="outline" size="sm">
                 <Link href={`/userDashboard/service-proposals/${booking.proposalId}`}>
                   {t("viewProposal")}

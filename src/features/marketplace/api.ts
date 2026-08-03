@@ -21,6 +21,8 @@ import type {
   AcceptServiceProposalResult,
   CreateMarketplaceServiceReviewInput,
   CreateServiceInquiryPayload,
+  CreateInstantServiceBookingPayload,
+  InstantServiceBookingResult,
   CreateServiceProposalPayload,
   ListServiceBookingsResult,
   ListServiceInquiriesResult,
@@ -441,6 +443,17 @@ export async function createServiceInquiry(
     headers: { Accept: "application/json", "Content-Type": "application/json" },
     body: JSON.stringify(body),
     networkErrorMessage: "Network error while creating service inquiry.",
+  });
+}
+
+export async function createInstantServiceBooking(
+  body: CreateInstantServiceBookingPayload,
+): Promise<InstantServiceBookingResult> {
+  return authJson<InstantServiceBookingResult>("/api/service-bookings/instant", {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    networkErrorMessage: "Network error while creating instant booking.",
   });
 }
 

@@ -69,6 +69,7 @@ export default function MarketplaceServiceDetailPage({
   });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"inquire" | "instant">("inquire");
 
   const serviceQuery = useQuery({
     queryKey: [
@@ -152,7 +153,7 @@ export default function MarketplaceServiceDetailPage({
     if (date) setSelectedDate(date);
   };
 
-  const openInquiry = () => {
+  const openBookingDialog = (mode: "inquire" | "instant") => {
     if (isPreview || !selectedDate) return;
     if (!isReady) return;
     if (!isAuthenticated) {
@@ -160,6 +161,7 @@ export default function MarketplaceServiceDetailPage({
       router.push(`/login?redirect=${redirect}`);
       return;
     }
+    setDialogMode(mode);
     setInquiryOpen(true);
   };
 
@@ -412,28 +414,59 @@ export default function MarketplaceServiceDetailPage({
                   {isPreview ? (
                     <>
                       <Button type="button" className="w-full" disabled>
-                        {t("inquireCta")}
+                        {service.instantBookingEnabled
+                          ? t("instantBookCta")
+                          : t("inquireCta")}
                       </Button>
                       <p className="mt-2 text-xs text-muted-foreground">
                         {t("previewInquireDisabled")}
                       </p>
                     </>
                   ) : (
-                    <>
-                      <Button
-                        type="button"
-                        className="w-full bg-primary"
-                        onClick={openInquiry}
-                        disabled={!selectedDate}
-                      >
-                        {t("inquireCta")}
-                      </Button>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {selectedDate
-                          ? t("inquireHint")
-                          : t("selectDateToInquire")}
-                      </p>
-                    </>
+                    <div className="space-y-2">
+                      {service.instantBookingEnabled ? (
+                        <>
+                          <Button
+                            type="button"
+                            className="w-full bg-primary"
+                            onClick={() => openBookingDialog("instant")}
+                            disabled={!selectedDate}
+                          >
+                            {t("instantBookCta")}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full border-[#303030] bg-transparent"
+                            onClick={() => openBookingDialog("inquire")}
+                            disabled={!selectedDate}
+                          >
+                            {t("inquireCta")}
+                          </Button>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            {selectedDate
+                              ? t("instantBookHint")
+                              : t("selectDateToBook")}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            type="button"
+                            className="w-full bg-primary"
+                            onClick={() => openBookingDialog("inquire")}
+                            disabled={!selectedDate}
+                          >
+                            {t("inquireCta")}
+                          </Button>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            {selectedDate
+                              ? t("inquireHint")
+                              : t("selectDateToInquire")}
+                          </p>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -450,6 +483,7 @@ export default function MarketplaceServiceDetailPage({
           initialStartDate={selectedDateStr}
           initialEndDate={selectedDateStr}
           lockEventDate
+          mode={dialogMode}
         />
       ) : null}
     </div>

@@ -4,23 +4,18 @@ import { use } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Loader2, Lock, MapPin, MessageCircle } from "lucide-react";
+import { ArrowLeft, Loader2, MessageCircle } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { Button } from "@/components/ui/button";
 import { DashboardContentPanel } from "@/components/dashboard/dashboard-shared";
+import { ServiceBookingDetails } from "@/components/marketplace/ServiceBookingDetails";
 import { getServiceBooking } from "@/features/marketplace/api";
+import { isInstantServiceBooking } from "@/features/marketplace/booking-display";
 import { marketplaceKeys } from "@/features/marketplace/query-keys";
-import type { ServiceLocation } from "@/features/marketplace/types";
 import { getDashboardPaths } from "@/features/dashboard/paths";
 import { useAuth } from "@/features/auth/auth-context";
-import { decimalToNumber } from "@/features/venues/utils";
 
 const paths = getDashboardPaths("vendor");
-
-function asLocation(value: unknown): ServiceLocation {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return value as ServiceLocation;
-}
 
 function VendorBookingDetailContent({ id }: { id: string }) {
   const t = useTranslations("vendorMarketplace");
@@ -33,7 +28,6 @@ function VendorBookingDetailContent({ id }: { id: string }) {
     enabled: isAuthenticated && isReady && !!user?.id,
   });
 
-  const location = asLocation(booking?.locationSnapshot);
   const addressUnlocked = Boolean(booking?.addressUnlocked);
 
   return (
@@ -71,48 +65,9 @@ function VendorBookingDetailContent({ id }: { id: string }) {
               {String(booking.startDate).slice(0, 10)} →{" "}
               {String(booking.endDate).slice(0, 10)}
             </p>
-            {booking.buyer ? (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {booking.buyer.firstName} {booking.buyer.lastName}
-                {booking.buyer.email ? ` · ${booking.buyer.email}` : ""}
-              </p>
-            ) : null}
           </div>
 
-          <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-            <h2 className="text-sm font-medium text-zinc-300">{t("total")}</h2>
-            <p className="mt-2 text-lg font-semibold text-white">
-              {decimalToNumber(booking.totalAmount).toLocaleString()}{" "}
-              {booking.currency}
-            </p>
-            {booking.status === "PAYMENT_PENDING" && booking.expiresAt ? (
-              <p className="mt-1 text-xs text-amber-300">
-                {t("holdExpires", {
-                  time: new Date(booking.expiresAt).toLocaleString(),
-                })}
-              </p>
-            ) : null}
-          </section>
-
-          <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-            <h2 className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-300">
-              <MapPin className="h-4 w-4" />
-              {t("eventLocation")}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {[location.venueName, location.city, location.country]
-                .filter(Boolean)
-                .join(" · ") || t("locationUnavailable")}
-            </p>
-            {addressUnlocked && location.address ? (
-              <p className="mt-2 text-sm text-white">{location.address}</p>
-            ) : (
-              <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                <Lock className="h-3.5 w-3.5" />
-                {t("addressLocked")}
-              </p>
-            )}
-          </section>
+          <ServiceBookingDetails booking={booking} />
 
           <div className="flex flex-wrap gap-3">
             {addressUnlocked && booking.inquiry?.conversation?.id ? (
@@ -125,14 +80,14 @@ function VendorBookingDetailContent({ id }: { id: string }) {
                 </Link>
               </Button>
             ) : null}
-            {booking.inquiryId ? (
+            {!isInstantServiceBooking(booking) && booking.inquiryId ? (
               <Button asChild variant="ghost" size="sm" className="px-0">
                 <Link href={paths.marketplaceInquiry(booking.inquiryId)}>
                   {t("viewInquiry")}
                 </Link>
               </Button>
             ) : null}
-            {booking.proposalId ? (
+            {!isInstantServiceBooking(booking) && booking.proposalId ? (
               <Button asChild variant="ghost" size="sm" className="px-0">
                 <Link href={paths.marketplaceProposal(booking.proposalId)}>
                   {t("viewProposal")}
