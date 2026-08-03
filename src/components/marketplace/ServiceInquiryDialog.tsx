@@ -28,7 +28,9 @@ import { DatePicker } from "@/components/ui/date-time-picker";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { createInstantServiceBooking, createServiceInquiry } from "@/features/marketplace/api";
 import type {
+  InstantServiceBookingResult,
   PublicMarketplaceService,
+  ServiceInquiry,
   ServicePackage,
 } from "@/features/marketplace/types";
 import {
@@ -237,8 +239,12 @@ export function ServiceInquiryDialog({
     });
   };
 
-  const createMut = useMutation({
-    mutationFn: () => {
+  const createMut = useMutation<
+    ServiceInquiry | InstantServiceBookingResult,
+    Error,
+    void
+  >({
+    mutationFn: async () => {
       if (textContainsContactInfo(notes)) {
         throw new Error(contactInfoBlockedMessage(t("notes")));
       }
@@ -277,7 +283,7 @@ export function ServiceInquiryDialog({
     },
     onSuccess: (result) => {
       onOpenChange(false);
-      if (isInstant && "booking" in result) {
+      if (isInstant && "booking" in result && result.booking?.id) {
         toast.success(tMarketplace("instantBookSuccess"));
         router.push(`/marketplace/booking/${result.booking.id}/checkout`);
         return;

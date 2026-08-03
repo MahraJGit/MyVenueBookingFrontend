@@ -53,6 +53,7 @@ import {
 } from "@/features/marketplace/api";
 import { marketplaceKeys } from "@/features/marketplace/query-keys";
 import type {
+  CreateMarketplaceServicePayload,
   Currency,
   ManagedMarketplaceService,
   ServiceAddOnPayload,
@@ -320,10 +321,10 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
     setTimezone(selectedCountry.defaultTimezone?.trim() || "");
   }, [selectedCountry, isEdit]);
 
-  const buildPayload = () => {
+  const buildPayload = (): CreateMarketplaceServicePayload => {
     const base = baseCity.trim().toLowerCase();
     const existingMode = existingQuery.data?.customizationMode;
-    const payload: Parameters<typeof updateMarketplaceService>[1] = {
+    const payload: CreateMarketplaceServicePayload = {
       title: title.trim(),
       description: description.trim() || null,
       categoryId,
