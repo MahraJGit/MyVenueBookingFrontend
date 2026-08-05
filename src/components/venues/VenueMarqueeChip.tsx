@@ -14,7 +14,7 @@ type VenueMarqueeChipProps = {
 export function VenueMarqueeChip({ venue }: VenueMarqueeChipProps) {
   const t = useTranslations("venues");
   const fallback = getFallbackVenueImage(venue.id);
-  const initial = venue.coverImage?.trim() || fallback;
+  const initial = venue.thumbnail?.trim() || venue.coverImage?.trim() || fallback;
   const [src, setSrc] = useState(initial);
 
   const subtitle =

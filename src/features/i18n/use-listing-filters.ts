@@ -80,6 +80,8 @@ export function useListingLabels() {
       allCountries: t("allCountries"),
       selectCountryFirst: t("selectCountryFirst"),
       city: t("city"),
+      searchCountry: t("searchCountry"),
+      searchCity: t("searchCity"),
       sortBy: t("sortBy"),
       searchEvents: t("searchEvents"),
       searchVenues: t("searchVenues"),

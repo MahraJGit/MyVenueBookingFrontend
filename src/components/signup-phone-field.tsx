@@ -18,6 +18,8 @@ type SignupPhoneFieldProps = {
   className?: string;
   /** `auth`: login/signup dark bar. `ui`: theme tokens — matches card forms (affiliate, dashboard). */
   variant?: "auth" | "ui";
+  /** Default country for the dial selector (ISO 3166-1 alpha-2). */
+  defaultCountry?: React.ComponentProps<typeof PhoneInput>["defaultCountry"];
 };
 
 /**
@@ -31,6 +33,7 @@ export function SignupPhoneField({
   "aria-invalid": ariaInvalid,
   className,
   variant = "auth",
+  defaultCountry = "US",
 }: SignupPhoneFieldProps) {
   const tone = variant === "ui" ? "ui" : "auth";
   const CountrySelect = React.useMemo(() => {
@@ -50,7 +53,7 @@ export function SignupPhoneField({
     >
       <PhoneInput
         international
-        defaultCountry="US"
+        defaultCountry={defaultCountry}
         flags={flags}
         countrySelectComponent={CountrySelect}
         value={value}

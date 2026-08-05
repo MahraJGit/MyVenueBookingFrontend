@@ -142,6 +142,8 @@ export function applyIncomingMessageToCache(
       });
 
       items.sort((a, b) => {
+        const unreadDelta = Number(b.unreadCount > 0) - Number(a.unreadCount > 0);
+        if (unreadDelta !== 0) return unreadDelta;
         const aTime = a.lastMessageAt ? Date.parse(a.lastMessageAt) : 0;
         const bTime = b.lastMessageAt ? Date.parse(b.lastMessageAt) : 0;
         return bTime - aTime;

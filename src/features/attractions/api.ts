@@ -157,6 +157,7 @@ export type ManagedAttraction = {
   /** True when active ticket sales lock structural edits. */
   contentOnlyEdit?: boolean;
   createdAt?: string;
+  createdByUserId?: string | null;
   vendorProfileId?: string | null;
   vendorProfile?: {
     id: string;
@@ -210,7 +211,7 @@ export type CreateAttractionPayload = {
   gallery: string[];
   venueId?: string | null;
   venueName?: string | null;
-  venuePhone?: string | null;
+  venuePhone: string;
   venueWebsite?: string | null;
   countryCode: string;
   city: string;
@@ -495,6 +496,23 @@ export async function deleteAttraction(id: string): Promise<void> {
     const json = await parseJson<unknown>(res);
     throw ApiError.fromUnknown(res.status, json);
   }
+}
+
+export async function restoreAttraction(id: string): Promise<ManagedAttraction> {
+  const res = await authFetch(
+    `/api/attractions/${encodeURIComponent(id)}/restore`,
+    {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while restoring attraction.",
+    },
+  );
+
+  const json = await parseJson<SuccessEnvelope<ManagedAttraction>>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, json as unknown);
+  }
+  return unwrapEnvelope(json);
 }
 
 export type ManagedOccurrence = AttractionOccurrenceSummary & {

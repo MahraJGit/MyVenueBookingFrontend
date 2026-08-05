@@ -31,10 +31,12 @@ function variantForStatus(status: string) {
   if (
     status === "REJECTED" ||
     status === "CANCELLED" ||
-    status === "INACTIVE" ||
-    status === "DELETED"
+    status === "INACTIVE"
   ) {
     return "destructive" as const;
+  }
+  if (status === "DELETED") {
+    return "secondary" as const;
   }
   if (status === "HOLD" || status === "PENDING") {
     return "secondary" as const;

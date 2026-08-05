@@ -28,6 +28,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 import {
     createEvent,
     getManagedEvent,
@@ -71,6 +72,10 @@ import {
     putManagedSeating,
     type SeatMapFocalPoint,
 } from "@/features/seating/api"
+import { SignupPhoneField } from "@/components/signup-phone-field"
+import { isE164Valid, toPhoneInputValue } from "@/lib/phone"
+import type { Value as PhoneValue } from "react-phone-number-input"
+import type { CountryCode } from "libphonenumber-js"
 
 const inputClass = "bg-input/50 border-border"
 const selectTriggerClass = cn(inputClass, "w-full")
@@ -258,6 +263,7 @@ export default function AddEventsContentPage() {
     const tForms = useTranslations("forms")
     const tCurrency = useTranslations("currency")
     const tEvents = useTranslations("events")
+    const tValidation = useTranslations("validation")
     const router = useRouter()
     const searchParams = useSearchParams()
     const paths = useDashboardPaths()
@@ -283,7 +289,7 @@ export default function AddEventsContentPage() {
     const [thumbnailUploading, setThumbnailUploading] = React.useState(false)
     const [galleryUploading, setGalleryUploading] = React.useState(false)
     const [venueName, setVenueName] = React.useState("")
-    const [venuePhone, setVenuePhone] = React.useState("")
+    const [venuePhone, setVenuePhone] = React.useState<PhoneValue | undefined>(undefined)
     const [venueWebsite, setVenueWebsite] = React.useState("https://example.com")
     const [countryCode, setCountryCode] = React.useState("AE")
     const [city, setCity] = React.useState("")
@@ -417,6 +423,17 @@ export default function AddEventsContentPage() {
         return cat
     }, [category, categoryOptions])
 
+    const categorySelectOptions = React.useMemo(() => {
+        if (!legacyCategoryName) return categoryOptions
+        return [
+            {
+                value: legacyCategoryName,
+                label: `${legacyCategoryName} ${t("currentValue")}`,
+            },
+            ...categoryOptions,
+        ]
+    }, [categoryOptions, legacyCategoryName, t])
+
     const timingValidation = React.useMemo(
         () =>
             validateEventAndTicketTiming(
@@ -443,7 +460,7 @@ export default function AddEventsContentPage() {
         setThumbnail(existing.thumbnail ?? "")
         setGalleryUrls(existing.gallery ?? [])
         setVenueName(existing.venueName ?? "")
-        setVenuePhone(existing.venuePhone ?? "")
+        setVenuePhone(toPhoneInputValue(existing.venuePhone))
         setVenueWebsite(existing.venueWebsite ?? "https://example.com")
         setCountryCode(existing.countryCode?.trim().toUpperCase() || "AE")
         setCity(existing.city?.trim() ?? "")
@@ -575,7 +592,7 @@ export default function AddEventsContentPage() {
                     thumbnail: thumbnail.trim() || undefined,
                     gallery: galleryUrls,
                     venueName: venueName.trim(),
-                    venuePhone: venuePhone.trim(),
+                    venuePhone: venuePhone?.trim() ?? "",
                     venueWebsite: venueWebsite.trim(),
                 })
             }
@@ -640,7 +657,7 @@ export default function AddEventsContentPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["managed-events"] })
             toast.success(editId ? t("eventUpdated") : t("eventCreated"))
-            router.push(paths.events)
+            router.replace(paths.events)
         },
         onError: (e) => toastApiError(e, t("couldNotSaveEvent")),
     })
@@ -698,7 +715,7 @@ export default function AddEventsContentPage() {
             thumbnail: thumbnail.trim() || undefined,
             gallery,
             venueName: venueName.trim(),
-            venuePhone: venuePhone.trim(),
+            venuePhone: venuePhone?.trim() ?? "",
             venueWebsite: venueWebsite.trim(),
             countryCode: countryCode.trim(),
             city: city.trim(),
@@ -802,6 +819,10 @@ export default function AddEventsContentPage() {
         }
         if (!coverImage.trim()) {
             toast.error(t("uploadCoverError"))
+            return
+        }
+        if (!isE164Valid(venuePhone)) {
+            toast.error(tValidation("invalidPhone"))
             return
         }
         if (galleryUrls.length < EVENT_GALLERY_MIN_IMAGES) {
@@ -960,42 +981,26 @@ export default function AddEventsContentPage() {
                         </div>
                         <div className="space-y-2 sm:col-span-2">
                             <Label>{t("categoryLabel").replace(":", "")}</Label>
-                            <Select
+                            <SearchableSelect
                                 key={`category-${editId ?? "new"}-${category}`}
-                                value={category || undefined}
+                                value={category}
                                 onValueChange={setCategoryOverride}
+                                options={categorySelectOptions}
                                 disabled={
                                     loadingEventCategories ||
                                     (eventCategories.length === 0 && !category)
                                 }
-                            >
-                                <SelectTrigger className={selectTriggerClass}>
-                                    <SelectValue
-                                        placeholder={
-                                            loadingEventCategories
-                                                ? t("loadingCategories")
-                                                : eventCategoriesError
-                                                    ? t("couldNotLoadCategories")
-                                                    : eventCategories.length === 0 && !legacyCategoryName
-                                                        ? t("noActiveCategories")
-                                                        : tForms("selectCategory")
-                                        }
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {legacyCategoryName ? (
-                                        <SelectItem value={legacyCategoryName}>
-                                            {legacyCategoryName}{" "}
-                                            <span className="text-muted-foreground">{t("currentValue")}</span>
-                                        </SelectItem>
-                                    ) : null}
-                                    {categoryOptions.map((c) => (
-                                        <SelectItem key={c.value} value={c.value}>
-                                            {c.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                triggerClassName={selectTriggerClass}
+                                placeholder={
+                                    loadingEventCategories
+                                        ? t("loadingCategories")
+                                        : eventCategoriesError
+                                            ? t("couldNotLoadCategories")
+                                            : eventCategories.length === 0 && !legacyCategoryName
+                                                ? t("noActiveCategories")
+                                                : tForms("selectCategory")
+                                }
+                            />
                             {eventCategoriesError ? (
                                 <p className="text-xs text-destructive">
                                     {t("refreshConnectionHint")}
@@ -1205,12 +1210,12 @@ export default function AddEventsContentPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="venue-phone">{t("venuePhoneLabel").replace(":", "")}</Label>
-                            <Input
+                            <SignupPhoneField
                                 id="venue-phone"
-                                required
+                                variant="ui"
+                                defaultCountry={(countryCode || "AE") as CountryCode}
                                 value={venuePhone}
-                                onChange={(e) => setVenuePhone(e.target.value)}
-                                className={inputClass}
+                                onChange={setVenuePhone}
                             />
                         </div>
                         <div className="space-y-2">

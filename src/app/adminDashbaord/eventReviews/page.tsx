@@ -108,10 +108,13 @@ function formatDateTime(dateString: string, timeZone?: string | null) {
 function reviewableStatus(
   status: EventApprovalStatus | undefined,
 ): "APPROVED" | "REJECTED" | "PENDING" | null {
-  if (status === "APPROVED" || status === "REJECTED" || status === "PENDING") {
-    return status
-  }
+  if (status === "APPROVED" || status === "ACTIVE") return "APPROVED"
+  if (status === "REJECTED" || status === "PENDING") return status
   return status === "DRAFT" ? "PENDING" : null
+}
+
+function isLiveEventStatus(status: EventApprovalStatus | undefined): boolean {
+  return status === "APPROVED" || status === "ACTIVE"
 }
 
 export default function EventReviewsPage() {
@@ -136,7 +139,7 @@ export default function EventReviewsPage() {
   const statusLabel = (status: EventApprovalStatus | undefined) => {
     if (!status) return tStatus("unknown")
     if (status === "PENDING") return tStatus("pending")
-    if (status === "APPROVED") return tStatus("approved")
+    if (status === "APPROVED" || status === "ACTIVE") return tStatus("approved")
     if (status === "REJECTED") return tStatus("rejected")
     if (status === "DRAFT") return tStatus("draft")
     return status.charAt(0) + status.slice(1).toLowerCase()
@@ -176,7 +179,10 @@ export default function EventReviewsPage() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["admin-event-reviews"] })
       queryClient.invalidateQueries({ queryKey: ["managed-events"] })
-      setActiveDetails((prev) => (prev?.id === result.id ? result : prev))
+      setActiveDetails(null)
+      setViewEvent(null)
+      setRejectTarget(null)
+      setRejectReason("")
       toast.success(
         result.status === "APPROVED" ? t("eventApproved") : t("eventRejected"),
       )
@@ -197,19 +203,11 @@ export default function EventReviewsPage() {
 
   const handleRejectSubmit = () => {
     if (!rejectTarget || !rejectReason.trim()) return
-    updateMutation.mutate(
-      {
-        id: rejectTarget.id,
-        status: "REJECTED",
-        reason: rejectReason.trim(),
-      },
-      {
-        onSuccess: () => {
-          setRejectReason("")
-          setRejectTarget(null)
-        },
-      },
-    )
+    updateMutation.mutate({
+      id: rejectTarget.id,
+      status: "REJECTED",
+      reason: rejectReason.trim(),
+    })
   }
 
   return (
@@ -367,9 +365,12 @@ export default function EventReviewsPage() {
                                 setRejectTarget(ev)
                                 return
                               }
-                              if (value === ev.status) return
                               if (value === "APPROVED") {
-                                updateMutation.mutate({ id: ev.id, status: "APPROVED" })
+                                if (isLiveEventStatus(ev.status)) return
+                                updateMutation.mutate({
+                                  id: ev.id,
+                                  status: "APPROVED",
+                                })
                               }
                             }}
                           >
@@ -388,8 +389,12 @@ export default function EventReviewsPage() {
                               <SelectItem value="PENDING" disabled>
                                 {tStatus("pending")}
                               </SelectItem>
-                              <SelectItem value="APPROVED">{tAdmin("approve")}</SelectItem>
-                              <SelectItem value="REJECTED">{tAdmin("reject")}</SelectItem>
+                              <SelectItem value="APPROVED">
+                                {tStatus("approved")}
+                              </SelectItem>
+                              <SelectItem value="REJECTED">
+                                {tStatus("rejected")}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -486,7 +491,8 @@ export default function EventReviewsPage() {
                 <Button
                   className="bg-primary text-black hover:bg-primary/90"
                   disabled={
-                    updateMutation.isPending || activeDetails.status === "APPROVED"
+                    updateMutation.isPending ||
+                    isLiveEventStatus(activeDetails.status)
                   }
                   onClick={() =>
                     updateMutation.mutate({

@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 import {
   createAttraction,
   getManagedAttraction,
@@ -57,6 +58,10 @@ import { locationKeys } from "@/features/locations/query-keys"
 import { toastApiError } from "@/lib/toasts"
 import { formatTimezoneLabel } from "@/lib/timezones"
 import { validateUploadFile } from "@/features/uploads/validation"
+import { SignupPhoneField } from "@/components/signup-phone-field"
+import { isE164Valid, toPhoneInputValue } from "@/lib/phone"
+import type { Value as PhoneValue } from "react-phone-number-input"
+import type { CountryCode } from "libphonenumber-js"
 import type { AddressHint } from "@/components/maps/location-picker-map"
 import { useDashboardPaths } from "@/features/dashboard/paths"
 import { DashboardPageShell } from "@/components/dashboard/dashboard-ui"
@@ -120,6 +125,7 @@ export default function AddAttractionsContentPage() {
   const tCommon = useTranslations("common")
   const tCurrency = useTranslations("currency")
   const tEvents = useTranslations("events")
+  const tValidation = useTranslations("validation")
   const paths = useDashboardPaths()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -139,7 +145,7 @@ export default function AddAttractionsContentPage() {
   const [thumbnailUploading, setThumbnailUploading] = React.useState(false)
   const [galleryUploading, setGalleryUploading] = React.useState(false)
   const [venueName, setVenueName] = React.useState("")
-  const [venuePhone, setVenuePhone] = React.useState("")
+  const [venuePhone, setVenuePhone] = React.useState<PhoneValue | undefined>(undefined)
   const [venueWebsite, setVenueWebsite] = React.useState("https://example.com")
   const [countryCode, setCountryCode] = React.useState("AE")
   const [city, setCity] = React.useState("")
@@ -252,6 +258,17 @@ export default function AddAttractionsContentPage() {
     return cat
   }, [category, categoryOptions])
 
+  const categorySelectOptions = React.useMemo(() => {
+    if (!legacyCategoryName) return categoryOptions
+    return [
+      {
+        value: legacyCategoryName,
+        label: `${legacyCategoryName} ${t("currentValue")}`,
+      },
+      ...categoryOptions,
+    ]
+  }, [categoryOptions, legacyCategoryName, t])
+
   React.useEffect(() => {
     if (
       !pendingMapCity ||
@@ -296,7 +313,7 @@ export default function AddAttractionsContentPage() {
     setThumbnail(existing.thumbnail ?? "")
     setGalleryUrls(existing.gallery ?? [])
     setVenueName(existing.venueName ?? "")
-    setVenuePhone(existing.venuePhone ?? "")
+    setVenuePhone(toPhoneInputValue(existing.venuePhone))
     setVenueWebsite(existing.venueWebsite ?? "https://example.com")
     setCountryCode(existing.countryCode?.trim().toUpperCase() || "AE")
     setCity(existing.city?.trim() ?? "")
@@ -430,7 +447,7 @@ export default function AddAttractionsContentPage() {
           thumbnail: thumbnail.trim() || undefined,
           gallery: galleryUrls,
           venueName: venueName.trim() || null,
-          venuePhone: venuePhone.trim() || null,
+          venuePhone: venuePhone?.trim() || "",
           venueWebsite: venueWebsite.trim() || null,
         })
         return { saved, seatingResult: undefined as undefined }
@@ -511,7 +528,7 @@ export default function AddAttractionsContentPage() {
       } else {
         toast.success(editId ? t("attractionUpdated") : t("attractionCreated"))
       }
-      router.push(paths.attractions)
+      router.replace(paths.attractions)
     },
     onError: (e) => toastApiError(e, t("couldNotSaveAttraction")),
   })
@@ -546,7 +563,7 @@ export default function AddAttractionsContentPage() {
       thumbnail: thumbnail.trim() || undefined,
       gallery,
       venueName: venueName.trim() || null,
-      venuePhone: venuePhone.trim() || null,
+      venuePhone: venuePhone?.trim() || "",
       venueWebsite: venueWebsite.trim() || null,
       countryCode: countryCode.trim(),
       city: city.trim(),
@@ -668,7 +685,7 @@ export default function AddAttractionsContentPage() {
     const [eh, em] = endTime.split(":").map(Number)
     const startMins = sh * 60 + sm
     const endMins = eh * 60 + em
-    if (endMins <= startMins) {
+    if (endMins === startMins) {
       toast.error(t("slotEndAfterStartError"))
       return
     }
@@ -676,12 +693,37 @@ export default function AddAttractionsContentPage() {
       toast.error(t("slotTimeDuplicateError"))
       return
     }
+    const dayMinutes = 24 * 60
+    const exclusiveEnd = (s: number, e: number) => (e < s ? e + dayMinutes : e)
+    const rangesOverlap = (
+      aStart: number,
+      aEnd: number,
+      bStart: number,
+      bEnd: number,
+    ) => aStart < bEnd && aEnd > bStart
+    const templatesOverlap = (
+      aStart: number,
+      aEnd: number,
+      bStart: number,
+      bEnd: number,
+    ) => {
+      const aEx = exclusiveEnd(aStart, aEnd)
+      const bEx = exclusiveEnd(bStart, bEnd)
+      return (
+        rangesOverlap(aStart, aEx, bStart, bEx) ||
+        rangesOverlap(aStart, aEx, bStart + dayMinutes, bEx + dayMinutes) ||
+        rangesOverlap(bStart, bEx, aStart + dayMinutes, aEx + dayMinutes)
+      )
+    }
     const overlap = slots.find((s) => {
       const [osh, osm] = s.startTime.split(":").map(Number)
       const [oeh, oem] = s.endTime.split(":").map(Number)
-      const otherStart = osh * 60 + osm
-      const otherEnd = oeh * 60 + oem
-      return startMins < otherEnd && endMins > otherStart
+      return templatesOverlap(
+        startMins,
+        endMins,
+        osh * 60 + osm,
+        oeh * 60 + oem,
+      )
     })
     if (overlap) {
       toast.error(
@@ -720,6 +762,10 @@ export default function AddAttractionsContentPage() {
     }
     if (!coverImage.trim()) {
       toast.error(t("uploadCoverError"))
+      return
+    }
+    if (!isE164Valid(venuePhone)) {
+      toast.error(tValidation("invalidPhone"))
       return
     }
     if (galleryUrls.length < GALLERY_MIN) {
@@ -898,42 +944,26 @@ export default function AddAttractionsContentPage() {
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>{t("categoryLabel").replace(":", "")}</Label>
-                <Select
+                <SearchableSelect
                   key={`category-${editId ?? "new"}-${category}`}
-                  value={category || undefined}
+                  value={category}
                   onValueChange={setCategoryOverride}
+                  options={categorySelectOptions}
                   disabled={
                     loadingAttractionCategories ||
                     (attractionCategories.length === 0 && !category)
                   }
-                >
-                  <SelectTrigger className={selectTriggerClass}>
-                    <SelectValue
-                      placeholder={
-                        loadingAttractionCategories
-                          ? t("loadingCategories")
-                          : attractionCategoriesError
-                            ? t("couldNotLoadCategories")
-                            : attractionCategories.length === 0 && !legacyCategoryName
-                              ? t("noActiveCategories")
-                              : tForms("selectCategory")
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {legacyCategoryName ? (
-                      <SelectItem value={legacyCategoryName}>
-                        {legacyCategoryName}{" "}
-                        <span className="text-muted-foreground">{t("currentValue")}</span>
-                      </SelectItem>
-                    ) : null}
-                    {categoryOptions.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  triggerClassName={selectTriggerClass}
+                  placeholder={
+                    loadingAttractionCategories
+                      ? t("loadingCategories")
+                      : attractionCategoriesError
+                        ? t("couldNotLoadCategories")
+                        : attractionCategories.length === 0 && !legacyCategoryName
+                          ? t("noActiveCategories")
+                          : tForms("selectCategory")
+                  }
+                />
                 {attractionCategoriesError ? (
                   <p className="text-xs text-destructive">
                     {t("refreshConnectionHint")}
@@ -1145,11 +1175,12 @@ export default function AddAttractionsContentPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="venue-phone">{t("venuePhoneLabel").replace(":", "")}</Label>
-                <Input
+                <SignupPhoneField
                   id="venue-phone"
+                  variant="ui"
+                  defaultCountry={(countryCode || "AE") as CountryCode}
                   value={venuePhone}
-                  onChange={(e) => setVenuePhone(e.target.value)}
-                  className={inputClass}
+                  onChange={setVenuePhone}
                 />
               </div>
               <div className="space-y-2">
@@ -1401,6 +1432,9 @@ export default function AddAttractionsContentPage() {
                         </span>
                         <span className="text-sm text-muted-foreground">
                           {slot.startTime} – {slot.endTime}
+                          {slot.endTime < slot.startTime
+                            ? ` ${t("slotEndsNextDay")}`
+                            : ""}
                         </span>
                         <Button
                           type="button"

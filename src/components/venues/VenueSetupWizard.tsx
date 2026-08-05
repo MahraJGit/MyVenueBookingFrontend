@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -84,7 +85,7 @@ import {
 } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
 import type { VenueAmenityPayload } from "@/features/venues/types";
-import { defaultWeeklySchedules, buildVenueCustomAttributes, evaluateVenueReadiness, isPropertyStyleVenueType, parseVenuePropertyAttributes, DAY_NAMES } from "@/features/venues/utils";
+import { defaultWeeklySchedules, buildVenueCustomAttributes, evaluateVenueReadiness, isPropertyStyleVenueType, parseVenuePropertyAttributes, DAY_NAMES, VENUE_GALLERY_MIN_IMAGES } from "@/features/venues/utils";
 import { useDashboardPaths } from "@/features/dashboard/paths";
 import { listCitiesByCountryCode, listCountries } from "@/features/locations/api";
 import {
@@ -131,6 +132,7 @@ export function VenueSetupWizard({
   const paths = useDashboardPaths();
   const isAdminScope = dashboardScope === "admin";
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const hydratedVenueIdRef = useRef<string | null>(null);
 
   const [createdVenueId, setCreatedVenueId] = useState<string | null>(null);
@@ -176,6 +178,7 @@ export function VenueSetupWizard({
     venueTypeId: "",
     timezone: "Asia/Dubai",
     coverImage: "",
+    thumbnail: "",
   });
   const [pendingMapCity, setPendingMapCity] = useState<PendingMapCity | null>(null);
 
@@ -236,20 +239,25 @@ export function VenueSetupWizard({
   /** Blob previews keyed by persisted S3 URL (avoid /api/media 401 before save). */
   const [galleryPreviews, setGalleryPreviews] = useState<Record<string, string>>({});
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const coverPreviewRef = useRef<string | null>(null);
+  const thumbnailPreviewRef = useRef<string | null>(null);
   const galleryPreviewsRef = useRef<Record<string, string>>({});
   coverPreviewRef.current = coverPreview;
+  thumbnailPreviewRef.current = thumbnailPreview;
   galleryPreviewsRef.current = galleryPreviews;
 
   useEffect(() => {
     return () => {
       if (coverPreviewRef.current) URL.revokeObjectURL(coverPreviewRef.current);
+      if (thumbnailPreviewRef.current) URL.revokeObjectURL(thumbnailPreviewRef.current);
       for (const url of Object.values(galleryPreviewsRef.current)) {
         URL.revokeObjectURL(url);
       }
     };
   }, []);
   const [galleryUploading, setGalleryUploading] = useState(false);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
 
   const [schedules, setSchedules] = useState(defaultWeeklySchedules());
   const [pricing, setPricing] = useState<PricingFormState>(defaultPricingForm());
@@ -270,6 +278,7 @@ export function VenueSetupWizard({
   const [fieldAttempted, setFieldAttempted] = useState({
     name: false,
     address: false,
+    venueType: false,
     blockDate: false,
     pricing: false,
   });
@@ -325,6 +334,7 @@ export function VenueSetupWizard({
       venueTypeId: existing.venueType?.id ?? "",
       timezone: existing.timezone,
       coverImage: existing.coverImage ?? "",
+      thumbnail: existing.thumbnail ?? "",
     });
     setGalleryUrls((current) => {
       const serverGallery = existing.gallery ?? [];
@@ -390,6 +400,7 @@ export function VenueSetupWizard({
         return updateVenue(effectiveVenueId, {
           description: details.description || undefined,
           coverImage: details.coverImage || undefined,
+          thumbnail: details.thumbnail.trim() || undefined,
           gallery: galleryUrls.filter((url) => !url.startsWith("blob:")),
           customAttributes: buildVenueCustomAttributes(
             propertyPayload,
@@ -413,9 +424,10 @@ export function VenueSetupWizard({
         longitude: Number(details.longitude),
         capacityMin: details.capacityMin ? Number(details.capacityMin) : undefined,
         capacityMax: details.capacityMax ? Number(details.capacityMax) : undefined,
-        venueTypeId: details.venueTypeId || undefined,
+        venueTypeId: details.venueTypeId,
         timezone: details.timezone,
-        coverImage: details.coverImage || undefined,
+        coverImage: details.coverImage,
+        thumbnail: details.thumbnail.trim() || undefined,
         gallery: galleryUrls.filter((url) => !url.startsWith("blob:")),
         customAttributes: buildVenueCustomAttributes(
           propertyPayload,
@@ -439,21 +451,21 @@ export function VenueSetupWizard({
       const wasCreate = !hasPersistedVenue;
       if (wasCreate) {
         setCreatedVenueId(venue.id);
-        queryClient.invalidateQueries({ queryKey: venueKeys.all });
-        const nextTab = "schedules";
-        setActiveTab(nextTab);
-        const params = new URLSearchParams({ id: venue.id, tab: nextTab });
-        router.replace(`${paths.addVenue}?${params.toString()}`);
-        toast.success(
-          isAdminScope ? t("detailsSavedAdmin") : t("detailsSavedVendor"),
-        );
-        return;
       }
-      toast.success(t("venueUpdated"));
       queryClient.invalidateQueries({ queryKey: venueKeys.all });
-      queryClient.invalidateQueries({
-        queryKey: venueKeys.managedDetail(effectiveVenueId!),
-      });
+      if (!wasCreate && effectiveVenueId) {
+        queryClient.invalidateQueries({
+          queryKey: venueKeys.managedDetail(effectiveVenueId),
+        });
+      }
+      toast.success(
+        wasCreate
+          ? isAdminScope
+            ? t("detailsSavedAdmin")
+            : t("detailsSavedVendor")
+          : t("venueUpdated"),
+      );
+      router.push(paths.venues);
     },
     onError: (e) => toastApiError(e),
   });
@@ -500,6 +512,7 @@ export function VenueSetupWizard({
       queryClient.invalidateQueries({
         queryKey: venueKeys.managedDetail(effectiveVenueId!),
       });
+      router.push(paths.venues);
     },
     onError: (e) => toastApiError(e),
   });
@@ -564,6 +577,29 @@ export function VenueSetupWizard({
     }
   };
 
+  const uploadThumbnail = async (file: File) => {
+    const blobUrl = URL.createObjectURL(file);
+    setThumbnailPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return blobUrl;
+    });
+    try {
+      validateUploadFile(file);
+      setThumbnailUploading(true);
+      const url = await uploadVenueMedia(file);
+      setDetails((d) => ({ ...d, thumbnail: url }));
+      toast.success(t("thumbnailUploaded"));
+    } catch (e) {
+      setThumbnailPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      toastApiError(e, t("thumbnailUploadFailed"));
+    } finally {
+      setThumbnailUploading(false);
+    }
+  };
+
   const onGalleryFiles = async (files: File[]) => {
     const list = files;
     if (!list.length) return;
@@ -578,7 +614,6 @@ export function VenueSetupWizard({
       setGalleryUploading(true);
       const results = await Promise.all(list.map((file) => uploadVenueMedia(file)));
 
-      let persistedGallery: string[] = [];
       setGalleryUrls((current) => {
         const next = [...current];
         blobUrls.forEach((blobUrl, index) => {
@@ -589,7 +624,6 @@ export function VenueSetupWizard({
             next.push(results[index]);
           }
         });
-        persistedGallery = next.filter((url) => !url.startsWith("blob:"));
         return next;
       });
       // Keep blob previews mapped to S3 URLs until removed / unmount
@@ -600,12 +634,6 @@ export function VenueSetupWizard({
         });
         return next;
       });
-
-      if (effectiveVenueId && persistedGallery.length > 0) {
-        await updateVenue(effectiveVenueId, { gallery: persistedGallery });
-        queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(effectiveVenueId) });
-        queryClient.invalidateQueries({ queryKey: venueKeys.all });
-      }
 
       toast.success(
         list.length === 1
@@ -621,10 +649,9 @@ export function VenueSetupWizard({
     }
   };
 
-  const removeGalleryAt = async (index: number) => {
+  const removeGalleryAt = (index: number) => {
     const removedUrl = galleryUrls[index];
-    const nextGallery = galleryUrls.filter((_, i) => i !== index);
-    setGalleryUrls(nextGallery);
+    setGalleryUrls((current) => current.filter((_, i) => i !== index));
 
     if (removedUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(removedUrl);
@@ -635,18 +662,6 @@ export function VenueSetupWizard({
         delete next[removedUrl];
         return next;
       });
-    }
-
-    if (!effectiveVenueId) return;
-
-    const persistedGallery = nextGallery.filter((url) => !url.startsWith("blob:"));
-    try {
-      await updateVenue(effectiveVenueId, { gallery: persistedGallery });
-      queryClient.invalidateQueries({ queryKey: venueKeys.managedDetail(effectiveVenueId) });
-      queryClient.invalidateQueries({ queryKey: venueKeys.all });
-    } catch (e) {
-      toastApiError(e);
-      setGalleryUrls(galleryUrls);
     }
   };
 
@@ -661,7 +676,9 @@ export function VenueSetupWizard({
       ? evaluateVenueReadiness({
           name: existing.name,
           address: existing.address,
+          venueTypeId: existing.venueType?.id ?? null,
           coverImage: existing.coverImage,
+          gallery: existing.gallery,
           pricing: existing.pricing,
           schedules: existing.schedules,
           amenities: existing.amenities,
@@ -676,16 +693,29 @@ export function VenueSetupWizard({
     fieldAttempted.address && isBlank(details.address)
       ? tForms("fieldRequired", { field: tForms("address") })
       : null;
+  const venueTypeError =
+    fieldAttempted.venueType && isBlank(details.venueTypeId)
+      ? tForms("fieldRequired", { field: t("venueType") })
+      : null;
   const blockDateError =
     fieldAttempted.blockDate && isBlank(blockForm.blockDate)
       ? tForms("fieldRequired", { field: t("date") })
       : null;
 
   function trySaveDetails() {
-    setFieldAttempted((a) => ({ ...a, name: true, address: true }));
-    if (isBlank(details.name) || isBlank(details.address)) return;
+    setFieldAttempted((a) => ({ ...a, name: true, address: true, venueType: true }));
+    if (isBlank(details.name) || isBlank(details.address) || isBlank(details.venueTypeId)) return;
     if (!findCatalogCity(cityOptions, details.city)) {
       toast.error(t("selectCityError"));
+      return;
+    }
+    if (!details.coverImage.trim()) {
+      toast.error(t("coverRequired"));
+      return;
+    }
+    const persistedGallery = galleryUrls.filter((url) => !url.startsWith("blob:"));
+    if (persistedGallery.length < VENUE_GALLERY_MIN_IMAGES) {
+      toast.error(t("galleryMinError", { min: VENUE_GALLERY_MIN_IMAGES }));
       return;
     }
     saveDetails.mutate();
@@ -760,25 +790,18 @@ export function VenueSetupWizard({
           className={cn(inputClass, "min-h-24")}
         />
       </div>
-      <div className="space-y-2">
-        <Label>{t("venueType")}</Label>
-        <Select
+      <FormField label={t("venueType")} required error={venueTypeError}>
+        <SearchableSelect
           value={details.venueTypeId}
           onValueChange={(v) => setDetails({ ...details, venueTypeId: v })}
-        >
-          <SelectTrigger className={cn(inputClass, "w-full")}>
-            <SelectValue placeholder={t("selectType")} />
-          </SelectTrigger>
-          <SelectContent>
-            {venueTypes.map((t) => (
-              <SelectItem key={t.id} value={t.id}>
-                {t.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-   
-      </div>
+          options={venueTypes.map((type) => ({
+            value: type.id,
+            label: type.name,
+          }))}
+          placeholder={tForms("selectVenueType")}
+          triggerClassName={fieldClassName(cn(inputClass, "w-full"), !!venueTypeError)}
+        />
+      </FormField>
       <div className="space-y-2">
         <Label>{t("capacity")}</Label>
         <div className="flex items-center gap-2">
@@ -902,6 +925,69 @@ export function VenueSetupWizard({
           </div>
         </div>
       </div>
+      <div className="space-y-2 sm:col-span-2">
+        <Label>{tForms("thumbnail")}</Label>
+        <p className="text-xs text-muted-foreground">{t("thumbnailOptional")}</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          {details.thumbnail || thumbnailPreview ? (
+            <div className="relative h-32 w-48 shrink-0 overflow-hidden rounded-lg border border-border">
+              <SecureStoredImage
+                src={details.thumbnail || thumbnailPreview || ""}
+                previewSrc={thumbnailPreview ?? undefined}
+                alt={tForms("thumbnail")}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="flex h-32 w-48 shrink-0 items-center justify-center rounded-lg border border-dashed border-border bg-muted/30">
+              <ImagePlus className="h-8 w-8 text-muted-foreground" />
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={thumbnailInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void uploadThumbnail(file);
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={thumbnailUploading}
+              onClick={() => thumbnailInputRef.current?.click()}
+            >
+              {thumbnailUploading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <ImagePlus className="mr-2 h-4 w-4" />
+              )}
+              {tForms("uploadThumbnail")}
+            </Button>
+            {(details.thumbnail || thumbnailPreview) && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive"
+                onClick={() => {
+                  setThumbnailPreview((prev) => {
+                    if (prev) URL.revokeObjectURL(prev);
+                    return null;
+                  });
+                  setDetails({ ...details, thumbnail: "" });
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {tForms("removeThumbnail")}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
       <VenueGalleryUpload
         urls={galleryUrls}
         previewUrls={galleryPreviews}
@@ -909,6 +995,7 @@ export function VenueSetupWizard({
         onUpload={onGalleryFiles}
         onRemove={removeGalleryAt}
         inputId={hasPersistedVenue ? "venue-gallery-upload-edit" : "venue-gallery-upload-create"}
+        hint={t("galleryRequired", { min: VENUE_GALLERY_MIN_IMAGES })}
       />
     </>
   );
@@ -1253,7 +1340,7 @@ export function VenueSetupWizard({
                 {saveDetails.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {hasPersistedVenue ? t("saveDetails") : t("saveAndContinue")}
+                {t("saveDetails")}
               </Button>
             </CardFooter>
           </Card>

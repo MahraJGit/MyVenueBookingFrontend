@@ -137,11 +137,18 @@ export function ChatInbox({ basePath, context }: ChatInboxProps) {
   const hasOlderMessages = Boolean(messagesQuery.hasNextPage);
 
   const displayConversations = useMemo(() => {
-    if (!selectedId || inList) return conversations;
-    if (selectedConversationQuery.data) {
-      return [detailToSummary(selectedConversationQuery.data), ...conversations];
-    }
-    return conversations;
+    const list =
+      selectedId && !inList && selectedConversationQuery.data
+        ? [detailToSummary(selectedConversationQuery.data), ...conversations]
+        : conversations;
+
+    return [...list].sort((a, b) => {
+      const unreadDelta = Number(b.unreadCount > 0) - Number(a.unreadCount > 0);
+      if (unreadDelta !== 0) return unreadDelta;
+      const aTime = a.lastMessageAt ? Date.parse(a.lastMessageAt) : 0;
+      const bTime = b.lastMessageAt ? Date.parse(b.lastMessageAt) : 0;
+      return bTime - aTime;
+    });
   }, [conversations, inList, selectedConversationQuery.data, selectedId]);
 
   const sendMutation = useMutation({

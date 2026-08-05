@@ -6,6 +6,7 @@ import { getFallbackVenueImage } from "@/features/venues/utils";
 
 type VenueCoverImageProps = {
   coverImage: string | null;
+  thumbnail?: string | null;
   venueName: string;
   seed: string;
   className?: string;
@@ -13,12 +14,13 @@ type VenueCoverImageProps = {
 
 export function VenueCoverImage({
   coverImage,
+  thumbnail,
   venueName,
   seed,
   className,
 }: VenueCoverImageProps) {
   const fallback = getFallbackVenueImage(seed);
-  const resolved = coverImage?.trim() || fallback;
+  const resolved = thumbnail?.trim() || coverImage?.trim() || fallback;
   const [src, setSrc] = useState(resolved);
 
   return (

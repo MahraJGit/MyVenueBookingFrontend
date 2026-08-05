@@ -32,6 +32,7 @@ export function VenueCard({ venue }: VenueCardProps) {
       >
       <VenueCoverImage
         coverImage={venue.coverImage || null}
+        thumbnail={venue.thumbnail || null}
         venueName={venue.name}
         seed={venue.id}
       />

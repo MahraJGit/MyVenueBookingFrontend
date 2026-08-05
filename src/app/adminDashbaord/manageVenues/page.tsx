@@ -366,7 +366,7 @@ export default function ManageVenuesPage() {
 }
 
 function VenueThumb({ venue }: { venue: ManagedVenue }) {
-  const src = venue.coverImage?.trim();
+  const src = venue.thumbnail?.trim() || venue.coverImage?.trim();
 
   if (src) {
     return (

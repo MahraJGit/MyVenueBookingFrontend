@@ -117,6 +117,7 @@ export type PublicVenue = {
   customAttributes?: Record<string, unknown>;
   rules?: Record<string, unknown> | null;
   coverImage?: string | null;
+  thumbnail?: string | null;
   gallery?: string[];
   status?: EntityStatus;
   venueType?: VenueType | null;
@@ -235,16 +236,21 @@ export type CreateVenuePayload = {
   longitude?: number;
   capacityMin?: number;
   capacityMax?: number;
-  venueTypeId?: string;
+  venueTypeId: string;
   timezone?: string;
-  coverImage?: string;
-  gallery?: string[];
+  coverImage: string;
+  thumbnail?: string | null;
+  gallery: string[];
   customAttributes?: Record<string, unknown>;
   rules?: Record<string, unknown>;
   vendorId?: string;
 };
 
-export type UpdateVenuePayload = Partial<CreateVenuePayload>;
+export type UpdateVenuePayload = Partial<CreateVenuePayload> & {
+  coverImage?: string;
+  thumbnail?: string | null;
+  gallery?: string[];
+};
 
 export type VenuePricingPayload = {
   modelType: PricingModel;

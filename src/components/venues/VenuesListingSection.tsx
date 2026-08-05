@@ -12,6 +12,7 @@ import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCar
 import { VenueTypeFilters } from "@/components/venues/VenueTypeFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Select,
   SelectContent,
@@ -220,43 +221,31 @@ export function VenuesListingSection() {
                 }}
                 className="w-full border-[#303030] bg-black text-white"
               />
-              <Select
+              <SearchableSelect
                 value={countryCode || "__all__"}
                 onValueChange={handleCountryChange}
-              >
-                <SelectTrigger className="w-full border-[#303030] bg-black text-white">
-                  <SelectValue placeholder={labels.country} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">{labels.allCountries}</SelectItem>
-                  {countries.map((c) => (
-                    <SelectItem key={c.id} value={c.code}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
+                placeholder={labels.country}
+                searchPlaceholder={labels.searchCountry}
+                triggerClassName="w-full border-[#303030] bg-black text-white hover:bg-black"
+                options={[
+                  { value: "__all__", label: labels.allCountries },
+                  ...countries.map((c) => ({ value: c.code, label: c.name })),
+                ]}
+              />
+              <SearchableSelect
                 value={city || "__all__"}
                 onValueChange={(v) => setCity(v === "__all__" ? "" : v)}
                 disabled={!countryCode}
-              >
-                <SelectTrigger className="w-full border-[#303030] bg-black text-white">
-                  <SelectValue
-                    placeholder={
-                      countryCode ? labels.city : labels.selectCountryFirst
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">{labels.city}</SelectItem>
-                  {cities.map((c) => (
-                    <SelectItem key={c.id} value={c.name}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder={
+                  countryCode ? labels.city : labels.selectCountryFirst
+                }
+                searchPlaceholder={labels.searchCity}
+                triggerClassName="w-full border-[#303030] bg-black text-white hover:bg-black disabled:opacity-50"
+                options={[
+                  { value: "__all__", label: labels.city },
+                  ...cities.map((c) => ({ value: c.name, label: c.name })),
+                ]}
+              />
               <Select value={sortValue} onValueChange={handleSortChange}>
                 <SelectTrigger className="w-full border-[#303030] bg-black text-white hover:bg-black dark:hover:bg-black data-[state=open]:border-ring data-[state=open]:ring-ring/50 data-[state=open]:ring-[3px]">
                   <SelectValue placeholder={labels.sortBy} />

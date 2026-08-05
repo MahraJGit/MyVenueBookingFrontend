@@ -1,5 +1,6 @@
 import parsePhoneNumber from "libphonenumber-js/max";
 import { isValidPhoneNumber } from "libphonenumber-js/max";
+import type { Value } from "react-phone-number-input";
 
 /** Normalized parts for your register / OTP APIs (matches backend `phone` + `phoneCountryCode`). */
 export function e164ToApiParts(
@@ -21,4 +22,13 @@ export function e164ToApiParts(
 export function isE164Valid(e164: string | undefined): boolean {
   if (!e164?.trim()) return false;
   return isValidPhoneNumber(e164);
+}
+
+/** Use with `SignupPhoneField` — only returns a value when already valid E.164. */
+export function toPhoneInputValue(
+  raw: string | null | undefined,
+): Value | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed || !isE164Valid(trimmed)) return undefined;
+  return trimmed as Value;
 }

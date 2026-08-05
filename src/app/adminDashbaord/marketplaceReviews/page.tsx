@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { DollarSign, Eye, Loader2, MapPin, Store } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { RoleGuard } from "@/components/auth/RoleGuard";
@@ -10,13 +10,6 @@ import { StatusBadge } from "@/components/venues/StatusBadge";
 import { ServiceReviewDetails } from "@/components/marketplace/ServiceReviewDetails";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -26,6 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -40,43 +40,110 @@ import {
   updateMarketplaceServiceStatus,
 } from "@/features/marketplace/api";
 import { marketplaceKeys } from "@/features/marketplace/query-keys";
-import type { ManagedMarketplaceService } from "@/features/marketplace/types";
-import { serviceCustomizationLabel, servicePricingModelLabel } from "@/features/marketplace/utils";
+import type {
+  EntityStatus,
+  ManagedMarketplaceService,
+} from "@/features/marketplace/types";
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
 import { toastApiError } from "@/lib/toasts";
 import {
   DashboardPanel,
   DashboardPageShell,
-  DashboardTableWrapper,
-  dashboardCardClass,
+  DashboardErrorAlert,
   dashboardTableClass,
   dashboardTableContainerClass,
   dashboardTableActionsClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
   dashboardDialogContentClass,
+  dashboardOutlineButtonClass,
+  dashboardSelectTriggerClass,
+  dashboardDropdownContentClass,
+  dashboardTextareaClass,
 } from "@/components/dashboard/dashboard-ui";
+import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 10;
+
+const REVIEW_STATUSES: EntityStatus[] = [
+  "PENDING",
+  "ACTIVE",
+  "REJECTED",
+  "DRAFT",
+];
+
+type StatusFilter = "ALL" | EntityStatus;
+
+function statusBadgeVariant(status: EntityStatus | string | undefined) {
+  if (status === "ACTIVE" || status === "APPROVED") return "default";
+  if (status === "REJECTED" || status === "CANCELLED") return "destructive";
+  return "secondary";
+}
+
+function formatDate(dateString: string) {
+  try {
+    return new Date(dateString).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return dateString;
+  }
+}
+
+/** Map DB status → select value (ACTIVE/APPROVED both show as Active). */
+function reviewableStatus(
+  status: EntityStatus | string | undefined,
+): "ACTIVE" | "REJECTED" | "PENDING" | null {
+  if (status === "ACTIVE" || status === "APPROVED") return "ACTIVE";
+  if (status === "REJECTED" || status === "PENDING") return status;
+  return status === "DRAFT" ? "PENDING" : null;
+}
+
+function isLiveService(status: EntityStatus | string | undefined) {
+  return status === "ACTIVE" || status === "APPROVED";
+}
+
+function isPendingService(status: EntityStatus | string | undefined) {
+  return status === "PENDING";
+}
 
 export default function MarketplaceReviewsPage() {
   const t = useTranslations("adminMarketplaceReviews");
   const tCommon = useTranslations("common");
   const tAdmin = useTranslations("adminDashboard");
+  const tStatus = useTranslations("entityStatus");
+  const tListing = useTranslations("listing");
   const queryClient = useQueryClient();
-  const [viewService, setViewService] = useState<ManagedMarketplaceService | null>(
-    null,
-  );
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [page, setPage] = useState(1);
+  const [viewService, setViewService] =
+    useState<ManagedMarketplaceService | null>(null);
   const [rejectService, setRejectService] =
     useState<ManagedMarketplaceService | null>(null);
   const [reason, setReason] = useState("");
 
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
+
   const listParams = {
-    status: "PENDING" as const,
-    limit: 50,
+    page,
+    limit: PAGE_SIZE,
+    ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
   };
 
-  const { data, isLoading, isFetching } = useQuery({
+  const {
+    data,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: marketplaceKeys.managedList(listParams),
     queryFn: () => listManagedMarketplaceServices(listParams),
   });
@@ -110,158 +177,230 @@ export default function MarketplaceReviewsPage() {
   const pendingId = statusMut.isPending ? statusMut.variables?.id : null;
   const pendingStatus = statusMut.isPending ? statusMut.variables?.status : null;
   const services = data?.data ?? [];
+  const meta = data?.meta;
+  const totalPages = meta?.totalPages ?? 1;
+  const showPagination = !isLoading && (meta?.total ?? 0) > 0;
   const detail = serviceDetail ?? viewService;
+
+  const statusLabel = (status: EntityStatus | string | undefined) => {
+    if (!status) return tStatus("unknown");
+    if (status === "PENDING") return tStatus("pending");
+    if (status === "ACTIVE" || status === "APPROVED") return tStatus("active");
+    if (status === "REJECTED") return tStatus("rejected");
+    if (status === "DRAFT") return tStatus("draft");
+    return status.charAt(0) + status.slice(1).toLowerCase();
+  };
+
+  const errorMessage = useMemo(() => {
+    if (!isError || !error) return null;
+    return error instanceof Error ? error.message : t("failedLoad");
+  }, [isError, error, t]);
 
   return (
     <RoleGuard allowedRoles={["ADMIN"]}>
       <DashboardPageShell>
         <DashboardPanel>
-          <DashboardPageHeader title={t("title")} description={t("description")} />
-
-          <Card className={dashboardCardClass}>
-            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0 pb-4">
-              <div className="space-y-1">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Store className="h-5 w-5 text-primary" />
-                  {t("pendingSubmissions")}
-                </CardTitle>
-                <CardDescription>
-                  {isLoading
-                    ? t("loadingQueue")
-                    : t("serviceCount", { count: services.length })}
-                </CardDescription>
-              </div>
-              {isFetching && !isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              ) : null}
-            </CardHeader>
-
-            <CardContent className="p-0">
-              <DashboardTableWrapper className="rounded-none border-0 border-t border-[#303030]">
-                <Table
-                  className={cn(dashboardTableClass, "min-w-[1000px]")}
-                  containerClassName={dashboardTableContainerClass}
+          <DashboardPageHeader
+            title={t("title")}
+            description={t("description")}
+            action={
+              <div className="flex flex-wrap items-center gap-2">
+                {isFetching && !isLoading ? (
+                  <span className="flex items-center gap-1 text-xs text-zinc-500">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {tCommon("refreshing")}
+                  </span>
+                ) : null}
+                <Button
+                  variant={statusFilter === "ALL" ? "default" : "outline"}
+                  onClick={() => setStatusFilter("ALL")}
+                  disabled={isLoading}
                 >
-                  <TableHeader>
-                    <TableRow className={dashboardTableHeaderRowClass}>
-                      <TableHead className="min-w-[240px] text-muted-foreground">
-                        {t("service")}
-                      </TableHead>
-                      <TableHead className="min-w-[160px] text-muted-foreground">
-                        {tCommon("vendor")}
-                      </TableHead>
-                      <TableHead className="min-w-[130px] text-muted-foreground">
-                        {t("pricing")}
-                      </TableHead>
-                      <TableHead className="min-w-[130px] text-muted-foreground">
-                        {t("customization")}
-                      </TableHead>
-                      <TableHead className="min-w-[300px] text-right text-muted-foreground">
-                        {tCommon("actions")}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableSkeleton cols={5} />
-                    ) : services.length === 0 ? (
-                      <TableEmptyRow colSpan={5}>{t("noPending")}</TableEmptyRow>
-                    ) : (
-                      services.map((service) => {
-                        const isApproving =
-                          pendingId === service.id && pendingStatus === "ACTIVE";
-                        const isRejecting =
-                          pendingId === service.id && pendingStatus === "REJECTED";
+                  {tCommon("all")}
+                </Button>
+                {REVIEW_STATUSES.map((s) => (
+                  <Button
+                    key={s}
+                    variant={statusFilter === s ? "default" : "outline"}
+                    onClick={() => setStatusFilter(s)}
+                    disabled={isLoading}
+                  >
+                    {statusLabel(s)}
+                  </Button>
+                ))}
+              </div>
+            }
+          />
 
-                        return (
-                          <TableRow
-                            key={service.id}
-                            className={dashboardTableRowClass}
+          {errorMessage ? (
+            <DashboardErrorAlert
+              message={errorMessage}
+              onRetry={() => void refetch()}
+              retryLabel={tCommon("retry")}
+            />
+          ) : null}
+
+          <DashboardDataTable
+            pagination={
+              showPagination
+                ? {
+                    label: tListing("pageOfWithCount", {
+                      page: meta?.page ?? page,
+                      totalPages,
+                      total: meta?.total ?? services.length,
+                      type: t("servicesCount"),
+                    }),
+                    page,
+                    totalPages,
+                    total: meta?.total ?? services.length,
+                    onPageChange: setPage,
+                    previousLabel: tCommon("previous"),
+                    nextLabel: tCommon("next"),
+                    isLoading,
+                  }
+                : undefined
+            }
+          >
+            <Table
+              className={cn(dashboardTableClass, "min-w-[1100px]")}
+              containerClassName={dashboardTableContainerClass}
+            >
+              <TableHeader>
+                <TableRow className={dashboardTableHeaderRowClass}>
+                  <TableHead className="min-w-[200px] whitespace-nowrap text-muted-foreground">
+                    {t("service")}
+                  </TableHead>
+                  <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
+                    {tCommon("vendor")}
+                  </TableHead>
+                  <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
+                    {tAdmin("tableCity")}
+                  </TableHead>
+                  <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
+                    {tCommon("status")}
+                  </TableHead>
+                  <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
+                    {tCommon("submitted")}
+                  </TableHead>
+                  <TableHead className="min-w-[240px] whitespace-nowrap text-right text-muted-foreground">
+                    {tCommon("actions")}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableSkeleton cols={6} />
+                ) : services.length === 0 ? (
+                  <TableEmptyRow colSpan={6}>{t("noServices")}</TableEmptyRow>
+                ) : (
+                  services.map((service) => {
+                    const selectValue = reviewableStatus(service.status);
+                    return (
+                      <TableRow
+                        key={service.id}
+                        className={dashboardTableRowClass}
+                      >
+                        <TableCell className="max-w-[240px] whitespace-normal break-words font-medium">
+                          <button
+                            type="button"
+                            className="text-left hover:text-primary hover:underline"
+                            onClick={() => setViewService(service)}
                           >
-                            <TableCell>
-                              <div className="space-y-1.5">
-                                <p className="font-medium text-foreground">
-                                  {service.title}
-                                </p>
-                                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                  <span className="inline-flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    {service.baseCity ?? "—"}
-                                  </span>
-                                  {service.category?.name ? (
-                                    <Badge variant="outline" className="text-[10px]">
-                                      {service.category.name}
-                                    </Badge>
+                            {service.title}
+                          </button>
+                        </TableCell>
+                        <TableCell
+                          className="max-w-[200px] truncate text-muted-foreground"
+                          title={service.vendor?.vendorName ?? undefined}
+                        >
+                          {service.vendor?.vendorName ?? "—"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {service.baseCity ?? "—"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <Badge variant={statusBadgeVariant(service.status)}>
+                            {statusLabel(service.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {service.createdAt
+                            ? formatDate(service.createdAt)
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right">
+                          <div className={dashboardTableActionsClass}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className={cn(
+                                "shrink-0",
+                                dashboardOutlineButtonClass,
+                              )}
+                              onClick={() => setViewService(service)}
+                            >
+                              <Eye className="h-4 w-4" />
+                              {tCommon("view")}
+                            </Button>
+
+                            <Select
+                              value={selectValue ?? undefined}
+                              disabled={
+                                !selectValue || pendingId === service.id
+                              }
+                              onValueChange={(
+                                value: "ACTIVE" | "REJECTED" | "PENDING",
+                              ) => {
+                                if (value === "REJECTED") {
+                                  setRejectService(service);
+                                  return;
+                                }
+                                if (value === "ACTIVE") {
+                                  if (isLiveService(service.status)) return;
+                                  statusMut.mutate({
+                                    id: service.id,
+                                    status: "ACTIVE",
+                                  });
+                                }
+                              }}
+                            >
+                              <SelectTrigger
+                                size="sm"
+                                className={cn(
+                                  "h-8 w-[130px] shrink-0",
+                                  dashboardSelectTriggerClass,
+                                )}
+                              >
+                                <span className="flex w-full items-center gap-2">
+                                  {pendingId === service.id ? (
+                                    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
                                   ) : null}
-                                </div>
-                                {service.status ? (
-                                  <StatusBadge status={service.status} />
-                                ) : null}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {service.vendor?.vendorName ?? "—"}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              <Badge variant="secondary" className="gap-1 font-normal">
-                                <DollarSign className="h-3 w-3" />
-                                {servicePricingModelLabel(service.pricingModel)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              <Badge variant="outline" className="font-normal">
-                                {serviceCustomizationLabel(service.customizationMode)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-right">
-                              <div className={dashboardTableActionsClass}>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setViewService(service)}
-                                >
-                                  <Eye className="mr-1 h-3 w-3" />
-                                  {tCommon("view")}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  className="bg-primary"
-                                  disabled={isApproving || isRejecting}
-                                  onClick={() =>
-                                    statusMut.mutate({
-                                      id: service.id,
-                                      status: "ACTIVE",
-                                    })
-                                  }
-                                >
-                                  {isApproving ? (
-                                    <>
-                                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                                      {t("approving")}
-                                    </>
-                                  ) : (
-                                    tAdmin("approve")
-                                  )}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  disabled={isApproving || isRejecting}
-                                  onClick={() => setRejectService(service)}
-                                >
-                                  {tAdmin("reject")}
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </DashboardTableWrapper>
-            </CardContent>
-          </Card>
+                                  <SelectValue placeholder={t("setStatus")} />
+                                </span>
+                              </SelectTrigger>
+                              <SelectContent
+                                className={dashboardDropdownContentClass}
+                              >
+                                <SelectItem value="PENDING" disabled>
+                                  {tStatus("pending")}
+                                </SelectItem>
+                                <SelectItem value="ACTIVE">
+                                  {tStatus("active")}
+                                </SelectItem>
+                                <SelectItem value="REJECTED">
+                                  {tStatus("rejected")}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </DashboardDataTable>
         </DashboardPanel>
       </DashboardPageShell>
 
@@ -292,31 +431,38 @@ export default function MarketplaceReviewsPage() {
           ) : serviceDetail ? (
             <div className="space-y-4">
               <ServiceReviewDetails service={serviceDetail} />
-              <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-                <Button
-                  className="bg-primary"
-                  disabled={
-                    statusMut.isPending &&
-                    pendingId === serviceDetail.id &&
-                    pendingStatus === "ACTIVE"
-                  }
-                  onClick={() =>
-                    statusMut.mutate({ id: serviceDetail.id, status: "ACTIVE" })
-                  }
-                >
-                  {tAdmin("approve")}
-                </Button>
-                <Button
-                  variant="destructive"
-                  disabled={statusMut.isPending && pendingId === serviceDetail.id}
-                  onClick={() => {
-                    setRejectService(serviceDetail);
-                    setViewService(null);
-                  }}
-                >
-                  {tAdmin("reject")}
-                </Button>
-              </div>
+              {isPendingService(serviceDetail.status) ? (
+                <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+                  <Button
+                    className="bg-primary text-black hover:bg-primary/90"
+                    disabled={
+                      statusMut.isPending &&
+                      pendingId === serviceDetail.id &&
+                      pendingStatus === "ACTIVE"
+                    }
+                    onClick={() =>
+                      statusMut.mutate({
+                        id: serviceDetail.id,
+                        status: "ACTIVE",
+                      })
+                    }
+                  >
+                    {tAdmin("approve")}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    disabled={
+                      statusMut.isPending && pendingId === serviceDetail.id
+                    }
+                    onClick={() => {
+                      setRejectService(serviceDetail);
+                      setViewService(null);
+                    }}
+                  >
+                    {tAdmin("reject")}
+                  </Button>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </DialogContent>
@@ -341,14 +487,15 @@ export default function MarketplaceReviewsPage() {
             </DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder={t("rejectPlaceholder")}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className="min-h-24 border-border bg-input/50"
+            placeholder={t("rejectPlaceholder")}
+            className={cn(dashboardTextareaClass, "min-h-28")}
           />
           <DialogFooter>
             <Button
               variant="outline"
+              className={dashboardOutlineButtonClass}
               onClick={() => {
                 setRejectService(null);
                 setReason("");
@@ -364,16 +511,25 @@ export default function MarketplaceReviewsPage() {
                   pendingId === rejectService?.id &&
                   pendingStatus === "REJECTED")
               }
-              onClick={() =>
-                rejectService &&
+              onClick={() => {
+                if (!rejectService) return;
                 statusMut.mutate({
                   id: rejectService.id,
                   status: "REJECTED",
                   reason: reason.trim(),
-                })
-              }
+                });
+              }}
             >
-              {t("rejectService")}
+              {statusMut.isPending &&
+              pendingId === rejectService?.id &&
+              pendingStatus === "REJECTED" ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t("rejectService")}
+                </>
+              ) : (
+                t("rejectService")
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

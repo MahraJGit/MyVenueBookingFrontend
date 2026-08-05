@@ -96,10 +96,15 @@ function formatDate(dateString: string, timeZone?: string | null) {
 function reviewableStatus(
   status: AttractionApprovalStatus | undefined,
 ): "APPROVED" | "REJECTED" | "PENDING" | null {
-  if (status === "APPROVED" || status === "REJECTED" || status === "PENDING") {
-    return status
-  }
+  if (status === "APPROVED" || status === "ACTIVE") return "APPROVED"
+  if (status === "REJECTED" || status === "PENDING") return status
   return status === "DRAFT" ? "PENDING" : null
+}
+
+function isLiveAttractionStatus(
+  status: AttractionApprovalStatus | undefined,
+): boolean {
+  return status === "APPROVED" || status === "ACTIVE"
 }
 
 function formatDaysOfWeek(days: number[]): string {
@@ -131,7 +136,7 @@ export default function AttractionReviewsPage() {
   const statusLabel = (status: AttractionApprovalStatus | undefined) => {
     if (!status) return tStatus("unknown")
     if (status === "PENDING") return tStatus("pending")
-    if (status === "APPROVED") return tStatus("approved")
+    if (status === "APPROVED" || status === "ACTIVE") return tStatus("approved")
     if (status === "REJECTED") return tStatus("rejected")
     if (status === "DRAFT") return tStatus("draft")
     return status.charAt(0) + status.slice(1).toLowerCase()
@@ -181,6 +186,9 @@ export default function AttractionReviewsPage() {
       queryClient.invalidateQueries({
         queryKey: ["admin-attraction-review-detail", result.id],
       })
+      setActiveId(null)
+      setRejectTarget(null)
+      setRejectReason("")
       toast.success(
         result.status === "APPROVED" ? t("attractionApproved") : t("attractionRejected"),
       )
@@ -201,20 +209,11 @@ export default function AttractionReviewsPage() {
 
   const handleRejectSubmit = () => {
     if (!rejectTarget || !rejectReason.trim()) return
-    updateMutation.mutate(
-      {
-        id: rejectTarget.id,
-        status: "REJECTED",
-        reason: rejectReason.trim(),
-      },
-      {
-        onSuccess: () => {
-          setRejectReason("")
-          setRejectTarget(null)
-          setActiveId(null)
-        },
-      },
-    )
+    updateMutation.mutate({
+      id: rejectTarget.id,
+      status: "REJECTED",
+      reason: rejectReason.trim(),
+    })
   }
 
   const attractionColumnHeader = tAdmin("tableAttraction")
@@ -379,9 +378,12 @@ export default function AttractionReviewsPage() {
                                 setRejectTarget(row)
                                 return
                               }
-                              if (value === row.status) return
                               if (value === "APPROVED") {
-                                updateMutation.mutate({ id: row.id, status: "APPROVED" })
+                                if (isLiveAttractionStatus(row.status)) return
+                                updateMutation.mutate({
+                                  id: row.id,
+                                  status: "APPROVED",
+                                })
                               }
                             }}
                           >
@@ -400,8 +402,12 @@ export default function AttractionReviewsPage() {
                               <SelectItem value="PENDING" disabled>
                                 {tStatus("pending")}
                               </SelectItem>
-                              <SelectItem value="APPROVED">{tAdmin("approve")}</SelectItem>
-                              <SelectItem value="REJECTED">{tAdmin("reject")}</SelectItem>
+                              <SelectItem value="APPROVED">
+                                {tStatus("approved")}
+                              </SelectItem>
+                              <SelectItem value="REJECTED">
+                                {tStatus("rejected")}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -618,7 +624,8 @@ export default function AttractionReviewsPage() {
                 <Button
                   className="bg-primary text-black hover:bg-primary/90"
                   disabled={
-                    updateMutation.isPending || activeDetails.status === "APPROVED"
+                    updateMutation.isPending ||
+                    isLiveAttractionStatus(activeDetails.status)
                   }
                   onClick={() =>
                     updateMutation.mutate({

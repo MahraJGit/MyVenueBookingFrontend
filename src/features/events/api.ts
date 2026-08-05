@@ -78,6 +78,7 @@ export type ManagedEvent = {
   /** True when active ticket sales lock structural edits. */
   contentOnlyEdit?: boolean;
   createdAt?: string;
+  createdByUserId?: string | null;
   vendorProfileId?: string | null;
   vendorProfile?: {
     id: string;
@@ -376,6 +377,20 @@ export async function deleteEvent(id: string): Promise<void> {
     const json = await parseJson<unknown>(res);
     throw ApiError.fromUnknown(res.status, json);
   }
+}
+
+export async function restoreEvent(id: string): Promise<ManagedEvent> {
+  const res = await authFetch(`/api/events/${encodeURIComponent(id)}/restore`, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    networkErrorMessage: "Network error while restoring event.",
+  });
+
+  const json = await parseJson<SuccessEnvelope<ManagedEvent>>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, json as unknown);
+  }
+  return unwrapEnvelope(json);
 }
 
 /** Upload image/file for cover or gallery — returns public-style URL stored in DB. */

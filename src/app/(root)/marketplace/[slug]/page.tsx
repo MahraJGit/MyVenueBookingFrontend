@@ -106,6 +106,16 @@ export default function MarketplaceServiceDetailPage({
     const set = new Set<string>();
     const result = availabilityQuery.data;
     if (!result) return set;
+
+    // Prefer capacity-aware day breakdown from the API when present.
+    if (result.days?.length) {
+      for (const day of result.days) {
+        if (!day.available) set.add(day.date);
+      }
+      return set;
+    }
+
+    // Legacy fallback: any overlapping booking marks the day unavailable.
     for (const block of result.blocks ?? []) {
       if (block.isBlocked) set.add(String(block.blockDate).slice(0, 10));
     }

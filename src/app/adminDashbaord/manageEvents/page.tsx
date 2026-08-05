@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { CalendarDays, Eye, Pencil, Trash2, Plus, Armchair, Ticket } from "lucide-react";
+import { CalendarDays, Eye, Pencil, Trash2, Plus, Armchair, Ticket, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
@@ -42,19 +42,32 @@ import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import {
   deleteEvent,
   listManagedEvents,
+  restoreEvent,
   type ManagedEvent,
 } from "@/features/events/api";
+import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
 import { useDashboardPaths } from "@/features/dashboard/paths";
 
 const PAGE_SIZE = 10;
 
+function canRestoreManagedListing(
+  item: { createdByUserId?: string | null },
+  userId: string | undefined,
+  scope: "vendor" | "admin",
+) {
+  if (!userId) return false;
+  if (scope === "vendor") return true;
+  return item.createdByUserId === userId;
+}
+
 export default function ManageEvents() {
   const t = useTranslations("adminDashboard");
   const tCommon = useTranslations("common");
   const tListing = useTranslations("listing");
   const paths = useDashboardPaths();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -83,6 +96,15 @@ export default function ManageEvents() {
       toast.success(t("eventDeleted"));
     },
     onError: (e) => toastApiError(e, t("couldNotDeleteEvent")),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => restoreEvent(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["managed-events"] });
+      toast.success(t("eventRestored"));
+    },
+    onError: (e) => toastApiError(e, t("couldNotRestoreEvent")),
   });
 
   const rows = data?.data ?? [];
@@ -272,6 +294,28 @@ export default function ManageEvents() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </>
+                        ) : canRestoreManagedListing(ev, user?.id, paths.scope) ? (
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-foreground"
+                            aria-label={t("restoreEvent")}
+                            disabled={restoreMutation.isPending}
+                            onClick={() => {
+                              if (
+                                !confirm(
+                                  t("restoreEventConfirm", {
+                                    name: ev.eventName,
+                                  }),
+                                )
+                              )
+                                return;
+                              restoreMutation.mutate(ev.id);
+                            }}
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
                         ) : null}
                       </div>
                     </TableCell>

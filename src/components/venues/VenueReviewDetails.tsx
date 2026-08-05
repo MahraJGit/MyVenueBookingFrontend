@@ -185,10 +185,10 @@ export function VenueReviewDetails({ venue }: VenueReviewDetailsProps) {
         ) : null}
       </div>
 
-      {venue.coverImage ? (
+      {venue.coverImage || venue.thumbnail ? (
         <div className="overflow-hidden rounded-lg border border-border">
           <SecureStoredImage
-            src={venue.coverImage}
+            src={venue.coverImage || venue.thumbnail || ""}
             alt={venue.name}
             className="h-48 w-full object-cover"
           />

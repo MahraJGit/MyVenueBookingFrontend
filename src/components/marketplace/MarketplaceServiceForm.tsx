@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { VenueGalleryUpload } from "@/components/venues/VenueGalleryUpload";
 import {
   VenueScheduleEditor,
@@ -58,7 +59,6 @@ import type {
   ManagedMarketplaceService,
   ServiceAddOnPayload,
   ServiceCustomizationMode,
-  ServiceMenuItemPayload,
   ServicePackagePayload,
   ServicePricingModel,
 } from "@/features/marketplace/types";
@@ -79,9 +79,35 @@ const inputClass = dashboardInputClass;
 
 type PackageDraft = ServicePackagePayload;
 type AddOnDraft = ServiceAddOnPayload;
-type MenuDraft = ServiceMenuItemPayload;
+type CourseDraft = {
+  name: string;
+  dishes: string[];
+};
 
 type Props = { serviceId?: string };
+
+function groupMenuItemsIntoCourses(
+  items: Array<{ name: string; course?: string | null }>,
+): CourseDraft[] {
+  const order: string[] = [];
+  const byCourse = new Map<string, string[]>();
+  for (const item of items) {
+    const course = (item.course ?? "").trim();
+    const name = item.name.trim();
+    if (!name) continue;
+    const key = course || "";
+    if (!byCourse.has(key)) {
+      byCourse.set(key, []);
+      order.push(key);
+    }
+    byCourse.get(key)!.push(name);
+  }
+  if (order.length === 0) return [];
+  return order.map((name) => ({
+    name,
+    dishes: byCourse.get(name) ?? [],
+  }));
+}
 
 export function MarketplaceServiceForm({ serviceId }: Props) {
   const isEdit = Boolean(serviceId);
@@ -114,11 +140,12 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
   const [portfolioUploading, setPortfolioUploading] = useState(false);
   const [packages, setPackages] = useState<PackageDraft[]>([]);
   const [addOns, setAddOns] = useState<AddOnDraft[]>([]);
-  const [menuItems, setMenuItems] = useState<MenuDraft[]>([]);
+  const [menuCourses, setMenuCourses] = useState<CourseDraft[]>([]);
   const [schedules, setSchedules] = useState<ScheduleRow[]>(
     defaultWeeklyServiceSchedules(),
   );
   const [instantBookingEnabled, setInstantBookingEnabled] = useState(false);
+  const [bookingCapacity, setBookingCapacity] = useState(1);
   const [previewService, setPreviewService] =
     useState<ManagedMarketplaceService | null>(null);
 
@@ -187,6 +214,9 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
     setCoverImage(existing.coverImage ?? "");
     setPortfolio(existing.portfolio ?? []);
     setInstantBookingEnabled(Boolean(existing.instantBookingEnabled));
+    setBookingCapacity(
+      Math.min(10, Math.max(1, Number(existing.bookingCapacity) || 1)),
+    );
     setPackages(
       (existing.packages ?? []).map((p) => ({
         name: p.name,
@@ -214,15 +244,13 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
         sortOrder: a.sortOrder ?? 0,
       })),
     );
-    setMenuItems(
-      (existing.menuItems ?? []).map((m) => ({
-        name: m.name,
-        description: m.description ?? "",
-        course: m.course ?? "",
-        price: m.price == null ? null : decimalToNumber(m.price),
-        isActive: m.isActive !== false,
-        sortOrder: m.sortOrder ?? 0,
-      })),
+    setMenuCourses(
+      groupMenuItemsIntoCourses(
+        (existing.menuItems ?? []).map((m) => ({
+          name: m.name,
+          course: m.course ?? "",
+        })),
+      ),
     );
     if (existing.schedules && existing.schedules.length > 0) {
       const byDay = new Map(existing.schedules.map((r) => [r.dayOfWeek, r]));
@@ -344,6 +372,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
       coverImage: coverImage || null,
       portfolio,
       instantBookingEnabled,
+      bookingCapacity,
       addOns,
       schedules: schedules.map((s) => ({
         dayOfWeek: s.dayOfWeek,
@@ -357,7 +386,19 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
       customizationMode === "PACKAGE" ||
       customizationMode === "MENU_BUILDER"
     ) {
-      payload.packages = packages;
+      payload.packages = packages.map((pkg) => ({
+        ...pkg,
+        menuRules:
+          customizationMode === "MENU_BUILDER"
+            ? (pkg.menuRules ?? []).map((rule) => ({
+                course: rule.course.trim(),
+                chooseCount: rule.chooseCount,
+                // Match dishes by course name (set when courses are saved as menu items)
+                menuItemIds: [],
+                extraPerGuest: null,
+              }))
+            : undefined,
+      }));
     } else if (
       existingMode === "PACKAGE" ||
       existingMode === "MENU_BUILDER"
@@ -367,7 +408,21 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
     }
 
     if (customizationMode === "MENU_BUILDER") {
-      payload.menuItems = menuItems;
+      let sortOrder = 0;
+      payload.menuItems = menuCourses.flatMap((course) => {
+        const courseName = course.name.trim();
+        return course.dishes
+          .map((dish) => dish.trim())
+          .filter(Boolean)
+          .map((name) => ({
+            name,
+            description: null,
+            course: courseName || null,
+            price: null,
+            isActive: true,
+            sortOrder: sortOrder++,
+          }));
+      });
     } else if (existingMode === "MENU_BUILDER") {
       payload.menuItems = [];
     }
@@ -393,12 +448,62 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
         toast.error(t("packageRequired"));
         throw new ApiError(400, t("packageRequired"));
       }
-      if (
-        payload.customizationMode === "MENU_BUILDER" &&
-        (payload.menuItems?.length ?? 0) === 0
-      ) {
-        toast.error(t("menuRequired"));
-        throw new ApiError(400, t("menuRequired"));
+      if (payload.customizationMode === "MENU_BUILDER") {
+        if ((payload.packages?.length ?? 0) === 0) {
+          toast.error(t("menuBuilderPackageRequired"));
+          throw new ApiError(400, t("menuBuilderPackageRequired"));
+        }
+        if ((payload.menuItems?.length ?? 0) === 0) {
+          toast.error(t("menuRequired"));
+          throw new ApiError(400, t("menuRequired"));
+        }
+        const coursesWithoutName = menuCourses.some(
+          (c) => c.dishes.some((d) => d.trim()) && !c.name.trim(),
+        );
+        if (coursesWithoutName) {
+          toast.error(t("courseNameRequired"));
+          throw new ApiError(400, t("courseNameRequired"));
+        }
+        const menuCourseNames = new Set(
+          menuCourses
+            .filter((c) => c.name.trim() && c.dishes.some((d) => d.trim()))
+            .map((c) => c.name.trim().toLowerCase()),
+        );
+        for (const pkg of payload.packages ?? []) {
+          const rules = pkg.menuRules ?? [];
+          if (rules.length === 0) {
+            toast.error(t("menuRulesRequired", { package: pkg.name || "—" }));
+            throw new ApiError(
+              400,
+              t("menuRulesRequired", { package: pkg.name || "—" }),
+            );
+          }
+          for (const rule of rules) {
+            const course = rule.course.trim();
+            if (!course || rule.chooseCount < 1) {
+              toast.error(t("menuRuleInvalid", { package: pkg.name || "—" }));
+              throw new ApiError(
+                400,
+                t("menuRuleInvalid", { package: pkg.name || "—" }),
+              );
+            }
+            if (!menuCourseNames.has(course.toLowerCase())) {
+              toast.error(
+                t("menuRuleCourseMismatch", {
+                  package: pkg.name || "—",
+                  course,
+                }),
+              );
+              throw new ApiError(
+                400,
+                t("menuRuleCourseMismatch", {
+                  package: pkg.name || "—",
+                  course,
+                }),
+              );
+            }
+          }
+        }
       }
       if (!payload.schedules?.some((s) => s.isOpen)) {
         toast.error(t("scheduleOpenDayRequired"));
@@ -422,9 +527,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
       queryClient.invalidateQueries({ queryKey: marketplaceKeys.all });
       const submitted = Boolean(vars.submit && saved.status === "PENDING");
       toast.success(submitted ? t("submittedForReview") : t("saved"));
-      if (!serviceId) {
-        router.replace(paths.editMarketplaceService(saved.id));
-      }
+      router.replace(paths.marketplace);
     },
     onError: (e) => {
       if (e instanceof ApiError && e.statusCode === 400) return;
@@ -532,18 +635,16 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
               </div>
               <div className="space-y-2">
                 <Label>{t("category")}</Label>
-                <Select value={categoryId} onValueChange={setCategoryId}>
-                  <SelectTrigger className={cn(inputClass, "w-full")}>
-                    <SelectValue placeholder={t("selectCategory")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={categoryId}
+                  onValueChange={setCategoryId}
+                  options={categories.map((c) => ({
+                    value: c.id,
+                    label: c.name,
+                  }))}
+                  placeholder={t("selectCategory")}
+                  triggerClassName={cn(inputClass, "w-full")}
+                />
               </div>
               <div className="space-y-2">
                 <Label>{t("pricingModel")}</Label>
@@ -601,6 +702,23 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                   checked={instantBookingEnabled}
                   onCheckedChange={setInstantBookingEnabled}
                 />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="booking-capacity">{t("bookingCapacity")}</Label>
+                <NumberInput
+                  id="booking-capacity"
+                  className={inputClass}
+                  value={bookingCapacity}
+                  onValueChange={(v) =>
+                    setBookingCapacity(Math.min(10, Math.max(1, v ?? 1)))
+                  }
+                  min={1}
+                  max={10}
+                  integer
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t("bookingCapacityHint")}
+                </p>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>{t("country")}</Label>
@@ -820,8 +938,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
             </CardContent>
           </Card>
 
-          {(customizationMode === "PACKAGE" ||
-            customizationMode === "MENU_BUILDER") && (
+          {customizationMode === "PACKAGE" ? (
             <Card className={dashboardCardClass}>
               <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
                 <div>
@@ -911,7 +1028,9 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                           variant="ghost"
                           className="text-destructive"
                           onClick={() =>
-                            setPackages((prev) => prev.filter((_, i) => i !== idx))
+                            setPackages((prev) =>
+                              prev.filter((_, i) => i !== idx),
+                            )
                           }
                         >
                           <Trash2 className="mr-1.5 h-4 w-4" />
@@ -923,7 +1042,445 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                 )}
               </CardContent>
             </Card>
-          )}
+          ) : null}
+
+          {customizationMode === "MENU_BUILDER" ? (
+            <Card className={dashboardCardClass}>
+              <CardHeader>
+                <CardTitle>{t("menuBuilderTitle")}</CardTitle>
+                <CardDescription>{t("menuBuilderDesc")}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium">{t("menuCoursesTitle")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("menuCoursesDesc")}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setMenuCourses((prev) => [
+                          ...prev,
+                          { name: "", dishes: [""] },
+                        ])
+                      }
+                    >
+                      <Plus className="mr-1.5 h-4 w-4" />
+                      {t("addCourse")}
+                    </Button>
+                  </div>
+                  {menuCourses.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {t("noCoursesYet")}
+                    </p>
+                  ) : (
+                    menuCourses.map((course, courseIdx) => (
+                      <div
+                        key={courseIdx}
+                        className="space-y-3 rounded-lg border border-border p-4"
+                      >
+                        <div className="flex flex-wrap items-end gap-3">
+                          <div className="min-w-[12rem] flex-1 space-y-2">
+                            <Label>{t("courseName")}</Label>
+                            <Input
+                              className={inputClass}
+                              placeholder={t("ruleCoursePlaceholder")}
+                              value={course.name}
+                              onChange={(e) => {
+                                const nextName = e.target.value;
+                                const prevName = course.name;
+                                setMenuCourses((prev) =>
+                                  prev.map((c, i) =>
+                                    i === courseIdx
+                                      ? { ...c, name: nextName }
+                                      : c,
+                                  ),
+                                );
+                                if (prevName.trim()) {
+                                  setPackages((prev) =>
+                                    prev.map((p) => ({
+                                      ...p,
+                                      menuRules: (p.menuRules ?? []).map(
+                                        (rule) =>
+                                          rule.course === prevName
+                                            ? { ...rule, course: nextName }
+                                            : rule,
+                                      ),
+                                    })),
+                                  );
+                                }
+                              }}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => {
+                              const removed = course.name.trim();
+                              setMenuCourses((prev) =>
+                                prev.filter((_, i) => i !== courseIdx),
+                              );
+                              if (removed) {
+                                setPackages((prev) =>
+                                  prev.map((p) => ({
+                                    ...p,
+                                    menuRules: (p.menuRules ?? []).filter(
+                                      (rule) => rule.course !== removed,
+                                    ),
+                                  })),
+                                );
+                              }
+                            }}
+                          >
+                            <Trash2 className="mr-1.5 h-4 w-4" />
+                            {t("removeCourse")}
+                          </Button>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t("dishesForCourse")}</Label>
+                          {course.dishes.map((dish, dishIdx) => (
+                            <div key={dishIdx} className="flex gap-2">
+                              <Input
+                                className={inputClass}
+                                placeholder={t("dishNamePlaceholder")}
+                                value={dish}
+                                onChange={(e) =>
+                                  setMenuCourses((prev) =>
+                                    prev.map((c, i) =>
+                                      i === courseIdx
+                                        ? {
+                                            ...c,
+                                            dishes: c.dishes.map((d, di) =>
+                                              di === dishIdx
+                                                ? e.target.value
+                                                : d,
+                                            ),
+                                          }
+                                        : c,
+                                    ),
+                                  )
+                                }
+                              />
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="shrink-0 text-destructive"
+                                onClick={() =>
+                                  setMenuCourses((prev) =>
+                                    prev.map((c, i) =>
+                                      i === courseIdx
+                                        ? {
+                                            ...c,
+                                            dishes: c.dishes.filter(
+                                              (_, di) => di !== dishIdx,
+                                            ),
+                                          }
+                                        : c,
+                                    ),
+                                  )
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setMenuCourses((prev) =>
+                                prev.map((c, i) =>
+                                  i === courseIdx
+                                    ? { ...c, dishes: [...c.dishes, ""] }
+                                    : c,
+                                ),
+                              )
+                            }
+                          >
+                            <Plus className="mr-1.5 h-4 w-4" />
+                            {t("addDish")}
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="space-y-4 border-t border-border pt-6">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium">{t("packages")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("packagesDescMenuBuilder")}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setPackages((prev) => [
+                          ...prev,
+                          {
+                            name: "",
+                            description: "",
+                            price: 0,
+                            isActive: true,
+                            sortOrder: prev.length,
+                            menuRules: [],
+                          },
+                        ])
+                      }
+                    >
+                      <Plus className="mr-1.5 h-4 w-4" />
+                      {t("addPackage")}
+                    </Button>
+                  </div>
+                  {packages.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {t("noPackages")}
+                    </p>
+                  ) : (
+                    packages.map((pkg, idx) => {
+                      const courseOptions = menuCourses
+                        .map((c) => c.name.trim())
+                        .filter(Boolean);
+                      return (
+                        <div
+                          key={idx}
+                          className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-2"
+                        >
+                          <div className="space-y-2">
+                            <Label>{t("packageName")}</Label>
+                            <Input
+                              className={inputClass}
+                              value={pkg.name}
+                              onChange={(e) =>
+                                setPackages((prev) =>
+                                  prev.map((p, i) =>
+                                    i === idx
+                                      ? { ...p, name: e.target.value }
+                                      : p,
+                                  ),
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{t("packagePrice")}</Label>
+                            <NumberInput
+                              className={inputClass}
+                              value={pkg.price}
+                              min={0}
+                              integer
+                              onValueChange={(v) =>
+                                setPackages((prev) =>
+                                  prev.map((p, i) =>
+                                    i === idx ? { ...p, price: v ?? 0 } : p,
+                                  ),
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2 sm:col-span-2">
+                            <Label>{t("packageDescription")}</Label>
+                            <Textarea
+                              className={inputClass}
+                              value={pkg.description ?? ""}
+                              onChange={(e) =>
+                                setPackages((prev) =>
+                                  prev.map((p, i) =>
+                                    i === idx
+                                      ? { ...p, description: e.target.value }
+                                      : p,
+                                  ),
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="space-y-3 border-t border-border pt-3 sm:col-span-2">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <Label>{t("menuRules")}</Label>
+                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                  {t("menuRulesSimpleDesc")}
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={courseOptions.length === 0}
+                                onClick={() =>
+                                  setPackages((prev) =>
+                                    prev.map((p, i) =>
+                                      i === idx
+                                        ? {
+                                            ...p,
+                                            menuRules: [
+                                              ...(p.menuRules ?? []),
+                                              {
+                                                course: courseOptions[0] ?? "",
+                                                chooseCount: 1,
+                                                menuItemIds: [],
+                                                extraPerGuest: null,
+                                              },
+                                            ],
+                                          }
+                                        : p,
+                                    ),
+                                  )
+                                }
+                              >
+                                <Plus className="mr-1.5 h-4 w-4" />
+                                {t("addMenuRule")}
+                              </Button>
+                            </div>
+                            {courseOptions.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">
+                                {t("addCoursesBeforeRules")}
+                              </p>
+                            ) : (pkg.menuRules ?? []).length === 0 ? (
+                              <p className="text-sm text-muted-foreground">
+                                {t("noMenuRulesYet")}
+                              </p>
+                            ) : (
+                              (pkg.menuRules ?? []).map((rule, ruleIdx) => (
+                                <div
+                                  key={ruleIdx}
+                                  className="grid gap-3 rounded-md border border-dashed border-border p-3 sm:grid-cols-[1fr_8rem_auto]"
+                                >
+                                  <div className="space-y-2">
+                                    <Label>{t("ruleCourse")}</Label>
+                                    <Select
+                                      value={rule.course || undefined}
+                                      onValueChange={(value) =>
+                                        setPackages((prev) =>
+                                          prev.map((p, i) =>
+                                            i === idx
+                                              ? {
+                                                  ...p,
+                                                  menuRules: (
+                                                    p.menuRules ?? []
+                                                  ).map((r, ri) =>
+                                                    ri === ruleIdx
+                                                      ? { ...r, course: value }
+                                                      : r,
+                                                  ),
+                                                }
+                                              : p,
+                                          ),
+                                        )
+                                      }
+                                    >
+                                      <SelectTrigger className={inputClass}>
+                                        <SelectValue
+                                          placeholder={t("selectCourse")}
+                                        />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {courseOptions.map((name) => (
+                                          <SelectItem key={name} value={name}>
+                                            {name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>{t("chooseCount")}</Label>
+                                    <NumberInput
+                                      className={inputClass}
+                                      value={rule.chooseCount}
+                                      min={1}
+                                      integer
+                                      onValueChange={(v) =>
+                                        setPackages((prev) =>
+                                          prev.map((p, i) =>
+                                            i === idx
+                                              ? {
+                                                  ...p,
+                                                  menuRules: (
+                                                    p.menuRules ?? []
+                                                  ).map((r, ri) =>
+                                                    ri === ruleIdx
+                                                      ? {
+                                                          ...r,
+                                                          chooseCount: v ?? 1,
+                                                        }
+                                                      : r,
+                                                  ),
+                                                }
+                                              : p,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                  <div className="flex items-end">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-destructive"
+                                      onClick={() =>
+                                        setPackages((prev) =>
+                                          prev.map((p, i) =>
+                                            i === idx
+                                              ? {
+                                                  ...p,
+                                                  menuRules: (
+                                                    p.menuRules ?? []
+                                                  ).filter(
+                                                    (_, ri) => ri !== ruleIdx,
+                                                  ),
+                                                }
+                                              : p,
+                                          ),
+                                        )
+                                      }
+                                    >
+                                      <Trash2 className="mr-1.5 h-4 w-4" />
+                                      {t("removeMenuRule")}
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                          <div className="sm:col-span-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive"
+                              onClick={() =>
+                                setPackages((prev) =>
+                                  prev.filter((_, i) => i !== idx),
+                                )
+                              }
+                            >
+                              <Trash2 className="mr-1.5 h-4 w-4" />
+                              {t("removePackage")}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card className={dashboardCardClass}>
             <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
@@ -1010,111 +1567,6 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
               )}
             </CardContent>
           </Card>
-
-          {customizationMode === "MENU_BUILDER" ? (
-            <Card className={dashboardCardClass}>
-              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
-                <div>
-                  <CardTitle>{t("menuItems")}</CardTitle>
-                  <CardDescription>{t("menuItemsDesc")}</CardDescription>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    setMenuItems((prev) => [
-                      ...prev,
-                      {
-                        name: "",
-                        description: "",
-                        course: "",
-                        price: null,
-                        isActive: true,
-                        sortOrder: prev.length,
-                      },
-                    ])
-                  }
-                >
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  {t("addMenuItem")}
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {menuItems.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t("noMenuItems")}</p>
-                ) : (
-                  menuItems.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-3"
-                    >
-                      <div className="space-y-2">
-                        <Label>{t("menuItemName")}</Label>
-                        <Input
-                          className={inputClass}
-                          value={item.name}
-                          onChange={(e) =>
-                            setMenuItems((prev) =>
-                              prev.map((p, i) =>
-                                i === idx ? { ...p, name: e.target.value } : p,
-                              ),
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{t("course")}</Label>
-                        <Input
-                          className={inputClass}
-                          value={item.course ?? ""}
-                          onChange={(e) =>
-                            setMenuItems((prev) =>
-                              prev.map((p, i) =>
-                                i === idx ? { ...p, course: e.target.value } : p,
-                              ),
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{t("menuItemPrice")}</Label>
-                        <NumberInput
-                          className={inputClass}
-                          value={item.price ?? undefined}
-                          min={0}
-                          integer
-                          onValueChange={(v) =>
-                            setMenuItems((prev) =>
-                              prev.map((p, i) =>
-                                i === idx ? { ...p, price: v ?? null } : p,
-                              ),
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="sm:col-span-3">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive"
-                          onClick={() =>
-                            setMenuItems((prev) =>
-                              prev.filter((_, i) => i !== idx),
-                            )
-                          }
-                        >
-                          <Trash2 className="mr-1.5 h-4 w-4" />
-                          {t("removeMenuItem")}
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          ) : null}
 
           <Card className={dashboardCardClass}>
             <CardFooter className="flex flex-wrap justify-end gap-2 pt-6">

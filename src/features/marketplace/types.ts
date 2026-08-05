@@ -100,6 +100,8 @@ export type MarketplaceService = {
   status: EntityStatus;
   rejectionReason?: string | null;
   instantBookingEnabled?: boolean;
+  /** Max concurrent jobs per calendar day (1–10). Default 1. */
+  bookingCapacity?: number;
   cancellationPolicy?: Record<string, unknown> | null;
   createdAt?: string;
   updatedAt?: string;
@@ -180,6 +182,7 @@ export type CreateMarketplaceServicePayload = {
   baseCity?: string | null;
   cancellationPolicy?: Record<string, unknown> | null;
   instantBookingEnabled?: boolean;
+  bookingCapacity?: number;
   packages?: ServicePackagePayload[];
   addOns?: ServiceAddOnPayload[];
   menuItems?: ServiceMenuItemPayload[];
@@ -210,11 +213,21 @@ export type ServiceBlockPayload = {
   isBlocked?: boolean;
 };
 
+export type ServiceAvailabilityDay = {
+  date: string;
+  booked: number;
+  remaining: number;
+  blocked: boolean;
+  available: boolean;
+};
+
 export type ServiceAvailabilityResult = {
   serviceId: string;
   startDate: string;
   endDate: string;
   available: boolean;
+  bookingCapacity?: number;
+  days?: ServiceAvailabilityDay[];
   blocks: ServiceBlock[];
   busyBookings: Array<{
     id: string;

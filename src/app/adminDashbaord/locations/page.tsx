@@ -20,13 +20,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toastApiError } from "@/lib/toasts";
@@ -45,6 +39,10 @@ import { locationKeys } from "@/features/locations/query-keys";
 const inputClass = dashboardInputClass;
 const selectTriggerClass = cn("w-full", dashboardSelectTriggerClass);
 const TIMEZONE_OPTIONS = listTimezones();
+const TIMEZONE_SELECT_OPTIONS = TIMEZONE_OPTIONS.map((tz) => ({
+  value: tz,
+  label: formatTimezoneLabel(tz),
+}));
 
 export default function LocationsAdminPage() {
   const t = useTranslations("adminDashboard");
@@ -70,6 +68,17 @@ export default function LocationsAdminPage() {
   const selectedCountry = useMemo(
     () => countries.find((country) => country.code === selectedCountryCode),
     [countries, selectedCountryCode],
+  );
+
+  const activeCountryOptions = useMemo(
+    () =>
+      countries
+        .filter((country) => country.isActive)
+        .map((country) => ({
+          value: country.code,
+          label: `${country.name} (${country.code})`,
+        })),
+    [countries],
   );
 
   const toggleCountryMut = useMutation({
@@ -192,23 +201,15 @@ export default function LocationsAdminPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField label={tForms("country")} htmlFor="country-code">
-                    <Select
+                    <SearchableSelect
                       value={selectedCountryCode}
                       onValueChange={setSelectedCountryCode}
-                    >
-                      <SelectTrigger id="country-code" className={selectTriggerClass}>
-                        <SelectValue placeholder={tForms("country")} />
-                      </SelectTrigger>
-                      <SelectContent className={dashboardDropdownContentClass}>
-                        {countries
-                          .filter((country) => country.isActive)
-                          .map((country) => (
-                            <SelectItem key={country.id} value={country.code}>
-                              {country.name} ({country.code})
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
+                      options={activeCountryOptions}
+                      placeholder={tForms("country")}
+                      searchPlaceholder="Search countries..."
+                      triggerClassName={selectTriggerClass}
+                      contentClassName={dashboardDropdownContentClass}
+                    />
                   </FormField>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <FormField label={tForms("city")} htmlFor="city-name">
@@ -221,18 +222,15 @@ export default function LocationsAdminPage() {
                       />
                     </FormField>
                     <FormField label={tForms("timezone")} htmlFor="city-timezone">
-                      <Select value={cityTimezone} onValueChange={setCityTimezone}>
-                        <SelectTrigger id="city-timezone" className={selectTriggerClass}>
-                          <SelectValue placeholder={tForms("timezone")} />
-                        </SelectTrigger>
-                        <SelectContent className={cn(dashboardDropdownContentClass, "max-h-72")}>
-                          {TIMEZONE_OPTIONS.map((tz) => (
-                            <SelectItem key={tz} value={tz}>
-                              {formatTimezoneLabel(tz)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <SearchableSelect
+                        value={cityTimezone}
+                        onValueChange={setCityTimezone}
+                        options={TIMEZONE_SELECT_OPTIONS}
+                        placeholder={tForms("timezone")}
+                        searchPlaceholder="Search timezones..."
+                        triggerClassName={selectTriggerClass}
+                        contentClassName={cn(dashboardDropdownContentClass, "max-h-80")}
+                      />
                     </FormField>
                   </div>
                   <Button

@@ -150,11 +150,15 @@ export function entityStatusLabel(status: EntityStatus | undefined): string {
 type VenueReadinessSource = {
   name?: string | null;
   address?: string | null;
+  venueTypeId?: string | null;
   coverImage?: string | null;
+  gallery?: string[] | null;
   pricing?: unknown | null;
   schedules?: Array<{ isOpen: boolean }> | null;
   amenities?: unknown[] | null;
 };
+
+export const VENUE_GALLERY_MIN_IMAGES = 5;
 
 export function evaluateVenueReadiness(venue: VenueReadinessSource) {
   const schedules = venue.schedules ?? [];
@@ -164,8 +168,8 @@ export function evaluateVenueReadiness(venue: VenueReadinessSource) {
       id: "details",
       label: "Venue details",
       required: true,
-      met: Boolean(venue.name?.trim() && venue.address?.trim()),
-      message: "Name and address are required",
+      met: Boolean(venue.name?.trim() && venue.address?.trim() && venue.venueTypeId?.trim()),
+      message: "Name, address, and venue type are required",
     },
     {
       id: "schedule",
@@ -191,9 +195,16 @@ export function evaluateVenueReadiness(venue: VenueReadinessSource) {
     {
       id: "cover",
       label: "Cover image",
-      required: false,
-      met: Boolean(venue.coverImage),
-      message: "Recommended for better visibility",
+      required: true,
+      met: Boolean(venue.coverImage?.trim()),
+      message: "Upload a cover image before submitting for review",
+    },
+    {
+      id: "gallery",
+      label: "Gallery images",
+      required: true,
+      met: (venue.gallery?.length ?? 0) >= VENUE_GALLERY_MIN_IMAGES,
+      message: `Add at least ${VENUE_GALLERY_MIN_IMAGES} gallery images`,
     },
   ];
 
