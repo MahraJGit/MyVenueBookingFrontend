@@ -152,6 +152,8 @@ export type ManagedAttraction = {
   daysOfWeek: number[];
   slots: AttractionSlotTemplate[];
   materializeHorizonDays?: number;
+  /** Minutes before each occurrence start when gate scanning opens. */
+  entryOpenMinutesBefore?: number;
   status?: AttractionApprovalStatus;
   isDeleted?: boolean;
   /** True when active ticket sales lock structural edits. */
@@ -225,6 +227,8 @@ export type CreateAttractionPayload = {
   daysOfWeek: number[];
   slots: AttractionSlotTemplate[];
   materializeHorizonDays?: number;
+  /** Minutes before each occurrence start when gate scanning opens (default 60). */
+  entryOpenMinutesBefore?: number;
   ticketTypes: Array<{
     name: string;
     price: number;

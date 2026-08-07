@@ -1319,6 +1319,9 @@
     "bookingHorizonLabel": "How far ahead can guests book? (days)",
     "bookingHorizonHint": "Dates beyond this window stay blocked on the calendar until they come into range. Shows are prepared automatically within this window.",
     "bookingHorizonInvalid": "Booking window must be between 1 and 365 days.",
+    "entryOpenMinutesLabel": "Entry opens (minutes before start)",
+    "entryOpenMinutesHint": "How many minutes before start staff can scan tickets at the gate. Scanning closes when the event or show ends.",
+    "entryOpenMinutesInvalid": "Entry window must be between 0 and 1440 minutes.",
     "marketplaceSection": "Marketplace",
     "marketplaceReviews": "Service Request",
     "serviceCategories": "Service Categories"

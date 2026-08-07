@@ -1323,6 +1323,9 @@
     "attractionRestored": "تمت استعادة المعلم كمسودة",
     "couldNotRestoreAttraction": "تعذّر استعادة المعلم.",
     "slotOverlapError": "\"{nameA}\" and \"{nameB}\" have overlapping times (including across midnight).",
+    "entryOpenMinutesLabel": "يفتح الدخول (دقائق قبل البداية)",
+    "entryOpenMinutesHint": "عدد الدقائق قبل البداية التي يمكن للموظفين خلالها مسح التذاكر عند البوابة. يتوقف المسح عند انتهاء الفعالية أو العرض.",
+    "entryOpenMinutesInvalid": "يجب أن تكون نافذة الدخول بين 0 و 1440 دقيقة.",
     "bookingHorizonLabel": "How far ahead can guests book? (days)",
     "bookingHorizonHint": "Dates beyond this window stay blocked on the calendar until they come into range. Shows are prepared automatically within this window.",
     "bookingHorizonInvalid": "Booking window must be between 1 and 365 days."

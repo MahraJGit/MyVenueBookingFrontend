@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { DateTimePicker } from "@/components/ui/date-time-picker"
+import { NumberInput } from "@/components/ui/number-input"
 import { VenueGalleryUpload } from "@/components/venues/VenueGalleryUpload"
 import {
     Select,
@@ -304,6 +305,7 @@ export default function AddEventsContentPage() {
     )
     const [startLocal, setStartLocal] = React.useState(() => defaultSchedule().start)
     const [endLocal, setEndLocal] = React.useState(() => defaultSchedule().end)
+    const [entryOpenMinutesBefore, setEntryOpenMinutesBefore] = React.useState(60)
     const [tickets, setTickets] = React.useState<TicketForm[]>([defaultTicket(t("generalTicket"))])
     const [seatingEnabled, setSeatingEnabled] = React.useState(false)
     const [seatingSections, setSeatingSections] = React.useState<SeatingEditorSection[]>([])
@@ -476,6 +478,9 @@ export default function AddEventsContentPage() {
         const toLocal = (iso: string) => utcIsoToDatetimeLocalValue(iso, eventTz)
         setStartLocal(toLocal(existing.startDateTime))
         setEndLocal(toLocal(existing.endDateTime))
+        setEntryOpenMinutesBefore(
+            Math.min(1440, Math.max(0, existing.entryOpenMinutesBefore ?? 60)),
+        )
 
         setTickets(
             existing.ticketTypes.length > 0
@@ -594,6 +599,7 @@ export default function AddEventsContentPage() {
                     venueName: venueName.trim(),
                     venuePhone: venuePhone?.trim() ?? "",
                     venueWebsite: venueWebsite.trim(),
+                    entryOpenMinutesBefore,
                 })
             }
 
@@ -725,6 +731,7 @@ export default function AddEventsContentPage() {
             latitude: Number(latitude),
             longitude: Number(longitude),
             locationSource,
+            entryOpenMinutesBefore,
             ticketTypes: ticketPayload,
         }
 
@@ -827,6 +834,14 @@ export default function AddEventsContentPage() {
         }
         if (galleryUrls.length < EVENT_GALLERY_MIN_IMAGES) {
             toast.error(t("galleryMinError", { min: EVENT_GALLERY_MIN_IMAGES }))
+            return
+        }
+        if (
+            !Number.isFinite(entryOpenMinutesBefore) ||
+            entryOpenMinutesBefore < 0 ||
+            entryOpenMinutesBefore > 1440
+        ) {
+            toast.error(t("entryOpenMinutesInvalid"))
             return
         }
         saveMutation.mutate()
@@ -1055,6 +1070,24 @@ export default function AddEventsContentPage() {
                             {timingValidation.eventEndError ? (
                                 <p className="text-xs text-destructive">{timingValidation.eventEndError}</p>
                             ) : null}
+                        </div>
+
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="entry-open-minutes">{t("entryOpenMinutesLabel")}</Label>
+                            <p className="text-xs text-muted-foreground">
+                                {t("entryOpenMinutesHint")}
+                            </p>
+                            <NumberInput
+                                id="entry-open-minutes"
+                                integer
+                                min={0}
+                                max={1440}
+                                value={entryOpenMinutesBefore}
+                                onValueChange={(v) =>
+                                    setEntryOpenMinutesBefore(v ?? 60)
+                                }
+                                className={inputClass}
+                            />
                         </div>
 
                         <div className="space-y-2 sm:col-span-2">

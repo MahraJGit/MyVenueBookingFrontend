@@ -72,6 +72,8 @@ export type ManagedEvent = {
   latitude: string | number;
   longitude: string | number;
   locationSource: "VENUE" | "CUSTOM";
+  /** Minutes before startDateTime when gate scanning opens. */
+  entryOpenMinutesBefore?: number;
   seatingEnabled?: boolean;
   status?: EventApprovalStatus;
   isDeleted?: boolean;
@@ -185,6 +187,8 @@ export type CreateEventPayload = {
   latitude: number;
   longitude: number;
   locationSource: "VENUE" | "CUSTOM";
+  /** Minutes before startDateTime when gate scanning opens (default 60). */
+  entryOpenMinutesBefore?: number;
   ticketTypes: {
     name: string;
     price: number;

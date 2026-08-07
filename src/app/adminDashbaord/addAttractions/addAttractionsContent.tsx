@@ -159,6 +159,7 @@ export default function AddAttractionsContentPage() {
 
   const [daysOfWeek, setDaysOfWeek] = React.useState<number[]>([1, 2, 3, 4, 5])
   const [materializeHorizonDays, setMaterializeHorizonDays] = React.useState(60)
+  const [entryOpenMinutesBefore, setEntryOpenMinutesBefore] = React.useState(60)
   const [slots, setSlots] = React.useState<
     Array<{ name: string; startTime: string; endTime: string }>
   >([])
@@ -328,6 +329,9 @@ export default function AddAttractionsContentPage() {
     setMaterializeHorizonDays(
       Math.min(365, Math.max(1, existing.materializeHorizonDays ?? 60)),
     )
+    setEntryOpenMinutesBefore(
+      Math.min(1440, Math.max(0, existing.entryOpenMinutesBefore ?? 60)),
+    )
     setSlots(
       existing.slots?.length
         ? existing.slots.map((s) => ({
@@ -449,6 +453,7 @@ export default function AddAttractionsContentPage() {
           venueName: venueName.trim() || null,
           venuePhone: venuePhone?.trim() || "",
           venueWebsite: venueWebsite.trim() || null,
+          entryOpenMinutesBefore,
         })
         return { saved, seatingResult: undefined as undefined }
       }
@@ -576,6 +581,7 @@ export default function AddAttractionsContentPage() {
       seatingEnabled,
       daysOfWeek,
       materializeHorizonDays,
+      entryOpenMinutesBefore,
       slots: slots.map((s) => ({
         name: s.name.trim(),
         startTime: s.startTime.trim(),
@@ -790,6 +796,14 @@ export default function AddAttractionsContentPage() {
       materializeHorizonDays > 365
     ) {
       toast.error(t("bookingHorizonInvalid"))
+      return
+    }
+    if (
+      !Number.isFinite(entryOpenMinutesBefore) ||
+      entryOpenMinutesBefore < 0 ||
+      entryOpenMinutesBefore > 1440
+    ) {
+      toast.error(t("entryOpenMinutesInvalid"))
       return
     }
     if (tickets.some((ticket) => !ticket.name.trim())) {
@@ -1387,6 +1401,23 @@ export default function AddAttractionsContentPage() {
                   value={materializeHorizonDays}
                   onValueChange={(v) =>
                     setMaterializeHorizonDays(v ?? 60)
+                  }
+                  className={inputClass}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="entry-open-minutes">{t("entryOpenMinutesLabel")}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("entryOpenMinutesHint")}
+                </p>
+                <NumberInput
+                  id="entry-open-minutes"
+                  integer
+                  min={0}
+                  max={1440}
+                  value={entryOpenMinutesBefore}
+                  onValueChange={(v) =>
+                    setEntryOpenMinutesBefore(v ?? 60)
                   }
                   className={inputClass}
                 />
