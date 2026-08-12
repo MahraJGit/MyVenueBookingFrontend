@@ -10,7 +10,7 @@ import {
   bookingSelectionHours,
   isInstantServiceBooking,
 } from "@/features/marketplace/booking-display";
-import { decimalToNumber } from "@/features/marketplace/utils";
+import { decimalToNumber, formatSlotLabel } from "@/features/marketplace/utils";
 
 type Props = {
   booking: ServiceBooking;
@@ -74,6 +74,15 @@ export function ServiceBookingDetails({
   const startKey = String(booking.startDate).slice(0, 10);
   const endKey = String(booking.endDate).slice(0, 10);
   const eventDate = startKey === endKey ? startKey : `${startKey} → ${endKey}`;
+  const slot =
+    booking.slot ??
+    booking.proposal?.slot ??
+    booking.inquiry?.slot ??
+    null;
+  const slotTime =
+    slot?.startAt && slot?.endAt
+      ? formatSlotLabel(slot.startAt, slot.endAt, slot.label)
+      : null;
   const vendor = booking.vendor ?? booking.service?.vendor ?? null;
   const packagePrice =
     booking.inquiry?.package?.price != null
@@ -96,6 +105,9 @@ export function ServiceBookingDetails({
           )}
         />
         <MetaRow label={t("eventDate")} value={eventDate} />
+        {slotTime ? (
+          <MetaRow label={t("inquiryTimeSlot")} value={slotTime} />
+        ) : null}
         <MetaRow
           label={t("serviceFallback")}
           value={booking.service?.title ?? null}

@@ -16,6 +16,8 @@ export const marketplaceKeys = {
     [...marketplaceKeys.all, "schedules", id] as const,
   blocks: (id: string) =>
     [...marketplaceKeys.all, "blocks", id] as const,
+  slots: (id: string, params?: Record<string, unknown>) =>
+    [...marketplaceKeys.all, "slots", id, params ?? {}] as const,
   availability: (id: string, startDate: string, endDate: string) =>
     [...marketplaceKeys.all, "availability", id, startDate, endDate] as const,
   inquiries: (userId: string | undefined, params?: Record<string, unknown>) =>

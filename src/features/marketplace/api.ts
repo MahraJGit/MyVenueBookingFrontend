@@ -16,6 +16,9 @@ import type {
   ServicePricingModel,
   ServiceSchedule,
   ServiceSchedulesPayload,
+  ServiceSlot,
+  CreateServiceSlotPayload,
+  UpdateServiceSlotPayload,
   UpdateMarketplaceServicePayload,
   EntityStatus,
   AcceptServiceProposalResult,
@@ -390,6 +393,124 @@ export async function removeServiceBlock(
       method: "DELETE",
       headers: { Accept: "application/json" },
       networkErrorMessage: "Network error while removing service block.",
+    },
+  );
+}
+
+export type ServiceOfflineBookingPayload = {
+  date?: string;
+  slotKey?: string | null;
+  guestName?: string | null;
+  guestPhone?: string | null;
+  specialRequests?: string | null;
+  guestCount?: number | null;
+  totalAmount?: number | null;
+};
+
+export async function createServiceOfflineBooking(
+  serviceId: string,
+  body: ServiceOfflineBookingPayload,
+): Promise<ServiceBooking> {
+  return authJson<ServiceBooking>(
+    `/api/marketplace-services/${encodeURIComponent(serviceId)}/offline-bookings`,
+    {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      networkErrorMessage: "Network error while recording local booking.",
+    },
+  );
+}
+
+// ─── Service slots ─────────────────────────────────────────────
+
+export async function listServiceSlots(
+  serviceId: string,
+  params?: {
+    startDate?: string;
+    endDate?: string;
+    availableOnly?: boolean;
+  },
+): Promise<ServiceSlot[]> {
+  const sp = new URLSearchParams();
+  if (params?.startDate) sp.set("startDate", params.startDate);
+  if (params?.endDate) sp.set("endDate", params.endDate);
+  if (params?.availableOnly !== undefined) {
+    sp.set("availableOnly", String(params.availableOnly));
+  }
+  const qs = sp.toString();
+  const json = await apiGet<SuccessEnvelope<ServiceSlot[]>>(
+    `/api/marketplace-services/${encodeURIComponent(serviceId)}/slots${qs ? `?${qs}` : ""}`,
+  );
+  return unwrapEnvelope(json);
+}
+
+export async function listManagedServiceSlots(
+  serviceId: string,
+  params?: {
+    startDate?: string;
+    endDate?: string;
+    availableOnly?: boolean;
+  },
+): Promise<ServiceSlot[]> {
+  const sp = new URLSearchParams();
+  if (params?.startDate) sp.set("startDate", params.startDate);
+  if (params?.endDate) sp.set("endDate", params.endDate);
+  if (params?.availableOnly !== undefined) {
+    sp.set("availableOnly", String(params.availableOnly));
+  }
+  const qs = sp.toString();
+  return authJson<ServiceSlot[]>(
+    `/api/marketplace-services/${encodeURIComponent(serviceId)}/manage/slots${qs ? `?${qs}` : ""}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while loading service slots.",
+    },
+  );
+}
+
+export async function createServiceSlot(
+  serviceId: string,
+  body: CreateServiceSlotPayload,
+): Promise<ServiceSlot> {
+  return authJson<ServiceSlot>(
+    `/api/marketplace-services/${encodeURIComponent(serviceId)}/slots`,
+    {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      networkErrorMessage: "Network error while creating service slot.",
+    },
+  );
+}
+
+export async function updateServiceSlot(
+  serviceId: string,
+  slotId: string,
+  body: UpdateServiceSlotPayload,
+): Promise<ServiceSlot> {
+  return authJson<ServiceSlot>(
+    `/api/marketplace-services/${encodeURIComponent(serviceId)}/slots/${encodeURIComponent(slotId)}`,
+    {
+      method: "PATCH",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      networkErrorMessage: "Network error while updating service slot.",
+    },
+  );
+}
+
+export async function deleteServiceSlot(
+  serviceId: string,
+  slotId: string,
+): Promise<void> {
+  return authVoid(
+    `/api/marketplace-services/${encodeURIComponent(serviceId)}/slots/${encodeURIComponent(slotId)}`,
+    {
+      method: "DELETE",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while deleting service slot.",
     },
   );
 }

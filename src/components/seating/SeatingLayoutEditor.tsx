@@ -69,6 +69,8 @@ type SeatingLayoutEditorProps = {
   onFocalPointChange: (focal: SeatMapFocalPoint | null) => void;
   ticketOptions: TicketOption[];
   disabled?: boolean;
+  /** When false, only the layout controls render (toggle lives outside). */
+  showEnableToggle?: boolean;
 };
 
 function emptySection(
@@ -102,6 +104,7 @@ export function SeatingLayoutEditor({
   onFocalPointChange,
   ticketOptions,
   disabled,
+  showEnableToggle = true,
 }: SeatingLayoutEditorProps) {
   const defaultTicketId = ticketOptions[0]?.id ?? "";
   const [selectedIndex, setSelectedIndex] = React.useState<number | null>(null);
@@ -117,6 +120,7 @@ export function SeatingLayoutEditor({
   );
 
   const customGeometry = hasCustomGeometry(sections, focalPoint);
+  const hasTickets = ticketOptions.length > 0;
 
   const updateSection = (index: number, patch: Partial<SeatingEditorSection>) => {
     onSectionsChange(
@@ -149,334 +153,383 @@ export function SeatingLayoutEditor({
     ]);
   };
 
+  const venuePreview = customGeometry ? (
+    <EditorVenuePreview
+      sections={sections}
+      focalPoint={focalPoint}
+      selectedIndex={selectedIndex}
+      onSelect={setSelectedIndex}
+      onMoveSection={(index, x, y) =>
+        updateSection(index, { posX: Math.round(x), posY: Math.round(y) })
+      }
+      disabled={disabled}
+    />
+  ) : (
+    <div className="venue-preview-root flex h-full flex-col space-y-2 rounded-2xl border border-border bg-muted/30 p-4">
+      <p className="shrink-0 text-xs text-muted-foreground">
+        Venue preview — pick a layout preset or set a focal point to arrange sections on a map.
+      </p>
+      <div className="min-h-[240px] flex-1">
+        <SeatMapPreview sections={sections} />
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-card/40 p-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 font-medium">
-            <Armchair className="h-4 w-4 text-primary" />
-            Reserved seating
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Let buyers pick seats on a map. Ticket quantities are set from your
-            layout.
-          </p>
-        </div>
-        <Switch
-          checked={enabled}
-          onCheckedChange={onEnabledChange}
-          disabled={disabled || ticketOptions.length === 0}
-          aria-label="Enable reserved seating"
-        />
-      </div>
-
-      {enabled ? (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Start from a venue layout</Label>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {SEATING_PRESETS.map((preset) => {
-                const Icon = PRESET_ICONS[preset.id];
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    disabled={disabled || ticketOptions.length === 0}
-                    onClick={() => applyPreset(preset.id)}
-                    className="rounded-xl border border-border bg-card/40 p-3 text-left transition hover:border-primary/60 hover:bg-card disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <Icon className="h-4 w-4 text-primary" />
-                      {preset.name}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {preset.description}
-                    </p>
-                  </button>
-                );
-              })}
+      {showEnableToggle ? (
+        <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-card/40 p-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 font-medium">
+              <Armchair className="h-4 w-4 text-primary" />
+              Reserved seating
             </div>
-            <p className="text-xs text-muted-foreground">
-              Picking a layout replaces the current sections. You can rename, recolor,
-              move, and reshape every section afterwards.
+            <p className="text-sm text-muted-foreground">
+              Let buyers pick seats on a map. Ticket quantities are set from your
+              layout.
             </p>
           </div>
+          <Switch
+            checked={enabled}
+            onCheckedChange={onEnabledChange}
+            disabled={disabled}
+            aria-label="Enable reserved seating"
+          />
+        </div>
+      ) : null}
 
-          <div className="grid gap-3 sm:grid-cols-2">
+      {enabled ? (
+        !hasTickets ? (
+          <p className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+            Add at least one ticket type above, then come back here to design sections
+            and see the venue layout.
+          </p>
+        ) : (
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Focal point</Label>
-              <Select
-                value={focalPoint?.kind ?? "none"}
-                disabled={disabled}
-                onValueChange={(value) => {
-                  if (value === "none") {
-                    onFocalPointChange(null);
-                    return;
-                  }
-                  onFocalPointChange({
-                    kind: value as Exclude<SeatMapFocalPoint["kind"], "none">,
-                    x: focalPoint?.x ?? 0,
-                    y: focalPoint?.y ?? 0,
-                  });
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="stage">Stage</SelectItem>
-                  <SelectItem value="field">Field</SelectItem>
-                  <SelectItem value="court">Court</SelectItem>
-                  <SelectItem value="screen">Screen</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Start from a venue layout</Label>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {SEATING_PRESETS.map((preset) => {
+                  const Icon = PRESET_ICONS[preset.id];
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => applyPreset(preset.id)}
+                      className="rounded-xl border border-border bg-card/40 p-3 text-left transition hover:border-primary/60 hover:bg-card disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Icon className="h-4 w-4 text-primary" />
+                        {preset.name}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {preset.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
               <p className="text-xs text-muted-foreground">
-                Shown at the center of the map so buyers can orient themselves.
+                Picking a layout replaces the current sections. You can rename, recolor,
+                move, and reshape every section afterwards.
               </p>
             </div>
-          </div>
 
-          {sections.map((section, index) => {
-            const geom = resolveGeometry(section);
-            return (
-              <div
-                key={index}
-                className={cn(
-                  "space-y-3 rounded-xl border border-border p-4 transition",
-                  selectedIndex === index && "border-primary/70 ring-1 ring-primary/40",
-                )}
-                onClick={() => setSelectedIndex(index)}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-sm font-semibold">
-                    {section.name.trim() || `Section ${index + 1}`}
-                  </h4>
-                  {sections.length > 1 ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      disabled={disabled}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedIndex(null);
-                        onSectionsChange(sections.filter((_, i) => i !== index));
-                      }}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Focal point</Label>
+                <Select
+                  value={focalPoint?.kind ?? "none"}
+                  disabled={disabled}
+                  onValueChange={(value) => {
+                    if (value === "none") {
+                      onFocalPointChange(null);
+                      return;
+                    }
+                    onFocalPointChange({
+                      kind: value as Exclude<SeatMapFocalPoint["kind"], "none">,
+                      x: focalPoint?.x ?? 0,
+                      y: focalPoint?.y ?? 0,
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="stage">Stage</SelectItem>
+                    <SelectItem value="field">Field</SelectItem>
+                    <SelectItem value="court">Court</SelectItem>
+                    <SelectItem value="screen">Screen</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Shown at the center of the map so buyers can orient themselves.
+                </p>
+              </div>
+            </div>
+
+            {/* Sections scroll in-card; preview stays pinned (page sticky fails under dashboard overflow). */}
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,420px)] lg:items-stretch lg:h-[min(72vh,680px)]">
+              <div className="order-2 flex min-h-0 flex-col gap-3 lg:order-1">
+                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1 max-h-[min(55vh,480px)] lg:max-h-none">
+                {sections.map((section, index) => {
+                  const geom = resolveGeometry(section);
+                  const seatCount =
+                    Math.max(0, section.rowCount) * Math.max(0, section.seatsPerRow);
+                  return (
+                    <div
+                      key={index}
+                      className={cn(
+                        "space-y-3 rounded-xl border border-border p-4 transition",
+                        selectedIndex === index && "border-primary/70 ring-1 ring-primary/40",
+                      )}
+                      onClick={() => setSelectedIndex(index)}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  ) : null}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-semibold truncate">
+                            {section.name.trim() || `Section ${index + 1}`}
+                          </h4>
+                          <p className="text-xs text-muted-foreground">
+                            {seatCount} seats
+                            {section.ticketTypeId
+                              ? ` · ${
+                                  ticketOptions.find((t) => t.id === section.ticketTypeId)
+                                    ?.name ?? "Ticket"
+                                }`
+                              : null}
+                          </p>
+                        </div>
+                        {sections.length > 1 ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 text-destructive"
+                            disabled={disabled}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedIndex(null);
+                              onSectionsChange(sections.filter((_, i) => i !== index));
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        ) : null}
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Section name</Label>
+                          <Input
+                            value={section.name}
+                            disabled={disabled}
+                            onChange={(e) => updateSection(index, { name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Ticket type</Label>
+                          <Select
+                            value={section.ticketTypeId}
+                            disabled={disabled}
+                            onValueChange={(value) =>
+                              updateSection(index, { ticketTypeId: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select ticket type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ticketOptions.map((ticket) => (
+                                <SelectItem key={ticket.id} value={ticket.id}>
+                                  {ticket.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Rows</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={50}
+                            value={section.rowCount}
+                            disabled={disabled}
+                            onChange={(e) =>
+                              updateSection(index, {
+                                rowCount: Math.max(1, Number(e.target.value) || 1),
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Seats per row</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={50}
+                            value={section.seatsPerRow}
+                            disabled={disabled}
+                            onChange={(e) =>
+                              updateSection(index, {
+                                seatsPerRow: Math.max(1, Number(e.target.value) || 1),
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>First row letter</Label>
+                          <Input
+                            maxLength={1}
+                            value={section.rowLabelStart ?? "A"}
+                            disabled={disabled}
+                            onChange={(e) => {
+                              const letter = e.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 1);
+                              updateSection(index, {
+                                rowLabelStart: (letter || "A").toUpperCase(),
+                              });
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Color</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {SECTION_COLORS.map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                disabled={disabled}
+                                onClick={() => updateSection(index, { color })}
+                                className="h-8 w-8 rounded-full border-2 transition"
+                                style={{
+                                  backgroundColor: color,
+                                  borderColor:
+                                    section.color === color ? "white" : "transparent",
+                                  outline:
+                                    section.color === color
+                                      ? `2px solid ${color}`
+                                      : undefined,
+                                }}
+                                aria-label={`Color ${color}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Row shape</Label>
+                          <Select
+                            value={geom.shape}
+                            disabled={disabled}
+                            onValueChange={(value) => {
+                              if (value === "ARC") {
+                                updateSection(index, {
+                                  shape: "ARC",
+                                  curve: geom.curve >= 1 ? geom.curve : 40,
+                                });
+                              } else {
+                                updateSection(index, { shape: "GRID" });
+                              }
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="GRID">Straight rows</SelectItem>
+                              <SelectItem value="ARC">Curved rows</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Angle (degrees)</Label>
+                          <Input
+                            type="number"
+                            min={-360}
+                            max={360}
+                            value={geom.rotation}
+                            disabled={disabled}
+                            onChange={(e) =>
+                              updateSection(index, {
+                                rotation: Math.max(
+                                  -360,
+                                  Math.min(360, Number(e.target.value) || 0),
+                                ),
+                              })
+                            }
+                          />
+                        </div>
+                        {geom.shape === "ARC" ? (
+                          <>
+                            <div className="space-y-2">
+                              <Label>Curve (degrees)</Label>
+                              <Input
+                                type="number"
+                                min={1}
+                                max={300}
+                                value={section.curve ?? 40}
+                                disabled={disabled}
+                                onChange={(e) =>
+                                  updateSection(index, {
+                                    curve: Math.max(
+                                      1,
+                                      Math.min(300, Number(e.target.value) || 1),
+                                    ),
+                                  })
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Distance from focal point</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={5000}
+                                value={section.arcRadius ?? 0}
+                                disabled={disabled}
+                                onChange={(e) =>
+                                  updateSection(index, {
+                                    arcRadius: Math.max(0, Number(e.target.value) || 0),
+                                  })
+                                }
+                              />
+                              <p className="text-xs text-muted-foreground">0 = automatic</p>
+                            </div>
+                          </>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Section name</Label>
-                    <Input
-                      value={section.name}
-                      disabled={disabled}
-                      onChange={(e) => updateSection(index, { name: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Ticket type</Label>
-                    <Select
-                      value={section.ticketTypeId}
-                      disabled={disabled}
-                      onValueChange={(value) =>
-                        updateSection(index, { ticketTypeId: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select ticket type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ticketOptions.map((ticket) => (
-                          <SelectItem key={ticket.id} value={ticket.id}>
-                            {ticket.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Rows</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={50}
-                      value={section.rowCount}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        updateSection(index, {
-                          rowCount: Math.max(1, Number(e.target.value) || 1),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Seats per row</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={50}
-                      value={section.seatsPerRow}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        updateSection(index, {
-                          seatsPerRow: Math.max(1, Number(e.target.value) || 1),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>First row letter</Label>
-                    <Input
-                      maxLength={1}
-                      value={section.rowLabelStart ?? "A"}
-                      disabled={disabled}
-                      onChange={(e) => {
-                        const letter = e.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 1);
-                        updateSection(index, {
-                          rowLabelStart: (letter || "A").toUpperCase(),
-                        });
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Color</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {SECTION_COLORS.map((color) => (
-                        <button
-                          key={color}
-                          type="button"
-                          disabled={disabled}
-                          onClick={() => updateSection(index, { color })}
-                          className="h-8 w-8 rounded-full border-2 transition"
-                          style={{
-                            backgroundColor: color,
-                            borderColor:
-                              section.color === color ? "white" : "transparent",
-                            outline:
-                              section.color === color
-                                ? `2px solid ${color}`
-                                : undefined,
-                          }}
-                          aria-label={`Color ${color}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Row shape</Label>
-                    <Select
-                      value={geom.shape}
-                      disabled={disabled}
-                      onValueChange={(value) => {
-                        if (value === "ARC") {
-                          updateSection(index, {
-                            shape: "ARC",
-                            curve: geom.curve >= 1 ? geom.curve : 40,
-                          });
-                        } else {
-                          updateSection(index, { shape: "GRID" });
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="GRID">Straight rows</SelectItem>
-                        <SelectItem value="ARC">Curved rows</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Angle (degrees)</Label>
-                    <Input
-                      type="number"
-                      min={-360}
-                      max={360}
-                      value={geom.rotation}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        updateSection(index, {
-                          rotation: Math.max(-360, Math.min(360, Number(e.target.value) || 0)),
-                        })
-                      }
-                    />
-                  </div>
-                  {geom.shape === "ARC" ? (
-                    <>
-                      <div className="space-y-2">
-                        <Label>Curve (degrees)</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={300}
-                          value={section.curve ?? 40}
-                          disabled={disabled}
-                          onChange={(e) =>
-                            updateSection(index, {
-                              curve: Math.max(1, Math.min(300, Number(e.target.value) || 1)),
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Distance from focal point</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={5000}
-                          value={section.arcRadius ?? 0}
-                          disabled={disabled}
-                          onChange={(e) =>
-                            updateSection(index, {
-                              arcRadius: Math.max(0, Number(e.target.value) || 0),
-                            })
-                          }
-                        />
-                        <p className="text-xs text-muted-foreground">0 = automatic</p>
-                      </div>
-                    </>
-                  ) : null}
+                <div className="shrink-0 space-y-3 border-t border-border pt-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={disabled || !defaultTicketId}
+                    onClick={addSection}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add section
+                  </Button>
+
+                  <p className="text-sm text-muted-foreground">
+                    Total seats:{" "}
+                    <span className="font-medium text-foreground">{totalSeats}</span>
+                  </p>
                 </div>
               </div>
-            );
-          })}
 
-          <Button
-            type="button"
-            variant="outline"
-            disabled={disabled || !defaultTicketId}
-            onClick={addSection}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add section
-          </Button>
-
-          <p className="text-sm text-muted-foreground">
-            Total seats: <span className="font-medium text-foreground">{totalSeats}</span>
-          </p>
-
-          {customGeometry ? (
-            <EditorVenuePreview
-              sections={sections}
-              focalPoint={focalPoint}
-              selectedIndex={selectedIndex}
-              onSelect={setSelectedIndex}
-              onMoveSection={(index, x, y) =>
-                updateSection(index, { posX: Math.round(x), posY: Math.round(y) })
-              }
-              disabled={disabled}
-            />
-          ) : (
-            <SeatMapPreview sections={sections} />
-          )}
-        </div>
+              <div className="order-1 flex min-h-0 flex-col lg:order-2">
+                <div className="min-h-0 flex-1">{venuePreview}</div>
+              </div>
+            </div>
+          </div>
+        )
       ) : null}
     </div>
   );
@@ -590,15 +643,20 @@ function EditorVenuePreview({
   };
 
   return (
-    <div className="space-y-2 rounded-2xl border border-border bg-muted/30 p-4">
-      <p className="text-xs text-muted-foreground">
-        Venue preview — drag a section to reposition it, click to select.
-      </p>
+    <div className="venue-preview-root flex h-full flex-col space-y-2 rounded-2xl border border-border bg-muted/30 p-4">
+      <div className="flex shrink-0 items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          Venue preview — drag a section to reposition it, click to select.
+        </p>
+        <span className="shrink-0 text-xs font-medium text-foreground">
+          {sections.length} section{sections.length === 1 ? "" : "s"}
+        </span>
+      </div>
       <svg
         ref={svgRef}
         viewBox={`${viewBox.minX} ${viewBox.minY} ${viewBox.width} ${viewBox.height}`}
         preserveAspectRatio="xMidYMid meet"
-        className="h-[380px] w-full touch-none select-none rounded-xl bg-background/60"
+        className="min-h-[240px] w-full flex-1 touch-none select-none rounded-xl bg-background/60 lg:min-h-0"
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}

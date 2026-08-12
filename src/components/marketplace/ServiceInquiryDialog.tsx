@@ -37,7 +37,12 @@ import {
   contactInfoBlockedMessage,
   textContainsContactInfo,
 } from "@/features/marketplace/contact-guard";
-import { decimalToNumber } from "@/features/marketplace/utils";
+import {
+  decimalToNumber,
+  formatSlotLabel,
+  guestBoundsError,
+  hasGuestBounds,
+} from "@/features/marketplace/utils";
 import { listCountries } from "@/features/locations/api";
 import { findActiveCountry } from "@/features/locations/match";
 import { locationKeys } from "@/features/locations/query-keys";
@@ -56,6 +61,17 @@ type ServiceInquiryDialogProps = {
   service: PublicMarketplaceService;
   initialStartDate?: string;
   initialEndDate?: string;
+  /** Pre-selected generated slot key for SLOT-mode services. */
+  initialSlotKey?: string;
+  /** Alias for initialSlotKey. */
+  slotKey?: string;
+  /** @deprecated Prefer initialSlotKey — value is treated as slotKey. */
+  initialSlotId?: string;
+  /** @deprecated Prefer slotKey. */
+  slotId?: string;
+  initialSlotStartAt?: string;
+  initialSlotEndAt?: string;
+  initialSlotLabel?: string | null;
   /** When true, event date comes from the detail calendar and cannot be changed. */
   lockEventDate?: boolean;
   /** inquire = proposal flow; instant = pay now via listed pricing */
@@ -88,6 +104,13 @@ export function ServiceInquiryDialog({
   service,
   initialStartDate = "",
   initialEndDate = "",
+  initialSlotKey,
+  slotKey: slotKeyProp,
+  initialSlotId,
+  slotId: slotIdProp,
+  initialSlotStartAt,
+  initialSlotEndAt,
+  initialSlotLabel,
   lockEventDate = false,
   mode = "inquire",
 }: ServiceInquiryDialogProps) {
@@ -98,6 +121,9 @@ export function ServiceInquiryDialog({
   const pathname = usePathname();
   const { isAuthenticated, isReady } = useAuth();
   const isInstant = mode === "instant";
+  const isSlotMode = service.bookingMode === "SLOT";
+  const lockedSlotKey =
+    initialSlotKey || slotKeyProp || initialSlotId || slotIdProp || "";
 
   const packages = useMemo(
     () =>
@@ -126,9 +152,19 @@ export function ServiceInquiryDialog({
   const allowedCities = useMemo(() => serviceAreaCities(service), [service]);
   const lockedCountryCode = service.countryCode?.trim().toUpperCase() ?? "";
 
+  const slotSummary =
+    initialSlotStartAt && initialSlotEndAt
+      ? formatSlotLabel(
+          initialSlotStartAt,
+          initialSlotEndAt,
+          initialSlotLabel,
+        )
+      : null;
+
   const [eventDate, setEventDate] = useState(
     initialStartDate || initialEndDate || "",
   );
+  const [slotKey, setSlotKey] = useState(lockedSlotKey);
   const [guestCount, setGuestCount] = useState("");
   const [packageId, setPackageId] = useState("");
   const [addOnIds, setAddOnIds] = useState<string[]>([]);
@@ -170,6 +206,7 @@ export function ServiceInquiryDialog({
   useEffect(() => {
     if (!open) return;
     setEventDate(initialStartDate || initialEndDate || "");
+    setSlotKey(lockedSlotKey);
     setPackageId("");
     setAddOnIds([]);
     setMenuSelections({});
@@ -188,6 +225,7 @@ export function ServiceInquiryDialog({
     open,
     initialStartDate,
     initialEndDate,
+    lockedSlotKey,
     lockedCountryCode,
     service.baseCity,
     allowedCities,
@@ -254,11 +292,23 @@ export function ServiceInquiryDialog({
       if (textContainsContactInfo(address)) {
         throw new Error(contactInfoBlockedMessage(t("eventAddress")));
       }
+      if (isSlotMode && !slotKey) {
+        throw new Error(tMarketplace("slotRequired"));
+      }
       const body = {
         serviceId: service.id,
         packageId: packageId || null,
-        startDate: eventDate,
-        endDate: eventDate,
+        ...(isSlotMode
+          ? {
+              slotKey,
+              ...(eventDate
+                ? { startDate: eventDate, endDate: eventDate }
+                : {}),
+            }
+          : {
+              startDate: eventDate,
+              endDate: eventDate,
+            }),
         guestCount: guestCount ? Number(guestCount) : null,
         location: {
           country: selectedCountry?.name || countryCode || undefined,
@@ -272,7 +322,11 @@ export function ServiceInquiryDialog({
           menuSelections: Object.entries(menuSelections).map(
             ([course, menuItemIds]) => ({ course, menuItemIds }),
           ),
-          hours: hours ? Number(hours) : null,
+          // Hours derived server-side for SLOT + HOURLY
+          hours:
+            isSlotMode || !hours
+              ? null
+              : Number(hours),
         },
         notes: notes || null,
       };
@@ -298,6 +352,10 @@ export function ServiceInquiryDialog({
         toast.error(e.message);
         return;
       }
+      if (e instanceof Error && e.message === tMarketplace("slotRequired")) {
+        toast.error(e.message);
+        return;
+      }
       toastApiError(
         e,
         isInstant
@@ -311,7 +369,16 @@ export function ServiceInquiryDialog({
     service.customizationMode === "PACKAGE" ||
     service.customizationMode === "MENU_BUILDER";
   const needsGuests = service.pricingModel === "PER_GUEST";
-  const needsHours = service.pricingModel === "HOURLY";
+  const showGuests =
+    needsGuests || hasGuestBounds(service.guestMin, service.guestMax);
+  const guestsBoundsErr = showGuests
+    ? guestBoundsError(guestCount, service.guestMin, service.guestMax, {
+        invalid: tMarketplace("guestsInvalid"),
+        min: tMarketplace("guestsMin", { min: service.guestMin ?? 1 }),
+        max: tMarketplace("guestsMax", { max: service.guestMax ?? 0 }),
+      })
+    : null;
+  const needsHours = service.pricingModel === "HOURLY" && !isSlotMode;
   const menuReady = !isMenuBuilder || menuCompleteForPackage(selectedPackage, menuSelections);
   const contactFieldsClean =
     !textContainsContactInfo(notes) &&
@@ -320,13 +387,14 @@ export function ServiceInquiryDialog({
 
   const canSubmit =
     Boolean(service.id) &&
-    Boolean(eventDate) &&
+    (isSlotMode ? Boolean(slotKey) : Boolean(eventDate)) &&
     Boolean(countryCode) &&
     Boolean(city) &&
     (!needsPackage || Boolean(packageId)) &&
     menuReady &&
     contactFieldsClean &&
     (!needsGuests || Number(guestCount) > 0) &&
+    !guestsBoundsErr &&
     (!needsHours || Number(hours) > 0);
 
   const disablePastDates = (date: Date) => {
@@ -334,6 +402,8 @@ export function ServiceInquiryDialog({
     today.setHours(0, 0, 0, 0);
     return date < today;
   };
+
+  const hideEventDatePicker = isSlotMode && Boolean(slotKey) && lockEventDate;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -373,24 +443,45 @@ export function ServiceInquiryDialog({
             if (canSubmit) createMut.mutate();
           }}
         >
-          <div className="space-y-2">
-            <Label>{t("eventDate")}</Label>
-            <DatePicker
-              value={eventDate}
-              required
-              disabled={lockEventDate}
-              disabledDates={lockEventDate ? undefined : disablePastDates}
-              placeholder={tCommon("pickDate")}
-              triggerClassName={FIELD_TRIGGER_CLASS}
-              popoverClassName={OVERLAY_Z}
-              onChange={setEventDate}
-            />
-            {lockEventDate ? (
-              <p className="text-xs text-muted-foreground">
-                {t("eventDateLockedHint")}
+          {isSlotMode && (slotSummary || slotKey) ? (
+            <div className="space-y-2 rounded-xl border border-[#303030] bg-black/40 px-4 py-3">
+              <Label>{tMarketplace("selectedSlot")}</Label>
+              <p className="text-sm text-white">
+                {slotSummary ||
+                  (eventDate
+                    ? tMarketplace("selectedSlotDateOnly", { date: eventDate })
+                    : tMarketplace("selectSlot"))}
               </p>
-            ) : null}
-          </div>
+              {eventDate ? (
+                <p className="text-xs text-zinc-500">
+                  {t("eventDate")}: {eventDate}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {!hideEventDatePicker ? (
+            <div className="space-y-2">
+              <Label>{t("eventDate")}</Label>
+              <DatePicker
+                value={eventDate}
+                required={!isSlotMode}
+                disabled={lockEventDate || isSlotMode}
+                disabledDates={
+                  lockEventDate || isSlotMode ? undefined : disablePastDates
+                }
+                placeholder={tCommon("pickDate")}
+                triggerClassName={FIELD_TRIGGER_CLASS}
+                popoverClassName={OVERLAY_Z}
+                onChange={setEventDate}
+              />
+              {lockEventDate ? (
+                <p className="text-xs text-muted-foreground">
+                  {t("eventDateLockedHint")}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {needsPackage ? (
             <div className="space-y-2">
@@ -571,18 +662,38 @@ export function ServiceInquiryDialog({
             </div>
           ) : null}
 
-          {needsGuests ? (
+          {showGuests ? (
             <div className="space-y-2">
               <Label htmlFor="inquiry-guests">{t("guests")}</Label>
               <Input
                 id="inquiry-guests"
                 type="number"
-                min={1}
+                min={service.guestMin ?? 1}
+                max={service.guestMax ?? undefined}
                 value={guestCount}
                 onChange={(e) => setGuestCount(e.target.value)}
-                required
+                required={needsGuests}
                 className={FIELD_CLASS}
               />
+              {service.guestMin != null && service.guestMax != null ? (
+                <p className="text-xs text-zinc-400">
+                  {tMarketplace("guestsRangeHint", {
+                    min: service.guestMin,
+                    max: service.guestMax,
+                  })}
+                </p>
+              ) : service.guestMin != null ? (
+                <p className="text-xs text-zinc-400">
+                  {tMarketplace("guestsMin", { min: service.guestMin })}
+                </p>
+              ) : service.guestMax != null ? (
+                <p className="text-xs text-zinc-400">
+                  {tMarketplace("guestsMax", { max: service.guestMax })}
+                </p>
+              ) : null}
+              {guestsBoundsErr ? (
+                <p className="text-xs text-red-400">{guestsBoundsErr}</p>
+              ) : null}
             </div>
           ) : null}
 
@@ -724,3 +835,4 @@ export function ServiceInquiryDialog({
     </Dialog>
   );
 }
+

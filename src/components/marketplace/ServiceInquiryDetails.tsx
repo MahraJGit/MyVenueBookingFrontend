@@ -15,6 +15,7 @@ import {
 } from "@/features/marketplace/inquiry-display";
 import {
   decimalToNumber,
+  formatSlotLabel,
   servicePricingModelLabel,
 } from "@/features/marketplace/utils";
 
@@ -66,6 +67,14 @@ export function ServiceInquiryDetails({
   const currency = inquiry.service?.currency ?? "AED";
   const packageName = inquiry.package?.name ?? null;
   const eventDate = formatInquiryEventDate(inquiry.startDate, inquiry.endDate);
+  const slotTime =
+    inquiry.slot?.startAt && inquiry.slot?.endAt
+      ? formatSlotLabel(
+          inquiry.slot.startAt,
+          inquiry.slot.endAt,
+          inquiry.slot.label,
+        )
+      : null;
   const cityCountry = [location?.city?.trim(), location?.country?.trim()]
     .filter(Boolean)
     .join(", ");
@@ -81,6 +90,9 @@ export function ServiceInquiryDetails({
     <div className="space-y-4">
       <DetailSection title={t("inquiryEventDetails")}>
         <MetaRow label={t("eventDate")} value={eventDate} />
+        {slotTime ? (
+          <MetaRow label={t("inquiryTimeSlot")} value={slotTime} />
+        ) : null}
         {packageName ? (
           <MetaRow label={t("inquiryPackage")} value={packageName} />
         ) : null}

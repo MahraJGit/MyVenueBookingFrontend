@@ -73,6 +73,75 @@ export function formatDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+/** Returns an error message when guestCount violates optional service bounds. Empty input is ok. */
+export function guestBoundsError(
+  guestCountRaw: string | number | null | undefined,
+  guestMin?: number | null,
+  guestMax?: number | null,
+  messages?: {
+    invalid?: string;
+    min?: string;
+    max?: string;
+  },
+): string | null {
+  if (guestCountRaw === "" || guestCountRaw == null) return null;
+  const n =
+    typeof guestCountRaw === "number" ? guestCountRaw : Number(guestCountRaw);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n < 1) {
+    return messages?.invalid ?? "Enter a valid guest count";
+  }
+  if (guestMin != null && n < guestMin) {
+    return messages?.min ?? `At least ${guestMin} guests required`;
+  }
+  if (guestMax != null && n > guestMax) {
+    return messages?.max ?? `At most ${guestMax} guests allowed`;
+  }
+  return null;
+}
+
+export function hasGuestBounds(
+  guestMin?: number | null,
+  guestMax?: number | null,
+): boolean {
+  return guestMin != null || guestMax != null;
+}
+
+
+/** Local date key for a slot timestamp (YYYY-MM-DD). */
+export function slotDateKey(iso: string | Date): string {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (Number.isNaN(d.getTime())) return String(iso).slice(0, 10);
+  return formatDateKey(d);
+}
+
+export function formatSlotTimeRange(
+  startAt: string | Date,
+  endAt: string | Date,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  const start = typeof startAt === "string" ? new Date(startAt) : startAt;
+  const end = typeof endAt === "string" ? new Date(endAt) : endAt;
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return `${String(startAt)} – ${String(endAt)}`;
+  }
+  const timeOpts: Intl.DateTimeFormatOptions = {
+    hour: "numeric",
+    minute: "2-digit",
+    ...options,
+  };
+  return `${start.toLocaleTimeString(undefined, timeOpts)} – ${end.toLocaleTimeString(undefined, timeOpts)}`;
+}
+
+export function formatSlotLabel(
+  startAt: string | Date,
+  endAt: string | Date,
+  label?: string | null,
+): string {
+  const range = formatSlotTimeRange(startAt, endAt);
+  const name = label?.trim();
+  return name ? `${name} · ${range}` : range;
+}
+
 export function monthRangeKeys(year: number, month: number): {
   startDate: string;
   endDate: string;

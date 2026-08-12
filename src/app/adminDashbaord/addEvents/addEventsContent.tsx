@@ -14,11 +14,11 @@ import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { NumberInput } from "@/components/ui/number-input"
 import { VenueGalleryUpload } from "@/components/venues/VenueGalleryUpload"
@@ -1485,9 +1485,46 @@ export default function AddEventsContentPage() {
                 </Card>
 
                 <Card className="border-border bg-card">
+                    <CardHeader>
+                        <CardTitle>Reserved seating</CardTitle>
+                        <CardDescription>
+                            Turn this on before ticket types if buyers should pick seats on a
+                            map. Quantities come from the layout instead of a free total.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-muted/20 p-4">
+                            <div className="space-y-1">
+                                <p className="text-sm font-medium text-foreground">
+                                    Enable reserved seating
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    Off: set quantity and sales on each ticket type. On: hide
+                                    quantity and design sections below.
+                                </p>
+                            </div>
+                            <Switch
+                                checked={seatingEnabled}
+                                onCheckedChange={setSeatingEnabled}
+                                disabled={
+                                    saveMutation.isPending ||
+                                    Boolean(editId && existing?.contentOnlyEdit)
+                                }
+                                aria-label="Enable reserved seating"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border bg-card">
                     <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
                         <div className="space-y-1">
                             <CardTitle>{t("ticketTypes")}</CardTitle>
+                            {seatingEnabled ? (
+                                <CardDescription>
+                                    Quantity is calculated from the seating layout below.
+                                </CardDescription>
+                            ) : null}
                         </div>
                         <Button
                             type="button"
@@ -1563,46 +1600,27 @@ export default function AddEventsContentPage() {
                                         </p>
                                     ) : null}
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>{t("quantityTotal")}</Label>
-                                    <Input
-                                        required={!seatingEnabled}
-                                        type="number"
-                                        min={1}
-                                        disabled={seatingEnabled}
-                                        value={
-                                            seatingEnabled
-                                                ? String(
-                                                      seatingSections
-                                                          .filter((s) => {
-                                                              const key = tickets[i]?.id ?? `pending:${i}`
-                                                              return s.ticketTypeId === key
-                                                          })
-                                                          .reduce(
-                                                              (sum, s) =>
-                                                                  sum +
-                                                                  Math.max(1, s.rowCount) *
-                                                                      Math.max(1, s.seatsPerRow),
-                                                              0,
-                                                          ) || Number(ticket.quantityTotal) || 0,
-                                                  )
-                                                : ticket.quantityTotal
-                                        }
-                                        onChange={(e) =>
-                                            setTickets((rows) =>
-                                                rows.map((r, j) =>
-                                                    j === i ? { ...r, quantityTotal: e.target.value } : r,
-                                                ),
-                                            )
-                                        }
-                                        className={inputClass}
-                                    />
-                                    {seatingEnabled ? (
-                                        <p className="text-xs text-muted-foreground">
-                                            Quantity is calculated from the seating layout.
-                                        </p>
-                                    ) : null}
-                                </div>
+                                {!seatingEnabled ? (
+                                    <div className="space-y-2">
+                                        <Label>{t("quantityTotal")}</Label>
+                                        <Input
+                                            required
+                                            type="number"
+                                            min={1}
+                                            value={ticket.quantityTotal}
+                                            onChange={(e) =>
+                                                setTickets((rows) =>
+                                                    rows.map((r, j) =>
+                                                        j === i
+                                                            ? { ...r, quantityTotal: e.target.value }
+                                                            : r,
+                                                    ),
+                                                )
+                                            }
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                ) : null}
                                 <div className="space-y-2 sm:col-span-2">
                                     <Label>{t("salesStart")}</Label>
                                     <DateTimePicker
@@ -1650,33 +1668,34 @@ export default function AddEventsContentPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card">
-                    <CardHeader>
-                        <CardTitle>Seating</CardTitle>
-                        <CardDescription>
-                            Optional reserved seating map for this event. Buyers pick seats
-                            instead of a free quantity.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <SeatingLayoutEditor
-                            enabled={seatingEnabled}
-                            onEnabledChange={setSeatingEnabled}
-                            sections={seatingSections}
-                            onSectionsChange={setSeatingSections}
-                            focalPoint={seatingFocal}
-                            onFocalPointChange={setSeatingFocal}
-                            ticketOptions={seatingTicketOptions}
-                            disabled={
-                                saveMutation.isPending ||
-                                Boolean(editId && existing?.contentOnlyEdit)
-                            }
-                        />
-                    </CardContent>
-                    <CardFooter className="border-t justify-end">
-                        {formActions}
-                    </CardFooter>
-                </Card>
+                {seatingEnabled ? (
+                    <Card className="border-border bg-card">
+                        <CardHeader>
+                            <CardTitle>Seating layout</CardTitle>
+                            <CardDescription>
+                                Design sections and watch the venue map update as you edit.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <SeatingLayoutEditor
+                                enabled={seatingEnabled}
+                                onEnabledChange={setSeatingEnabled}
+                                sections={seatingSections}
+                                onSectionsChange={setSeatingSections}
+                                focalPoint={seatingFocal}
+                                onFocalPointChange={setSeatingFocal}
+                                ticketOptions={seatingTicketOptions}
+                                showEnableToggle={false}
+                                disabled={
+                                    saveMutation.isPending ||
+                                    Boolean(editId && existing?.contentOnlyEdit)
+                                }
+                            />
+                        </CardContent>
+                    </Card>
+                ) : null}
+
+                <div className="flex justify-end">{formActions}</div>
             </form>
             </div>
         </DashboardPageShell>

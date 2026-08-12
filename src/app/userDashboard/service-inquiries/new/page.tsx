@@ -33,7 +33,7 @@ import {
   contactInfoBlockedMessage,
   textContainsContactInfo,
 } from "@/features/marketplace/contact-guard";
-import { decimalToNumber } from "@/features/marketplace/utils";
+import { decimalToNumber, guestBoundsError, hasGuestBounds } from "@/features/marketplace/utils";
 import { listCountries } from "@/features/locations/api";
 import { findActiveCountry } from "@/features/locations/match";
 import { locationKeys } from "@/features/locations/query-keys";
@@ -66,6 +66,7 @@ function menuCompleteForPackage(
 
 function NewServiceInquiryForm() {
   const t = useTranslations("userDashboard");
+  const tMarketplace = useTranslations("marketplace");
   const tCommon = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -243,6 +244,16 @@ function NewServiceInquiryForm() {
     service?.customizationMode === "PACKAGE" ||
     service?.customizationMode === "MENU_BUILDER";
   const needsGuests = service?.pricingModel === "PER_GUEST";
+  const showGuests =
+    needsGuests ||
+    hasGuestBounds(service?.guestMin, service?.guestMax);
+  const guestsBoundsErr = showGuests
+    ? guestBoundsError(guestCount, service?.guestMin, service?.guestMax, {
+        invalid: tMarketplace("guestsInvalid"),
+        min: tMarketplace("guestsMin", { min: service?.guestMin ?? 1 }),
+        max: tMarketplace("guestsMax", { max: service?.guestMax ?? 0 }),
+      })
+    : null;
   const needsHours = service?.pricingModel === "HOURLY";
   const menuReady =
     !isMenuBuilder || menuCompleteForPackage(selectedPackage, menuSelections);
@@ -260,6 +271,7 @@ function NewServiceInquiryForm() {
     menuReady &&
     contactFieldsClean &&
     (!needsGuests || Number(guestCount) > 0) &&
+    !guestsBoundsErr &&
     (!needsHours || Number(hours) > 0);
 
   const disablePastDates = (date: Date) => {
@@ -501,17 +513,37 @@ function NewServiceInquiryForm() {
         </div>
       ) : null}
 
-      {needsGuests ? (
+      {showGuests ? (
         <div className="space-y-2">
           <Label htmlFor="guestCount">{t("guests")}</Label>
           <Input
             id="guestCount"
             type="number"
-            min={1}
+            min={service?.guestMin ?? 1}
+            max={service?.guestMax ?? undefined}
             value={guestCount}
             onChange={(e) => setGuestCount(e.target.value)}
-            required
+            required={needsGuests}
           />
+          {service?.guestMin != null && service?.guestMax != null ? (
+            <p className="text-xs text-muted-foreground">
+              {tMarketplace("guestsRangeHint", {
+                min: service.guestMin,
+                max: service.guestMax,
+              })}
+            </p>
+          ) : service?.guestMin != null ? (
+            <p className="text-xs text-muted-foreground">
+              {tMarketplace("guestsMin", { min: service.guestMin })}
+            </p>
+          ) : service?.guestMax != null ? (
+            <p className="text-xs text-muted-foreground">
+              {tMarketplace("guestsMax", { max: service.guestMax })}
+            </p>
+          ) : null}
+          {guestsBoundsErr ? (
+            <p className="text-xs text-destructive">{guestsBoundsErr}</p>
+          ) : null}
         </div>
       ) : null}
 

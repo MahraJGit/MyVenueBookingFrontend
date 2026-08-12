@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -16,21 +16,33 @@ import {
   checkServiceAvailability,
   getPreviewMarketplaceService,
   getPublicMarketplaceServiceBySlug,
+  listServiceSlots,
 } from "@/features/marketplace/api";
 import { marketplaceKeys } from "@/features/marketplace/query-keys";
 import {
   decimalToNumber,
   formatDateKey,
+  formatSlotLabel,
   getServiceFromPrice,
   monthRangeKeys,
-  serviceCustomizationLabel,
   servicePricingModelLabel,
+  slotDateKey,
 } from "@/features/marketplace/utils";
 import { getFallbackEventImage } from "@/features/events/utils";
 import { getMediaProxyUrl } from "@/features/uploads/media-url";
 import type { MonthAvailabilityDay } from "@/features/venues/types";
+import type { ServiceSlot } from "@/features/marketplace/types";
 import { useLocaleContext } from "@/features/i18n/locale-context";
 import { useAuth } from "@/features/auth/auth-context";
+import { cn } from "@/lib/utils";
+
+function serviceSlotKey(slot: ServiceSlot): string {
+  return slot.slotKey || slot.id;
+}
+
+function serviceSlotDate(slot: ServiceSlot): string {
+  return slot.date ?? slotDateKey(slot.startAt);
+}
 
 function DetailSkeleton() {
   return (
@@ -68,6 +80,7 @@ export default function MarketplaceServiceDetailPage({
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [selectedSlotKey, setSelectedSlotKey] = useState<string>("");
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"inquire" | "instant">("inquire");
 
@@ -83,6 +96,7 @@ export default function MarketplaceServiceDetailPage({
         : getPublicMarketplaceServiceBySlug(slug),
   });
 
+  const isSlotMode = serviceQuery.data?.bookingMode === "SLOT";
   const year = calendarMonth.getFullYear();
   const monthNum = calendarMonth.getMonth() + 1;
   const range = monthRangeKeys(year, monthNum);
@@ -102,12 +116,47 @@ export default function MarketplaceServiceDetailPage({
     enabled: Boolean(serviceQuery.data?.id),
   });
 
+  const slotsQuery = useQuery({
+    queryKey: marketplaceKeys.slots(serviceQuery.data?.id ?? "", {
+      ...range,
+      availableOnly: false,
+    }),
+    queryFn: () =>
+      listServiceSlots(serviceQuery.data!.id, {
+        startDate: range.startDate,
+        endDate: range.endDate,
+        availableOnly: false,
+      }),
+    enabled: Boolean(serviceQuery.data?.id) && isSlotMode,
+  });
+
+  const monthSlots: ServiceSlot[] = useMemo(() => {
+    if (!isSlotMode) return [];
+    if (slotsQuery.data?.length) return slotsQuery.data;
+    return availabilityQuery.data?.slots ?? [];
+  }, [isSlotMode, slotsQuery.data, availabilityQuery.data?.slots]);
+
   const busyDates = useMemo(() => {
     const set = new Set<string>();
+    if (isSlotMode) {
+      const daysWithAvailable = new Set<string>();
+      for (const slot of monthSlots) {
+        if (slot.available !== false && slot.isActive !== false) {
+          daysWithAvailable.add(serviceSlotDate(slot));
+        }
+      }
+      // Mark days without any available slots as busy (unavailable).
+      const endDay = new Date(year, monthNum, 0).getDate();
+      for (let day = 1; day <= endDay; day += 1) {
+        const key = formatDateKey(new Date(year, monthNum - 1, day));
+        if (!daysWithAvailable.has(key)) set.add(key);
+      }
+      return set;
+    }
+
     const result = availabilityQuery.data;
     if (!result) return set;
 
-    // Prefer capacity-aware day breakdown from the API when present.
     if (result.days?.length) {
       for (const day of result.days) {
         if (!day.available) set.add(day.date);
@@ -115,7 +164,6 @@ export default function MarketplaceServiceDetailPage({
       return set;
     }
 
-    // Legacy fallback: any overlapping booking marks the day unavailable.
     for (const block of result.blocks ?? []) {
       if (block.isBlocked) set.add(String(block.blockDate).slice(0, 10));
     }
@@ -127,7 +175,7 @@ export default function MarketplaceServiceDetailPage({
       }
     }
     return set;
-  }, [availabilityQuery.data]);
+  }, [isSlotMode, monthSlots, availabilityQuery.data, year, monthNum]);
 
   const openByWeekday = useMemo(() => {
     const map = new Map<number, boolean>();
@@ -140,12 +188,14 @@ export default function MarketplaceServiceDetailPage({
   const monthAvailability: MonthAvailabilityDay[] = useMemo(() => {
     const days: MonthAvailabilityDay[] = [];
     const endDay = new Date(year, monthNum, 0).getDate();
-    const hasSchedule = openByWeekday.size > 0;
+    const hasSchedule = !isSlotMode && openByWeekday.size > 0;
     for (let day = 1; day <= endDay; day += 1) {
       const date = new Date(year, monthNum - 1, day);
       const key = formatDateKey(date);
       const weekday = date.getDay();
-      const scheduleOpen = hasSchedule ? openByWeekday.get(weekday) === true : true;
+      const scheduleOpen = hasSchedule
+        ? openByWeekday.get(weekday) === true
+        : true;
       const available = scheduleOpen && !busyDates.has(key);
       days.push({
         date: key,
@@ -154,17 +204,47 @@ export default function MarketplaceServiceDetailPage({
       });
     }
     return days;
-  }, [year, monthNum, busyDates, openByWeekday]);
+  }, [year, monthNum, busyDates, openByWeekday, isSlotMode]);
 
   const selectedDateStr = selectedDate ? formatDateKey(selectedDate) : "";
 
+  const daySlots = useMemo(() => {
+    if (!isSlotMode || !selectedDateStr) return [];
+    return monthSlots
+      .filter((slot) => serviceSlotDate(slot) === selectedDateStr)
+      .filter((slot) => slot.available !== false && slot.isActive !== false)
+      .sort(
+        (a, b) =>
+          new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+      );
+  }, [isSlotMode, selectedDateStr, monthSlots]);
+
+  const selectedSlot = useMemo(
+    () => daySlots.find((s) => serviceSlotKey(s) === selectedSlotKey) ?? null,
+    [daySlots, selectedSlotKey],
+  );
+
+  useEffect(() => {
+    setSelectedSlotKey("");
+  }, [selectedDateStr, calendarMonth]);
+
+  useEffect(() => {
+    if (!selectedSlotKey) return;
+    if (!daySlots.some((s) => serviceSlotKey(s) === selectedSlotKey)) {
+      setSelectedSlotKey("");
+    }
+  }, [daySlots, selectedSlotKey]);
+
   const handleSelectDate = (date: Date | undefined) => {
-    // Single selection only — do not clear when the same day is clicked again.
     if (date) setSelectedDate(date);
   };
 
+  const canOpenBooking = isSlotMode
+    ? Boolean(selectedSlotKey)
+    : Boolean(selectedDate);
+
   const openBookingDialog = (mode: "inquire" | "instant") => {
-    if (isPreview || !selectedDate) return;
+    if (isPreview || !canOpenBooking) return;
     if (!isReady) return;
     if (!isAuthenticated) {
       const redirect = encodeURIComponent(pathname || `/marketplace/${slug}`);
@@ -204,6 +284,24 @@ export default function MarketplaceServiceDetailPage({
   const locationLabel =
     service.baseCity ||
     (service.citiesServed?.length ? service.citiesServed.slice(0, 3).join(", ") : null);
+
+  const calendarLoading =
+    availabilityQuery.isLoading || (isSlotMode && slotsQuery.isLoading);
+
+  const hintText = (() => {
+    if (isPreview) return null;
+    if (isSlotMode) {
+      if (!selectedDate) return t("selectDateForSlots");
+      if (!selectedSlotKey) return t("selectSlotToBook");
+      return service.instantBookingEnabled
+        ? t("instantBookHint")
+        : t("inquireHint");
+    }
+    if (service.instantBookingEnabled) {
+      return selectedDate ? t("instantBookHint") : t("selectDateToBook");
+    }
+    return selectedDate ? t("inquireHint") : t("selectDateToInquire");
+  })();
 
   return (
     <div className="min-h-screen bg-[#0e0e0e] text-white">
@@ -377,7 +475,6 @@ export default function MarketplaceServiceDetailPage({
 
                 <p className="mb-3 text-xs uppercase tracking-wide text-zinc-500">
                   Pricing Model: {servicePricingModelLabel(service.pricingModel)}
-                  {/* {serviceCustomizationLabel(service.customizationMode)} */}
                 </p>
 
                 {price.amount != null ? (
@@ -399,7 +496,7 @@ export default function MarketplaceServiceDetailPage({
                 )}
 
                 <div className="relative mt-1">
-                  {availabilityQuery.isLoading ? (
+                  {calendarLoading ? (
                     <div className="flex justify-center py-10">
                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
                     </div>
@@ -416,8 +513,50 @@ export default function MarketplaceServiceDetailPage({
                   )}
                 </div>
 
+                {isSlotMode && selectedDate ? (
+                  <div className="mt-4 space-y-2 border-t border-[#303030] pt-4">
+                    <p className="text-sm font-medium text-white">
+                      {t("availableSlots", { date: selectedDateStr })}
+                    </p>
+                    {daySlots.length === 0 ? (
+                      <p className="text-xs text-zinc-500">{t("noSlotsForDay")}</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {daySlots.map((slot) => {
+                          const key = serviceSlotKey(slot);
+                          const selected = selectedSlotKey === key;
+                          return (
+                            <li key={key}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedSlotKey(key)}
+                                className={cn(
+                                  "w-full rounded-xl border px-3 py-2.5 text-left text-sm transition-colors",
+                                  selected
+                                    ? "border-primary bg-primary/10 text-white"
+                                    : "border-[#303030] bg-black/40 text-zinc-200 hover:border-primary/50",
+                                )}
+                              >
+                                <span className="font-medium">
+                                  {formatSlotLabel(
+                                    slot.startAt,
+                                    slot.endAt,
+                                    slot.label,
+                                  )}
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                ) : null}
+
                 <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
-                  {t("availabilityHint")}
+                  {isSlotMode
+                    ? t("availabilityHintSlot")
+                    : t("availabilityHint")}
                 </p>
 
                 <div className="mt-4 border-t border-[#303030] pt-4 sm:mt-5 sm:pt-5">
@@ -440,7 +579,7 @@ export default function MarketplaceServiceDetailPage({
                             type="button"
                             className="w-full bg-primary"
                             onClick={() => openBookingDialog("instant")}
-                            disabled={!selectedDate}
+                            disabled={!canOpenBooking}
                           >
                             {t("instantBookCta")}
                           </Button>
@@ -449,33 +588,26 @@ export default function MarketplaceServiceDetailPage({
                             variant="outline"
                             className="w-full border-[#303030] bg-transparent"
                             onClick={() => openBookingDialog("inquire")}
-                            disabled={!selectedDate}
+                            disabled={!canOpenBooking}
                           >
                             {t("inquireCta")}
                           </Button>
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            {selectedDate
-                              ? t("instantBookHint")
-                              : t("selectDateToBook")}
-                          </p>
                         </>
                       ) : (
-                        <>
-                          <Button
-                            type="button"
-                            className="w-full bg-primary"
-                            onClick={() => openBookingDialog("inquire")}
-                            disabled={!selectedDate}
-                          >
-                            {t("inquireCta")}
-                          </Button>
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            {selectedDate
-                              ? t("inquireHint")
-                              : t("selectDateToInquire")}
-                          </p>
-                        </>
+                        <Button
+                          type="button"
+                          className="w-full bg-primary"
+                          onClick={() => openBookingDialog("inquire")}
+                          disabled={!canOpenBooking}
+                        >
+                          {t("inquireCta")}
+                        </Button>
                       )}
+                      {hintText ? (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {hintText}
+                        </p>
+                      ) : null}
                     </div>
                   )}
                 </div>
@@ -490,8 +622,20 @@ export default function MarketplaceServiceDetailPage({
           open={inquiryOpen}
           onOpenChange={setInquiryOpen}
           service={service}
-          initialStartDate={selectedDateStr}
-          initialEndDate={selectedDateStr}
+          initialStartDate={
+            selectedSlot
+              ? serviceSlotDate(selectedSlot)
+              : selectedDateStr
+          }
+          initialEndDate={
+            selectedSlot
+              ? serviceSlotDate(selectedSlot)
+              : selectedDateStr
+          }
+          initialSlotKey={selectedSlotKey || undefined}
+          initialSlotStartAt={selectedSlot?.startAt}
+          initialSlotEndAt={selectedSlot?.endAt}
+          initialSlotLabel={selectedSlot?.label}
           lockEventDate
           mode={dialogMode}
         />

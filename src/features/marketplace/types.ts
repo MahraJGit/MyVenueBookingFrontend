@@ -4,6 +4,8 @@ export type { Currency, EntityStatus };
 
 export type ServicePricingModel = "FLAT_PER_EVENT" | "HOURLY" | "PER_GUEST";
 
+export type ServiceBookingMode = "DATE" | "SLOT";
+
 export type ServiceCustomizationMode = "NONE" | "PACKAGE" | "MENU_BUILDER";
 
 export type ServiceCategory = {
@@ -72,6 +74,48 @@ export type ServiceBlock = {
   isBlocked: boolean;
 };
 
+/** Recurring time window that repeats on weekly open days (SLOT booking mode). */
+export type ServiceSlotTemplate = {
+  name?: string | null;
+  startTime: string;
+  endTime: string;
+};
+
+export type ServiceSlot = {
+  id: string;
+  serviceId?: string;
+  /** Generated key e.g. "YYYY-MM-DD|HH:mm"; may equal `id`. */
+  slotKey?: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  startAt: string;
+  endAt: string;
+  capacity?: number;
+  label?: string | null;
+  isActive: boolean;
+  booked?: number;
+  remaining?: number;
+  available?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CreateServiceSlotPayload = {
+  startAt: string;
+  endAt: string;
+  capacity?: number;
+  label?: string | null;
+};
+
+export type UpdateServiceSlotPayload = {
+  startAt?: string;
+  endAt?: string;
+  capacity?: number;
+  label?: string | null;
+  isActive?: boolean;
+};
+
 export type MarketplaceServiceVendor = {
   id: string;
   vendorName: string;
@@ -100,8 +144,15 @@ export type MarketplaceService = {
   status: EntityStatus;
   rejectionReason?: string | null;
   instantBookingEnabled?: boolean;
-  /** Max concurrent jobs per calendar day (1–10). Default 1. */
+  /** DATE = daily calendar capacity; SLOT = recurring templates on open days. */
+  bookingMode?: ServiceBookingMode;
+  /** Max concurrent jobs per calendar day (1–10). Used when bookingMode=DATE. Default 1. */
   bookingCapacity?: number;
+  /** Optional guest bounds; validated when buyer enters guest count. */
+  guestMin?: number | null;
+  guestMax?: number | null;
+  /** Recurring time windows for SLOT mode (repeat on weekly open days). */
+  slotTemplates?: ServiceSlotTemplate[];
   cancellationPolicy?: Record<string, unknown> | null;
   createdAt?: string;
   updatedAt?: string;
@@ -182,7 +233,11 @@ export type CreateMarketplaceServicePayload = {
   baseCity?: string | null;
   cancellationPolicy?: Record<string, unknown> | null;
   instantBookingEnabled?: boolean;
+  bookingMode?: ServiceBookingMode;
   bookingCapacity?: number;
+  guestMin?: number | null;
+  guestMax?: number | null;
+  slotTemplates?: ServiceSlotTemplate[];
   packages?: ServicePackagePayload[];
   addOns?: ServiceAddOnPayload[];
   menuItems?: ServiceMenuItemPayload[];
@@ -226,8 +281,10 @@ export type ServiceAvailabilityResult = {
   startDate: string;
   endDate: string;
   available: boolean;
+  bookingMode?: ServiceBookingMode;
   bookingCapacity?: number;
   days?: ServiceAvailabilityDay[];
+  slots?: ServiceSlot[];
   blocks: ServiceBlock[];
   busyBookings: Array<{
     id: string;
@@ -293,6 +350,7 @@ export type ServiceInquiry = {
   serviceId: string;
   buyerId: string;
   packageId?: string | null;
+  slotId?: string | null;
   startDate: string;
   endDate: string;
   guestCount?: number | null;
@@ -312,6 +370,7 @@ export type ServiceInquiry = {
     currency?: string;
     pricingModel?: ServicePricingModel | string;
     customizationMode?: ServiceCustomizationMode | string;
+    bookingMode?: ServiceBookingMode | string;
     vendor?: {
       id: string;
       vendorName: string;
@@ -330,6 +389,7 @@ export type ServiceInquiry = {
     avatarUrl?: string | null;
   } | null;
   package?: ServicePackage | null;
+  slot?: ServiceSlot | null;
   proposals?: ServiceProposal[];
   booking?: {
     id: string;
@@ -337,6 +397,7 @@ export type ServiceInquiry = {
     expiresAt?: string | null;
     totalAmount?: number | string;
     currency?: string;
+    slotId?: string | null;
   } | null;
   conversation?: { id: string } | null;
 };
@@ -357,6 +418,7 @@ export type ServiceProposal = {
   inquiryId: string;
   serviceId: string;
   vendorId: string;
+  slotId?: string | null;
   version?: number;
   status: ServiceProposalStatus | string;
   notes?: string | null;
@@ -376,6 +438,7 @@ export type ServiceProposal = {
     coverImage?: string | null;
     vendor?: { id: string; vendorName: string; userId?: string } | null;
   } | null;
+  slot?: ServiceSlot | null;
   booking?: {
     id: string;
     status: ServiceBookingStatus | string;
@@ -385,11 +448,13 @@ export type ServiceProposal = {
 
 export type ServiceBooking = {
   id: string;
-  inquiryId: string;
-  proposalId: string;
+  inquiryId?: string | null;
+  proposalId?: string | null;
   serviceId: string;
   buyerId: string;
   vendorId: string;
+  slotId?: string | null;
+  slotKey?: string | null;
   startDate: string;
   endDate: string;
   locationSnapshot?: ServiceLocation | Record<string, unknown>;
@@ -397,6 +462,10 @@ export type ServiceBooking = {
   totalAmount: number | string;
   currency: string;
   status: ServiceBookingStatus | string;
+  source?: "ONLINE" | "OFFLINE" | string;
+  guestName?: string | null;
+  guestPhone?: string | null;
+  specialRequests?: string | null;
   expiresAt?: string | null;
   addressUnlocked?: boolean;
   createdAt: string;
@@ -409,6 +478,7 @@ export type ServiceBooking = {
     currency?: string;
     pricingModel?: ServicePricingModel | string;
     customizationMode?: ServiceCustomizationMode | string;
+    bookingMode?: ServiceBookingMode | string;
     vendor?: { id: string; vendorName: string; userId?: string; email?: string } | null;
     addOns?: ServiceAddOn[];
     menuItems?: ServiceMenuItem[];
@@ -421,6 +491,7 @@ export type ServiceBooking = {
   } | null;
   vendor?: { id: string; vendorName: string; userId?: string; email?: string } | null;
   proposal?: ServiceProposal | null;
+  slot?: ServiceSlot | null;
   inquiry?: {
     id: string;
     guestCount?: number | null;
@@ -429,6 +500,7 @@ export type ServiceBooking = {
     location?: ServiceLocation | Record<string, unknown>;
     selection?: ServiceInquirySelection | Record<string, unknown>;
     package?: { id: string; name: string; price?: number | string } | null;
+    slot?: ServiceSlot | null;
     conversation?: { id: string } | null;
   } | null;
 };
@@ -436,8 +508,12 @@ export type ServiceBooking = {
 export type CreateServiceInquiryPayload = {
   serviceId: string;
   packageId?: string | null;
-  startDate: string;
-  endDate: string;
+  /** Preferred for SLOT-mode services (generated key e.g. "YYYY-MM-DD|HH:mm"). */
+  slotKey?: string | null;
+  /** @deprecated Prefer `slotKey` for generated public slots. */
+  slotId?: string | null;
+  startDate?: string;
+  endDate?: string;
   guestCount?: number | null;
   location?: ServiceLocation;
   selection?: ServiceInquirySelection;

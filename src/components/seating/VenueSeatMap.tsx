@@ -122,6 +122,7 @@ export function VenueSeatMap({
     startY: number;
     origin: Bounds;
     moved: boolean;
+    capturing: boolean;
   } | null>(null);
 
   const sectionsKey = React.useMemo(
@@ -186,23 +187,47 @@ export function VenueSeatMap({
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
+    // Do NOT capture yet — immediate capture steals clicks from section/seat targets.
     dragRef.current = {
       pointerId: e.pointerId,
       startX: e.clientX,
       startY: e.clientY,
       origin: viewBox,
       moved: false,
+      capturing: false,
     };
-    e.currentTarget.setPointerCapture(e.pointerId);
   };
+
+  const endDrag = React.useCallback((pointerId?: number) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    if (pointerId != null && drag.pointerId !== pointerId) return;
+    if (drag.capturing) {
+      try {
+        svgRef.current?.releasePointerCapture(drag.pointerId);
+      } catch {
+        // already released
+      }
+    }
+    dragRef.current = null;
+  }, []);
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== e.pointerId) return;
+    // Hover / button released must never pan — button can be lost if a child stopped pointerup.
+    if ((e.buttons & 1) === 0) {
+      endDrag(e.pointerId);
+      return;
+    }
     const dxPx = e.clientX - drag.startX;
     const dyPx = e.clientY - drag.startY;
     if (!drag.moved && Math.hypot(dxPx, dyPx) < 5) return;
-    drag.moved = true;
+    if (!drag.moved) {
+      drag.moved = true;
+      drag.capturing = true;
+      svgRef.current?.setPointerCapture(e.pointerId);
+    }
     const svg = svgRef.current;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
@@ -216,25 +241,89 @@ export function VenueSeatMap({
 
   const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
     const drag = dragRef.current;
-    if (drag?.pointerId === e.pointerId) {
-      // Keep `moved` readable during the click that follows pointerup.
-      window.setTimeout(() => {
-        dragRef.current = null;
-      }, 0);
-    }
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    // Keep `moved` readable for seat/section handlers that run on this same pointerup.
+    const moved = drag.moved;
+    window.setTimeout(() => {
+      if (dragRef.current?.pointerId === e.pointerId) {
+        endDrag(e.pointerId);
+      }
+    }, 0);
+    // Store moved flag briefly on the ref object until cleared.
+    drag.moved = moved;
+  };
+
+  const onPointerCancel = (e: React.PointerEvent<SVGSVGElement>) => {
+    endDrag(e.pointerId);
+  };
+
+  const onPointerLeave = (e: React.PointerEvent<SVGSVGElement>) => {
+    // If the cursor leaves without buttons down, drop any stale drag session.
+    if ((e.buttons & 1) === 0) endDrag(e.pointerId);
   };
 
   const wasDrag = () => Boolean(dragRef.current?.moved);
 
+  const padBounds = (bounds: Bounds, ratio = 0.18): Bounds => {
+    const padX = Math.max(SEAT_PITCH, bounds.width * ratio);
+    const padY = Math.max(SEAT_PITCH, bounds.height * ratio);
+    return {
+      minX: bounds.minX - padX,
+      minY: bounds.minY - padY,
+      width: bounds.width + padX * 2,
+      height: bounds.height + padY * 2,
+    };
+  };
+
   const focusSection = (render: SectionRender) => {
-    if (wasDrag()) return;
     setActiveId(render.section.id);
-    setViewBox(render.bounds);
+    setViewBox(padBounds(render.bounds));
   };
 
   const backToOverview = () => {
     setActiveId(null);
     setViewBox(fullBounds);
+  };
+
+  const onSectionActivate = (
+    render: SectionRender,
+    e: React.PointerEvent | React.KeyboardEvent,
+  ) => {
+    if (render.availableCount === 0) return;
+    if ("pointerId" in e) {
+      if (wasDrag()) {
+        endDrag(e.pointerId);
+        return;
+      }
+      endDrag(e.pointerId);
+    } else if (wasDrag()) {
+      return;
+    }
+    focusSection(render);
+  };
+
+  const onSeatActivate = (
+    seat: PublicSeat,
+    section: PublicSeatSection,
+    e: React.PointerEvent,
+  ) => {
+    if (disabled) return;
+    if (wasDrag()) {
+      endDrag(e.pointerId);
+      return;
+    }
+    const isSelected = selectedSet.has(seat.id);
+    const status: SeatStatus = isSelected ? "selected" : seat.status;
+    if (
+      status !== "available" &&
+      status !== "selected" &&
+      status !== "held_by_me"
+    ) {
+      endDrag(e.pointerId);
+      return;
+    }
+    endDrag(e.pointerId);
+    onToggleSeat(seat, section);
   };
 
   if (rendered.length === 0) {
@@ -289,7 +378,8 @@ export function VenueSeatMap({
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
+          onPointerCancel={onPointerCancel}
+          onPointerLeave={onPointerLeave}
           role="application"
           aria-label="Venue seat map"
         >
@@ -347,8 +437,9 @@ export function VenueSeatMap({
                   strokeOpacity={0.25}
                   strokeWidth={1.5}
                   className="cursor-pointer"
-                  onClick={() => {
-                    if (!wasDrag()) focusSection(render);
+                  onPointerUp={(e) => {
+                    if (e.button !== 0) return;
+                    onSectionActivate(render, e);
                   }}
                 />
               );
@@ -359,8 +450,23 @@ export function VenueSeatMap({
                 <g
                   key={render.section.id}
                   className={cn(!soldOut && "cursor-pointer")}
-                  onClick={() => {
-                    if (!soldOut) focusSection(render);
+                  role="button"
+                  tabIndex={soldOut ? -1 : 0}
+                  aria-label={`${render.section.name}, ${
+                    soldOut
+                      ? "sold out"
+                      : `${render.availableCount} seats available`
+                  }`}
+                  onPointerUp={(e) => {
+                    if (e.button !== 0 || soldOut) return;
+                    onSectionActivate(render, e);
+                  }}
+                  onKeyDown={(e) => {
+                    if (soldOut) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSectionActivate(render, e);
+                    }
                   }}
                 >
                   <path
@@ -422,6 +528,7 @@ export function VenueSeatMap({
                   stroke={render.section.color}
                   strokeOpacity={0.5}
                   strokeWidth={1.5}
+                  pointerEvents="none"
                 />
                 {render.placements.map(({ seat, x, y }) => {
                   const isSelected = selectedSet.has(seat.id);
@@ -437,13 +544,15 @@ export function VenueSeatMap({
                     <g
                       key={seat.id}
                       className={cn(clickable ? "cursor-pointer" : "cursor-not-allowed")}
-                      onClick={() => {
-                        if (!clickable || wasDrag()) return;
-                        onToggleSeat(seat, render.section);
+                      onPointerUp={(e) => {
+                        if (e.button !== 0 || !clickable) return;
+                        onSeatActivate(seat, render.section, e);
                       }}
                       role="button"
                       aria-label={`Seat ${seat.label}, ${status}`}
                     >
+                      {/* Larger invisible hit target */}
+                      <circle cx={x} cy={y} r={SEAT_RADIUS * 1.55} fill="transparent" />
                       <circle
                         cx={x}
                         cy={y}
@@ -451,6 +560,7 @@ export function VenueSeatMap({
                         fill={palette.fill}
                         stroke={palette.stroke}
                         strokeWidth={isSelected ? 2 : 1.25}
+                        pointerEvents="none"
                       />
                       <text
                         x={x}

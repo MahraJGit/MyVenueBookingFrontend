@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { TimePicker } from "@/components/ui/date-time-picker";
 import { VenueGalleryUpload } from "@/components/venues/VenueGalleryUpload";
 import {
   VenueScheduleEditor,
@@ -44,6 +45,8 @@ import {
 } from "@/components/dashboard/dashboard-ui";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { useDashboardPaths } from "@/features/dashboard/paths";
+import { useDayNames } from "@/features/i18n/use-day-names";
+import { validateNamedSlotsAgainstSchedules } from "@/features/venues/pricing-validation";
 import {
   createMarketplaceService,
   getManagedMarketplaceService,
@@ -58,9 +61,11 @@ import type {
   Currency,
   ManagedMarketplaceService,
   ServiceAddOnPayload,
+  ServiceBookingMode,
   ServiceCustomizationMode,
   ServicePackagePayload,
   ServicePricingModel,
+  ServiceSlotTemplate,
 } from "@/features/marketplace/types";
 import {
   decimalToNumber,
@@ -83,6 +88,19 @@ type CourseDraft = {
   name: string;
   dishes: string[];
 };
+
+type SlotTemplateDraft = ServiceSlotTemplate & { localId: string };
+
+function newTemplateDraft(
+  partial?: Partial<ServiceSlotTemplate>,
+): SlotTemplateDraft {
+  return {
+    localId: `tpl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: partial?.name ?? "",
+    startTime: partial?.startTime ?? "09:00",
+    endTime: partial?.endTime ?? "11:00",
+  };
+}
 
 type Props = { serviceId?: string };
 
@@ -116,6 +134,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
   const t = useTranslations("vendorMarketplace");
   const tCommon = useTranslations("common");
   const tForms = useTranslations("forms");
+  const dayNames = useDayNames();
   const queryClient = useQueryClient();
 
   const [title, setTitle] = useState("");
@@ -145,7 +164,11 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
     defaultWeeklyServiceSchedules(),
   );
   const [instantBookingEnabled, setInstantBookingEnabled] = useState(false);
+  const [bookingMode, setBookingMode] = useState<ServiceBookingMode>("DATE");
   const [bookingCapacity, setBookingCapacity] = useState(1);
+  const [guestMin, setGuestMin] = useState<number | undefined>(undefined);
+  const [guestMax, setGuestMax] = useState<number | undefined>(undefined);
+  const [slotTemplates, setSlotTemplates] = useState<SlotTemplateDraft[]>([]);
   const [previewService, setPreviewService] =
     useState<ManagedMarketplaceService | null>(null);
 
@@ -214,8 +237,28 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
     setCoverImage(existing.coverImage ?? "");
     setPortfolio(existing.portfolio ?? []);
     setInstantBookingEnabled(Boolean(existing.instantBookingEnabled));
+    setBookingMode(existing.bookingMode === "SLOT" ? "SLOT" : "DATE");
     setBookingCapacity(
       Math.min(10, Math.max(1, Number(existing.bookingCapacity) || 1)),
+    );
+    setGuestMin(
+      existing.guestMin != null && Number(existing.guestMin) > 0
+        ? Number(existing.guestMin)
+        : undefined,
+    );
+    setGuestMax(
+      existing.guestMax != null && Number(existing.guestMax) > 0
+        ? Number(existing.guestMax)
+        : undefined,
+    );
+    setSlotTemplates(
+      (existing.slotTemplates ?? []).map((tpl) =>
+        newTemplateDraft({
+          name: tpl.name ?? "",
+          startTime: tpl.startTime || "09:00",
+          endTime: tpl.endTime || "11:00",
+        }),
+      ),
     );
     setPackages(
       (existing.packages ?? []).map((p) => ({
@@ -372,7 +415,19 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
       coverImage: coverImage || null,
       portfolio,
       instantBookingEnabled,
-      bookingCapacity,
+      bookingMode,
+      bookingCapacity: bookingMode === "DATE" ? bookingCapacity : undefined,
+      guestMin: guestMin ?? null,
+      guestMax: guestMax ?? null,
+      ...(bookingMode === "SLOT"
+        ? {
+            slotTemplates: slotTemplates.map((tpl) => ({
+              name: tpl.name?.trim() || null,
+              startTime: tpl.startTime,
+              endTime: tpl.endTime,
+            })),
+          }
+        : {}),
       addOns,
       schedules: schedules.map((s) => ({
         dayOfWeek: s.dayOfWeek,
@@ -442,6 +497,14 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
         throw new ApiError(400, t("categoryRequired"));
       }
       if (
+        payload.guestMin != null &&
+        payload.guestMax != null &&
+        payload.guestMax < payload.guestMin
+      ) {
+        toast.error(t("guestMaxBeforeMin"));
+        throw new ApiError(400, t("guestMaxBeforeMin"));
+      }
+      if (
         payload.customizationMode === "PACKAGE" &&
         (payload.packages?.length ?? 0) === 0
       ) {
@@ -508,6 +571,38 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
       if (!payload.schedules?.some((s) => s.isOpen)) {
         toast.error(t("scheduleOpenDayRequired"));
         throw new ApiError(400, t("scheduleOpenDayRequired"));
+      }
+
+      if (payload.bookingMode === "SLOT") {
+        const templates = payload.slotTemplates ?? [];
+        const validTemplates = templates.filter(
+          (tpl) =>
+            Boolean(tpl.startTime) &&
+            Boolean(tpl.endTime) &&
+            tpl.endTime > tpl.startTime,
+        );
+        if (templates.some((tpl) => !(tpl.endTime > tpl.startTime))) {
+          toast.error(t("slotTimesInvalid"));
+          throw new ApiError(400, t("slotTimesInvalid"));
+        }
+        if (opts.submit && validTemplates.length < 1) {
+          toast.error(t("slotsRequiredBeforeSubmit"));
+          throw new ApiError(400, t("slotsRequiredBeforeSubmit"));
+        }
+        const scheduleError = validateNamedSlotsAgainstSchedules(
+          templates.map((tpl) => ({
+            name: tpl.name ?? undefined,
+            startTime: tpl.startTime,
+            endTime: tpl.endTime,
+          })),
+          payload.schedules ?? schedules,
+          t,
+          dayNames,
+        );
+        if (scheduleError) {
+          toast.error(scheduleError);
+          throw new ApiError(400, scheduleError);
+        }
       }
 
       const saved = serviceId
@@ -704,22 +799,81 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="booking-capacity">{t("bookingCapacity")}</Label>
-                <NumberInput
-                  id="booking-capacity"
-                  className={inputClass}
-                  value={bookingCapacity}
-                  onValueChange={(v) =>
-                    setBookingCapacity(Math.min(10, Math.max(1, v ?? 1)))
-                  }
-                  min={1}
-                  max={10}
-                  integer
-                />
+                <Label>{t("bookingMode")}</Label>
+                <Select
+                  value={bookingMode}
+                  onValueChange={(v) => setBookingMode(v as ServiceBookingMode)}
+                >
+                  <SelectTrigger className={cn(inputClass, "w-full")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DATE">{t("bookingModeDate")}</SelectItem>
+                    <SelectItem value="SLOT">{t("bookingModeSlot")}</SelectItem>
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  {t("bookingCapacityHint")}
+                  {t("bookingModeHint")}
                 </p>
               </div>
+              {bookingMode === "DATE" ? (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="booking-capacity">{t("bookingCapacity")}</Label>
+                  <NumberInput
+                    id="booking-capacity"
+                    className={inputClass}
+                    value={bookingCapacity}
+                    onValueChange={(v) =>
+                      setBookingCapacity(Math.min(10, Math.max(1, v ?? 1)))
+                    }
+                    min={1}
+                    max={10}
+                    integer
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("bookingCapacityHint")}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground sm:col-span-2">
+                  {t("bookingCapacitySlotNote")}
+                </p>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="guest-min">{t("guestMin")}</Label>
+                <NumberInput
+                  id="guest-min"
+                  className={inputClass}
+                  value={guestMin}
+                  onValueChange={(v) =>
+                    setGuestMin(
+                      v == null ? undefined : Math.max(1, Math.floor(v)),
+                    )
+                  }
+                  min={1}
+                  integer
+                  placeholder={t("optional")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="guest-max">{t("guestMax")}</Label>
+                <NumberInput
+                  id="guest-max"
+                  className={inputClass}
+                  value={guestMax}
+                  onValueChange={(v) =>
+                    setGuestMax(
+                      v == null ? undefined : Math.max(1, Math.floor(v)),
+                    )
+                  }
+                  min={1}
+                  integer
+                  placeholder={t("optional")}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground sm:col-span-2">
+                {t("guestBoundsHint")}
+              </p>
               <div className="space-y-2 sm:col-span-2">
                 <Label>{t("country")}</Label>
                 <Select
@@ -928,15 +1082,140 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
             </CardContent>
           </Card>
 
-          <Card className={dashboardCardClass}>
-            <CardHeader>
-              <CardTitle>{t("weeklyHours")}</CardTitle>
-              <CardDescription>{t("weeklyHoursDesc")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <VenueScheduleEditor schedules={schedules} onChange={setSchedules} />
-            </CardContent>
-          </Card>
+          {bookingMode === "SLOT" ? (
+            <>
+              <Card className={dashboardCardClass}>
+                <CardHeader>
+                  <CardTitle>{t("weeklyHours")}</CardTitle>
+                  <CardDescription>{t("weeklyHoursSlotHint")}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <VenueScheduleEditor
+                    schedules={schedules}
+                    onChange={setSchedules}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card className={dashboardCardClass}>
+                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+                  <div>
+                    <CardTitle>{t("manageSlots")}</CardTitle>
+                    <CardDescription>{t("formSlotsDesc")}</CardDescription>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      setSlotTemplates((prev) => [...prev, newTemplateDraft()])
+                    }
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    {t("addSlot")}
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {slotTemplates.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("noSlots")}</p>
+                  ) : (
+                    <ul className="space-y-3">
+                      {slotTemplates.map((tpl, idx) => (
+                        <li
+                          key={tpl.localId}
+                          className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(10.5rem,12rem)_minmax(10.5rem,12rem)_auto]"
+                        >
+                          <div className="space-y-2">
+                            <Label>{t("slotLabel")}</Label>
+                            <Input
+                              className={inputClass}
+                              value={tpl.name ?? ""}
+                              onChange={(e) =>
+                                setSlotTemplates((prev) =>
+                                  prev.map((row, i) =>
+                                    i === idx
+                                      ? { ...row, name: e.target.value }
+                                      : row,
+                                  ),
+                                )
+                              }
+                              placeholder={t("slotLabelPlaceholder")}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{t("slotStartTime")}</Label>
+                            <TimePicker
+                              value={tpl.startTime}
+                              onChange={(startTime) =>
+                                setSlotTemplates((prev) =>
+                                  prev.map((row, i) =>
+                                    i === idx ? { ...row, startTime } : row,
+                                  ),
+                                )
+                              }
+                              triggerClassName={cn(
+                                inputClass,
+                                "h-9 w-full min-w-[10.5rem]",
+                              )}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{t("slotEndTime")}</Label>
+                            <TimePicker
+                              value={tpl.endTime}
+                              onChange={(endTime) =>
+                                setSlotTemplates((prev) =>
+                                  prev.map((row, i) =>
+                                    i === idx ? { ...row, endTime } : row,
+                                  ),
+                                )
+                              }
+                              triggerClassName={cn(
+                                inputClass,
+                                "h-9 w-full min-w-[10.5rem]",
+                              )}
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="text-destructive"
+                              aria-label={tCommon("remove")}
+                              onClick={() =>
+                                setSlotTemplates((prev) =>
+                                  prev.filter((_, i) => i !== idx),
+                                )
+                              }
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {t("slotWithinHoursHint")}
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card className={dashboardCardClass}>
+              <CardHeader>
+                <CardTitle>{t("weeklyHours")}</CardTitle>
+                <CardDescription>{t("weeklyHoursDesc")}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <VenueScheduleEditor
+                  schedules={schedules}
+                  onChange={setSchedules}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {customizationMode === "PACKAGE" ? (
             <Card className={dashboardCardClass}>
