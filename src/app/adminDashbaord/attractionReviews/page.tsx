@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -57,11 +57,10 @@ import {
   dashboardDropdownContentClass,
   dashboardTextareaClass,
 } from "@/components/dashboard/dashboard-ui"
-import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table"
+import { DashboardDataTable, DashboardSortableHeader } from "@/components/dashboard/dashboard-data-table"
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared"
 import { cn } from "@/lib/utils"
-
-const PAGE_SIZE = 10
+import { useTableQueryState } from "@/hooks/use-table-query-state"
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
@@ -122,16 +121,15 @@ export default function AttractionReviewsPage() {
   const tAdmin = useTranslations("adminDashboard")
   const tForms = useTranslations("forms")
   const tListing = useTranslations("listing")
+  const tTables = useTranslations("tables")
   const queryClient = useQueryClient()
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL")
-  const [page, setPage] = useState(1)
+  const table = useTableQueryState<{ status: StatusFilter }>({
+    initialSortBy: "createdAt",
+    initialFilters: { status: "ALL" },
+  })
   const [activeId, setActiveId] = useState<string | null>(null)
   const [rejectTarget, setRejectTarget] = useState<ManagedAttraction | null>(null)
   const [rejectReason, setRejectReason] = useState("")
-
-  useEffect(() => {
-    setPage(1)
-  }, [statusFilter])
 
   const statusLabel = (status: AttractionApprovalStatus | undefined) => {
     if (!status) return tStatus("unknown")
@@ -150,15 +148,13 @@ export default function AttractionReviewsPage() {
     refetch,
     isFetching,
   } = useQuery({
-    queryKey: ["admin-attraction-reviews", statusFilter, page],
+    queryKey: ["admin-attraction-reviews", table.queryParams],
     queryFn: () =>
       listManagedAttractions({
-        page,
-        limit: PAGE_SIZE,
+        ...table.queryParams,
         vendorOnly: true,
-        ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
-        sortBy: "createdAt",
-        sortOrder: "desc",
+        ...(table.filters.status !== "ALL" ? { status: table.filters.status } : {}),
+        sortBy: table.sortBy as "createdAt" | "name" | "scheduleStartDate" | undefined,
       }),
   })
 
@@ -244,8 +240,8 @@ export default function AttractionReviewsPage() {
                 </span>
               ) : null}
               <Button
-                variant={statusFilter === "ALL" ? "default" : "outline"}
-                onClick={() => setStatusFilter("ALL")}
+                variant={table.filters.status === "ALL" ? "default" : "outline"}
+                onClick={() => table.setFilter("status", "ALL")}
                 disabled={isLoading}
               >
                 {tCommon("all")}
@@ -253,8 +249,8 @@ export default function AttractionReviewsPage() {
               {REVIEW_STATUSES.map((s) => (
                 <Button
                   key={s}
-                  variant={statusFilter === s ? "default" : "outline"}
-                  onClick={() => setStatusFilter(s)}
+                  variant={table.filters.status === s ? "default" : "outline"}
+                  onClick={() => table.setFilter("status", s)}
                   disabled={isLoading}
                 >
                   {statusLabel(s)}
@@ -273,19 +269,26 @@ export default function AttractionReviewsPage() {
       ) : null}
 
       <DashboardDataTable
+        toolbar={{
+          search: { value: table.search, onChange: table.setSearch, placeholder: tCommon("search") },
+          pageSize: { value: table.pageSize, onChange: table.setPageSize },
+          onReset: table.reset,
+          showReset: table.hasActiveFilters,
+          isRefreshing: isFetching && !isLoading,
+        }}
         pagination={
           showPagination
             ? {
                 label: tListing("pageOfWithCount", {
-                  page: meta?.page ?? page,
+                  page: meta?.page ?? table.page,
                   totalPages,
                   total: meta?.total ?? attractions.length,
                   type: t("attractionsCount"),
                 }),
-                page,
+                page: table.page,
                 totalPages,
                 total: meta?.total ?? attractions.length,
-                onPageChange: setPage,
+                onPageChange: table.setPage,
                 previousLabel: tCommon("previous"),
                 nextLabel: tCommon("next"),
                 isLoading,
@@ -299,9 +302,7 @@ export default function AttractionReviewsPage() {
         >
           <TableHeader>
             <TableRow className={dashboardTableHeaderRowClass}>
-              <TableHead className="min-w-[200px] whitespace-nowrap text-muted-foreground">
-                {attractionColumnHeader}
-              </TableHead>
+              <DashboardSortableHeader className="min-w-[200px]" label={attractionColumnHeader} column="name" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
               <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
                 {tCommon("vendor")}
               </TableHead>
@@ -311,9 +312,7 @@ export default function AttractionReviewsPage() {
               <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
                 {tCommon("status")}
               </TableHead>
-              <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
-                {tCommon("submitted")}
-              </TableHead>
+              <DashboardSortableHeader className="min-w-[110px]" label={tCommon("submitted")} column="createdAt" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
               <TableHead className="min-w-[240px] whitespace-nowrap text-right text-muted-foreground">
                 {tCommon("actions")}
               </TableHead>
@@ -323,7 +322,9 @@ export default function AttractionReviewsPage() {
             {isLoading ? (
               <TableSkeleton cols={6} />
             ) : attractions.length === 0 ? (
-              <TableEmptyRow colSpan={6}>{t("noAttractions")}</TableEmptyRow>
+              <TableEmptyRow colSpan={6}>
+                {table.hasActiveFilters ? tTables("noMatch") : t("noAttractions")}
+              </TableEmptyRow>
             ) : (
               attractions.map((row) => {
                   const selectValue = reviewableStatus(row.status)

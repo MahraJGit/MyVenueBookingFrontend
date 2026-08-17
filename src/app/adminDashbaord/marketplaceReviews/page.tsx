@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -61,11 +61,10 @@ import {
   dashboardDropdownContentClass,
   dashboardTextareaClass,
 } from "@/components/dashboard/dashboard-ui";
-import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
+import { DashboardDataTable, DashboardSortableHeader } from "@/components/dashboard/dashboard-data-table";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { cn } from "@/lib/utils";
-
-const PAGE_SIZE = 10;
+import { useTableQueryState } from "@/hooks/use-table-query-state";
 
 const REVIEW_STATUSES: EntityStatus[] = [
   "PENDING",
@@ -117,23 +116,23 @@ export default function MarketplaceReviewsPage() {
   const tAdmin = useTranslations("adminDashboard");
   const tStatus = useTranslations("entityStatus");
   const tListing = useTranslations("listing");
+  const tTables = useTranslations("tables");
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
-  const [page, setPage] = useState(1);
+  const table = useTableQueryState<{ status: StatusFilter }>({
+    initialSortBy: "createdAt",
+    initialFilters: { status: "ALL" },
+  });
   const [viewService, setViewService] =
     useState<ManagedMarketplaceService | null>(null);
   const [rejectService, setRejectService] =
     useState<ManagedMarketplaceService | null>(null);
   const [reason, setReason] = useState("");
 
-  useEffect(() => {
-    setPage(1);
-  }, [statusFilter]);
-
   const listParams = {
-    page,
-    limit: PAGE_SIZE,
-    ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
+    ...table.queryParams,
+    scope: "platform" as const,
+    ...(table.filters.status !== "ALL" ? { status: table.filters.status } : {}),
+    sortBy: table.sortBy as "createdAt" | "title" | "basePrice" | undefined,
   };
 
   const {
@@ -212,8 +211,8 @@ export default function MarketplaceReviewsPage() {
                   </span>
                 ) : null}
                 <Button
-                  variant={statusFilter === "ALL" ? "default" : "outline"}
-                  onClick={() => setStatusFilter("ALL")}
+                  variant={table.filters.status === "ALL" ? "default" : "outline"}
+                  onClick={() => table.setFilter("status", "ALL")}
                   disabled={isLoading}
                 >
                   {tCommon("all")}
@@ -221,8 +220,8 @@ export default function MarketplaceReviewsPage() {
                 {REVIEW_STATUSES.map((s) => (
                   <Button
                     key={s}
-                    variant={statusFilter === s ? "default" : "outline"}
-                    onClick={() => setStatusFilter(s)}
+                    variant={table.filters.status === s ? "default" : "outline"}
+                    onClick={() => table.setFilter("status", s)}
                     disabled={isLoading}
                   >
                     {statusLabel(s)}
@@ -241,19 +240,26 @@ export default function MarketplaceReviewsPage() {
           ) : null}
 
           <DashboardDataTable
+            toolbar={{
+              search: { value: table.search, onChange: table.setSearch, placeholder: tCommon("search") },
+              pageSize: { value: table.pageSize, onChange: table.setPageSize },
+              onReset: table.reset,
+              showReset: table.hasActiveFilters,
+              isRefreshing: isFetching && !isLoading,
+            }}
             pagination={
               showPagination
                 ? {
                     label: tListing("pageOfWithCount", {
-                      page: meta?.page ?? page,
+                      page: meta?.page ?? table.page,
                       totalPages,
                       total: meta?.total ?? services.length,
                       type: t("servicesCount"),
                     }),
-                    page,
+                    page: table.page,
                     totalPages,
                     total: meta?.total ?? services.length,
-                    onPageChange: setPage,
+                    onPageChange: table.setPage,
                     previousLabel: tCommon("previous"),
                     nextLabel: tCommon("next"),
                     isLoading,
@@ -267,9 +273,7 @@ export default function MarketplaceReviewsPage() {
             >
               <TableHeader>
                 <TableRow className={dashboardTableHeaderRowClass}>
-                  <TableHead className="min-w-[200px] whitespace-nowrap text-muted-foreground">
-                    {t("service")}
-                  </TableHead>
+                  <DashboardSortableHeader className="min-w-[200px]" label={t("service")} column="title" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
                   <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
                     {tCommon("vendor")}
                   </TableHead>
@@ -279,9 +283,7 @@ export default function MarketplaceReviewsPage() {
                   <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
                     {tCommon("status")}
                   </TableHead>
-                  <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
-                    {tCommon("submitted")}
-                  </TableHead>
+                  <DashboardSortableHeader className="min-w-[110px]" label={tCommon("submitted")} column="createdAt" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
                   <TableHead className="min-w-[240px] whitespace-nowrap text-right text-muted-foreground">
                     {tCommon("actions")}
                   </TableHead>
@@ -291,7 +293,9 @@ export default function MarketplaceReviewsPage() {
                 {isLoading ? (
                   <TableSkeleton cols={6} />
                 ) : services.length === 0 ? (
-                  <TableEmptyRow colSpan={6}>{t("noServices")}</TableEmptyRow>
+                  <TableEmptyRow colSpan={6}>
+                    {table.hasActiveFilters ? tTables("noMatch") : t("noServices")}
+                  </TableEmptyRow>
                 ) : (
                   services.map((service) => {
                     const selectValue = reviewableStatus(service.status);

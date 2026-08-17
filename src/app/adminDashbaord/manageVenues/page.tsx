@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CalendarDays, Eye, Loader2, Pencil, Plus } from "lucide-react";
+import { Building2, CalendarDays, Eye, Pencil, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/venues/StatusBadge";
@@ -30,7 +30,6 @@ import {
 import {
   DashboardPanel,
   DashboardPageShell,
-  DashboardSearchInput,
   dashboardTableClass,
   dashboardTableContainerClass,
   dashboardTableActionsClass,
@@ -40,20 +39,20 @@ import {
   dashboardDropdownContentClass,
   dashboardOutlineButtonClass,
 } from "@/components/dashboard/dashboard-ui";
-import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
 import {
-  DashboardPageHeader,
-  dashboardFilterBarBorderClass,
-} from "@/components/dashboard/dashboard-shared";
-import { DashboardFilterBar } from "@/components/userDashboard/DashboardScrollableTabs";
+  DashboardDataTable,
+  DashboardSortableHeader,
+  formatTableRangeLabel,
+} from "@/components/dashboard/dashboard-data-table";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { useDashboardPaths } from "@/features/dashboard/paths";
 import { listManagedVenues, updateVenueStatus } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
 import type { EntityStatus, ManagedVenue } from "@/features/venues/types";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
+import { useTableQueryState } from "@/hooks/use-table-query-state";
 
-const PAGE_SIZE = 10;
 const selectTriggerClass = cn("w-full sm:w-[180px]", dashboardSelectTriggerClass);
 
 export default function ManageVenuesPage() {
@@ -67,25 +66,21 @@ export default function ManageVenuesPage() {
   const tCommon = useTranslations("common");
   const tForms = useTranslations("forms");
   const tListing = useTranslations("listing");
+  const tTables = useTranslations("tables");
   const tVenues = useTranslations("venues");
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<EntityStatus | "ALL">("ALL");
   const [viewVenue, setViewVenue] = useState<ManagedVenue | null>(null);
-
-  useEffect(() => {
-    setPage(1);
-  }, [search, statusFilter]);
+  const table = useTableQueryState<{ status: EntityStatus | "ALL" }>({
+    initialSortBy: "createdAt",
+    initialSortOrder: "desc",
+    initialFilters: { status: "ALL" },
+  });
 
   const listParams = {
-    page,
-    limit: PAGE_SIZE,
-    ...(search.trim() ? { search: search.trim() } : {}),
-    ...(statusFilter === "ALL" ? {} : { status: statusFilter }),
+    ...table.queryParams,
+    ...(table.filters.status === "ALL" ? {} : { status: table.filters.status }),
     ...(isAdminOwnList ? { mine: true } : isAdmin ? { allPlatform: true } : {}),
-    sortBy: "createdAt" as const,
-    sortOrder: "desc" as const,
+    sortBy: table.sortBy as "createdAt" | "name",
   };
 
   const { data, isLoading, isFetching } = useQuery({
@@ -126,13 +121,17 @@ export default function ManageVenuesPage() {
       <DashboardPanel>
         <DashboardPageHeader title={pageTitle} description={pageDesc} />
 
-        <DashboardFilterBar
-        className={dashboardFilterBarBorderClass}
-        action={
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+      <DashboardDataTable
+        toolbar={{
+          search: {
+            value: table.search,
+            onChange: table.setSearch,
+            placeholder: tListing("searchVenues"),
+          },
+          filters: (
             <Select
-              value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as EntityStatus | "ALL")}
+              value={table.filters.status}
+              onValueChange={(v) => table.setFilter("status", v as EntityStatus | "ALL")}
             >
               <SelectTrigger className={selectTriggerClass}>
                 <SelectValue />
@@ -142,54 +141,39 @@ export default function ManageVenuesPage() {
                 <SelectItem value="DRAFT">{tStatus("draft")}</SelectItem>
                 <SelectItem value="PENDING">{tStatus("pendingReview")}</SelectItem>
                 <SelectItem value="ACTIVE">{tStatus("active")}</SelectItem>
-                {isAdmin ? (
-                  <SelectItem value="APPROVED">{tStatus("approved")}</SelectItem>
-                ) : null}
+                {isAdmin ? <SelectItem value="APPROVED">{tStatus("approved")}</SelectItem> : null}
                 <SelectItem value="INACTIVE">{tStatus("inactive")}</SelectItem>
                 <SelectItem value="REJECTED">{tStatus("rejected")}</SelectItem>
               </SelectContent>
             </Select>
-            {isAdminOwnList || !isAdmin ? (
+          ),
+          pageSize: { value: table.pageSize, onChange: table.setPageSize },
+          onReset: table.reset,
+          showReset: table.hasActiveFilters,
+          isRefreshing: isFetching && !isLoading,
+          trailing:
+            isAdminOwnList || !isAdmin ? (
               <Button asChild className="w-full sm:w-auto">
                 <Link href={paths.addVenue}>
                   <Plus className="mr-2 h-4 w-4" />
                   {t("addVenue")}
                 </Link>
               </Button>
-            ) : null}
-          </div>
-        }
-      >
-        <div className="w-full max-w-sm">
-          <DashboardSearchInput
-            placeholder={tListing("searchVenues")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      </DashboardFilterBar>
-
-      {isFetching && !isLoading ? (
-        <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          {tCommon("loading")}
-        </div>
-      ) : null}
-
-      <DashboardDataTable
+            ) : undefined,
+        }}
         pagination={
           showPagination
             ? {
-                label: tListing("pageOfWithCount", {
-                  page: meta?.page ?? page,
-                  totalPages,
+                label: formatTableRangeLabel({
+                  page: table.page,
+                  pageSize: table.pageSize,
                   total: meta?.total ?? venues.length,
-                  type: tListing("venuesCount"),
+                  showingLabel: (values) => tTables("showing", values),
                 }),
-                page,
+                page: table.page,
                 totalPages,
                 total: meta?.total ?? venues.length,
-                onPageChange: setPage,
+                onPageChange: table.setPage,
                 previousLabel: tCommon("previous"),
                 nextLabel: tCommon("next"),
                 isLoading,
@@ -203,9 +187,14 @@ export default function ManageVenuesPage() {
         >
           <TableHeader>
             <TableRow className={dashboardTableHeaderRowClass}>
-              <TableHead className="min-w-[220px] whitespace-nowrap text-muted-foreground">
-                {tCommon("name")}
-              </TableHead>
+              <DashboardSortableHeader
+                className="min-w-[220px]"
+                label={tCommon("name")}
+                column="name"
+                sortBy={table.sortBy}
+                sortOrder={table.sortOrder}
+                onSort={table.toggleSort}
+              />
               {isAdmin && !isAdminOwnList ? (
                 <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
                   {t("vendorCol")}

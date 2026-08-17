@@ -33,6 +33,7 @@ export type AttractionTicketSalesSummary = {
   attractionSlug: string;
   city: string;
   timezone?: string | null;
+  vendorId: string | null;
   vendorName: string | null;
   totalTicketsSold: number;
   totalRevenue: number;
@@ -65,6 +66,7 @@ export type AttractionTicketSaleRecord = {
   purchasedAt: string;
   occurrenceStartDateTime: string | null;
   timezone: string | null;
+  vendorId: string | null;
   vendorName: string | null;
   buyer: {
     id: string;
@@ -91,9 +93,13 @@ export type AttractionTicketSalesResponse = {
 };
 
 export type ListAttractionTicketSalesParams = {
+  scope?: "workspace" | "platform";
   attractionId?: string;
+  vendorId?: string;
   status?: TicketSaleStatusFilter;
   search?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   limit?: number;
 };
@@ -102,9 +108,13 @@ export async function getAttractionTicketSales(
   params: ListAttractionTicketSalesParams = {},
 ) {
   const search = new URLSearchParams();
+  if (params.scope) search.set("scope", params.scope);
   if (params.attractionId) search.set("attractionId", params.attractionId);
+  if (params.vendorId) search.set("vendorId", params.vendorId);
   if (params.status) search.set("status", params.status);
   if (params.search) search.set("search", params.search);
+  if (params.dateFrom) search.set("dateFrom", params.dateFrom);
+  if (params.dateTo) search.set("dateTo", params.dateTo);
   if (params.page) search.set("page", String(params.page));
   if (params.limit) search.set("limit", String(params.limit));
 

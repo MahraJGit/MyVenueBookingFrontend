@@ -102,12 +102,14 @@ export type ListManagedResult = {
 
 export type PublicVendorProfile = {
   id: string;
+  slug?: string;
   vendorName: string;
   businessType: string;
   ownerName: string;
   phone: string;
   email: string;
   address: string;
+  logoUrl?: string | null;
 };
 
 export type PublicEvent = {

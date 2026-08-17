@@ -234,6 +234,7 @@ export async function listManagedMarketplaceServices(params?: {
   status?: EntityStatus;
   sortBy?: "createdAt" | "title" | "basePrice";
   sortOrder?: "asc" | "desc";
+  scope?: "workspace" | "platform";
 }): Promise<ListManagedMarketplaceServicesResult> {
   const sp = new URLSearchParams();
   sp.set("page", String(params?.page ?? 1));
@@ -245,6 +246,7 @@ export async function listManagedMarketplaceServices(params?: {
   if (params?.status) sp.set("status", params.status);
   if (params?.sortBy) sp.set("sortBy", params.sortBy);
   if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
+  if (params?.scope) sp.set("scope", params.scope);
 
   return authJson<ListManagedMarketplaceServicesResult>(
     `/api/marketplace-services/manage?${sp.toString()}`,
@@ -698,13 +700,23 @@ export async function listServiceBookings(params?: {
   page?: number;
   limit?: number;
   status?: string;
-  scope?: "buyer" | "vendor";
+  scope?: "buyer" | "vendor" | "platform";
+  vendorId?: string;
+  serviceId?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }): Promise<ListServiceBookingsResult> {
   const sp = new URLSearchParams();
   sp.set("page", String(params?.page ?? 1));
   sp.set("limit", String(params?.limit ?? 20));
   if (params?.status) sp.set("status", params.status);
   sp.set("scope", params?.scope ?? "buyer");
+  if (params?.vendorId) sp.set("vendorId", params.vendorId);
+  if (params?.serviceId) sp.set("serviceId", params.serviceId);
+  if (params?.search) sp.set("search", params.search);
+  if (params?.dateFrom) sp.set("dateFrom", params.dateFrom);
+  if (params?.dateTo) sp.set("dateTo", params.dateTo);
 
   return authJson<ListServiceBookingsResult>(
     `/api/service-bookings?${sp.toString()}`,

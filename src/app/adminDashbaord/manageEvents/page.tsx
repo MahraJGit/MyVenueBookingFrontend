@@ -4,7 +4,7 @@
  * Event management: data table + actions (previous card grid removed — use git history if needed).
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,17 +27,18 @@ import { EventPublicPreviewDialog } from "@/components/events/EventPublicPreview
 import {
   DashboardPanel,
   DashboardPageShell,
-  DashboardSearchInput,
   DashboardErrorAlert,
   dashboardTableClass,
   dashboardTableContainerClass,
   dashboardTableActionsClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
-  dashboardSelectTriggerClass,
-  dashboardDropdownContentClass,
 } from "@/components/dashboard/dashboard-ui";
-import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
+import {
+  DashboardDataTable,
+  DashboardSortableHeader,
+  formatTableRangeLabel,
+} from "@/components/dashboard/dashboard-data-table";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import {
   deleteEvent,
@@ -49,8 +50,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
 import { useDashboardPaths } from "@/features/dashboard/paths";
-
-const PAGE_SIZE = 10;
+import { useTableQueryState } from "@/hooks/use-table-query-state";
 
 function canRestoreManagedListing(
   item: { createdByUserId?: string | null },
@@ -65,27 +65,22 @@ function canRestoreManagedListing(
 export default function ManageEvents() {
   const t = useTranslations("adminDashboard");
   const tCommon = useTranslations("common");
-  const tListing = useTranslations("listing");
+  const tTables = useTranslations("tables");
   const paths = useDashboardPaths();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
   const [viewEvent, setViewEvent] = useState<ManagedEvent | null>(null);
-
-  useEffect(() => {
-    setPage(1);
-  }, [search]);
+  const table = useTableQueryState({
+    initialSortBy: "createdAt",
+    initialSortOrder: "desc",
+  });
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["managed-events", search, page],
+    queryKey: ["managed-events", table.queryParams],
     queryFn: () =>
       listManagedEvents({
-        page,
-        limit: PAGE_SIZE,
-        ...(search.trim() ? { search: search.trim() } : {}),
-        sortBy: "createdAt",
-        sortOrder: "desc",
+        ...table.queryParams,
+        sortBy: table.sortBy as "createdAt" | "startDateTime" | "eventName",
       }),
   });
 
@@ -127,14 +122,6 @@ export default function ManageEvents() {
           }
         />
 
-        <div className="w-full max-w-sm">
-          <DashboardSearchInput
-            placeholder={t("searchEvents")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
         {isError ? (
           <DashboardErrorAlert
             message={error instanceof Error ? error.message : t("failedLoadEvents")}
@@ -144,19 +131,32 @@ export default function ManageEvents() {
         ) : null}
 
         <DashboardDataTable
+          toolbar={{
+            search: {
+              value: table.search,
+              onChange: table.setSearch,
+              placeholder: t("searchEvents"),
+            },
+            pageSize: {
+              value: table.pageSize,
+              onChange: table.setPageSize,
+            },
+            onReset: table.reset,
+            showReset: table.hasActiveFilters,
+          }}
           pagination={
             showPagination
               ? {
-                  label: tListing("pageOfWithCount", {
-                    page: meta?.page ?? page,
-                    totalPages,
+                  label: formatTableRangeLabel({
+                    page: table.page,
+                    pageSize: table.pageSize,
                     total: meta?.total ?? rows.length,
-                    type: tListing("eventsCount"),
+                    showingLabel: (values) => tTables("showing", values),
                   }),
-                  page,
+                  page: table.page,
                   totalPages,
                   total: meta?.total ?? rows.length,
-                  onPageChange: setPage,
+                  onPageChange: table.setPage,
                   previousLabel: tCommon("previous"),
                   nextLabel: tCommon("next"),
                   isLoading,
@@ -170,12 +170,22 @@ export default function ManageEvents() {
           >
             <TableHeader>
               <TableRow className={dashboardTableHeaderRowClass}>
-                <TableHead className="min-w-[220px] whitespace-nowrap text-muted-foreground">
-                  {t("tableEvent")}
-                </TableHead>
-                <TableHead className="min-w-[170px] whitespace-nowrap text-muted-foreground">
-                  {t("tableStarts")}
-                </TableHead>
+                <DashboardSortableHeader
+                  className="min-w-[220px]"
+                  label={t("tableEvent")}
+                  column="eventName"
+                  sortBy={table.sortBy}
+                  sortOrder={table.sortOrder}
+                  onSort={table.toggleSort}
+                />
+                <DashboardSortableHeader
+                  className="min-w-[170px]"
+                  label={t("tableStarts")}
+                  column="startDateTime"
+                  sortBy={table.sortBy}
+                  sortOrder={table.sortOrder}
+                  onSort={table.toggleSort}
+                />
                 <TableHead className="min-w-[120px] whitespace-nowrap text-muted-foreground">
                   {t("tableCity")}
                 </TableHead>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
@@ -34,19 +34,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
+import {
+  DashboardDataTable,
+  DashboardSortableHeader,
+  formatTableRangeLabel,
+} from "@/components/dashboard/dashboard-data-table";
 import {
   DashboardPageHeader,
-  dashboardFilterBarBorderClass,
 } from "@/components/dashboard/dashboard-shared";
 import {
   DashboardPanel,
   DashboardPageShell,
-  DashboardSearchInput,
   DashboardErrorAlert,
   dashboardTableClass,
   dashboardTableContainerClass,
-  dashboardTableActionsClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
   dashboardSelectTriggerClass,
@@ -54,7 +55,7 @@ import {
   dashboardOutlineButtonClass,
   dashboardDialogContentClass,
 } from "@/components/dashboard/dashboard-ui";
-import { DashboardFilterBar } from "@/components/userDashboard/DashboardScrollableTabs";
+import { useTableQueryState } from "@/hooks/use-table-query-state";
 import { SecureAvatar } from "@/components/users/SecureAvatar";
 import { useAuth } from "@/features/auth/auth-context";
 import {
@@ -68,7 +69,6 @@ import { profileInitials } from "@/features/users/profile-display";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
 
-const PAGE_SIZE = 10;
 const selectTriggerClass = cn("w-full sm:w-[180px]", dashboardSelectTriggerClass);
 
 type RoleFilter = UserRole | "ALL";
@@ -89,33 +89,29 @@ function statusBadgeVariant(status: UserAccountStatus) {
 export default function UsersPage() {
   const t = useTranslations("adminUsers");
   const tCommon = useTranslations("common");
-  const tListing = useTranslations("listing");
+  const tTables = useTranslations("tables");
   const { locale } = useLocaleContext();
   const dateFnsLocale = getDateFnsLocale(locale);
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
 
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const table = useTableQueryState<{
+    role: RoleFilter;
+    status: StatusFilter;
+  }>({
+    initialSortBy: "createdAt",
+    initialFilters: { role: "ALL", status: "ALL" },
+  });
   const [statusTarget, setStatusTarget] = useState<{
     user: AdminUser;
     nextStatus: UserAccountStatus;
   } | null>(null);
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, roleFilter, statusFilter]);
-
   const listParams = {
-    page,
-    limit: PAGE_SIZE,
-    ...(search.trim() ? { search: search.trim() } : {}),
-    ...(roleFilter === "ALL" ? {} : { role: roleFilter }),
-    ...(statusFilter === "ALL" ? {} : { status: statusFilter }),
-    sortBy: "createdAt" as const,
-    sortOrder: "desc" as const,
+    ...table.queryParams,
+    ...(table.filters.role === "ALL" ? {} : { role: table.filters.role }),
+    ...(table.filters.status === "ALL" ? {} : { status: table.filters.status }),
+    sortBy: table.sortBy as "createdAt" | "firstName" | "email" | undefined,
   };
 
   const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
@@ -149,12 +145,6 @@ export default function UsersPage() {
   const totalPages = meta?.totalPages ?? 1;
   const showPagination = !isLoading && (meta?.total ?? 0) > 0;
 
-  const roleLabel = (role: UserRole) => {
-    if (role === "BUYER") return t("roleBuyer");
-    if (role === "VENDOR") return t("roleVendor");
-    return t("roleAdmin");
-  };
-
   const statusLabel = (status: UserAccountStatus) => {
     if (status === "ACTIVE") return t("statusActive");
     if (status === "SUSPENDED") return t("statusSuspended");
@@ -176,13 +166,25 @@ export default function UsersPage() {
       <DashboardPanel>
         <DashboardPageHeader title={t("title")} description={t("description")} />
 
-        <DashboardFilterBar
-          className={dashboardFilterBarBorderClass}
-          action={
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+        {isError ? (
+          <DashboardErrorAlert
+            message={error instanceof Error ? error.message : tCommon("error")}
+            onRetry={() => refetch()}
+          />
+        ) : null}
+
+        <DashboardDataTable
+          toolbar={{
+            search: {
+              value: table.search,
+              onChange: table.setSearch,
+              placeholder: t("searchPlaceholder"),
+            },
+            filters: (
+              <>
               <Select
-                value={roleFilter}
-                onValueChange={(v) => setRoleFilter(v as RoleFilter)}
+                value={table.filters.role}
+                onValueChange={(v) => table.setFilter("role", v as RoleFilter)}
               >
                 <SelectTrigger className={selectTriggerClass}>
                   <SelectValue />
@@ -195,8 +197,8 @@ export default function UsersPage() {
                 </SelectContent>
               </Select>
               <Select
-                value={statusFilter}
-                onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+                value={table.filters.status}
+                onValueChange={(v) => table.setFilter("status", v as StatusFilter)}
               >
                 <SelectTrigger className={selectTriggerClass}>
                   <SelectValue />
@@ -208,46 +210,26 @@ export default function UsersPage() {
                   <SelectItem value="INACTIVE">{t("statusInactive")}</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          }
-        >
-          <div className="w-full max-w-sm">
-            <DashboardSearchInput
-              placeholder={t("searchPlaceholder")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </DashboardFilterBar>
-
-        {isError ? (
-          <DashboardErrorAlert
-            message={error instanceof Error ? error.message : tCommon("error")}
-            onRetry={() => refetch()}
-          />
-        ) : null}
-
-        {isFetching && !isLoading ? (
-          <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {tCommon("loading")}
-          </div>
-        ) : null}
-
-        <DashboardDataTable
+              </>
+            ),
+            pageSize: { value: table.pageSize, onChange: table.setPageSize },
+            onReset: table.reset,
+            showReset: table.hasActiveFilters,
+            isRefreshing: isFetching && !isLoading,
+          }}
           pagination={
             showPagination
               ? {
-                  label: tListing("pageOfWithCount", {
-                    page: meta?.page ?? page,
-                    totalPages,
+                  label: formatTableRangeLabel({
+                    page: table.page,
+                    pageSize: table.pageSize,
                     total: meta?.total ?? users.length,
-                    type: t("title").toLowerCase(),
+                    showingLabel: (args) => tTables("showing", args),
                   }),
-                  page,
+                  page: table.page,
                   totalPages,
                   total: meta?.total ?? users.length,
-                  onPageChange: setPage,
+                  onPageChange: table.setPage,
                   previousLabel: tCommon("previous"),
                   nextLabel: tCommon("next"),
                   isLoading: isFetching,
@@ -261,12 +243,8 @@ export default function UsersPage() {
           >
             <TableHeader>
               <TableRow className={dashboardTableHeaderRowClass}>
-                <TableHead className="min-w-[200px] whitespace-nowrap text-muted-foreground">
-                  {t("columnName")}
-                </TableHead>
-                <TableHead className="min-w-[200px] whitespace-nowrap text-muted-foreground">
-                  {t("columnEmail")}
-                </TableHead>
+                <DashboardSortableHeader className="min-w-[200px]" label={t("columnName")} column="firstName" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
+                <DashboardSortableHeader className="min-w-[200px]" label={t("columnEmail")} column="email" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
                 <TableHead className="min-w-[150px] whitespace-nowrap text-muted-foreground">
                   {t("columnPhone")}
                 </TableHead>
@@ -276,9 +254,7 @@ export default function UsersPage() {
                 <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
                   {t("columnStatus")}
                 </TableHead>
-                <TableHead className="min-w-[120px] whitespace-nowrap text-muted-foreground">
-                  {t("columnJoined")}
-                </TableHead>
+                <DashboardSortableHeader className="min-w-[120px]" label={t("columnJoined")} column="createdAt" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
                 <TableHead className="min-w-[130px] whitespace-nowrap text-right text-muted-foreground">
                   {t("columnActions")}
                 </TableHead>
@@ -286,9 +262,11 @@ export default function UsersPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableSkeleton cols={7} rows={PAGE_SIZE} />
+                <TableSkeleton cols={7} rows={table.pageSize} />
               ) : users.length === 0 ? (
-                <TableEmptyRow colSpan={7}>{t("noUsers")}</TableEmptyRow>
+                <TableEmptyRow colSpan={7}>
+                  {table.hasActiveFilters ? tTables("noMatch") : t("noUsers")}
+                </TableEmptyRow>
               ) : (
                 users.map((user) => {
                   const self = isSelf(user.id);

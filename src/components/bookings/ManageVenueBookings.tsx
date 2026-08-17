@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { ArrowUpDown, CalendarDays, Loader2 } from "lucide-react";
+import { ArrowUpDown, Loader2 } from "lucide-react";
 import { BookingDetailPanel } from "@/components/bookings/BookingDetailPanel";
 import {
   VendorBookingsEmptyState,
@@ -18,17 +18,16 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   DashboardPanel,
-  DashboardPagination,
   dashboardDropdownContentClass,
 } from "@/components/dashboard/dashboard-ui";
 import {
   DashboardPageHeader,
-  dashboardFilterBarBorderClass,
 } from "@/components/dashboard/dashboard-shared";
+import { DashboardScrollableTabs } from "@/components/userDashboard/DashboardScrollableTabs";
 import {
-  DashboardFilterBar,
-  DashboardScrollableTabs,
-} from "@/components/userDashboard/DashboardScrollableTabs";
+  DashboardDataTable,
+  formatTableRangeLabel,
+} from "@/components/dashboard/dashboard-data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,54 +40,64 @@ import { bookingKeys } from "@/features/venues/query-keys";
 import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
+import { useTableQueryState } from "@/hooks/use-table-query-state";
 
-const PAGE_SIZE = 10;
 const TAB_VALUES: BookingTabValue[] = ["all", "HOLD", "CONFIRMED", "CANCELLED", "COMPLETED"];
 
 type ManageVenueBookingsProps = {
   scope: DashboardScope;
+  syncWithUrl?: boolean;
 };
 
-export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
+export function ManageVenueBookings({ scope, syncWithUrl = false }: ManageVenueBookingsProps) {
   const isAdmin = scope === "admin";
+  const apiScope = isAdmin ? "platform" : "workspace";
   const t = useTranslations(isAdmin ? "adminVenueBookings" : "vendorDashboard");
   const tUser = useTranslations("userDashboard");
   const tBooking = useTranslations("booking");
   const tCommon = useTranslations("common");
   const tListing = useTranslations("listing");
+  const tTables = useTranslations("tables");
   const { user, isAuthenticated, isReady } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<BookingTabValue>("all");
   const [sortBy, setSortBy] = useState<BookingSortOption>("newest");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    setPage(1);
-    setSelectedId(null);
-  }, [activeTab, sortBy]);
+  const table = useTableQueryState<{ status: BookingTabValue; vendorId: string }>({
+    initialFilters: { status: "all", vendorId: "" },
+    syncWithUrl: isAdmin && syncWithUrl,
+  });
+  const activeTab = table.filters.status;
 
   const statusFilter = activeTab === "all" ? undefined : activeTab;
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
-    queryKey: bookingKeys.list(user?.id, { status: statusFilter, page, scope }),
+    queryKey: bookingKeys.list(user?.id, {
+      status: statusFilter,
+      search: table.debouncedSearch,
+      page: table.page,
+      limit: table.pageSize,
+      scope,
+    }),
     queryFn: () =>
       listBookings({
-        page,
-        limit: PAGE_SIZE,
+        page: table.page,
+        limit: table.pageSize,
         status: statusFilter,
+        search: table.debouncedSearch || undefined,
+        vendorId: table.filters.vendorId || undefined,
+        scope: apiScope,
       }),
     enabled: isAuthenticated && isReady && !!user?.id,
   });
 
   const { data: countData } = useQuery({
     queryKey: bookingKeys.list(user?.id, { scope, forCounts: true }),
-    queryFn: () => listBookings({ limit: 100 }),
+    queryFn: () => listBookings({ limit: 100, scope: apiScope }),
     staleTime: 30_000,
     enabled: isAuthenticated && isReady && !!user?.id,
   });
 
-  const bookings = data?.data ?? [];
+  const bookings = useMemo(() => data?.data ?? [], [data?.data]);
   const meta = data?.meta;
   const totalPages = meta?.totalPages ?? 1;
   const counts = useMemo(
@@ -129,9 +138,52 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
     <DashboardPanel>
       <DashboardPageHeader title={pageTitle} description={pageDesc} />
 
-      <DashboardFilterBar
-        className={dashboardFilterBarBorderClass}
-        action={
+      {isAdmin && data?.summary ? (
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-[#303030] bg-[#151515] p-4">
+            <p className="text-2xl font-semibold text-primary">
+              {data.summary.totalBookings}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("totalBookings")}</p>
+          </div>
+          <div className="rounded-xl border border-[#303030] bg-[#151515] p-4">
+            <p className="text-2xl font-semibold text-primary">
+              {data.summary.totalRevenue.toLocaleString()}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("totalRevenue")}</p>
+          </div>
+        </div>
+      ) : null}
+
+      <DashboardDataTable
+        toolbar={{
+          search: {
+            value: table.search,
+            onChange: table.setSearch,
+            placeholder: tListing("searchBookings"),
+          },
+          filters: (
+            <DashboardScrollableTabs
+              value={activeTab}
+              onValueChange={(value) => {
+                table.setFilter("status", value as BookingTabValue);
+                setSelectedId(null);
+              }}
+              items={TAB_VALUES.map((value) => ({
+                value,
+                label: tabLabel(value),
+              }))}
+            />
+          ),
+          pageSize: { value: table.pageSize, onChange: table.setPageSize },
+          onReset: () => {
+            table.reset();
+            setSortBy("newest");
+            setSelectedId(null);
+          },
+          showReset: table.hasActiveFilters || sortBy !== "newest",
+          isRefreshing: isFetching && !isLoading,
+          trailing: (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="w-full text-muted-foreground sm:w-auto">
@@ -140,31 +192,42 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className={cn("w-44", dashboardDropdownContentClass)}>
-              <DropdownMenuItem onClick={() => setSortBy("newest")}>
+              <DropdownMenuItem onClick={() => { setSortBy("newest"); setSelectedId(null); }}>
                 {tUser("newestFirst")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("oldest")}>
+              <DropdownMenuItem onClick={() => { setSortBy("oldest"); setSelectedId(null); }}>
                 {tUser("oldestFirst")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("amount-high")}>
+              <DropdownMenuItem onClick={() => { setSortBy("amount-high"); setSelectedId(null); }}>
                 {tUser("highestAmount")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("amount-low")}>
+              <DropdownMenuItem onClick={() => { setSortBy("amount-low"); setSelectedId(null); }}>
                 {tUser("lowestAmount")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          ),
+        }}
+        pagination={
+          (meta?.total ?? 0) > 0
+            ? {
+                label: formatTableRangeLabel({
+                  page: table.page,
+                  pageSize: table.pageSize,
+                  total: meta?.total ?? sortedBookings.length,
+                  showingLabel: (values) => tTables("showing", values),
+                }),
+                page: table.page,
+                totalPages,
+                total: meta?.total ?? sortedBookings.length,
+                isLoading,
+                previousLabel: tCommon("previous"),
+                nextLabel: tCommon("next"),
+                onPageChange: table.setPage,
+              }
+            : undefined
         }
       >
-        <DashboardScrollableTabs
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as BookingTabValue)}
-          items={TAB_VALUES.map((value) => ({
-            value,
-            label: tabLabel(value),
-          }))}
-        />
-      </DashboardFilterBar>
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-muted-foreground">
@@ -211,6 +274,7 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
               <div className="xl:col-span-3">
                 <BookingDetailPanel
                   bookingId={selectedId}
+                  accessScope={apiScope}
                   onClose={() => setSelectedId(null)}
                   allowReschedule
                   allowCancel
@@ -235,25 +299,9 @@ export function ManageVenueBookings({ scope }: ManageVenueBookingsProps) {
             )}
           </div>
 
-          {(meta?.total ?? 0) > 0 ? (
-            <DashboardPagination
-              className="mt-4"
-              label={tListing("pageOfWithCount", {
-                page: meta?.page ?? page,
-                totalPages,
-                total: meta?.total ?? sortedBookings.length,
-                type: tListing("bookingsCount"),
-              })}
-              page={page}
-              totalPages={totalPages}
-              isLoading={isLoading}
-              previousLabel={tCommon("previous")}
-              nextLabel={tCommon("next")}
-              onPageChange={setPage}
-            />
-          ) : null}
         </>
       )}
+      </DashboardDataTable>
     </DashboardPanel>
   );
 }

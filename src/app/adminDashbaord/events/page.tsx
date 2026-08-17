@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -37,10 +37,10 @@ import {
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
 import { toastApiError } from "@/lib/toasts";
 import { useClientPagination } from "@/hooks/use-client-pagination";
+import { useTableQueryState } from "@/hooks/use-table-query-state";
 import {
   DashboardPanel,
   DashboardPageShell,
-  DashboardSearchInput,
   DashboardErrorAlert,
   dashboardTableClass,
   dashboardTableContainerClass,
@@ -52,7 +52,11 @@ import {
   dashboardDialogContentClass,
   dashboardOutlineButtonClass,
 } from "@/components/dashboard/dashboard-ui";
-import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
+import {
+  DashboardDataTable,
+  DashboardSortableHeader,
+  formatTableRangeLabel,
+} from "@/components/dashboard/dashboard-data-table";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { cn } from "@/lib/utils";
 
@@ -79,17 +83,12 @@ export default function EventCategoriesPage() {
   const tCommon = useTranslations("common");
   const tStatus = useTranslations("entityStatus");
   const tAdmin = useTranslations("adminDashboard");
-  const tListing = useTranslations("listing");
+  const tTables = useTranslations("tables");
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-
-  useEffect(() => {
-    const id = window.setTimeout(() => {
-      setDebouncedSearch(search.trim());
-    }, 300);
-    return () => window.clearTimeout(id);
-  }, [search]);
+  const table = useTableQueryState({
+    initialSortBy: "name",
+    initialSortOrder: "asc",
+  });
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<EventCategory | null>(null);
@@ -106,25 +105,32 @@ export default function EventCategoriesPage() {
     refetch,
     isFetching,
   } = useQuery({
-    queryKey: ["event-categories", debouncedSearch],
+    queryKey: ["event-categories", table.debouncedSearch],
     queryFn: () =>
       listEventCategories({
-        search: debouncedSearch || undefined,
+        search: table.debouncedSearch || undefined,
       }),
   });
 
+  const sortedCategories = useMemo(
+    () =>
+      [...categories].sort((a, b) => {
+        const direction = table.sortOrder === "asc" ? 1 : -1;
+        if (table.sortBy === "createdAt") {
+          return direction * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        }
+        return direction * a.name.localeCompare(b.name);
+      }),
+    [categories, table.sortBy, table.sortOrder],
+  );
   const {
-    page,
-    setPage,
-    resetPage,
     total,
     totalPages,
     paginatedItems: paginatedCategories,
-  } = useClientPagination(categories);
-
-  useEffect(() => {
-    resetPage();
-  }, [debouncedSearch, resetPage]);
+  } = useClientPagination(sortedCategories, table.pageSize, {
+    page: table.page,
+    setPage: table.setPage,
+  });
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -214,35 +220,6 @@ export default function EventCategoriesPage() {
           }
         />
 
-      <div className="space-y-2">
-        <Label htmlFor="category-search" className="text-muted-foreground">
-          {tCommon("search")}
-        </Label>
-        <div className="flex flex-row items-end gap-2">
-          <DashboardSearchInput
-            id="category-search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("searchPlaceholder")}
-            autoComplete="off"
-            className="flex-1"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className={cn("shrink-0", dashboardOutlineButtonClass)}
-            onClick={() => setSearch("")}
-            disabled={!search}
-          >
-            {tCommon("clear")}
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {t("searchHint")}
-        </p>
-      </div>
-
-
       {errorMessage ? (
         <DashboardErrorAlert
           message={errorMessage}
@@ -252,17 +229,31 @@ export default function EventCategoriesPage() {
       ) : null}
 
       <DashboardDataTable
+        toolbar={{
+          search: {
+            value: table.search,
+            onChange: table.setSearch,
+            placeholder: t("searchPlaceholder"),
+          },
+          pageSize: {
+            value: table.pageSize,
+            onChange: table.setPageSize,
+          },
+          onReset: table.reset,
+          showReset: table.hasActiveFilters,
+          isRefreshing: isFetching && !isLoading,
+        }}
         pagination={{
-          label: tListing("pageOfWithCount", {
-            page,
-            totalPages,
+          label: formatTableRangeLabel({
+            page: table.page,
+            pageSize: table.pageSize,
             total,
-            type: t("title").toLowerCase(),
+            showingLabel: (values) => tTables("showing", values),
           }),
-          page,
+          page: table.page,
           totalPages,
           total,
-          onPageChange: setPage,
+          onPageChange: table.setPage,
           previousLabel: tCommon("previous"),
           nextLabel: tCommon("next"),
           isLoading,
@@ -274,18 +265,28 @@ export default function EventCategoriesPage() {
         >
           <TableHeader>
             <TableRow className={dashboardTableHeaderRowClass}>
-              <TableHead className="min-w-[140px] whitespace-nowrap text-muted-foreground">
-                {tCommon("name")}
-              </TableHead>
+              <DashboardSortableHeader
+                className="min-w-[140px]"
+                label={tCommon("name")}
+                column="name"
+                sortBy={table.sortBy}
+                sortOrder={table.sortOrder}
+                onSort={table.toggleSort}
+              />
               <TableHead className="min-w-[240px] whitespace-nowrap text-muted-foreground">
                 {tCommon("description")}
               </TableHead>
               <TableHead className="min-w-[100px] whitespace-nowrap text-muted-foreground">
                 {tCommon("status")}
               </TableHead>
-              <TableHead className="min-w-[170px] whitespace-nowrap text-muted-foreground">
-                {tCommon("created")}
-              </TableHead>
+              <DashboardSortableHeader
+                className="min-w-[170px]"
+                label={tCommon("created")}
+                column="createdAt"
+                sortBy={table.sortBy}
+                sortOrder={table.sortOrder}
+                onSort={table.toggleSort}
+              />
               <TableHead className="min-w-[300px] whitespace-nowrap text-right text-muted-foreground">
                 {tCommon("actions")}
               </TableHead>
@@ -352,7 +353,9 @@ export default function EventCategoriesPage() {
                 ))}
 
                 {!isLoading && categories.length === 0 ? (
-                  <TableEmptyRow colSpan={5}>{t("noCategories")}</TableEmptyRow>
+                  <TableEmptyRow colSpan={5}>
+                    {table.debouncedSearch ? tTables("noMatch") : t("noCategories")}
+                  </TableEmptyRow>
                 ) : null}
               </>
             )}

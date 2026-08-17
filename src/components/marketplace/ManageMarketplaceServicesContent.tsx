@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Eye, Loader2, Pencil, Plus, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -29,7 +29,6 @@ import {
 import {
   DashboardPanel,
   DashboardPageShell,
-  DashboardSearchInput,
   dashboardTableClass,
   dashboardTableContainerClass,
   dashboardTableActionsClass,
@@ -39,13 +38,13 @@ import {
   dashboardDropdownContentClass,
   dashboardOutlineButtonClass,
 } from "@/components/dashboard/dashboard-ui";
-import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
 import {
-  DashboardPageHeader,
-  dashboardFilterBarBorderClass,
-} from "@/components/dashboard/dashboard-shared";
-import { DashboardFilterBar } from "@/components/userDashboard/DashboardScrollableTabs";
+  DashboardDataTable,
+  formatTableRangeLabel,
+} from "@/components/dashboard/dashboard-data-table";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { useDashboardPaths } from "@/features/dashboard/paths";
+import { usePathname } from "next/navigation";
 import {
   listManagedMarketplaceServices,
   submitMarketplaceServiceForReview,
@@ -54,8 +53,8 @@ import { marketplaceKeys } from "@/features/marketplace/query-keys";
 import type { EntityStatus, ManagedMarketplaceService } from "@/features/marketplace/types";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
+import { useTableQueryState } from "@/hooks/use-table-query-state";
 
-const PAGE_SIZE = 10;
 const selectTriggerClass = cn("w-full sm:w-[180px]", dashboardSelectTriggerClass);
 
 function ServiceThumb({ service }: { service: ManagedMarketplaceService }) {
@@ -80,25 +79,29 @@ function ServiceThumb({ service }: { service: ManagedMarketplaceService }) {
 
 export function ManageMarketplaceServicesContent() {
   const paths = useDashboardPaths();
+  const pathname = usePathname();
+  const surfaceScope: "workspace" | "platform" = pathname.startsWith("/vendorDashboard")
+    ? "workspace"
+    : "platform";
   const t = useTranslations("vendorMarketplace");
   const tStatus = useTranslations("entityStatus");
   const tCommon = useTranslations("common");
+  const tTables = useTranslations("tables");
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<EntityStatus | "ALL">("ALL");
   const [previewService, setPreviewService] =
     useState<ManagedMarketplaceService | null>(null);
-
-  useEffect(() => {
-    setPage(1);
-  }, [search, statusFilter]);
+  const table = useTableQueryState<{ status: EntityStatus | "ALL" }>({
+    initialSortBy: "createdAt",
+    initialSortOrder: "desc",
+    initialFilters: { status: "ALL" },
+  });
 
   const listParams = {
-    page,
-    limit: PAGE_SIZE,
-    ...(search.trim() ? { search: search.trim() } : {}),
-    ...(statusFilter === "ALL" ? {} : { status: statusFilter }),
+    page: table.page,
+    limit: table.pageSize,
+    scope: surfaceScope,
+    ...(table.debouncedSearch ? { search: table.debouncedSearch } : {}),
+    ...(table.filters.status === "ALL" ? {} : { status: table.filters.status }),
     sortBy: "createdAt" as const,
     sortOrder: "desc" as const,
   };
@@ -127,13 +130,17 @@ export function ManageMarketplaceServicesContent() {
       <DashboardPanel>
         <DashboardPageHeader title={t("myServicesTitle")} description={t("myServicesDesc")} />
 
-        <DashboardFilterBar
-          className={dashboardFilterBarBorderClass}
-          action={
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <DashboardDataTable
+          toolbar={{
+            search: {
+              value: table.search,
+              onChange: table.setSearch,
+              placeholder: t("searchPlaceholder"),
+            },
+            filters: (
               <Select
-                value={statusFilter}
-                onValueChange={(v) => setStatusFilter(v as EntityStatus | "ALL")}
+                value={table.filters.status}
+                onValueChange={(v) => table.setFilter("status", v as EntityStatus | "ALL")}
               >
                 <SelectTrigger className={selectTriggerClass}>
                   <SelectValue />
@@ -147,40 +154,33 @@ export function ManageMarketplaceServicesContent() {
                   <SelectItem value="REJECTED">{tStatus("rejected")}</SelectItem>
                 </SelectContent>
               </Select>
+            ),
+            pageSize: { value: table.pageSize, onChange: table.setPageSize },
+            onReset: table.reset,
+            showReset: table.hasActiveFilters,
+            isRefreshing: isFetching && !isLoading,
+            trailing: (
               <Button asChild className="w-full sm:w-auto">
                 <Link href={paths.addMarketplaceService}>
                   <Plus className="mr-1.5 h-4 w-4" />
                   {t("newService")}
                 </Link>
               </Button>
-            </div>
-          }
-        >
-          <div className="flex w-full items-center gap-2">
-            <DashboardSearchInput
-              placeholder={t("searchPlaceholder")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {isFetching && !isLoading ? (
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-            ) : null}
-          </div>
-        </DashboardFilterBar>
-
-        <DashboardDataTable
+            ),
+          }}
           pagination={
             showPagination
               ? {
-                  label: t("pageOf", {
-                    page: meta?.page ?? page,
-                    totalPages,
+                  label: formatTableRangeLabel({
+                    page: table.page,
+                    pageSize: table.pageSize,
                     total: meta?.total ?? services.length,
+                    showingLabel: (values) => tTables("showing", values),
                   }),
-                  page,
+                  page: table.page,
                   totalPages,
                   total: meta?.total ?? services.length,
-                  onPageChange: setPage,
+                  onPageChange: table.setPage,
                   previousLabel: tCommon("previous"),
                   nextLabel: tCommon("next"),
                   isLoading,

@@ -50,7 +50,7 @@ import {
 import { DashboardPageHeader } from '@/components/dashboard/dashboard-shared'
 import { myTicketOrdersQueryKey } from '@/features/auth/auth-cache'
 import { useAuth } from '@/features/auth/auth-context'
-import { VendorReviewDialog } from '@/components/reviews/VendorReviewDialog'
+import { ListingReviewDialog } from '@/components/reviews/ListingReviewDialog'
 import { toastApiError } from '@/lib/toasts'
 import { useLocaleContext } from '@/features/i18n/locale-context'
 import { formatLocalizedDateTime } from '@/lib/date-locale'
@@ -60,9 +60,9 @@ type SortOption = 'newest' | 'oldest' | 'amount-high' | 'amount-low'
 const TAB_ORDER: TicketOrderTabValue[] = ['upcoming', 'attended', 'all', 'canceled']
 
 type ReviewTarget = {
-  eventId: string
-  eventName: string
-  vendorId: string
+  listingId: string
+  listingName: string
+  listingType: 'event' | 'attraction'
 }
 
 function sortOrders(orders: MyTicketOrder[], sort: SortOption) {
@@ -141,11 +141,10 @@ const Tickets = () => {
     getTicketStatusLabel(order, (key) => t(key))
 
   const openReview = (ticket: MyTicketOrder) => {
-    if (!ticket.vendorId) return
     setReviewTarget({
-      eventId: ticket.eventId,
-      eventName: ticket.eventName,
-      vendorId: ticket.vendorId,
+      listingId: ticket.eventId,
+      listingName: ticket.eventName,
+      listingType: ticket.productType === 'attraction' ? 'attraction' : 'event',
     })
   }
 
@@ -287,7 +286,7 @@ const Tickets = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end sm:gap-2">
-                        {ticket.canReviewOrganizer ? (
+                        {(ticket.canReviewListing ?? ticket.canReviewOrganizer) ? (
                           <Button
                             type="button"
                             variant="outline"
@@ -330,14 +329,14 @@ const Tickets = () => {
       </DashboardPanel>
 
       {reviewTarget ? (
-        <VendorReviewDialog
+        <ListingReviewDialog
           open={Boolean(reviewTarget)}
           onOpenChange={(open) => {
             if (!open) setReviewTarget(null)
           }}
-          eventId={reviewTarget.eventId}
-          eventName={reviewTarget.eventName}
-          vendorId={reviewTarget.vendorId}
+          listingType={reviewTarget.listingType}
+          listingId={reviewTarget.listingId}
+          listingName={reviewTarget.listingName}
           onSuccess={() => {
             void queryClient.invalidateQueries({ queryKey: myTicketOrdersQueryKey(user?.id) })
           }}

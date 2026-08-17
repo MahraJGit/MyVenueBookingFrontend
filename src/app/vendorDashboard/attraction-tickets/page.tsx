@@ -1,12 +1,12 @@
 "use client";
 
-import ManageAttractionTickets from "@/app/adminDashbaord/manageAttractionTickets/page";
+import { ManageAttractionTicketSales } from "@/components/sales/ManageAttractionTicketSales";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 
 export default function VendorAttractionTicketsPage() {
   return (
     <RoleGuard allowedRoles={["VENDOR", "ADMIN"]}>
-      <ManageAttractionTickets />
+      <ManageAttractionTicketSales scope="workspace" />
     </RoleGuard>
   );
 }

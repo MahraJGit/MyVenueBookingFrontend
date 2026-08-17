@@ -80,6 +80,7 @@ import { VenueReviewDialog } from "@/components/reviews/VenueReviewDialog";
 
 type BookingDetailPanelProps = {
   bookingId: string;
+  accessScope?: "buyer" | "workspace" | "platform";
   onClose?: () => void;
   allowCancel?: boolean;
   allowReschedule?: boolean;
@@ -126,6 +127,7 @@ function DetailSkeleton({ variant }: { variant: "default" | "user" | "vendor" })
 
 export function BookingDetailPanel({
   bookingId,
+  accessScope,
   onClose,
   allowCancel = true,
   allowReschedule = true,
@@ -142,8 +144,8 @@ export function BookingDetailPanel({
   const [endLocal, setEndLocal] = useState("");
 
   const { data: booking, isLoading, refetch } = useQuery({
-    queryKey: bookingKeys.detail(user?.id, bookingId),
-    queryFn: () => getBooking(bookingId),
+    queryKey: [...bookingKeys.detail(user?.id, bookingId), accessScope],
+    queryFn: () => getBooking(bookingId, accessScope),
     enabled: isAuthenticated && isReady && !!user?.id,
     refetchOnMount: "always",
   });

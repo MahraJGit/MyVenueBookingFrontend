@@ -26,7 +26,7 @@ import {
 import { myTicketOrderQueryKey, myTicketOrdersQueryKey } from '@/features/auth/auth-cache'
 import { useAuth } from '@/features/auth/auth-context'
 import { getTicketStatusLabel } from '@/features/ticket-purchases/order-display'
-import { VendorReviewDialog } from '@/components/reviews/VendorReviewDialog'
+import { ListingReviewDialog } from '@/components/reviews/ListingReviewDialog'
 import { getFallbackEventImage } from '@/features/events/utils'
 import { DisplayPrice } from '@/components/currency/DisplayPrice'
 import { toastApiError } from '@/lib/toasts'
@@ -311,13 +311,13 @@ export default function ViewTicketContent() {
           </div>
         </div>
       </div>
-      {order.canReviewOrganizer && order.vendorId ? (
-        <VendorReviewDialog
+      {(order.canReviewListing ?? order.canReviewOrganizer) ? (
+        <ListingReviewDialog
           open={reviewOpen}
           onOpenChange={setReviewOpen}
-          eventId={order.eventId}
-          eventName={order.eventName}
-          vendorId={order.vendorId}
+          listingType={order.productType === 'attraction' ? 'attraction' : 'event'}
+          listingId={order.eventId}
+          listingName={order.eventName}
           onSuccess={() => {
             void queryClient.invalidateQueries({ queryKey: myTicketOrderQueryKey(user?.id, orderGroupId ?? '') })
             void queryClient.invalidateQueries({ queryKey: myTicketOrdersQueryKey(user?.id) })

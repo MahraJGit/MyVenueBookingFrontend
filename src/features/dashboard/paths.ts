@@ -159,7 +159,7 @@ export function getDashboardPaths(scope: DashboardScope): DashboardPaths {
       `${VENDOR_DASHBOARD_PREFIX}/marketplace/proposals/new?inquiryId=${encodeURIComponent(inquiryId)}`,
     reviseMarketplaceProposal: (id: string) =>
       `${VENDOR_DASHBOARD_PREFIX}/marketplace/proposals/${encodeURIComponent(id)}/revise`,
-    marketplaceBookings: `${VENDOR_DASHBOARD_PREFIX}/marketplace/bookings`,
+    marketplaceBookings: `${ADMIN_DASHBOARD_PREFIX}/marketplaceBookings`,
     marketplaceBooking: (id: string) =>
       `${VENDOR_DASHBOARD_PREFIX}/marketplace/bookings/${encodeURIComponent(id)}`,
     eventCategories: `${ADMIN_DASHBOARD_PREFIX}/events`,

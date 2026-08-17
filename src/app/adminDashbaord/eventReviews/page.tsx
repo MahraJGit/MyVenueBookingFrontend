@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Eye, ExternalLink, Loader2 } from "lucide-react"
@@ -56,11 +56,10 @@ import {
   dashboardDropdownContentClass,
   dashboardTextareaClass,
 } from "@/components/dashboard/dashboard-ui"
-import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table"
+import { DashboardDataTable, DashboardSortableHeader } from "@/components/dashboard/dashboard-data-table"
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared"
 import { cn } from "@/lib/utils"
-
-const PAGE_SIZE = 10
+import { useTableQueryState } from "@/hooks/use-table-query-state"
 
 type StatusFilter = "ALL" | EventApprovalStatus
 
@@ -124,17 +123,16 @@ export default function EventReviewsPage() {
   const tAdmin = useTranslations("adminDashboard")
   const tForms = useTranslations("forms")
   const tListing = useTranslations("listing")
+  const tTables = useTranslations("tables")
   const queryClient = useQueryClient()
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL")
-  const [page, setPage] = useState(1)
+  const table = useTableQueryState<{ status: StatusFilter }>({
+    initialSortBy: "createdAt",
+    initialFilters: { status: "ALL" },
+  })
   const [viewEvent, setViewEvent] = useState<ManagedEvent | null>(null)
   const [activeDetails, setActiveDetails] = useState<ManagedEvent | null>(null)
   const [rejectTarget, setRejectTarget] = useState<ManagedEvent | null>(null)
   const [rejectReason, setRejectReason] = useState("")
-
-  useEffect(() => {
-    setPage(1)
-  }, [statusFilter])
 
   const statusLabel = (status: EventApprovalStatus | undefined) => {
     if (!status) return tStatus("unknown")
@@ -153,15 +151,13 @@ export default function EventReviewsPage() {
     refetch,
     isFetching,
   } = useQuery({
-    queryKey: ["admin-event-reviews", statusFilter, page],
+    queryKey: ["admin-event-reviews", table.queryParams],
     queryFn: () =>
       listManagedEvents({
-        page,
-        limit: PAGE_SIZE,
+        ...table.queryParams,
         vendorOnly: true,
-        ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
-        sortBy: "createdAt",
-        sortOrder: "desc",
+        ...(table.filters.status !== "ALL" ? { status: table.filters.status } : {}),
+        sortBy: table.sortBy as "createdAt" | "startDateTime" | "eventName" | undefined,
       }),
   })
 
@@ -225,8 +221,8 @@ export default function EventReviewsPage() {
                 </span>
               ) : null}
               <Button
-                variant={statusFilter === "ALL" ? "default" : "outline"}
-                onClick={() => setStatusFilter("ALL")}
+                variant={table.filters.status === "ALL" ? "default" : "outline"}
+                onClick={() => table.setFilter("status", "ALL")}
                 disabled={isLoading}
               >
                 {tCommon("all")}
@@ -234,8 +230,8 @@ export default function EventReviewsPage() {
               {REVIEW_STATUSES.map((s) => (
                 <Button
                   key={s}
-                  variant={statusFilter === s ? "default" : "outline"}
-                  onClick={() => setStatusFilter(s)}
+                  variant={table.filters.status === s ? "default" : "outline"}
+                  onClick={() => table.setFilter("status", s)}
                   disabled={isLoading}
                 >
                   {statusLabel(s)}
@@ -254,19 +250,26 @@ export default function EventReviewsPage() {
       ) : null}
 
       <DashboardDataTable
+        toolbar={{
+          search: { value: table.search, onChange: table.setSearch, placeholder: tCommon("search") },
+          pageSize: { value: table.pageSize, onChange: table.setPageSize },
+          onReset: table.reset,
+          showReset: table.hasActiveFilters,
+          isRefreshing: isFetching && !isLoading,
+        }}
         pagination={
           showPagination
             ? {
                 label: tListing("pageOfWithCount", {
-                  page: meta?.page ?? page,
+                  page: meta?.page ?? table.page,
                   totalPages,
                   total: meta?.total ?? events.length,
                   type: tListing("eventsCount"),
                 }),
-                page,
+                page: table.page,
                 totalPages,
                 total: meta?.total ?? events.length,
-                onPageChange: setPage,
+                onPageChange: table.setPage,
                 previousLabel: tCommon("previous"),
                 nextLabel: tCommon("next"),
                 isLoading,
@@ -280,24 +283,18 @@ export default function EventReviewsPage() {
         >
           <TableHeader>
             <TableRow className={dashboardTableHeaderRowClass}>
-              <TableHead className="min-w-[200px] whitespace-nowrap text-muted-foreground">
-                {tAdmin("tableEvent")}
-              </TableHead>
+              <DashboardSortableHeader className="min-w-[200px]" label={tAdmin("tableEvent")} column="eventName" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
               <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
                 {tCommon("vendor")}
               </TableHead>
               <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
                 {tAdmin("tableCity")}
               </TableHead>
-              <TableHead className="min-w-[170px] whitespace-nowrap text-muted-foreground">
-                {t("starts")}
-              </TableHead>
+              <DashboardSortableHeader className="min-w-[170px]" label={t("starts")} column="startDateTime" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
               <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
                 {tCommon("status")}
               </TableHead>
-              <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
-                {tCommon("submitted")}
-              </TableHead>
+              <DashboardSortableHeader className="min-w-[110px]" label={tCommon("submitted")} column="createdAt" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
               <TableHead className="min-w-[240px] whitespace-nowrap text-right text-muted-foreground">
                 {tCommon("actions")}
               </TableHead>
@@ -307,7 +304,9 @@ export default function EventReviewsPage() {
             {isLoading ? (
               <TableSkeleton cols={7} />
             ) : events.length === 0 ? (
-              <TableEmptyRow colSpan={7}>{t("noEvents")}</TableEmptyRow>
+              <TableEmptyRow colSpan={7}>
+                {table.hasActiveFilters ? tTables("noMatch") : t("noEvents")}
+              </TableEmptyRow>
             ) : (
               events.map((ev) => {
                   const selectValue = reviewableStatus(ev.status)

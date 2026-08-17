@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Clock, DollarSign, Eye, Loader2, MapPin } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { RoleGuard } from "@/components/auth/RoleGuard";
@@ -11,12 +11,12 @@ import { VenueReviewDetails } from "@/components/venues/VenueReviewDetails";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -36,44 +36,77 @@ import {
 } from "@/components/ui/table";
 import { getPreviewVenue, listManagedVenues, updateVenueStatus } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
-import type { ManagedVenue } from "@/features/venues/types";
+import type { EntityStatus, ManagedVenue } from "@/features/venues/types";
 import { pricingModelLabel } from "@/features/venues/utils";
 import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
 import { toastApiError } from "@/lib/toasts";
 import {
+  DashboardErrorAlert,
   DashboardPanel,
   DashboardPageShell,
-  DashboardTableWrapper,
-  dashboardCardClass,
   dashboardTableClass,
   dashboardTableContainerClass,
   dashboardTableActionsClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
   dashboardDialogContentClass,
-  dashboardTextareaClass,
+  dashboardDropdownContentClass,
+  dashboardOutlineButtonClass,
+  dashboardSelectTriggerClass,
 } from "@/components/dashboard/dashboard-ui";
+import { DashboardDataTable, DashboardSortableHeader } from "@/components/dashboard/dashboard-data-table";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { cn } from "@/lib/utils";
+import { useTableQueryState } from "@/hooks/use-table-query-state";
+
+type StatusFilter = "ALL" | "PENDING" | "ACTIVE" | "REJECTED" | "DRAFT";
+const REVIEW_STATUSES: Exclude<StatusFilter, "ALL">[] = [
+  "PENDING",
+  "ACTIVE",
+  "REJECTED",
+  "DRAFT",
+];
+
+function formatDate(value?: string) {
+  if (!value) return "—";
+  try {
+    return new Date(value).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return value;
+  }
+}
 
 export default function VenueReviewsPage() {
   const t = useTranslations("adminVenueReviews");
   const tCommon = useTranslations("common");
   const tAdmin = useTranslations("adminDashboard");
   const tForms = useTranslations("forms");
+  const tStatus = useTranslations("entityStatus");
+  const tListing = useTranslations("listing");
+  const tTables = useTranslations("tables");
   const queryClient = useQueryClient();
+  const table = useTableQueryState<{ status: StatusFilter }>({
+    initialSortBy: "createdAt",
+    initialFilters: { status: "ALL" },
+  });
   const [viewVenue, setViewVenue] = useState<ManagedVenue | null>(null);
   const [rejectVenue, setRejectVenue] = useState<ManagedVenue | null>(null);
   const [reason, setReason] = useState("");
 
   const listParams = {
-    status: "PENDING" as const,
+    ...table.queryParams,
     vendorOnly: true,
-    readyForReview: true,
-    limit: 50,
+    ...(table.filters.status !== "ALL"
+      ? { status: table.filters.status as EntityStatus }
+      : {}),
+    sortBy: table.sortBy as "createdAt" | "name" | undefined,
   };
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: venueKeys.managedList(listParams),
     queryFn: () => listManagedVenues(listParams),
   });
@@ -107,7 +140,23 @@ export default function VenueReviewsPage() {
   const pendingVenueId = statusMut.isPending ? statusMut.variables?.id : null;
   const pendingStatus = statusMut.isPending ? statusMut.variables?.status : null;
   const venues = data?.data ?? [];
+  const meta = data?.meta;
+  const totalPages = meta?.totalPages ?? 1;
+  const showPagination = !isLoading && (meta?.total ?? 0) > 0;
   const detail = venueDetail ?? viewVenue;
+  const errorMessage = useMemo(() => {
+    if (!isError || !error) return null;
+    return error instanceof Error ? error.message : t("loadingQueue");
+  }, [error, isError, t]);
+
+  const statusLabel = (status?: EntityStatus) => {
+    if (!status) return tStatus("unknown");
+    if (status === "ACTIVE" || status === "APPROVED") return tStatus("approved");
+    if (status === "PENDING") return tStatus("pending");
+    if (status === "REJECTED") return tStatus("rejected");
+    if (status === "DRAFT") return tStatus("draft");
+    return status.charAt(0) + status.slice(1).toLowerCase();
+  };
 
   return (
     <RoleGuard allowedRoles={["ADMIN"]}>
@@ -116,93 +165,132 @@ export default function VenueReviewsPage() {
           <DashboardPageHeader
             title={t("title")}
             description={t("description")}
+            action={
+              <div className="flex flex-wrap items-center gap-2">
+                {isFetching && !isLoading ? (
+                  <span className="flex items-center gap-1 text-xs text-zinc-500">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {tCommon("refreshing")}
+                  </span>
+                ) : null}
+                <Button
+                  variant={table.filters.status === "ALL" ? "default" : "outline"}
+                  onClick={() => table.setFilter("status", "ALL")}
+                  disabled={isLoading}
+                >
+                  {tCommon("all")}
+                </Button>
+                {REVIEW_STATUSES.map((status) => (
+                  <Button
+                    key={status}
+                    variant={table.filters.status === status ? "default" : "outline"}
+                    onClick={() => table.setFilter("status", status)}
+                    disabled={isLoading}
+                  >
+                    {statusLabel(status)}
+                  </Button>
+                ))}
+              </div>
+            }
           />
 
-        <Card className={dashboardCardClass}>
-          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0 pb-4">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Building2 className="h-5 w-5 text-primary" />
-                {t("pendingSubmissions")}
-              </CardTitle>
-              <CardDescription>
-                {isLoading
-                  ? t("loadingQueue")
-                  : t("venueCount", { count: venues.length })}
-              </CardDescription>
-            </div>
-            {isFetching && !isLoading && (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            )}
-          </CardHeader>
+          {errorMessage ? (
+            <DashboardErrorAlert
+              message={errorMessage}
+              onRetry={() => void refetch()}
+              retryLabel={tCommon("retry")}
+            />
+          ) : null}
 
-          <CardContent className="p-0">
-            <DashboardTableWrapper className="rounded-none border-0 border-t border-[#303030]">
+          <DashboardDataTable
+            toolbar={{
+              search: { value: table.search, onChange: table.setSearch, placeholder: tCommon("search") },
+              pageSize: { value: table.pageSize, onChange: table.setPageSize },
+              onReset: table.reset,
+              showReset: table.hasActiveFilters,
+              isRefreshing: isFetching && !isLoading,
+            }}
+            pagination={
+              showPagination
+                ? {
+                    label: tListing("pageOfWithCount", {
+                      page: meta?.page ?? table.page,
+                      totalPages,
+                      total: meta?.total ?? venues.length,
+                      type: tListing("venuesCount"),
+                    }),
+                    page: table.page,
+                    totalPages,
+                    total: meta?.total ?? venues.length,
+                    onPageChange: table.setPage,
+                    previousLabel: tCommon("previous"),
+                    nextLabel: tCommon("next"),
+                    isLoading,
+                  }
+                : undefined
+            }
+          >
             <Table
-              className={cn(dashboardTableClass, "min-w-[1000px]")}
+              className={cn(dashboardTableClass, "min-w-[1100px]")}
               containerClassName={dashboardTableContainerClass}
             >
               <TableHeader>
                 <TableRow className={dashboardTableHeaderRowClass}>
-                  <TableHead className="min-w-[240px] whitespace-nowrap text-muted-foreground">
-                    {tForms("venueName")}
-                  </TableHead>
+                  <DashboardSortableHeader className="min-w-[220px]" label={tForms("venueName")} column="name" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
                   <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
                     {tCommon("vendor")}
                   </TableHead>
-                  <TableHead className="min-w-[130px] whitespace-nowrap text-muted-foreground">
+                  <TableHead className="min-w-[120px] whitespace-nowrap text-muted-foreground">
+                    {tAdmin("tableCity")}
+                  </TableHead>
+                  <TableHead className="min-w-[140px] whitespace-nowrap text-muted-foreground">
                     {t("pricing")}
                   </TableHead>
-                  <TableHead className="min-w-[130px] whitespace-nowrap text-muted-foreground">
-                    {t("schedule")}
+                  <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
+                    {tCommon("status")}
                   </TableHead>
-                  <TableHead className="min-w-[300px] whitespace-nowrap text-right text-muted-foreground">
+                  <DashboardSortableHeader className="min-w-[120px]" label={tCommon("submitted")} column="createdAt" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
+                  <TableHead className="min-w-[240px] whitespace-nowrap text-right text-muted-foreground">
                     {tCommon("actions")}
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableSkeleton cols={5} />
+                  <TableSkeleton cols={7} />
                 ) : venues.length === 0 ? (
-                  <TableEmptyRow colSpan={5}>
-                      {t("noPending")}
+                  <TableEmptyRow colSpan={7}>
+                    {table.hasActiveFilters ? tTables("noMatch") : tCommon("noResults")}
                   </TableEmptyRow>
                 ) : (
                   venues.map((venue) => {
-                    const openDays =
-                      venue.schedules?.filter((s) => s.isOpen).length ?? 0;
-                    const isApproving =
-                      pendingVenueId === venue.id && pendingStatus === "ACTIVE";
-                    const isRejecting =
-                      pendingVenueId === venue.id && pendingStatus === "REJECTED";
+                    const selectValue =
+                      venue.status === "ACTIVE" || venue.status === "APPROVED"
+                        ? "ACTIVE"
+                        : venue.status === "REJECTED"
+                          ? "REJECTED"
+                          : "PENDING";
 
                     return (
                       <TableRow key={venue.id} className={dashboardTableRowClass}>
-                        <TableCell>
-                          <div className="space-y-1.5">
-                            <p className="font-medium text-foreground">{venue.name}</p>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                              <span className="inline-flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {venue.city ?? venue.address}
-                              </span>
-                              {venue.venueType?.name && (
-                                <Badge variant="outline" className="text-[10px]">
-                                  {venue.venueType.name}
-                                </Badge>
-                              )}
-                            </div>
-                            {venue.status && <StatusBadge status={venue.status} />}
-                          </div>
+                        <TableCell className="max-w-[240px] whitespace-normal break-words font-medium">
+                          <button
+                            type="button"
+                            className="text-left hover:text-primary hover:underline"
+                            onClick={() => setViewVenue(venue)}
+                          >
+                            {venue.name}
+                          </button>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="max-w-[200px] truncate text-muted-foreground">
                           {venue.vendor?.vendorName ?? "—"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {venue.city ?? "—"}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           {venue.pricing ? (
-                            <Badge variant="secondary" className="gap-1 font-normal">
-                              <DollarSign className="h-3 w-3" />
+                            <Badge variant="secondary" className="font-normal">
                               {pricingModelLabel(venue.pricing.modelType)}
                             </Badge>
                           ) : (
@@ -210,48 +298,63 @@ export default function VenueReviewsPage() {
                           )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          <Badge variant="outline" className="gap-1 font-normal">
-                            <Clock className="h-3 w-3" />
-                            {t("openDays", { count: openDays })}
-                          </Badge>
+                          {venue.status ? <StatusBadge status={venue.status} /> : "—"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {formatDate(venue.createdAt)}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-right">
                           <div className={dashboardTableActionsClass}>
                             <Button
                               size="sm"
                               variant="outline"
-                              className={cn("shrink-0 border-border")}
+                              className={cn("shrink-0", dashboardOutlineButtonClass)}
                               onClick={() => setViewVenue(venue)}
                             >
-                              <Eye className="mr-1 h-3 w-3" />
+                              <Eye className="h-4 w-4" />
                               {tCommon("view")}
                             </Button>
-                            <Button
-                              size="sm"
-                              className="shrink-0 bg-primary"
-                              disabled={isApproving || isRejecting}
-                              onClick={() =>
-                                statusMut.mutate({ id: venue.id, status: "ACTIVE" })
-                              }
+                            <Select
+                              value={selectValue}
+                              disabled={pendingVenueId === venue.id}
+                              onValueChange={(value: "ACTIVE" | "REJECTED" | "PENDING") => {
+                                if (value === "REJECTED") {
+                                  setRejectVenue(venue);
+                                  return;
+                                }
+                                if (
+                                  value === "ACTIVE" &&
+                                  venue.status !== "ACTIVE" &&
+                                  venue.status !== "APPROVED"
+                                ) {
+                                  statusMut.mutate({ id: venue.id, status: "ACTIVE" });
+                                }
+                              }}
                             >
-                              {isApproving ? (
-                                <>
-                                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                                  {t("approving")}
-                                </>
-                              ) : (
-                                tAdmin("approve")
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="shrink-0"
-                              disabled={isApproving || isRejecting}
-                              onClick={() => setRejectVenue(venue)}
-                            >
-                              {tAdmin("reject")}
-                            </Button>
+                              <SelectTrigger
+                                size="sm"
+                                className={cn(
+                                  "h-8 w-[130px] shrink-0",
+                                  dashboardSelectTriggerClass,
+                                )}
+                              >
+                                {pendingVenueId === venue.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : null}
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className={dashboardDropdownContentClass}>
+                                <SelectItem value="PENDING" disabled>
+                                  {tStatus("pending")}
+                                </SelectItem>
+                                <SelectItem value="ACTIVE">
+                                  {tStatus("approved")}
+                                </SelectItem>
+                                <SelectItem value="REJECTED">
+                                  {tStatus("rejected")}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -260,9 +363,7 @@ export default function VenueReviewsPage() {
                 )}
               </TableBody>
             </Table>
-            </DashboardTableWrapper>
-          </CardContent>
-        </Card>
+          </DashboardDataTable>
         </DashboardPanel>
       </DashboardPageShell>
 

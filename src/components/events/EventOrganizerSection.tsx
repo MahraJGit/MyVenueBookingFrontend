@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { Building2, Mail, MapPin, Phone, User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { PublicVendorProfile } from "@/features/events/api";
 
 type EventOrganizerSectionProps = {
-  vendor: PublicVendorProfile;
+  vendor: PublicVendorProfile & { slug?: string };
 };
 
 function formatBusinessType(
@@ -23,6 +24,7 @@ function formatBusinessType(
 
 export function EventOrganizerSection({ vendor }: EventOrganizerSectionProps) {
   const t = useTranslations("events");
+  const organizerHref = vendor.slug ? `/organizers/${vendor.slug}` : undefined;
 
   return (
     <section className="container mx-auto px-4 py-12 sm:px-6">
@@ -35,9 +37,17 @@ export function EventOrganizerSection({ vendor }: EventOrganizerSectionProps) {
                 <Building2 size={22} className="text-primary" />
               </div>
               <div className="min-w-0">
-                <h3 className="break-words text-lg font-semibold text-white" dir="auto">
-                  {vendor.vendorName}
-                </h3>
+                {organizerHref ? (
+                  <Link href={organizerHref} className="hover:underline">
+                    <h3 className="break-words text-lg font-semibold text-white" dir="auto">
+                      {vendor.vendorName}
+                    </h3>
+                  </Link>
+                ) : (
+                  <h3 className="break-words text-lg font-semibold text-white" dir="auto">
+                    {vendor.vendorName}
+                  </h3>
+                )}
                 <p className="text-sm text-zinc-400">
                   {formatBusinessType(vendor.businessType, t)}
                 </p>
@@ -48,6 +58,14 @@ export function EventOrganizerSection({ vendor }: EventOrganizerSectionProps) {
                 <User size={14} className="shrink-0 text-primary" />
                 <span>{t("organizerOwner", { name: vendor.ownerName })}</span>
               </p>
+            ) : null}
+            {organizerHref ? (
+              <Link
+                href={organizerHref}
+                className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
+              >
+                {t("viewOrganizerProfile")}
+              </Link>
             ) : null}
           </div>
 

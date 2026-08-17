@@ -20,6 +20,7 @@ import {
   Inbox,
   FileText,
   CalendarCheck,
+  User,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -110,6 +111,7 @@ export default function VendorSidebar({
           </SidebarSection>
 
           <SidebarSection title={t('account')} value="account">
+            <SidebarLink icon={User} label={t('profile')} href={`${paths.root}/profile`} onClose={onClose} />
             <SidebarLink icon={ShieldCheck} label={t('verifiers')} href={paths.verifiers} onClose={onClose} />
             <SidebarLink icon={MessageCircle} label={t('messages')} href={`${paths.root}/messages`} onClose={onClose} showUnreadBadge unreadContext="vendor" />
             <SidebarLink icon={Bell} label={t('notifications')} href={`${paths.root}/notifications`} onClose={onClose} />

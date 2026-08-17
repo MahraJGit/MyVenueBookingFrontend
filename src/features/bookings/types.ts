@@ -80,6 +80,10 @@ export type PaginatedMeta = {
 export type ListBookingsResult = {
   data: Booking[];
   meta: PaginatedMeta;
+  summary?: {
+    totalBookings: number;
+    totalRevenue: number;
+  };
 };
 
 export type BookingAmenitySelection = {

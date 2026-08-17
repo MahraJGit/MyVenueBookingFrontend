@@ -565,6 +565,10 @@ export type ListServiceProposalsResult = {
 export type ListServiceBookingsResult = {
   items: ServiceBooking[];
   meta: PaginationMeta;
+  summary?: {
+    totalBookings: number;
+    totalRevenue: number;
+  };
 };
 
 export type ServiceBookingCheckoutResult =

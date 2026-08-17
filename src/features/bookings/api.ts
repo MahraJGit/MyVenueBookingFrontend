@@ -47,13 +47,23 @@ export async function listBookings(params?: {
   page?: number;
   limit?: number;
   status?: BookingStatus;
-  /** buyer = bookings you placed; omit/managed = role-based venue/admin list */
-  scope?: "buyer" | "managed";
+  search?: string;
+  vendorId?: string;
+  venueId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  /** buyer = placed by user; workspace = attached vendor; platform = admin-wide */
+  scope?: "buyer" | "workspace" | "platform";
 }): Promise<ListBookingsResult> {
   const sp = new URLSearchParams();
   sp.set("page", String(params?.page ?? 1));
   sp.set("limit", String(params?.limit ?? 10));
   if (params?.status) sp.set("status", params.status);
+  if (params?.search) sp.set("search", params.search);
+  if (params?.vendorId) sp.set("vendorId", params.vendorId);
+  if (params?.venueId) sp.set("venueId", params.venueId);
+  if (params?.dateFrom) sp.set("dateFrom", params.dateFrom);
+  if (params?.dateTo) sp.set("dateTo", params.dateTo);
   if (params?.scope) sp.set("scope", params.scope);
 
   return authJson<ListBookingsResult>(`/api/bookings?${sp.toString()}`, {
@@ -63,8 +73,12 @@ export async function listBookings(params?: {
   });
 }
 
-export async function getBooking(id: string): Promise<Booking> {
-  return authJson<Booking>(`/api/bookings/${encodeURIComponent(id)}`, {
+export async function getBooking(
+  id: string,
+  scope?: "buyer" | "workspace" | "platform",
+): Promise<Booking> {
+  const query = scope ? `?scope=${scope}` : "";
+  return authJson<Booking>(`/api/bookings/${encodeURIComponent(id)}${query}`, {
     method: "GET",
     headers: { Accept: "application/json" },
     networkErrorMessage: "Network error while loading booking.",

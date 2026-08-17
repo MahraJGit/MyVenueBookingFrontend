@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -45,6 +45,14 @@ import {
 } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
 import type { AmenityCatalogItem, VenueType } from "@/features/venues/types";
+import { useClientPagination } from "@/hooks/use-client-pagination";
+import { useTableQueryState } from "@/hooks/use-table-query-state";
+import {
+  DashboardDataTable,
+  DashboardSortableHeader,
+  formatTableRangeLabel,
+} from "@/components/dashboard/dashboard-data-table";
+import { TableEmptyRow, TableSkeleton } from "@/components/ui/table-skeleton";
 import { fieldClassName, isBlank } from "@/lib/form-validation";
 import { toastApiError } from "@/lib/toasts";
 import {
@@ -52,7 +60,6 @@ import {
   DashboardPageShell,
   dashboardCardClass,
   dashboardInputClass,
-  dashboardTextareaClass,
   dashboardTabsListClass,
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
@@ -230,61 +237,13 @@ export default function VenueTaxonomyPage() {
                 <CardTitle className="text-base">{t("allVenueTypes")}</CardTitle>
                 <CardDescription>{t("typeCount", { count: types.length })}</CardDescription>
               </CardHeader>
-              <CardContent className="p-0">
-                {typesLoading ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : types.length === 0 ? (
-                  <p className="py-12 text-center text-sm text-muted-foreground">
-                    {t("noVenueTypesYet")}
-                  </p>
-                ) : (
-                  <div className="overflow-hidden rounded-b-xl border-t border-[#303030] px-4 sm:px-6">
-                    <Table
-                      className={cn(dashboardTableClass, "min-w-[700px]")}
-                      containerClassName={dashboardTableContainerClass}
-                    >
-                      <TableHeader>
-                        <TableRow className={dashboardTableHeaderRowClass}>
-                          <TableHead className="min-w-[180px] whitespace-nowrap text-muted-foreground">
-                            {tCommon("name")}
-                          </TableHead>
-                          <TableHead className="min-w-[280px] whitespace-nowrap text-muted-foreground">
-                            {tCommon("description")}
-                          </TableHead>
-                          <TableHead className="min-w-[80px] whitespace-nowrap text-right text-muted-foreground">
-                            {tCommon("actions")}
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {types.map((venueType) => (
-                          <TableRow key={venueType.id} className={dashboardTableRowClass}>
-                            <TableCell className="whitespace-normal break-words font-medium text-foreground align-top">
-                              {venueType.name}
-                            </TableCell>
-                            <TableCell className="whitespace-normal break-words text-muted-foreground align-top">
-                              {venueType.description ?? tCommon("notAvailable")}
-                            </TableCell>
-                            <TableCell className="w-14 shrink-0 whitespace-nowrap text-right align-top">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                aria-label={`${tCommon("delete")} ${venueType.name}`}
-                                onClick={() => setDeleteTypeTarget(venueType)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+              <CardContent>
+                <TaxonomyTable
+                  items={types}
+                  isLoading={typesLoading}
+                  emptyLabel={t("noVenueTypesYet")}
+                  onDelete={setDeleteTypeTarget}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -346,61 +305,13 @@ export default function VenueTaxonomyPage() {
                   {t("itemCount", { count: catalog.length })}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-0">
-                {catalogLoading ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : catalog.length === 0 ? (
-                  <p className="py-12 text-center text-sm text-muted-foreground">
-                    {t("noAmenitiesYet")}
-                  </p>
-                ) : (
-                  <div className="overflow-hidden rounded-b-xl border-t border-[#303030] px-4 sm:px-6">
-                    <Table
-                      className={cn(dashboardTableClass, "min-w-[700px]")}
-                      containerClassName={dashboardTableContainerClass}
-                    >
-                      <TableHeader>
-                        <TableRow className={dashboardTableHeaderRowClass}>
-                          <TableHead className="min-w-[180px] whitespace-nowrap text-muted-foreground">
-                            {tCommon("name")}
-                          </TableHead>
-                          <TableHead className="min-w-[280px] whitespace-nowrap text-muted-foreground">
-                            {tCommon("description")}
-                          </TableHead>
-                          <TableHead className="min-w-[80px] whitespace-nowrap text-right text-muted-foreground">
-                            {tCommon("actions")}
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {catalog.map((item) => (
-                          <TableRow key={item.id} className={dashboardTableRowClass}>
-                            <TableCell className="whitespace-normal break-words font-medium text-foreground align-top">
-                              {item.name}
-                            </TableCell>
-                            <TableCell className="whitespace-normal break-words text-muted-foreground align-top">
-                              {item.description ?? tCommon("notAvailable")}
-                            </TableCell>
-                            <TableCell className="w-14 shrink-0 whitespace-nowrap text-right align-top">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                aria-label={`${tCommon("delete")} ${item.name}`}
-                                onClick={() => setDeleteAmenityTarget(item)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+              <CardContent>
+                <TaxonomyTable
+                  items={catalog}
+                  isLoading={catalogLoading}
+                  emptyLabel={t("noAmenitiesYet")}
+                  onDelete={setDeleteAmenityTarget}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -518,5 +429,134 @@ export default function VenueTaxonomyPage() {
         </DialogContent>
       </Dialog>
     </RoleGuard>
+  );
+}
+
+type TaxonomyItem = VenueType | AmenityCatalogItem;
+
+function TaxonomyTable<T extends TaxonomyItem>({
+  items,
+  isLoading,
+  emptyLabel,
+  onDelete,
+}: {
+  items: T[];
+  isLoading: boolean;
+  emptyLabel: string;
+  onDelete: (item: T) => void;
+}) {
+  const tCommon = useTranslations("common");
+  const tTables = useTranslations("tables");
+  const table = useTableQueryState({
+    initialSortBy: "name",
+    initialSortOrder: "asc",
+  });
+  const filteredItems = useMemo(() => {
+    const search = table.debouncedSearch.toLocaleLowerCase();
+    return items
+      .filter(
+        (item) =>
+          !search ||
+          item.name.toLocaleLowerCase().includes(search) ||
+          item.description?.toLocaleLowerCase().includes(search),
+      )
+      .sort((a, b) => {
+        const direction = table.sortOrder === "asc" ? 1 : -1;
+        return direction * a.name.localeCompare(b.name);
+      });
+  }, [items, table.debouncedSearch, table.sortOrder]);
+  const { total, totalPages, paginatedItems } = useClientPagination(
+    filteredItems,
+    table.pageSize,
+    { page: table.page, setPage: table.setPage },
+  );
+
+  return (
+    <DashboardDataTable
+      toolbar={{
+        search: {
+          value: table.search,
+          onChange: table.setSearch,
+          placeholder: `${tCommon("search")}...`,
+        },
+        pageSize: { value: table.pageSize, onChange: table.setPageSize },
+        onReset: table.reset,
+        showReset: table.hasActiveFilters,
+      }}
+      pagination={{
+        label: formatTableRangeLabel({
+          page: table.page,
+          pageSize: table.pageSize,
+          total,
+          showingLabel: (values) => tTables("showing", values),
+        }),
+        page: table.page,
+        totalPages,
+        total,
+        onPageChange: table.setPage,
+        previousLabel: tCommon("previous"),
+        nextLabel: tCommon("next"),
+        isLoading,
+      }}
+    >
+      <Table
+        className={cn(dashboardTableClass, "min-w-[700px]")}
+        containerClassName={dashboardTableContainerClass}
+      >
+        <TableHeader>
+          <TableRow className={dashboardTableHeaderRowClass}>
+            <DashboardSortableHeader
+              className="min-w-[180px]"
+              label={tCommon("name")}
+              column="name"
+              sortBy={table.sortBy}
+              sortOrder={table.sortOrder}
+              onSort={table.toggleSort}
+            />
+            <TableHead className="min-w-[280px] whitespace-nowrap text-muted-foreground">
+              {tCommon("description")}
+            </TableHead>
+            <TableHead className="min-w-[80px] whitespace-nowrap text-right text-muted-foreground">
+              {tCommon("actions")}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            <TableSkeleton cols={3} />
+          ) : (
+            <>
+              {paginatedItems.map((item) => (
+                <TableRow key={item.id} className={dashboardTableRowClass}>
+                  <TableCell className="whitespace-normal break-words font-medium text-foreground align-top">
+                    {item.name}
+                  </TableCell>
+                  <TableCell className="whitespace-normal break-words text-muted-foreground align-top">
+                    {item.description ?? tCommon("notAvailable")}
+                  </TableCell>
+                  <TableCell className="w-14 shrink-0 whitespace-nowrap text-right align-top">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                      aria-label={`${tCommon("delete")} ${item.name}`}
+                      onClick={() => onDelete(item)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!paginatedItems.length ? (
+                <TableEmptyRow colSpan={3}>
+                  {table.debouncedSearch ? tTables("noMatch") : emptyLabel}
+                </TableEmptyRow>
+              ) : null}
+            </>
+          )}
+        </TableBody>
+      </Table>
+    </DashboardDataTable>
   );
 }

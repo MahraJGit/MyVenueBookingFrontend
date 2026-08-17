@@ -26,7 +26,7 @@ import {
   openTicketPurchaseFlow,
 } from "@/components/events/ticket-purchase-dialog";
 import { EventOrganizerSection } from "@/components/events/EventOrganizerSection";
-import { VendorReviewsSection } from "@/components/reviews/VendorReviewsSection";
+import { ListingReviewsSection } from "@/components/reviews/ListingReviewsSection";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLocaleContext } from "@/features/i18n/locale-context";
 import { getIntlLocale } from "@/i18n/locales";
@@ -438,9 +438,9 @@ export default function EventDetailPage() {
         </section>
       )}
 
-      {event.vendorProfile ? (
+      {event.id ? (
         <section className="container mx-auto border-t border-[#303030] px-4 py-12 sm:px-6">
-          <VendorReviewsSection vendorId={event.vendorProfile.id} />
+          <ListingReviewsSection listingType="event" listingId={event.id} />
         </section>
       ) : null}
     </div>

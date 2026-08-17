@@ -39,13 +39,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  DashboardDataTable,
+  DashboardSortableHeader,
+  formatTableRangeLabel,
+} from "@/components/dashboard/dashboard-data-table";
+import {
   DashboardPageHeader,
   dashboardSurfaceBorderClass,
 } from "@/components/dashboard/dashboard-shared";
 import {
   DashboardPageShell,
   DashboardPanel,
-  DashboardSearchInput,
   dashboardDropdownContentClass,
   dashboardSelectTriggerClass,
   dashboardTableClass,
@@ -64,7 +68,9 @@ import {
   listVerifiers,
   updateVerifier,
   type VerifierRow,
+  type VerifierStatus,
 } from "@/features/verifiers/api";
+import { useTableQueryState } from "@/hooks/use-table-query-state";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
 
@@ -239,12 +245,20 @@ function AssignmentMultiSelect({
 export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
   const t = useTranslations("verifiers");
   const tAuth = useTranslations("auth");
+  const tCommon = useTranslations("common");
+  const tTables = useTranslations("tables");
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = scope === "admin";
+  const apiScope: "workspace" | "platform" = isAdmin ? "platform" : "workspace";
 
-  const [search, setSearch] = useState("");
-  const [vendorFilter, setVendorFilter] = useState<string>("all");
+  const table = useTableQueryState<{
+    vendorProfileId: string;
+    status: "ALL" | VerifierStatus;
+  }>({
+    initialSortBy: "createdAt",
+    initialFilters: { vendorProfileId: "ALL", status: "ALL" },
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<VerifierRow | null>(null);
   const [viewingEvents, setViewingEvents] = useState<VerifierRow | null>(null);
@@ -255,11 +269,19 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
 
   const listParams = useMemo(
     () => ({
-      search: search.trim() || undefined,
+      scope: apiScope,
+      page: table.page,
+      limit: table.pageSize,
+      search: table.debouncedSearch || undefined,
+      sortBy: table.sortBy as "createdAt" | "username" | "displayName" | undefined,
+      sortOrder: table.sortOrder,
+      status: table.filters.status === "ALL" ? undefined : table.filters.status,
       vendorProfileId:
-        isAdmin && vendorFilter !== "all" ? vendorFilter : undefined,
+        isAdmin && table.filters.vendorProfileId !== "ALL"
+          ? table.filters.vendorProfileId
+          : undefined,
     }),
-    [isAdmin, search, vendorFilter],
+    [apiScope, isAdmin, table.debouncedSearch, table.filters, table.page, table.pageSize, table.sortBy, table.sortOrder],
   );
 
   const verifiersQuery = useQuery({
@@ -280,7 +302,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
 
   const eventsQuery = useQuery({
     queryKey: ["verifiers-assignable-events", user?.id, assignVendorId ?? "self"],
-    queryFn: () => listAssignableEvents(assignVendorId),
+    queryFn: () => listAssignableEvents(assignVendorId, apiScope),
     enabled:
       Boolean(user?.id) &&
       dialogOpen &&
@@ -293,7 +315,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
       user?.id,
       assignVendorId ?? "self",
     ],
-    queryFn: () => listAssignableAttractions(assignVendorId),
+    queryFn: () => listAssignableAttractions(assignVendorId, apiScope),
     enabled:
       Boolean(user?.id) &&
       dialogOpen &&
@@ -401,7 +423,8 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
     queryClient.invalidateQueries({ queryKey: ["verifiers"] });
 
   const createMutation = useMutation({
-    mutationFn: createVerifier,
+    mutationFn: (input: Parameters<typeof createVerifier>[0]) =>
+      createVerifier(input, apiScope),
     onSuccess: () => {
       toast.success(t("createSuccess"));
       setDialogOpen(false);
@@ -416,7 +439,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
       id,
       ...input
     }: { id: string } & Parameters<typeof updateVerifier>[1]) =>
-      updateVerifier(id, input),
+      updateVerifier(id, input, apiScope),
     onSuccess: () => {
       toast.success(t("updateSuccess"));
       setDialogOpen(false);
@@ -434,7 +457,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
     }: {
       id: string;
       status: "ACTIVE" | "DISABLED";
-    }) => updateVerifier(id, { status }),
+    }) => updateVerifier(id, { status }, apiScope),
     onSuccess: (_data, vars) => {
       toast.success(
         vars.status === "ACTIVE" ? t("enabledSuccess") : t("disabledSuccess"),
@@ -445,7 +468,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteVerifier,
+    mutationFn: (id: string) => deleteVerifier(id, apiScope),
     onSuccess: () => {
       toast.success(t("deleteSuccess"));
       void invalidate();
@@ -537,7 +560,8 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
   };
 
   const saving = createMutation.isPending || updateMutation.isPending;
-  const rows = verifiersQuery.data ?? [];
+  const rows = verifiersQuery.data?.data ?? [];
+  const meta = verifiersQuery.data?.meta;
 
   return (
     <DashboardPageShell>
@@ -553,20 +577,25 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
       />
 
       <DashboardPanel className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <DashboardSearchInput
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("searchPlaceholder")}
-            className="sm:max-w-sm"
-          />
+        <DashboardDataTable
+          toolbar={{
+            search: {
+              value: table.search,
+              onChange: table.setSearch,
+              placeholder: t("searchPlaceholder"),
+            },
+            filters: (
+              <>
           {isAdmin ? (
-            <Select value={vendorFilter} onValueChange={setVendorFilter}>
+            <Select
+              value={table.filters.vendorProfileId}
+              onValueChange={(value) => table.setFilter("vendorProfileId", value)}
+            >
               <SelectTrigger className={cn(dashboardSelectTriggerClass, "sm:w-64")}>
                 <SelectValue placeholder={t("filterVendor")} />
               </SelectTrigger>
               <SelectContent className={dashboardDropdownContentClass}>
-                <SelectItem value="all">{t("allVendors")}</SelectItem>
+                <SelectItem value="ALL">{t("allVendors")}</SelectItem>
                 {(vendorsQuery.data ?? []).map((vendor) => (
                   <SelectItem key={vendor.id} value={vendor.id}>
                     {vendor.vendorName}
@@ -575,14 +604,55 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
               </SelectContent>
             </Select>
           ) : null}
-        </div>
+                <Select
+                  value={table.filters.status}
+                  onValueChange={(value) =>
+                    table.setFilter("status", value as "ALL" | VerifierStatus)
+                  }
+                >
+                  <SelectTrigger className={cn(dashboardSelectTriggerClass, "sm:w-44")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className={dashboardDropdownContentClass}>
+                    <SelectItem value="ALL">{tCommon("all")}</SelectItem>
+                    <SelectItem value="ACTIVE">{t("statusActive")}</SelectItem>
+                    <SelectItem value="DISABLED">{t("statusDisabled")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            ),
+            pageSize: { value: table.pageSize, onChange: table.setPageSize },
+            onReset: table.reset,
+            showReset: table.hasActiveFilters,
+            isRefreshing: verifiersQuery.isFetching && !verifiersQuery.isLoading,
+          }}
+          pagination={
+            meta && meta.total > 0
+              ? {
+                  label: formatTableRangeLabel({
+                    page: table.page,
+                    pageSize: table.pageSize,
+                    total: meta.total,
+                    showingLabel: (args) => tTables("showing", args),
+                  }),
+                  page: table.page,
+                  totalPages: meta.totalPages,
+                  total: meta.total,
+                  onPageChange: table.setPage,
+                  previousLabel: tCommon("previous"),
+                  nextLabel: tCommon("next"),
+                  isLoading: verifiersQuery.isFetching,
+                }
+              : undefined
+          }
+        >
 
         <div className={dashboardTableContainerClass}>
           <Table className={dashboardTableClass}>
             <TableHeader>
               <TableRow className={dashboardTableHeaderRowClass}>
-                <TableHead>{t("colUsername")}</TableHead>
-                <TableHead>{t("colName")}</TableHead>
+                <DashboardSortableHeader label={t("colUsername")} column="username" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
+                <DashboardSortableHeader label={t("colName")} column="displayName" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
                 {isAdmin ? <TableHead>{t("colVendor")}</TableHead> : null}
                 <TableHead>{t("colEvents")}</TableHead>
                 <TableHead>{t("colAttractions")}</TableHead>
@@ -595,7 +665,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
                 <TableSkeleton cols={isAdmin ? 7 : 6} rows={5} />
               ) : rows.length === 0 ? (
                 <TableEmptyRow colSpan={isAdmin ? 7 : 6}>
-                  {t("empty")}
+                  {table.hasActiveFilters ? tTables("noMatch") : t("empty")}
                 </TableEmptyRow>
               ) : (
                 rows.map((row) => (
@@ -706,6 +776,7 @@ export default function ManageVerifiers({ scope }: ManageVerifiersProps) {
             </TableBody>
           </Table>
         </div>
+        </DashboardDataTable>
       </DashboardPanel>
 
       <Dialog

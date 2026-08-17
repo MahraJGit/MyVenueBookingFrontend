@@ -66,7 +66,7 @@ export default function Sidebar({
       </div>
 
       <div className="mb-6 flex items-center justify-center gap-2 px-2">
-        <Link href="/adminDashbaord/manageEvents">
+        <Link href="/adminDashbaord/dashboard">
           <Image
             src="/svg/logo.svg"
             alt={tCommon('logoAlt')}
@@ -80,35 +80,27 @@ export default function Sidebar({
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Accordion
           type="multiple"
-          defaultValue={['users', 'events', 'attractions', 'venues', 'marketplace', 'settings']}
+          defaultValue={['sales', 'users', 'events', 'attractions', 'venues', 'marketplace', 'settings']}
           className="space-y-2"
         >
           <SidebarSection title={t('users')} value="users">
             <SidebarLink icon="/svg/AddUserMale.svg" label={t('manageUsers')} href="/adminDashbaord/users" onClose={onClose} />
-            <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorRequests')} href="/adminDashbaord/vendorRequests" onClose={onClose} />
-            <SidebarLink icon="/svg/Collaborating.svg" label={t('verifiers')} href="/adminDashbaord/verifiers" onClose={onClose} />
+            <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorsDirectory')} href="/adminDashbaord/vendorRequests" onClose={onClose} />
             <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorMessages')} href="/adminDashbaord/messages" onClose={onClose} showUnreadBadge unreadContext="admin" />
           </SidebarSection>
 
           <SidebarSection title={t('venues')} value="venues">
             <SidebarLink icon="/svg/EventAccepted.svg" label={t('venueReviews')} href="/adminDashbaord/venueReviews" onClose={onClose} />
-            <SidebarLink icon="/svg/EventAccepted.svg" label={t('myVenues')} href="/adminDashbaord/myVenues" onClose={onClose} />
-            <SidebarLink icon="/svg/EventAccepted.svg" label={t('manageVenues')} href="/adminDashbaord/manageVenues" onClose={onClose} />
-            <SidebarLink icon="/svg/NewTicket.svg" label={t('venueBookings')} href="/adminDashbaord/venueBookings" onClose={onClose} />
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('venueTaxonomy')} href="/adminDashbaord/venueTaxonomy" onClose={onClose} />
           </SidebarSection>
 
           <SidebarSection title={t('events')} value="events">
             <SidebarLink icon="/svg/EventAccepted.svg" label={t('eventReviews')} href="/adminDashbaord/eventReviews" onClose={onClose} />
-            <SidebarLink icon="/svg/EventAccepted.svg" label={t('myEvents')} href="/adminDashbaord/manageEvents" onClose={onClose} />
-            <SidebarLink icon="/svg/NewTicket.svg" label={t('bookingTickets')} href="/adminDashbaord/manageTickets" onClose={onClose} />
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('eventCategories')} href="/adminDashbaord/events" onClose={onClose} />
           </SidebarSection>
 
           <SidebarSection title={t('attractionsSection')} value="attractions">
             <SidebarLink icon="/svg/EventAccepted.svg" label={t('attractionReviews')} href="/adminDashbaord/attractionReviews" onClose={onClose} />
-            <SidebarLink icon="/svg/EventAccepted.svg" label={t('myAttractions')} href="/adminDashbaord/manageAttractions" onClose={onClose} />
-            <SidebarLink icon="/svg/NewTicket.svg" label={t('attractionTickets')} href="/adminDashbaord/manageAttractionTickets" onClose={onClose} />
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('attractionCategories')} href="/adminDashbaord/attractionCategories" onClose={onClose} />
           </SidebarSection>
 
@@ -117,9 +109,15 @@ export default function Sidebar({
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('serviceCategories')} href="/adminDashbaord/serviceCategories" onClose={onClose} />
           </SidebarSection>
 
+          <SidebarSection title={t('salesSection')} value="sales">
+            <SidebarLink icon="/svg/tickets.svg" label={t('eventTicketSales')} href="/adminDashbaord/manageTickets" onClose={onClose} />
+            <SidebarLink icon="/svg/NewTicket.svg" label={t('attractionTicketSales')} href="/adminDashbaord/manageAttractionTickets" onClose={onClose} />
+            <SidebarLink icon="/svg/booking.svg" label={t('venueBookingsSales')} href="/adminDashbaord/venueBookings" onClose={onClose} />
+            <SidebarLink icon="/svg/Calendar.svg" label={t('marketplaceBookingsSales')} href="/adminDashbaord/marketplaceBookings" onClose={onClose} />
+          </SidebarSection>
+
           <SidebarSection title={t('settings')} value="settings">
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('locations')} href="/adminDashbaord/locations" onClose={onClose} />
-            <SidebarLink icon="/svg/Statistics.svg" label={t('analyticsReports')} href="/adminDashbaord/analytics" onClose={onClose} />
           </SidebarSection>
         </Accordion>
       </div>

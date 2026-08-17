@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,7 +22,6 @@ import { StatusBadge } from "@/components/venues/StatusBadge";
 import {
   DashboardPanel,
   DashboardPageShell,
-  DashboardSearchInput,
   DashboardErrorAlert,
   dashboardTableClass,
   dashboardTableContainerClass,
@@ -30,7 +29,11 @@ import {
   dashboardTableHeaderRowClass,
   dashboardTableRowClass,
 } from "@/components/dashboard/dashboard-ui";
-import { DashboardDataTable } from "@/components/dashboard/dashboard-data-table";
+import {
+  DashboardDataTable,
+  DashboardSortableHeader,
+  formatTableRangeLabel,
+} from "@/components/dashboard/dashboard-data-table";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import {
   deleteAttraction,
@@ -43,8 +46,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
 import { useDashboardPaths } from "@/features/dashboard/paths";
-
-const PAGE_SIZE = 10;
+import { useTableQueryState } from "@/hooks/use-table-query-state";
 
 function canRestoreManagedListing(
   item: { createdByUserId?: string | null },
@@ -59,26 +61,21 @@ function canRestoreManagedListing(
 export default function ManageAttractions() {
   const t = useTranslations("adminDashboard");
   const tCommon = useTranslations("common");
-  const tListing = useTranslations("listing");
+  const tTables = useTranslations("tables");
   const paths = useDashboardPaths();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    setPage(1);
-  }, [search]);
+  const table = useTableQueryState({
+    initialSortBy: "createdAt",
+    initialSortOrder: "desc",
+  });
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["managed-attractions", search, page],
+    queryKey: ["managed-attractions", table.queryParams],
     queryFn: () =>
       listManagedAttractions({
-        page,
-        limit: PAGE_SIZE,
-        ...(search.trim() ? { search: search.trim() } : {}),
-        sortBy: "createdAt",
-        sortOrder: "desc",
+        ...table.queryParams,
+        sortBy: table.sortBy as "createdAt" | "name" | "scheduleStartDate",
       }),
   });
 
@@ -136,14 +133,6 @@ export default function ManageAttractions() {
           }
         />
 
-        <div className="w-full max-w-sm">
-          <DashboardSearchInput
-            placeholder={t("searchAttractions")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
         {isError ? (
           <DashboardErrorAlert
             message={
@@ -155,19 +144,32 @@ export default function ManageAttractions() {
         ) : null}
 
         <DashboardDataTable
+          toolbar={{
+            search: {
+              value: table.search,
+              onChange: table.setSearch,
+              placeholder: t("searchAttractions"),
+            },
+            pageSize: {
+              value: table.pageSize,
+              onChange: table.setPageSize,
+            },
+            onReset: table.reset,
+            showReset: table.hasActiveFilters,
+          }}
           pagination={
             showPagination
               ? {
-                  label: tListing("pageOfWithCount", {
-                    page: meta?.page ?? page,
-                    totalPages,
+                  label: formatTableRangeLabel({
+                    page: table.page,
+                    pageSize: table.pageSize,
                     total: meta?.total ?? rows.length,
-                    type: t("attractionsSection"),
+                    showingLabel: (values) => tTables("showing", values),
                   }),
-                  page,
+                  page: table.page,
                   totalPages,
                   total: meta?.total ?? rows.length,
-                  onPageChange: setPage,
+                  onPageChange: table.setPage,
                   previousLabel: tCommon("previous"),
                   nextLabel: tCommon("next"),
                   isLoading,
@@ -181,12 +183,22 @@ export default function ManageAttractions() {
           >
             <TableHeader>
               <TableRow className={dashboardTableHeaderRowClass}>
-                <TableHead className="min-w-[220px] whitespace-nowrap text-muted-foreground">
-                  {t("attractionsSection")}
-                </TableHead>
-                <TableHead className="min-w-[170px] whitespace-nowrap text-muted-foreground">
-                  Next show
-                </TableHead>
+                <DashboardSortableHeader
+                  className="min-w-[220px]"
+                  label={t("attractionsSection")}
+                  column="name"
+                  sortBy={table.sortBy}
+                  sortOrder={table.sortOrder}
+                  onSort={table.toggleSort}
+                />
+                <DashboardSortableHeader
+                  className="min-w-[170px]"
+                  label="Next show"
+                  column="scheduleStartDate"
+                  sortBy={table.sortBy}
+                  sortOrder={table.sortOrder}
+                  onSort={table.toggleSort}
+                />
                 <TableHead className="min-w-[120px] whitespace-nowrap text-muted-foreground">
                   {t("tableCity")}
                 </TableHead>

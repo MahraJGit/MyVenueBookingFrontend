@@ -92,12 +92,24 @@ export type UpdateVerifierInput = {
 };
 
 export async function listVerifiers(params: {
+  scope?: "workspace" | "platform";
   vendorProfileId?: string;
   search?: string;
+  status?: VerifierStatus;
+  page?: number;
+  limit?: number;
+  sortBy?: "createdAt" | "username" | "displayName";
+  sortOrder?: "asc" | "desc";
 } = {}) {
   const search = new URLSearchParams();
+  if (params.scope) search.set("scope", params.scope);
   if (params.vendorProfileId) search.set("vendorProfileId", params.vendorProfileId);
   if (params.search) search.set("search", params.search);
+  if (params.status) search.set("status", params.status);
+  if (params.page) search.set("page", String(params.page));
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.sortBy) search.set("sortBy", params.sortBy);
+  if (params.sortOrder) search.set("sortOrder", params.sortOrder);
   const qs = search.toString();
 
   const res = await authFetch(`/api/verifiers${qs ? `?${qs}` : ""}`, {
@@ -107,11 +119,26 @@ export async function listVerifiers(params: {
   });
   const data = await parseJson<unknown>(res);
   if (!res.ok) throw ApiError.fromUnknown(res.status, data);
-  return (data as ApiEnvelope<VerifierRow[]>).data;
+  const envelope = data as ApiEnvelope<VerifierRow[]> & {
+    meta?: { total: number; page: number; limit: number; totalPages: number };
+  };
+  return {
+    data: envelope.data,
+    meta: envelope.meta ?? {
+      total: envelope.data.length,
+      page: params.page ?? 1,
+      limit: params.limit ?? envelope.data.length,
+      totalPages: 1,
+    },
+  };
 }
 
-export async function listAssignableEvents(vendorProfileId?: string) {
+export async function listAssignableEvents(
+  vendorProfileId?: string,
+  scope: "workspace" | "platform" = "workspace",
+) {
   const search = new URLSearchParams();
+  search.set("scope", scope);
   if (vendorProfileId) search.set("vendorProfileId", vendorProfileId);
   const qs = search.toString();
 
@@ -128,8 +155,12 @@ export async function listAssignableEvents(vendorProfileId?: string) {
   return (data as ApiEnvelope<AssignableEvent[]>).data;
 }
 
-export async function listAssignableAttractions(vendorProfileId?: string) {
+export async function listAssignableAttractions(
+  vendorProfileId?: string,
+  scope: "workspace" | "platform" = "workspace",
+) {
   const search = new URLSearchParams();
+  search.set("scope", scope);
   if (vendorProfileId) search.set("vendorProfileId", vendorProfileId);
   const qs = search.toString();
 
@@ -157,8 +188,11 @@ export async function listVerifierVendors() {
   return (data as ApiEnvelope<VerifierVendorOption[]>).data;
 }
 
-export async function createVerifier(input: CreateVerifierInput) {
-  const res = await authFetch("/api/verifiers", {
+export async function createVerifier(
+  input: CreateVerifierInput,
+  scope: "workspace" | "platform" = "workspace",
+) {
+  const res = await authFetch(`/api/verifiers?scope=${scope}`, {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -172,8 +206,12 @@ export async function createVerifier(input: CreateVerifierInput) {
   return (data as ApiEnvelope<VerifierRow>).data;
 }
 
-export async function updateVerifier(id: string, input: UpdateVerifierInput) {
-  const res = await authFetch(`/api/verifiers/${encodeURIComponent(id)}`, {
+export async function updateVerifier(
+  id: string,
+  input: UpdateVerifierInput,
+  scope: "workspace" | "platform" = "workspace",
+) {
+  const res = await authFetch(`/api/verifiers/${encodeURIComponent(id)}?scope=${scope}`, {
     method: "PATCH",
     headers: {
       Accept: "application/json",
@@ -187,8 +225,11 @@ export async function updateVerifier(id: string, input: UpdateVerifierInput) {
   return (data as ApiEnvelope<VerifierRow>).data;
 }
 
-export async function deleteVerifier(id: string) {
-  const res = await authFetch(`/api/verifiers/${encodeURIComponent(id)}`, {
+export async function deleteVerifier(
+  id: string,
+  scope: "workspace" | "platform" = "workspace",
+) {
+  const res = await authFetch(`/api/verifiers/${encodeURIComponent(id)}?scope=${scope}`, {
     method: "DELETE",
     headers: { Accept: "application/json" },
     networkErrorMessage: "Network error while deleting verifier.",

@@ -27,7 +27,7 @@ import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { CurrencyBrowseNotice } from "@/components/currency/CheckoutPrice";
 import { AttractionTicketPurchaseDialog } from "@/components/attractions/AttractionTicketPurchaseDialog";
 import { EventOrganizerSection } from "@/components/events/EventOrganizerSection";
-import { VendorReviewsSection } from "@/components/reviews/VendorReviewsSection";
+import { ListingReviewsSection } from "@/components/reviews/ListingReviewsSection";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLocaleContext } from "@/features/i18n/locale-context";
 import { getIntlLocale } from "@/i18n/locales";
@@ -625,9 +625,9 @@ export default function AttractionDetailPage() {
         </div>
       </section>
 
-      {attraction.vendorProfile?.id ? (
+      {attraction.id ? (
         <section className="container mx-auto border-t border-[#303030] px-4 py-12 sm:px-6">
-          <VendorReviewsSection vendorId={attraction.vendorProfile.id} />
+          <ListingReviewsSection listingType="attraction" listingId={attraction.id} />
         </section>
       ) : null}
 

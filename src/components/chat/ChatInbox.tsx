@@ -34,6 +34,7 @@ import type {
 } from "@/features/chat/types";
 import { toastApiError } from "@/lib/toasts";
 import { getAuthUser } from "@/features/auth/session-storage";
+import { participantRoleForContext } from "@/features/chat/inbox-context";
 import { useAuth } from "@/features/auth/auth-context";
 import {
   getConversationTitle,
@@ -80,7 +81,7 @@ export function ChatInbox({ basePath, context }: ChatInboxProps) {
   const prevMessageCountRef = useRef(0);
   const loadingOlderRef = useRef(false);
   const currentUserId = getAuthUser()?.id;
-  const viewerRole = getAuthUser()?.role;
+  const viewerRole = participantRoleForContext(context);
 
   useChatConversationJoin(selectedId, context);
 

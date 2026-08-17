@@ -68,6 +68,21 @@ export type CreateVendorReviewInput = {
   comment?: string;
 };
 
+export type CreateEventReviewInput = {
+  eventId: string;
+  rating: number;
+  comment?: string;
+};
+
+export type CreateAttractionReviewInput = {
+  attractionId: string;
+  rating: number;
+  comment?: string;
+};
+
+export type ListingReview = PublicVendorReview;
+export type ListingReviewSummary = VendorReviewSummary;
+
 export type CreateVenueReviewResult = {
   id: string;
   venueId: string;
@@ -82,6 +97,48 @@ export type CreateVenueReviewInput = {
   rating: number;
   comment?: string;
 };
+
+export async function createEventReview(
+  input: CreateEventReviewInput,
+): Promise<{ id: string; eventId: string; rating: number; comment: string | null; createdAt: string }> {
+  const res = await authFetch("/api/reviews/event", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+    networkErrorMessage: "Network error while submitting your review.",
+  });
+
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, data);
+  }
+
+  return (data as ApiEnvelope<{ id: string; eventId: string; rating: number; comment: string | null; createdAt: string }>).data;
+}
+
+export async function createAttractionReview(
+  input: CreateAttractionReviewInput,
+): Promise<{ id: string; attractionId: string; rating: number; comment: string | null; createdAt: string }> {
+  const res = await authFetch("/api/reviews/attraction", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+    networkErrorMessage: "Network error while submitting your review.",
+  });
+
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, data);
+  }
+
+  return (data as ApiEnvelope<{ id: string; attractionId: string; rating: number; comment: string | null; createdAt: string }>).data;
+}
 
 export async function createVendorReview(
   input: CreateVendorReviewInput,
@@ -123,6 +180,40 @@ export async function createVenueReview(
   }
 
   return (data as ApiEnvelope<CreateVenueReviewResult>).data;
+}
+
+export async function getEventReviewSummary(eventId: string): Promise<ListingReviewSummary> {
+  const json = await apiGet<unknown>(
+    `/api/reviews/events/${encodeURIComponent(eventId)}/summary`,
+  );
+  return unwrapApiGet<ListingReviewSummary>(json);
+}
+
+export async function getEventReviews(eventId: string, page = 1, limit = 10) {
+  const json = await apiGet<unknown>(
+    `/api/reviews/events/${encodeURIComponent(eventId)}?page=${page}&limit=${limit}`,
+  );
+  return unwrapApiGet<{
+    data: ListingReview[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+  }>(json);
+}
+
+export async function getAttractionReviewSummary(attractionId: string): Promise<ListingReviewSummary> {
+  const json = await apiGet<unknown>(
+    `/api/reviews/attractions/${encodeURIComponent(attractionId)}/summary`,
+  );
+  return unwrapApiGet<ListingReviewSummary>(json);
+}
+
+export async function getAttractionReviews(attractionId: string, page = 1, limit = 10) {
+  const json = await apiGet<unknown>(
+    `/api/reviews/attractions/${encodeURIComponent(attractionId)}?page=${page}&limit=${limit}`,
+  );
+  return unwrapApiGet<{
+    data: ListingReview[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+  }>(json);
 }
 
 export async function getVendorReviewSummary(

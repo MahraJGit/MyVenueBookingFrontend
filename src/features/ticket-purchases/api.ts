@@ -73,6 +73,7 @@ export type TicketOrderTabValue = "all" | TicketAttendancePhase;
 export type MyTicketOrder = {
   orderGroupId: string;
   orderCode: string;
+  productType?: "event" | "attraction";
   eventId: string;
   eventName: string;
   eventSlug: string;
@@ -89,6 +90,8 @@ export type MyTicketOrder = {
   ticketCount: number;
   attendancePhase: TicketAttendancePhase;
   paymentStatus: TicketPaymentStatus;
+  canReviewListing?: boolean;
+  hasReviewedListing?: boolean;
   canReviewOrganizer: boolean;
   hasReviewedOrganizer: boolean;
   items: Array<{
@@ -148,6 +151,7 @@ export type EventTicketSalesSummary = {
   eventSlug: string;
   eventStartDateTime: string;
   timezone?: string | null;
+  vendorId: string | null;
   vendorName: string | null;
   totalTicketsSold: number;
   totalRevenue: number;
@@ -178,6 +182,7 @@ export type TicketSaleRecord = {
   currency: string;
   status: string;
   purchasedAt: string;
+  vendorId: string | null;
   vendorName: string | null;
   buyer: {
     id: string;
@@ -204,18 +209,26 @@ export type TicketSalesResponse = {
 };
 
 export type ListTicketSalesParams = {
+  scope?: "workspace" | "platform";
   eventId?: string;
+  vendorId?: string;
   status?: TicketSaleStatusFilter;
   search?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   limit?: number;
 };
 
 export async function getTicketSales(params: ListTicketSalesParams = {}) {
   const search = new URLSearchParams();
+  if (params.scope) search.set("scope", params.scope);
   if (params.eventId) search.set("eventId", params.eventId);
+  if (params.vendorId) search.set("vendorId", params.vendorId);
   if (params.status) search.set("status", params.status);
   if (params.search) search.set("search", params.search);
+  if (params.dateFrom) search.set("dateFrom", params.dateFrom);
+  if (params.dateTo) search.set("dateTo", params.dateTo);
   if (params.page) search.set("page", String(params.page));
   if (params.limit) search.set("limit", String(params.limit));
 

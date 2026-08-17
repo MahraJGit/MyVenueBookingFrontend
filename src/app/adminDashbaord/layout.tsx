@@ -42,6 +42,7 @@ export default function DashboardLayout({
                 onMenuClick={() => setSidebarOpen(true)}
                 notificationsHref="/adminDashbaord/notifications"
                 notificationsVariant="admin"
+                notificationsAudience="ADMIN"
               />
               {children}
             </main>

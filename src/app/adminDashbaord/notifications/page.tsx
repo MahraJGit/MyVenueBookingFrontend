@@ -16,7 +16,7 @@ export default function AdminNotifications() {
           title={t('title')}
           description={tAdmin('description')}
         />
-        <NotificationsList embedded />
+        <NotificationsList embedded audience="ADMIN" />
       </DashboardPanel>
     </DashboardPageShell>
   )
