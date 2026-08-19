@@ -73,7 +73,7 @@ export default function UserServiceInquiriesPage() {
     <DashboardPageShell>
       <div className={dashboardEyebrowClass}>
         <Briefcase className="h-3.5 w-3.5" />
-        {t("serviceMarketplace")}
+        {t("quoteMarketplaceSection")}
       </div>
       <DashboardPageHeader
         title={t("myServiceInquiries")}

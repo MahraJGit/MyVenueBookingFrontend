@@ -104,8 +104,9 @@ export function getDashboardLinksForRole(role: string): DashboardLink[] {
   }
   if (role === "ADMIN") {
     return [
-      { labelKey: "adminDashboard", href: "/adminDashbaord/dashboard" },
-      { labelKey: "vendorDashboard", href: "/vendorDashboard" },
+      adminDashboard,
+      vendorDashboard,
+      { labelKey: "customerDashboard", href: "/userDashboard/profile" },
     ];
   }
   return [{ labelKey: "dashboard", href: customerDashboard.href }];

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { Loader2 } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,10 +16,12 @@ import {
   dashboardTextareaClass,
 } from "@/components/dashboard/dashboard-ui";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
+import { SecureStoredImage } from "@/components/uploads/SecureStoredImage";
 import {
   getMyVendorProfile,
   updateMyVendorPublicProfile,
 } from "@/features/vendor/api";
+import { uploadSingleFile } from "@/features/uploads/upload-single";
 import { toastApiError } from "@/lib/toasts";
 
 export default function VendorProfilePage() {
@@ -33,7 +35,13 @@ export default function VendorProfilePage() {
     websiteUrl: "",
     publicPhone: "",
     publicEmail: "",
+    logoUrl: "" as string | null,
+    coverImageUrl: "" as string | null,
   });
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["vendor-profile-me"],
@@ -49,8 +57,27 @@ export default function VendorProfilePage() {
       websiteUrl: profile.websiteUrl ?? "",
       publicPhone: profile.publicPhone ?? profile.phone ?? "",
       publicEmail: profile.publicEmail ?? profile.email ?? "",
+      logoUrl: profile.logoUrl ?? "",
+      coverImageUrl: profile.coverImageUrl ?? "",
     });
   }, [profile]);
+
+  const handleImageUpload = async (
+    file: File,
+    field: "logoUrl" | "coverImageUrl",
+  ) => {
+    const setUploading = field === "logoUrl" ? setLogoUploading : setCoverUploading;
+    setUploading(true);
+    try {
+      const url = await uploadSingleFile(file, "vendor-media");
+      setForm((prev) => ({ ...prev, [field]: url }));
+      toast.success(t(field === "logoUrl" ? "logoUploaded" : "coverUploaded"));
+    } catch (e) {
+      toastApiError(e);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const save = useMutation({
     mutationFn: () =>
@@ -61,6 +88,8 @@ export default function VendorProfilePage() {
         websiteUrl: form.websiteUrl.trim() || null,
         publicPhone: form.publicPhone.trim() || null,
         publicEmail: form.publicEmail.trim() || null,
+        logoUrl: form.logoUrl || null,
+        coverImageUrl: form.coverImageUrl || null,
       }),
     onSuccess: () => {
       toast.success(t("saved"));
@@ -100,6 +129,83 @@ export default function VendorProfilePage() {
           {!isApproved ? (
             <p className="text-sm text-muted-foreground">{t("pendingNotice")}</p>
           ) : null}
+
+          <div className="space-y-2">
+            <Label>{t("coverImage")}</Label>
+            <div
+              className="relative h-36 cursor-pointer overflow-hidden rounded-lg border border-dashed border-white/20 bg-black/30"
+              onClick={() => isApproved && coverInputRef.current?.click()}
+            >
+              {form.coverImageUrl ? (
+                <SecureStoredImage
+                  src={form.coverImageUrl}
+                  alt="Cover"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  <Camera className="mr-2 h-5 w-5" />
+                  {t("uploadCover")}
+                </div>
+              )}
+              {coverUploading ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : null}
+            </div>
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={!isApproved}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) handleImageUpload(file, "coverImageUrl");
+              }}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("logo")}</Label>
+            <div
+              className="relative h-24 w-24 cursor-pointer overflow-hidden rounded-xl border border-dashed border-white/20 bg-black/30"
+              onClick={() => isApproved && logoInputRef.current?.click()}
+            >
+              {form.logoUrl ? (
+                <SecureStoredImage
+                  src={form.logoUrl}
+                  alt="Logo"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center text-xs text-muted-foreground">
+                  <Camera className="mb-1 h-5 w-5" />
+                  {t("uploadLogo")}
+                </div>
+              )}
+              {logoUploading ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+              ) : null}
+            </div>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={!isApproved}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) handleImageUpload(file, "logoUrl");
+              }}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="vendorName">{t("vendorName")}</Label>
             <Input

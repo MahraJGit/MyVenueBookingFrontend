@@ -80,13 +80,12 @@ export default function Sidebar({
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Accordion
           type="multiple"
-          defaultValue={['sales', 'users', 'events', 'attractions', 'venues', 'marketplace', 'settings']}
+          defaultValue={['sales', 'users', 'events', 'attractions', 'venues', 'marketplace', 'settings', 'account']}
           className="space-y-2"
         >
           <SidebarSection title={t('users')} value="users">
             <SidebarLink icon="/svg/AddUserMale.svg" label={t('manageUsers')} href="/adminDashbaord/users" onClose={onClose} />
             <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorsDirectory')} href="/adminDashbaord/vendorRequests" onClose={onClose} />
-            <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorMessages')} href="/adminDashbaord/messages" onClose={onClose} showUnreadBadge unreadContext="admin" />
           </SidebarSection>
 
           <SidebarSection title={t('venues')} value="venues">
@@ -118,6 +117,12 @@ export default function Sidebar({
 
           <SidebarSection title={t('settings')} value="settings">
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('locations')} href="/adminDashbaord/locations" onClose={onClose} />
+          </SidebarSection>
+
+          <SidebarSection title={t('account')} value="account">
+            <SidebarLink icon="/svg/notification.svg" label={t('notifications')} href="/adminDashbaord/notifications" onClose={onClose} />
+            <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorMessages')} href="/adminDashbaord/messages" onClose={onClose} showUnreadBadge unreadContext="admin" />
+            <SidebarLink icon="/svg/tickets.svg" label={t('customerDashboard')} href="/userDashboard/profile" onClose={onClose} />
           </SidebarSection>
         </Accordion>
       </div>

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
+import { SecureStoredImage } from "@/components/uploads/SecureStoredImage";
 import {
   Popover,
   PopoverContent,
@@ -32,6 +33,7 @@ import {
   type VendorVerificationStatus,
   uploadSingleVendorDocumentWithProgress,
 } from "@/features/vendor/api";
+import { uploadSingleFile } from "@/features/uploads/upload-single";
 import {
   formatUploadFileSize,
   validateVendorDocumentFile,
@@ -185,6 +187,10 @@ const JoinAffiliateFormPage = () => {
     taxId: "",
     paymentTerms: "NET_30",
   });
+  const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
+  const [coverImageUrl, setCoverImageUrl] = React.useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = React.useState(false);
+  const [coverUploading, setCoverUploading] = React.useState(false);
   const [files, setFiles] = React.useState<{
     eidCopy: File | null;
     passportCopy: File | null;
@@ -276,6 +282,22 @@ const JoinAffiliateFormPage = () => {
         [field]: event.target.value,
       }));
     };
+
+  const handleBrandingUpload = async (
+    file: File,
+    setter: (url: string | null) => void,
+    setUploading: (v: boolean) => void,
+  ) => {
+    setUploading(true);
+    try {
+      const url = await uploadSingleFile(file, "vendor-media");
+      setter(url);
+    } catch (e) {
+      toastApiError(e);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -391,6 +413,8 @@ const JoinAffiliateFormPage = () => {
         address: formValues.address.trim(),
         taxId: formValues.taxId.trim(),
         paymentTerms: formValues.paymentTerms as "NET_15" | "NET_30" | "NET_60",
+        ...(logoUrl ? { logoUrl } : {}),
+        ...(coverImageUrl ? { coverImageUrl } : {}),
       });
 
       toast.success(t("formSubmitted"));
@@ -446,6 +470,81 @@ const JoinAffiliateFormPage = () => {
           <p className="text-muted-foreground">{t("pageSubtitle")}</p>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h2 className="mb-4 text-lg font-medium">{t("branding")}</h2>
+              <p className="mb-4 text-sm text-muted-foreground">{t("brandingHint")}</p>
+              <div className="space-y-4">
+                <div>
+                  <p className="mb-2 text-sm">{t("coverImageLabel")}</p>
+                  <label
+                    className="relative block h-36 cursor-pointer overflow-hidden rounded-lg border border-dashed border-white/20 bg-black/30"
+                  >
+                    {coverImageUrl ? (
+                      <SecureStoredImage
+                        src={coverImageUrl}
+                        alt="Cover"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                        <Upload className="mr-2 h-5 w-5" />
+                        {t("uploadCoverImage")}
+                      </span>
+                    )}
+                    {coverUploading ? (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <span className="text-sm text-white">{t("uploading")}</span>
+                      </span>
+                    ) : null}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (file) handleBrandingUpload(file, setCoverImageUrl, setCoverUploading);
+                      }}
+                    />
+                  </label>
+                </div>
+                <div>
+                  <p className="mb-2 text-sm">{t("logoLabel")}</p>
+                  <label
+                    className="relative block h-24 w-24 cursor-pointer overflow-hidden rounded-xl border border-dashed border-white/20 bg-black/30"
+                  >
+                    {logoUrl ? (
+                      <SecureStoredImage
+                        src={logoUrl}
+                        alt="Logo"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full flex-col items-center justify-center text-xs text-muted-foreground">
+                        <Upload className="mb-1 h-5 w-5" />
+                        {t("uploadLogo")}
+                      </span>
+                    )}
+                    {logoUploading ? (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <span className="text-xs text-white">{t("uploading")}</span>
+                      </span>
+                    ) : null}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (file) handleBrandingUpload(file, setLogoUrl, setLogoUploading);
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <div className="rounded-xl border border-border bg-card p-5">
               <h2 className="mb-4 text-lg font-medium">{t("personalInfo")}</h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

@@ -829,6 +829,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                     min={1}
                     max={10}
                     integer
+                    defaultOnBlur={1}
                   />
                   <p className="text-xs text-muted-foreground">
                     {t("bookingCapacityHint")}

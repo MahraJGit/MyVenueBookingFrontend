@@ -84,11 +84,17 @@ export default function UserServiceBookingDetailPage({
         className="mb-6 px-0 text-muted-foreground hover:text-foreground"
       >
         <Link
-          href="/userDashboard/service-bookings"
+          href={
+            booking && isInstantServiceBooking(booking)
+              ? "/userDashboard/instant-bookings"
+              : "/userDashboard/service-bookings"
+          }
           className="inline-flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          {t("backToServiceBookings")}
+          {booking && isInstantServiceBooking(booking)
+            ? t("backToInstantServiceBookings")
+            : t("backToServiceBookings")}
         </Link>
       </Button>
 

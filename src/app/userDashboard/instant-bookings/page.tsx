@@ -2,6 +2,6 @@
 
 import { UserServiceBookingsList } from "@/components/userDashboard/UserServiceBookingsList";
 
-export default function UserServiceBookingsPage() {
-  return <UserServiceBookingsList kind="quote" />;
+export default function UserInstantBookingsPage() {
+  return <UserServiceBookingsList kind="instant" />;
 }

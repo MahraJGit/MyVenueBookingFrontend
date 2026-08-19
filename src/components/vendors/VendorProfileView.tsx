@@ -21,9 +21,11 @@ import { SecureStoredImage } from "@/components/uploads/SecureStoredImage";
 import { DashboardScrollableTabs } from "@/components/userDashboard/DashboardScrollableTabs";
 import {
   getPublicOrganizerListings,
+  getPublicOrganizerReviews,
   type PublicOrganizerListing,
   type PublicOrganizerListingTab,
   type PublicOrganizerProfile,
+  type PublicOrganizerReview,
 } from "@/features/vendor/api";
 
 type ProfileTab = "about" | PublicOrganizerListingTab;
@@ -42,6 +44,7 @@ const listingTabs: PublicOrganizerListingTab[] = [
   "venues",
   "attractions",
   "services",
+  "reviews",
 ];
 
 export function VendorProfileView({
@@ -75,7 +78,15 @@ export function VendorProfileView({
             data: [],
             meta: { total: 0, page: 1, limit: 12, totalPages: 1 },
           }),
-    enabled: Boolean(activeListingTab && enablePublicListings),
+    enabled: Boolean(
+      activeListingTab && activeListingTab !== "reviews" && enablePublicListings,
+    ),
+  });
+
+  const reviewsQuery = useQuery({
+    queryKey: ["public-organizer-reviews", profile.slug, page],
+    queryFn: () => getPublicOrganizerReviews(profile.slug, page),
+    enabled: Boolean(activeListingTab === "reviews" && enablePublicListings),
   });
 
   const selectTab = (value: ProfileTab) => {
@@ -223,6 +234,49 @@ export function VendorProfileView({
                 </div>
               </aside>
             </div>
+          ) : tab === "reviews" ? (
+            reviewsQuery.isLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : reviewsQuery.data?.data.length ? (
+              <>
+                <div className="space-y-4">
+                  {reviewsQuery.data.data.map((review) => (
+                    <VendorReviewCard key={review.id} review={review} />
+                  ))}
+                </div>
+
+                {(reviewsQuery.data.meta.totalPages ?? 1) > 1 ? (
+                  <div className="mt-7 flex items-center justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      disabled={page <= 1 || reviewsQuery.isFetching}
+                      onClick={() => setPage((current) => current - 1)}
+                    >
+                      {tCommon("previous")}
+                    </Button>
+                    <span className="text-sm text-zinc-400">
+                      {page} / {reviewsQuery.data.meta.totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      disabled={
+                        page >= reviewsQuery.data.meta.totalPages ||
+                        reviewsQuery.isFetching
+                      }
+                      onClick={() => setPage((current) => current + 1)}
+                    >
+                      {tCommon("next")}
+                    </Button>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <div className="rounded-xl border border-dashed border-[#303030] py-16 text-center text-zinc-500">
+                {t("emptyTab")}
+              </div>
+            )
           ) : listingsQuery.isLoading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -277,6 +331,45 @@ export function VendorProfileView({
           </div>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function VendorReviewCard({ review }: { review: PublicOrganizerReview }) {
+  return (
+    <div className="rounded-xl border border-[#303030] bg-[#1b1b1b] p-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-sm font-semibold text-primary">
+            {review.reviewer.name.charAt(0).toUpperCase()}
+          </div>
+          <span className="font-medium">{review.reviewer.name}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star
+              key={i}
+              className={`h-4 w-4 ${
+                i < review.rating
+                  ? "fill-primary text-primary"
+                  : "text-zinc-600"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+      {review.comment ? (
+        <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+          {review.comment}
+        </p>
+      ) : null}
+      <p className="mt-2 text-xs text-zinc-500">
+        {new Date(review.createdAt).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })}
+      </p>
     </div>
   );
 }

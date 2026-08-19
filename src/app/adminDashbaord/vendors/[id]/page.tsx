@@ -88,6 +88,7 @@ export default function AdminVendorDetailPage({
         venues: 0,
         attractions: 0,
         services: 0,
+        reviews: vendor.reviewSummary.count,
       },
     };
 

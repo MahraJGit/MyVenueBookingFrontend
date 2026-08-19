@@ -4,9 +4,6 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-const PARTIAL_DECIMAL = /^-?\d*\.?\d*$/;
-const PARTIAL_INTEGER = /^-?\d*$/;
-
 function formatDisplay(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) {
     return "";
@@ -63,7 +60,13 @@ export function NumberInput({
     }
   }, [value]);
 
-  const pattern = integer ? PARTIAL_INTEGER : PARTIAL_DECIMAL;
+  const pattern = integer
+    ? min !== undefined && min >= 0
+      ? /^\d*$/
+      : /^-?\d*$/
+    : min !== undefined && min >= 0
+      ? /^\d*\.?\d*$/
+      : /^-?\d*\.?\d*$/;
 
   function parseDraft(raw: string): number | undefined {
     const trimmed = raw.trim();
@@ -99,6 +102,8 @@ export function NumberInput({
       {...props}
       type={integer ? "number" : "text"}
       step={integer ? 1 : undefined}
+      min={min}
+      max={max}
       inputMode={integer ? "numeric" : "decimal"}
       className={cn(className)}
       value={draft}
@@ -116,12 +121,20 @@ export function NumberInput({
         if (!pattern.test(raw)) {
           return;
         }
-        setDraft(raw);
         const parsed = parseDraft(raw);
-        onValueChange(parsed);
+        if (parsed !== undefined) {
+          setDraft(String(parsed));
+          onValueChange(parsed);
+          return;
+        }
+        setDraft(raw);
+        onValueChange(undefined);
       }}
       onKeyDown={(event) => {
         if (integer && (event.key === "." || event.key === "," || event.key === "e" || event.key === "E" || event.key === "+")) {
+          event.preventDefault();
+        }
+        if (min !== undefined && min >= 0 && event.key === "-") {
           event.preventDefault();
         }
         props.onKeyDown?.(event);

@@ -31,6 +31,8 @@ type CreateVendorProfileBody = {
   address: string;
   taxId: string;
   paymentTerms: "NET_15" | "NET_30" | "NET_60";
+  logoUrl?: string;
+  coverImageUrl?: string;
 };
 
 type CreateVendorProfileResponse = {
@@ -307,7 +309,19 @@ export type PublicOrganizerListingTab =
   | "past"
   | "venues"
   | "attractions"
-  | "services";
+  | "services"
+  | "reviews";
+
+export type PublicOrganizerReview = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  reviewer: {
+    id: string;
+    name: string;
+  };
+};
 
 export type PublicOrganizerListing = {
   id: string;
@@ -428,6 +442,20 @@ export async function getPublicOrganizerListings(
     meta: { total: number; page: number; limit: number; totalPages: number };
   }>(
     `/api/vendors/public/${encodeURIComponent(slug)}/${tab}?page=${page}&limit=${limit}`,
+  );
+}
+
+export async function getPublicOrganizerReviews(
+  slug: string,
+  page = 1,
+  limit = 12,
+) {
+  return apiGet<{
+    success: boolean;
+    data: PublicOrganizerReview[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+  }>(
+    `/api/vendors/public/${encodeURIComponent(slug)}/reviews?page=${page}&limit=${limit}`,
   );
 }
 

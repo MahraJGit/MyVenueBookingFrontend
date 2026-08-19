@@ -267,7 +267,6 @@ function NewServiceInquiryForm() {
     Boolean(eventDate) &&
     Boolean(countryCode) &&
     Boolean(city) &&
-    (!needsPackage || Boolean(packageId)) &&
     menuReady &&
     contactFieldsClean &&
     (!needsGuests || Number(guestCount) > 0) &&
@@ -334,7 +333,12 @@ function NewServiceInquiryForm() {
 
       {needsPackage ? (
         <div className="space-y-2">
-          <Label>{t("selectPackage")}</Label>
+          <Label>
+            {t("selectPackage")}{" "}
+            <span className="font-normal text-muted-foreground">
+              ({tCommon("optional")})
+            </span>
+          </Label>
           {packages.length === 0 ? (
             <p className="rounded-lg border border-dashed border-[#303030] px-3 py-4 text-sm text-zinc-500">
               {t("noPackagesAvailable")}
@@ -347,7 +351,11 @@ function NewServiceInquiryForm() {
                   <button
                     key={pkg.id}
                     type="button"
-                    onClick={() => setPackageId(pkg.id!)}
+                    onClick={() =>
+                      setPackageId((current) =>
+                        current === pkg.id ? "" : pkg.id!,
+                      )
+                    }
                     className={cn(
                       "rounded-xl border px-4 py-3 text-left transition-colors",
                       selected

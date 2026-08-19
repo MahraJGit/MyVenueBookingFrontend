@@ -17,74 +17,121 @@ import {
   MessageCircle,
   Briefcase,
   FileText,
+  Zap,
+  LayoutDashboard,
+  Store,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { cn } from '@/lib/utils'
 import { dashboardSidebarClass, DashboardLogoutButton } from '@/components/dashboard/dashboard-shared'
 import { ChatUnreadBadge } from '@/components/chat/ChatUnreadBadge'
+import { useAuth } from '@/features/auth/auth-context'
 
 type UserSidebarProps = {
   isOpen: boolean
   onClose: () => void
 }
 
+type NavLink = {
+  labelKey:
+    | 'personalInfo'
+    | 'tickets'
+    | 'venueBookings'
+    | 'myServiceInquiries'
+    | 'myServiceProposals'
+    | 'navQuoteBookings'
+    | 'navInstantBookings'
+    | 'favourites'
+    | 'payment'
+    | 'notification'
+    | 'messages'
+    | 'settings'
+  href: string
+  icon: typeof User
+}
+
+const topLinks: NavLink[] = [
+  { labelKey: 'personalInfo', href: '/userDashboard/profile', icon: User },
+  { labelKey: 'tickets', href: '/userDashboard/tickets', icon: Ticket },
+  { labelKey: 'venueBookings', href: '/userDashboard/bookings', icon: CalendarDays },
+]
+
+const quoteLinks: NavLink[] = [
+  { labelKey: 'myServiceInquiries', href: '/userDashboard/service-inquiries', icon: Briefcase },
+  { labelKey: 'myServiceProposals', href: '/userDashboard/service-proposals', icon: FileText },
+  { labelKey: 'navQuoteBookings', href: '/userDashboard/service-bookings', icon: CalendarCheck },
+]
+
+const instantLinks: NavLink[] = [
+  { labelKey: 'navInstantBookings', href: '/userDashboard/instant-bookings', icon: Zap },
+]
+
+const afterMarketplaceLinks: NavLink[] = [
+  { labelKey: 'favourites', href: '/userDashboard/favourites', icon: Heart },
+  { labelKey: 'payment', href: '/userDashboard/payment', icon: CreditCard },
+]
+
+const accountLinks: NavLink[] = [
+  { labelKey: 'notification', href: '/userDashboard/notifications', icon: Bell },
+  { labelKey: 'messages', href: '/userDashboard/messages', icon: MessageCircle },
+  { labelKey: 'settings', href: '/userDashboard/settings', icon: Settings },
+]
+
+function isLinkActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function NavItem({
+  item,
+  pathname,
+  onClose,
+}: {
+  item: NavLink
+  pathname: string
+  onClose: () => void
+}) {
+  const t = useTranslations('userDashboard')
+  const isActive = isLinkActive(pathname, item.href)
+  const Icon = item.icon
+
+  return (
+    <Link
+      href={item.href}
+      onClick={onClose}
+      className={cn(
+        'relative flex items-center gap-3 px-4 py-2 text-sm transition',
+        isActive ? 'text-primary' : 'text-gray-300 hover:text-white',
+      )}
+    >
+      {isActive ? (
+        <span className="absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-full bg-primary" />
+      ) : null}
+
+      <Icon size={18} className={isActive ? 'text-primary' : 'text-gray-400'} />
+
+      <span className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="truncate">{t(item.labelKey)}</span>
+        {item.labelKey === 'messages' ? <ChatUnreadBadge context="buyer" /> : null}
+      </span>
+    </Link>
+  )
+}
+
 export default function UserSidebar({ isOpen, onClose }: UserSidebarProps) {
   const pathname = usePathname()
   const t = useTranslations('userDashboard')
+  const tNav = useTranslations('nav')
   const tCommon = useTranslations('common')
-
-  const links = [
-    {
-      labelKey: 'personalInfo' as const,
-      href: '/userDashboard/profile',
-      icon: User,
-    },
-    {
-      labelKey: 'tickets' as const,
-      href: '/userDashboard/tickets',
-      icon: Ticket,
-    },
-    {
-      labelKey: 'venueBookings' as const,
-      href: '/userDashboard/bookings',
-      icon: CalendarDays,
-    },
-    {
-      labelKey: 'myServiceInquiries' as const,
-      href: '/userDashboard/service-inquiries',
-      icon: Briefcase,
-    },
-    {
-      labelKey: 'myServiceProposals' as const,
-      href: '/userDashboard/service-proposals',
-      icon: FileText,
-    },
-    {
-      labelKey: 'myServiceBookings' as const,
-      href: '/userDashboard/service-bookings',
-      icon: CalendarCheck,
-    },
-    {
-      labelKey: 'favourites' as const,
-      href: '/userDashboard/favourites',
-      icon: Heart,
-    },
-    {
-      labelKey: 'payment' as const,
-      href: '/userDashboard/payment',
-      icon: CreditCard,
-    },
-    {
-      labelKey: 'notification' as const,
-      href: '/userDashboard/notifications',
-      icon: Bell,
-    },
-    {
-      labelKey: 'messages' as const,
-      href: '/userDashboard/messages',
-      icon: MessageCircle,
-    },
-  ]
+  const { isAdmin, isVendor } = useAuth()
+  const quoteActive = quoteLinks.some((item) => isLinkActive(pathname, item.href))
+  const instantActive = instantLinks.some((item) => isLinkActive(pathname, item.href))
+  const accountActive = accountLinks.some((item) => isLinkActive(pathname, item.href))
 
   return (
     <aside
@@ -113,65 +160,101 @@ export default function UserSidebar({ isOpen, onClose }: UserSidebarProps) {
       </div>
 
       <nav className="flex flex-col space-y-1 overflow-y-auto">
-        {links.map((item) => {
-          const isActive = pathname.startsWith(item.href)
-          const Icon = item.icon
+        {topLinks.map((item) => (
+          <NavItem key={item.href} item={item} pathname={pathname} onClose={onClose} />
+        ))}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onClose}
+        <Accordion
+          type="multiple"
+          defaultValue={['quoteMarketplace', 'instantMarketplace', 'account']}
+          className="pt-1"
+        >
+          <AccordionItem value="quoteMarketplace" className="border-b-0 border-t border-white/10">
+            <AccordionTrigger
               className={cn(
-                'relative flex items-center gap-3 px-4 py-2 text-sm transition',
-                isActive ? 'text-primary' : 'text-gray-300 hover:text-white',
+                'px-4 py-2 text-left text-sm hover:no-underline',
+                quoteActive ? 'text-primary' : 'text-gray-300 hover:text-white',
               )}
             >
-              {isActive ? (
-                <span className="absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-full bg-primary" />
-              ) : null}
+              {t('quoteMarketplaceSection')}
+            </AccordionTrigger>
+            <AccordionContent className="space-y-1 pb-2">
+              {quoteLinks.map((item) => (
+                <NavItem key={item.href} item={item} pathname={pathname} onClose={onClose} />
+              ))}
+            </AccordionContent>
+          </AccordionItem>
 
-              <Icon
-                size={18}
-                className={isActive ? 'text-primary' : 'text-gray-400'}
-              />
+          <AccordionItem value="instantMarketplace" className="border-b-0 border-t border-white/10">
+            <AccordionTrigger
+              className={cn(
+                'px-4 py-2 text-left text-sm hover:no-underline',
+                instantActive ? 'text-primary' : 'text-gray-300 hover:text-white',
+              )}
+            >
+              {t('instantMarketplaceSection')}
+            </AccordionTrigger>
+            <AccordionContent className="space-y-1 pb-2">
+              {instantLinks.map((item) => (
+                <NavItem key={item.href} item={item} pathname={pathname} onClose={onClose} />
+              ))}
+            </AccordionContent>
+          </AccordionItem>
 
-              <span className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="truncate">{t(item.labelKey)}</span>
-                {item.labelKey === 'messages' ? <ChatUnreadBadge context="buyer" /> : null}
-              </span>
-            </Link>
-          )
-        })}
+          <AccordionItem value="account" className="border-b-0 border-t border-white/10">
+            <AccordionTrigger
+              className={cn(
+                'px-4 py-2 text-left text-sm hover:no-underline',
+                accountActive ? 'text-primary' : 'text-gray-300 hover:text-white',
+              )}
+            >
+              {t('account')}
+            </AccordionTrigger>
+            <AccordionContent className="space-y-1 pb-2">
+              {accountLinks.map((item) => (
+                <NavItem key={item.href} item={item} pathname={pathname} onClose={onClose} />
+              ))}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
+        {afterMarketplaceLinks.map((item) => (
+          <NavItem key={item.href} item={item} pathname={pathname} onClose={onClose} />
+        ))}
       </nav>
 
       <hr className="my-6 border-white/10" />
 
       <div className="mt-auto space-y-1">
-        <Link
-          href="/userDashboard/settings"
-          onClick={onClose}
-          className={cn(
-            'relative flex items-center gap-3 px-4 py-2 text-sm transition',
-            pathname.startsWith('/userDashboard/settings')
-              ? 'text-primary'
-              : 'text-gray-300 hover:text-white',
-          )}
-        >
-          {pathname.startsWith('/userDashboard/settings') ? (
-            <span className="absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-full bg-primary" />
-          ) : null}
-
-          <Settings
-            size={18}
-            className={
-              pathname.startsWith('/userDashboard/settings')
-                ? 'text-primary'
-                : 'text-gray-400'
-            }
-          />
-          {t('settings')}
-        </Link>
+        {isAdmin ? (
+          <>
+            <Link
+              href="/adminDashbaord/dashboard"
+              onClick={onClose}
+              className="relative flex items-center gap-3 px-4 py-2 text-sm text-gray-300 transition hover:text-white"
+            >
+              <LayoutDashboard size={18} className="text-gray-400" />
+              {tNav('adminDashboard')}
+            </Link>
+            <Link
+              href="/vendorDashboard"
+              onClick={onClose}
+              className="relative flex items-center gap-3 px-4 py-2 text-sm text-gray-300 transition hover:text-white"
+            >
+              <Store size={18} className="text-gray-400" />
+              {tNav('vendorDashboard')}
+            </Link>
+          </>
+        ) : isVendor ? (
+          <Link
+            href="/vendorDashboard"
+            onClick={onClose}
+            className="relative flex items-center gap-3 px-4 py-2 text-sm text-gray-300 transition hover:text-white"
+          >
+            <Store size={18} className="text-gray-400" />
+            {tNav('vendorDashboard')}
+          </Link>
+        ) : null}
 
         <DashboardLogoutButton onAfterLogout={onClose} />
       </div>
