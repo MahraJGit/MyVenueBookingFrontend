@@ -700,6 +700,7 @@ export async function listServiceBookings(params?: {
   page?: number;
   limit?: number;
   status?: string;
+  bookingType?: "instant" | "quote";
   scope?: "buyer" | "vendor" | "platform";
   vendorId?: string;
   serviceId?: string;
@@ -711,6 +712,7 @@ export async function listServiceBookings(params?: {
   sp.set("page", String(params?.page ?? 1));
   sp.set("limit", String(params?.limit ?? 20));
   if (params?.status) sp.set("status", params.status);
+  if (params?.bookingType) sp.set("bookingType", params.bookingType);
   sp.set("scope", params?.scope ?? "buyer");
   if (params?.vendorId) sp.set("vendorId", params.vendorId);
   if (params?.serviceId) sp.set("serviceId", params.serviceId);

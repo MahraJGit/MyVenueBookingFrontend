@@ -38,10 +38,9 @@ export default function VendorProfilePage() {
     logoUrl: "" as string | null,
     coverImageUrl: "" as string | null,
   });
-  const [logoUploading, setLogoUploading] = useState(false);
-  const [coverUploading, setCoverUploading] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const formInitializedRef = useRef(false);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["vendor-profile-me"],
@@ -49,7 +48,7 @@ export default function VendorProfilePage() {
   });
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || formInitializedRef.current) return;
     setForm({
       vendorName: profile.vendorName ?? "",
       slug: profile.slug ?? "",
@@ -60,24 +59,40 @@ export default function VendorProfilePage() {
       logoUrl: profile.logoUrl ?? "",
       coverImageUrl: profile.coverImageUrl ?? "",
     });
+    formInitializedRef.current = true;
   }, [profile]);
 
-  const handleImageUpload = async (
-    file: File,
-    field: "logoUrl" | "coverImageUrl",
-  ) => {
-    const setUploading = field === "logoUrl" ? setLogoUploading : setCoverUploading;
-    setUploading(true);
-    try {
+  const imageUpload = useMutation({
+    mutationFn: async ({
+      file,
+      field,
+    }: {
+      file: File;
+      field: "logoUrl" | "coverImageUrl";
+    }) => {
       const url = await uploadSingleFile(file, "vendor-media");
-      setForm((prev) => ({ ...prev, [field]: url }));
+      return updateMyVendorPublicProfile({ [field]: url });
+    },
+    onSuccess: (updated, { field }) => {
+      setForm((prev) => ({
+        ...prev,
+        logoUrl: updated.logoUrl ?? prev.logoUrl,
+        coverImageUrl: updated.coverImageUrl ?? prev.coverImageUrl,
+      }));
+      void queryClient.invalidateQueries({ queryKey: ["vendor-profile-me"] });
       toast.success(t(field === "logoUrl" ? "logoUploaded" : "coverUploaded"));
-    } catch (e) {
-      toastApiError(e);
-    } finally {
-      setUploading(false);
-    }
+    },
+    onError: (error) => toastApiError(error),
+  });
+
+  const handleImageUpload = (file: File, field: "logoUrl" | "coverImageUrl") => {
+    imageUpload.mutate({ file, field });
   };
+
+  const isUploadingLogo =
+    imageUpload.isPending && imageUpload.variables?.field === "logoUrl";
+  const isUploadingCover =
+    imageUpload.isPending && imageUpload.variables?.field === "coverImageUrl";
 
   const save = useMutation({
     mutationFn: () =>
@@ -148,7 +163,7 @@ export default function VendorProfilePage() {
                   {t("uploadCover")}
                 </div>
               )}
-              {coverUploading ? (
+              {isUploadingCover ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
@@ -186,7 +201,7 @@ export default function VendorProfilePage() {
                   {t("uploadLogo")}
                 </div>
               )}
-              {logoUploading ? (
+              {isUploadingLogo ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
                 </div>

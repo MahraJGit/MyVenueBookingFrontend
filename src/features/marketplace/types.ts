@@ -1,4 +1,5 @@
 ﻿import type { Currency, EntityStatus } from "@/features/venues/types";
+import type { PublicVendorProfile } from "@/features/events/api";
 
 export type { Currency, EntityStatus };
 
@@ -116,9 +117,7 @@ export type UpdateServiceSlotPayload = {
   isActive?: boolean;
 };
 
-export type MarketplaceServiceVendor = {
-  id: string;
-  vendorName: string;
+export type MarketplaceServiceVendor = PublicVendorProfile & {
   verificationStatus?: string;
   userId?: string;
   currency?: Currency;

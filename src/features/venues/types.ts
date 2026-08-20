@@ -1,3 +1,5 @@
+import type { PublicVendorProfile } from "@/features/events/api";
+
 export type EntityStatus =
   | "DRAFT"
   | "PENDING"
@@ -95,11 +97,8 @@ export type VenueAmenity = {
   catalog?: AmenityCatalogItem;
 };
 
-export type VenueVendor = {
-  id: string;
-  vendorName: string;
-  email: string;
-  userId: string;
+export type VenueVendor = PublicVendorProfile & {
+  userId?: string;
 };
 
 export type PublicVenue = {

@@ -35,6 +35,14 @@ import { useAuth } from "@/features/auth/auth-context";
 import { decimalToNumber } from "@/features/venues/utils";
 import { toastApiError } from "@/lib/toasts";
 
+function customerProposalStatusLabel(
+  status: string,
+  t: ReturnType<typeof useTranslations>,
+) {
+  if (status === "SENT") return t("proposalReceived");
+  return t(`serviceProposalStatus.${status}` as "serviceProposalStatus.SENT");
+}
+
 export default function UserServiceProposalDetailPage({
   params,
 }: {
@@ -125,7 +133,7 @@ export default function UserServiceProposalDetailPage({
         <div className="mx-auto max-w-3xl space-y-6">
           <div>
             <p className="text-xs uppercase tracking-wide text-primary">
-              {t(`serviceProposalStatus.${proposal.status}` as "serviceProposalStatus.SENT")}
+              {customerProposalStatusLabel(proposal.status, t)}
             </p>
             <h1 className="mt-1 text-2xl font-semibold text-white">
               {proposal.service?.title ??

@@ -38,6 +38,14 @@ const TABS = [
   "EXPIRED",
 ] as const;
 
+function customerInquiryStatusLabel(
+  value: string,
+  t: ReturnType<typeof useTranslations>,
+) {
+  if (value === "PROPOSAL_SENT") return t("proposalReceived");
+  return t(`serviceInquiryStatus.${value}` as "serviceInquiryStatus.PENDING");
+}
+
 export default function UserServiceInquiriesPage() {
   const t = useTranslations("userDashboard");
   const tCommon = useTranslations("common");
@@ -88,7 +96,7 @@ export default function UserServiceInquiriesPage() {
             value,
             label: (
               <>
-                {value === "all" ? tCommon("all") : t(`serviceInquiryStatus.${value}`)}
+                {value === "all" ? tCommon("all") : customerInquiryStatusLabel(value, t)}
                 <span className={dashboardTabCountClass}>{counts[value] ?? 0}</span>
               </>
             ),
@@ -164,7 +172,7 @@ function InquiryRow({ inquiry }: { inquiry: ServiceInquiry }) {
             </span>
           ) : null}
           <span className="inline-flex w-fit rounded-full bg-zinc-800 px-2.5 py-1 text-xs text-zinc-300">
-            {t(`serviceInquiryStatus.${inquiry.status}` as "serviceInquiryStatus.PENDING")}
+            {customerInquiryStatusLabel(inquiry.status, t)}
           </span>
         </div>
       </Link>

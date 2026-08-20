@@ -13,6 +13,14 @@ import { formatInquiryEventDate } from "@/features/marketplace/inquiry-display";
 import { marketplaceKeys } from "@/features/marketplace/query-keys";
 import { useAuth } from "@/features/auth/auth-context";
 
+function customerInquiryStatusLabel(
+  status: string,
+  t: ReturnType<typeof useTranslations>,
+) {
+  if (status === "PROPOSAL_SENT") return t("proposalReceived");
+  return t(`serviceInquiryStatus.${status}` as "serviceInquiryStatus.PENDING");
+}
+
 export default function UserServiceInquiryDetailPage({
   params,
 }: {
@@ -52,7 +60,7 @@ export default function UserServiceInquiryDetailPage({
         <div className="mx-auto max-w-3xl space-y-6">
           <div>
             <p className="text-xs uppercase tracking-wide text-primary">
-              {t(`serviceInquiryStatus.${inquiry.status}` as "serviceInquiryStatus.PENDING")}
+              {customerInquiryStatusLabel(inquiry.status, t)}
             </p>
             <h1 className="mt-1 text-2xl font-semibold text-white">
               {inquiry.service?.title ?? t("serviceFallback")}

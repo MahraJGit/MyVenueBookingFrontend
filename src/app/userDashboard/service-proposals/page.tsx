@@ -24,6 +24,14 @@ import { toastApiError } from "@/lib/toasts";
 
 const TABS = ["all", "ACCEPTED", "DECLINED"] as const;
 
+function customerProposalStatusLabel(
+  status: string,
+  t: ReturnType<typeof useTranslations>,
+) {
+  if (status === "SENT") return t("proposalReceived");
+  return t(`serviceProposalStatus.${status}` as "serviceProposalStatus.SENT");
+}
+
 export default function UserServiceProposalsPage() {
   const t = useTranslations("userDashboard");
   const tCommon = useTranslations("common");
@@ -132,7 +140,7 @@ function ProposalRow({ proposal }: { proposal: ServiceProposal }) {
           </p>
         </div>
         <span className="mt-2 inline-flex w-fit rounded-full bg-zinc-800 px-2.5 py-1 text-xs text-zinc-300 sm:mt-0">
-          {t(`serviceProposalStatus.${proposal.status}` as "serviceProposalStatus.SENT")}
+          {customerProposalStatusLabel(proposal.status, t)}
         </span>
       </Link>
     </li>

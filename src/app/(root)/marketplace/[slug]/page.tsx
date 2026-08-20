@@ -12,6 +12,7 @@ import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { Button } from "@/components/ui/button";
 import { AvailabilityCalendar } from "@/components/venues/AvailabilityCalendar";
 import { ServiceInquiryDialog } from "@/components/marketplace/ServiceInquiryDialog";
+import { EventOrganizerSection } from "@/components/events/EventOrganizerSection";
 import {
   checkServiceAvailability,
   getPreviewMarketplaceService,
@@ -331,10 +332,20 @@ export default function MarketplaceServiceDetailPage({
           </h1>
           <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-200">
             {service.vendor?.vendorName ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Store className="h-4 w-4 text-primary" />
-                {service.vendor.vendorName}
-              </span>
+              service.vendor.slug ? (
+                <Link
+                  href={`/organizers/${service.vendor.slug}`}
+                  className="inline-flex items-center gap-1.5 hover:underline"
+                >
+                  <Store className="h-4 w-4 text-primary" />
+                  {service.vendor.vendorName}
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1.5">
+                  <Store className="h-4 w-4 text-primary" />
+                  {service.vendor.vendorName}
+                </span>
+              )
             ) : null}
             {locationLabel ? (
               <span className="inline-flex items-center gap-1.5">
@@ -616,6 +627,10 @@ export default function MarketplaceServiceDetailPage({
           </div>
         </div>
       </section>
+
+      {service.vendor ? (
+        <EventOrganizerSection vendor={service.vendor} />
+      ) : null}
 
       {!isPreview ? (
         <ServiceInquiryDialog

@@ -23,6 +23,7 @@ import {
 import { DetailGallerySlider } from "@/components/gallery/DetailGallerySlider";
 import { AvailabilityCalendar } from "@/components/venues/AvailabilityCalendar";
 import { VenueReviewsSection } from "@/components/reviews/VenueReviewsSection";
+import { EventOrganizerSection } from "@/components/events/EventOrganizerSection";
 import { SlotPicker } from "@/components/venues/SlotPicker";
 import { VenueBookingDialog } from "@/components/bookings/VenueBookingDialog";
 import { DisplayPrice, DisplayPriceWithSuffix } from "@/components/currency/DisplayPrice";
@@ -647,6 +648,10 @@ export default function VenueDetailPage({
           </div>
         </div>
       </section>
+
+      {venue.vendor ? (
+        <EventOrganizerSection vendor={venue.vendor} />
+      ) : null}
 
       <section className="container mx-auto border-t border-[#303030] px-4 py-12 sm:px-6">
         <VenueReviewsSection venueId={venue.id} />

@@ -64,6 +64,7 @@ const STATUS_TABS = [
 ] as const;
 
 type StatusFilter = (typeof STATUS_TABS)[number];
+type BookingTypeFilter = "ALL" | "instant" | "quote";
 
 export type ManageMarketplaceBookingsProps = {
   scope: "platform" | "vendor";
@@ -85,10 +86,16 @@ export function ManageMarketplaceBookings({
 
   const table = useTableQueryState<{
     status: StatusFilter;
+    bookingType: BookingTypeFilter;
     vendorId: string;
     serviceId: string;
   }>({
-    initialFilters: { status: "ALL", vendorId: "", serviceId: "" },
+    initialFilters: {
+      status: "ALL",
+      bookingType: "ALL",
+      vendorId: "",
+      serviceId: "",
+    },
     syncWithUrl: isAdmin && syncWithUrl,
   });
 
@@ -101,6 +108,10 @@ export function ManageMarketplaceBookings({
       page: table.page,
       limit: table.pageSize,
       status: statusFilter,
+      bookingType:
+        table.filters.bookingType === "ALL"
+          ? undefined
+          : table.filters.bookingType,
       scope: apiScope as "platform" | "vendor",
       vendorId: table.filters.vendorId || undefined,
       serviceId: table.filters.serviceId || undefined,
@@ -109,6 +120,7 @@ export function ManageMarketplaceBookings({
     [
       apiScope,
       statusFilter,
+      table.filters.bookingType,
       table.debouncedSearch,
       table.filters.serviceId,
       table.filters.vendorId,
@@ -175,6 +187,27 @@ export function ManageMarketplaceBookings({
                   onChange={(serviceId) => table.setFilter("serviceId", serviceId)}
                   scope={isAdmin ? "platform" : "workspace"}
                 />
+                <Select
+                  value={table.filters.bookingType}
+                  onValueChange={(value) =>
+                    table.setFilter("bookingType", value as BookingTypeFilter)
+                  }
+                >
+                  <SelectTrigger
+                    className={cn("w-full sm:w-[180px]", dashboardSelectTriggerClass)}
+                  >
+                    <SelectValue placeholder={tCommon("allTypes")} />
+                  </SelectTrigger>
+                  <SelectContent className={dashboardDropdownContentClass}>
+                    <SelectItem value="ALL">{tCommon("allTypes")}</SelectItem>
+                    <SelectItem value="instant">
+                      {tVendor("instantBooking")}
+                    </SelectItem>
+                    <SelectItem value="quote">
+                      {tUser("quoteMarketplaceSection")}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
                 <Select
                   value={table.filters.status}
                   onValueChange={(value) =>
