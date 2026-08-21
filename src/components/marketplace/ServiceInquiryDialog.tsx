@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ import {
 import { DatePicker } from "@/components/ui/date-time-picker";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { createInstantServiceBooking, createServiceInquiry } from "@/features/marketplace/api";
+import { marketplaceKeys } from "@/features/marketplace/query-keys";
 import type {
   InstantServiceBookingResult,
   PublicMarketplaceService,
@@ -120,6 +121,7 @@ export function ServiceInquiryDialog({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, isReady } = useAuth();
+  const queryClient = useQueryClient();
   const isInstant = mode === "instant";
   const isSlotMode = service.bookingMode === "SLOT";
   const lockedSlotKey =
@@ -336,6 +338,7 @@ export function ServiceInquiryDialog({
       return createServiceInquiry(body);
     },
     onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: marketplaceKeys.all });
       onOpenChange(false);
       if (isInstant && "booking" in result && result.booking?.id) {
         toast.success(tMarketplace("instantBookSuccess"));

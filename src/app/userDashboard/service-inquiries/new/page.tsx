@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -73,6 +73,7 @@ function NewServiceInquiryForm() {
   const serviceIdParam = searchParams.get("serviceId");
   const slugParam = searchParams.get("slug");
   const { isAuthenticated, isReady } = useAuth();
+  const queryClient = useQueryClient();
 
   const serviceQuery = useQuery({
     queryKey: marketplaceKeys.publicDetail(serviceIdParam || slugParam || "none"),
@@ -228,6 +229,7 @@ function NewServiceInquiryForm() {
       });
     },
     onSuccess: (inquiry) => {
+      void queryClient.invalidateQueries({ queryKey: marketplaceKeys.all });
       toast.success(t("inquirySubmitted"));
       router.push(`/userDashboard/service-inquiries/${inquiry.id}`);
     },
