@@ -86,6 +86,7 @@ export default function Sidebar({
           <SidebarSection title={t('users')} value="users">
             <SidebarLink icon="/svg/AddUserMale.svg" label={t('manageUsers')} href="/adminDashbaord/users" onClose={onClose} />
             <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorsDirectory')} href="/adminDashbaord/vendorRequests" onClose={onClose} />
+            <SidebarLink icon="/svg/EventAccepted.svg" label={t('corporateOrganizations')} href="/adminDashbaord/corporateOrganizations" onClose={onClose} />
           </SidebarSection>
 
           <SidebarSection title={t('venues')} value="venues">
