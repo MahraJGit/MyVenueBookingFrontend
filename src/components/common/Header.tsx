@@ -2,7 +2,18 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronDown, Menu, X } from 'lucide-react';
+import {
+  BookOpen,
+  BriefcaseBusiness,
+  Building2,
+  FerrisWheel,
+  Home,
+  Menu,
+  Store,
+  Ticket,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -10,23 +21,13 @@ import { HeaderAuthActions, HeaderAuthMobileLinks } from '@/components/common/He
 import { CurrencySelect } from '@/components/currency/CurrencySelect';
 import { LanguageSelect } from '@/components/i18n/LanguageSelect';
 import { useLocaleContext } from '@/features/i18n/locale-context';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import {
   mobileNavLinkClass,
-  navDropdownItemClass,
   navLinkClass,
 } from '@/components/common/nav-link-styles';
 
-type NavItem = { href: string; label: string };
-
-/** Primary links stay in the bar; longer secondary links go under More. */
-const PRIMARY_NAV_COUNT = 5;
+type NavItem = { href: string; label: string; icon: LucideIcon };
 
 function DrawerSection({
   title,
@@ -57,25 +58,21 @@ const Header = () => {
 
   const navItems = useMemo<NavItem[]>(
     () => [
-      { href: '/', label: tNav('home') },
-      { href: '/events', label: tNav('events') },
-      { href: '/attractions', label: tNav('attractions') },
-      { href: '/marketplace', label: tNav('marketplace') },
-      { href: '/corporate', label: tNav('corporate') },
-      { href: '/venues', label: tNav('venueBooking') },
-      { href: '/affiliate', label: tNav('listYourVenue') },
-      { href: '/blog', label: tNav('blog') },
+      { href: '/', label: tNav('home'), icon: Home },
+      { href: '/events', label: tNav('events'), icon: Ticket },
+      { href: '/attractions', label: tNav('attractions'), icon: FerrisWheel },
+      { href: '/marketplace', label: tNav('marketplace'), icon: Store },
+      { href: '/venues', label: tNav('venueBooking'), icon: Building2 },
+      { href: '/affiliate', label: tNav('listYourVenue'), icon: BriefcaseBusiness },
+      { href: '/blog', label: tNav('blog'), icon: BookOpen },
     ],
     [tNav],
   );
 
-  const primaryNavItems = navItems.slice(0, PRIMARY_NAV_COUNT);
-  const moreNavItems = navItems.slice(PRIMARY_NAV_COUNT);
   const isItemActive = (href: string) =>
     href === '/'
       ? pathname === '/'
       : pathname === href || pathname.startsWith(`${href}/`);
-  const moreIsActive = moreNavItems.some((item) => isItemActive(item.href));
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
@@ -142,21 +139,22 @@ const Header = () => {
             <Link href="/" className="relative z-20 flex shrink-0 items-center">
               <Image
                 src="/svg/logo.svg"
-                alt="Evenjo"
-                width={165}
-                height={43}
+                alt="Venuearo"
+                width={118}
+                height={32}
                 className="h-7 w-auto sm:h-8 2xl:h-9"
                 priority
               />
             </Link>
 
             <nav
-              className="hidden min-w-0 items-center justify-center overflow-hidden 2xl:flex"
+              className="hidden min-w-0 items-center justify-center overflow-visible xl:flex"
               aria-label={tNav('mainNav')}
             >
               <ul className="flex max-w-full items-center justify-center gap-0.5">
-                {primaryNavItems.map((item) => {
+                {navItems.map((item) => {
                   const isActive = isItemActive(item.href);
+                  const Icon = item.icon;
                   return (
                     <li key={item.href} className="min-w-0 shrink">
                       <Link
@@ -164,49 +162,19 @@ const Header = () => {
                         onClick={closeMobileMenu}
                         className={navLinkClass(isActive)}
                       >
+                        <Icon className="size-3.5 shrink-0 opacity-90" aria-hidden />
                         {item.label}
                       </Link>
                     </li>
                   );
                 })}
-                {moreNavItems.length > 0 ? (
-                  <li className="shrink-0">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        className={cn(
-                          navLinkClass(moreIsActive),
-                          'inline-flex items-center gap-0.5 outline-none',
-                        )}
-                      >
-                        {tNav('more')}
-                        <ChevronDown className="size-3.5 opacity-70" aria-hidden />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="center" className="min-w-[12rem]">
-                        {moreNavItems.map((item) => {
-                          const isActive = isItemActive(item.href);
-                          return (
-                            <DropdownMenuItem
-                              key={item.href}
-                              asChild
-                              className={navDropdownItemClass(isActive)}
-                            >
-                              <Link href={item.href} onClick={closeMobileMenu}>
-                                {item.label}
-                              </Link>
-                            </DropdownMenuItem>
-                          );
-                        })}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </li>
-                ) : null}
               </ul>
             </nav>
 
             <div className="relative z-20 flex shrink-0 items-center justify-self-end gap-1.5">
               <div
                 className={cn(
-                  'hidden items-center gap-1.5 2xl:flex 2xl:gap-2',
+                  'hidden items-center gap-1.5 xl:flex xl:gap-2',
                   isRtl && 'flex-row-reverse',
                 )}
               >
@@ -222,7 +190,7 @@ const Header = () => {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen((open) => !open)}
-                className="site-nav-menu-btn flex size-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-foreground transition-colors hover:bg-white/10 2xl:hidden"
+                className="site-nav-menu-btn flex size-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-foreground transition-colors hover:bg-white/10 xl:hidden"
                 aria-label={mobileMenuOpen ? tCommon('closeMenu') : tCommon('toggleMenu')}
                 aria-expanded={mobileMenuOpen}
               >
@@ -235,7 +203,7 @@ const Header = () => {
 
       <div
         className={cn(
-          'fixed right-0 bottom-0 left-0 z-[60] bg-black/75 backdrop-blur-md transition-opacity duration-300 2xl:hidden',
+          'fixed right-0 bottom-0 left-0 z-[60] bg-black/75 backdrop-blur-md transition-opacity duration-300 xl:hidden',
           mobileLayerTop,
           mobileMenuOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
@@ -248,7 +216,7 @@ const Header = () => {
         aria-modal={mobileMenuOpen}
         aria-label={tCommon('menu')}
         className={cn(
-          'site-mobile-drawer fixed bottom-0 z-[65] flex w-[min(100vw,20rem)] flex-col shadow-2xl transition-transform duration-300 ease-out sm:w-80 2xl:hidden',
+          'site-mobile-drawer fixed bottom-0 z-[65] flex w-[min(100vw,20rem)] flex-col shadow-2xl transition-transform duration-300 ease-out sm:w-80 xl:hidden',
           mobileLayerTop,
           isRtl ? 'left-0 border-e' : 'right-0 border-s',
           mobileMenuOpen
@@ -263,6 +231,7 @@ const Header = () => {
             <ul className="space-y-1">
               {navItems.map((item) => {
                 const isActive = isItemActive(item.href);
+                const Icon = item.icon;
                 return (
                   <li key={item.href}>
                     <Link
@@ -273,10 +242,10 @@ const Header = () => {
                         'justify-start gap-3',
                       )}
                     >
-                      <span
+                      <Icon
                         className={cn(
-                          'size-1.5 shrink-0 rounded-full transition-colors',
-                          isActive ? 'bg-primary' : 'bg-transparent',
+                          'size-4 shrink-0 transition-colors',
+                          isActive ? 'text-primary' : 'text-foreground/60',
                         )}
                         aria-hidden
                       />

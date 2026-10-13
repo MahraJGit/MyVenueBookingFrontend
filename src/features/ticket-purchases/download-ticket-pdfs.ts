@@ -324,7 +324,7 @@ async function drawTicketPage(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.ink);
-  doc.text("MyVenueBooking", contentRight, metaY + 32, { align: "right" });
+  doc.text("Venuearo", contentRight, metaY + 32, { align: "right" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);

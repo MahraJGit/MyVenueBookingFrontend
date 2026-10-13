@@ -204,7 +204,7 @@ export default function AboutPageContent() {
                   <Mail size={30} />
                 </div>
                 <div className="card-text mt-4">
-                  <h5 className="text-lg font-semibold">Evenjo.info@yahoo.com</h5>
+                  <h5 className="text-lg font-semibold">info@venuearo.com</h5>
                 </div>
               </div>
               <div className="card w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.333rem)] flex flex-col items-center text-center p-6 rounded-2xl shadow-lg bg-[#1F1F1F]">

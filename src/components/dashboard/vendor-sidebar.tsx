@@ -68,8 +68,8 @@ export default function VendorSidebar({
           <Image
             src="/svg/logo.svg"
             alt={tCommon('logoAlt')}
-            width={170}
-            height={70}
+            width={118}
+            height={32}
             className="h-auto w-[140px] sm:w-[170px]"
           />
         </Link>

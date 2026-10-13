@@ -3,7 +3,8 @@ import { cn } from "@/lib/utils";
 const navLinkTypographyClass =
   "text-xs font-medium whitespace-nowrap xl:text-[13px]";
 
-const navLinkShapeClass = "rounded-full px-2 py-1.5 transition-colors xl:px-2.5";
+const navLinkShapeClass =
+  "inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors xl:px-2.5";
 
 export const navLinkActiveVisualClass = cn(
   navLinkShapeClass,

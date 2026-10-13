@@ -160,10 +160,10 @@ export default function SignupPage() {
                 <div className="flex flex-col items-center mb-8">
                     <Link href="/">
                         <Image
-                            src="/images/logo2.png"
+                            src="/svg/logo.svg"
                             alt={tCommon("logoAlt")}
-                            width={48}
-                            height={48}
+                            width={118}
+                            height={32}
                             priority
                         />
                     </Link>

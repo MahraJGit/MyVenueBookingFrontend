@@ -277,6 +277,7 @@
 
 .site-nav-bar {
   pointer-events: auto;
+  overflow: visible;
   /* Keep width stable; avoid border-top:none (causes white flicker with border-border reset) */
   border: 1px solid transparent;
   border-color: rgba(255, 255, 255, 0.08);

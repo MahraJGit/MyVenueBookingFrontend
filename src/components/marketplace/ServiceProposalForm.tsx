@@ -22,10 +22,12 @@ import {
   createServiceProposal,
   reviseServiceProposal,
 } from "@/features/marketplace/api";
+import { inquiryEstimateAmount } from "@/features/marketplace/inquiry-display";
 import type {
   CreateServiceProposalLinePayload,
   Currency,
   ServiceInquiry,
+  ServicePackage,
   ServiceProposal,
   ServiceProposalLineType,
 } from "@/features/marketplace/types";
@@ -44,6 +46,9 @@ const LINE_TYPES: ServiceProposalLineType[] = [
   "TRAVEL",
 ];
 
+const COMPANY_REQUEST_PRESET = "company-request";
+const CUSTOM_PRESET = "custom";
+
 type DraftLine = {
   key: string;
   lineType: ServiceProposalLineType;
@@ -52,49 +57,45 @@ type DraftLine = {
   unitPrice: string;
 };
 
+type PricePreset = {
+  id: string;
+  label: string;
+  lineType: ServiceProposalLineType;
+  unitPrice: string;
+  amountLabel: string;
+};
+
 function newKey() {
   return `line-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function linesFromEstimate(inquiry: ServiceInquiry): DraftLine[] {
+function draftFromPreset(preset: PricePreset): DraftLine {
+  return {
+    key: newKey(),
+    lineType: preset.lineType,
+    label: preset.label,
+    quantity: "1",
+    unitPrice: preset.unitPrice,
+  };
+}
+
+function linesFromEstimateSnapshot(inquiry: ServiceInquiry): DraftLine[] | null {
   const snap = inquiry.estimateSnapshot;
   const rawLines =
     snap && typeof snap === "object" && Array.isArray((snap as { lines?: unknown }).lines)
       ? ((snap as { lines: Array<Record<string, unknown>> }).lines)
       : null;
 
-  if (rawLines && rawLines.length > 0) {
-    return rawLines.map((line) => ({
-      key: newKey(),
-      lineType: (String(line.lineType || "CUSTOM") as ServiceProposalLineType),
-      label: String(line.label || "Line item"),
-      quantity: String(line.quantity ?? 1),
-      // Discounts are stored negative; edit them as positive values.
-      unitPrice: String(Math.abs(Number(line.unitPrice ?? 0))),
-    }));
-  }
+  if (!rawLines || rawLines.length === 0) return null;
 
-  if (inquiry.package) {
-    return [
-      {
-        key: newKey(),
-        lineType: "PACKAGE",
-        label: inquiry.package.name,
-        quantity: "1",
-        unitPrice: String(decimalToNumber(inquiry.package.price)),
-      },
-    ];
-  }
-
-  return [
-    {
-      key: newKey(),
-      lineType: "CUSTOM",
-      label: inquiry.service?.title ?? "Service",
-      quantity: "1",
-      unitPrice: "0",
-    },
-  ];
+  return rawLines.map((line) => ({
+    key: newKey(),
+    lineType: String(line.lineType || "CUSTOM") as ServiceProposalLineType,
+    label: String(line.label || "Line item"),
+    quantity: String(line.quantity ?? 1),
+    // Discounts are stored negative; edit them as positive values.
+    unitPrice: String(Math.abs(Number(line.unitPrice ?? 0))),
+  }));
 }
 
 function linesFromProposal(proposal: ServiceProposal): DraftLine[] {
@@ -112,7 +113,7 @@ function linesFromProposal(proposal: ServiceProposal): DraftLine[] {
   }
   return lines.map((line) => ({
     key: newKey(),
-    lineType: (String(line.lineType) as ServiceProposalLineType),
+    lineType: String(line.lineType) as ServiceProposalLineType,
     label: line.label,
     quantity: String(line.quantity ?? 1),
     // Discounts are stored negative; edit them as positive values.
@@ -132,6 +133,64 @@ function toPayloadLines(lines: DraftLine[]): CreateServiceProposalLinePayload[] 
       sortOrder: index,
     };
   });
+}
+
+function activePackages(inquiry: ServiceInquiry | null | undefined): ServicePackage[] {
+  const packages = inquiry?.service?.packages ?? [];
+  return packages.filter((pkg) => pkg.isActive !== false && pkg.id);
+}
+
+function buildPricePresets(
+  inquiry: ServiceInquiry,
+  companyRequestLabel: string,
+  customLabel: string,
+  currency: string,
+): PricePreset[] {
+  const presets: PricePreset[] = [];
+  const companyAmount = inquiryEstimateAmount(inquiry);
+
+  if (companyAmount != null && Number.isFinite(companyAmount) && companyAmount > 0) {
+    presets.push({
+      id: COMPANY_REQUEST_PRESET,
+      label: companyRequestLabel,
+      lineType: "CUSTOM",
+      unitPrice: String(companyAmount),
+      amountLabel: `${companyAmount.toLocaleString()} ${currency}`,
+    });
+  }
+
+  const seenPackageIds = new Set<string>();
+  const pushPackage = (pkg: ServicePackage | null | undefined) => {
+    if (!pkg?.id || seenPackageIds.has(pkg.id)) return;
+    seenPackageIds.add(pkg.id);
+    const price = decimalToNumber(pkg.price);
+    presets.push({
+      id: `package-${pkg.id}`,
+      label: pkg.name,
+      lineType: "PACKAGE",
+      unitPrice: String(price),
+      amountLabel: `${price.toLocaleString()} ${currency}`,
+    });
+  };
+
+  pushPackage(inquiry.package ?? undefined);
+  for (const pkg of activePackages(inquiry)) {
+    pushPackage(pkg);
+  }
+
+  presets.push({
+    id: CUSTOM_PRESET,
+    label: customLabel,
+    lineType: "CUSTOM",
+    unitPrice: "0",
+    amountLabel: `0 ${currency}`,
+  });
+
+  return presets;
+}
+
+function defaultPresetId(presets: PricePreset[]): string {
+  return presets[0]?.id ?? CUSTOM_PRESET;
 }
 
 export function ServiceProposalForm({
@@ -161,20 +220,58 @@ export function ServiceProposalForm({
   ).slice(0, 10);
   const eventDateLabel =
     eventStart === eventEnd ? eventStart : `${eventStart} → ${eventEnd}`;
+
+  const pricePresets = useMemo(() => {
+    if (!sourceInquiry) return [];
+    return buildPricePresets(
+      sourceInquiry,
+      t("companyRequest"),
+      t("customPrice"),
+      currency,
+    );
+  }, [sourceInquiry, t, currency]);
+
   const [notes, setNotes] = useState(proposal?.notes ?? "");
+  const [pricePresetId, setPricePresetId] = useState(() => {
+    if (mode === "revise" || !sourceInquiry) return CUSTOM_PRESET;
+    if (linesFromEstimateSnapshot(sourceInquiry)) return CUSTOM_PRESET;
+    const presets = buildPricePresets(
+      sourceInquiry,
+      t("companyRequest"),
+      t("customPrice"),
+      currency,
+    );
+    return defaultPresetId(presets);
+  });
   const [lines, setLines] = useState<DraftLine[]>(() => {
     if (mode === "revise" && proposal) return linesFromProposal(proposal);
-    if (sourceInquiry) return linesFromEstimate(sourceInquiry);
+    if (sourceInquiry) {
+      const snapshotLines = linesFromEstimateSnapshot(sourceInquiry);
+      if (snapshotLines) return snapshotLines;
+      const presets = buildPricePresets(
+        sourceInquiry,
+        t("companyRequest"),
+        t("customPrice"),
+        currency,
+      );
+      const preset = presets.find((p) => p.id === defaultPresetId(presets));
+      if (preset) return [draftFromPreset(preset)];
+    }
     return [
       {
         key: newKey(),
         lineType: "CUSTOM",
-        label: "Service",
+        label: t("serviceFallback"),
         quantity: "1",
         unitPrice: "0",
       },
     ];
   });
+
+  const companyAmount = sourceInquiry
+    ? inquiryEstimateAmount(sourceInquiry)
+    : null;
+  const showPricePreset = mode === "create" && pricePresets.length > 0;
 
   const total = useMemo(() => {
     return lines.reduce((sum, line) => {
@@ -206,6 +303,13 @@ export function ServiceProposalForm({
         unitPrice: "0",
       },
     ]);
+  };
+
+  const applyPricePreset = (presetId: string) => {
+    setPricePresetId(presetId);
+    const preset = pricePresets.find((item) => item.id === presetId);
+    if (!preset) return;
+    setLines([draftFromPreset(preset)]);
   };
 
   const createMut = useMutation({
@@ -268,6 +372,11 @@ export function ServiceProposalForm({
               ? ` · ${sourceInquiry.guestCount} ${t("guests")}`
               : ""}
           </p>
+          {companyAmount != null && companyAmount > 0 ? (
+            <p className="mt-2 text-sm text-primary">
+              {t("estimateLabel")}: {companyAmount.toLocaleString()} {currency}
+            </p>
+          ) : null}
           {sourceInquiry.notes ? (
             <p className="mt-2 whitespace-pre-wrap">{sourceInquiry.notes}</p>
           ) : null}
@@ -286,6 +395,25 @@ export function ServiceProposalForm({
           {t("proposalEventDateHint")}
         </p>
       </div>
+
+      {showPricePreset ? (
+        <div className="space-y-2">
+          <Label>{t("priceOption")}</Label>
+          <Select value={pricePresetId} onValueChange={applyPricePreset}>
+            <SelectTrigger className={cn(dashboardInputClass, "w-full")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {pricePresets.map((preset) => (
+                <SelectItem key={preset.id} value={preset.id}>
+                  {preset.label} · {preset.amountLabel}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">{t("priceOptionHint")}</p>
+        </div>
+      ) : null}
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">

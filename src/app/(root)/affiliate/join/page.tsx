@@ -30,6 +30,8 @@ import { getAccessToken } from "@/features/auth/session-storage";
 import {
   createVendorProfile,
   getMyVendorProfile,
+  sendVendorPhoneOtp,
+  verifyVendorPhoneOtp,
   type VendorVerificationStatus,
   uploadSingleVendorDocumentWithProgress,
 } from "@/features/vendor/api";
@@ -205,6 +207,16 @@ const JoinAffiliateFormPage = () => {
   const [uploadProgress, setUploadProgress] = React.useState<
     Partial<Record<FileKey, number>>
   >({});
+  const [phoneOtpSent, setPhoneOtpSent] = React.useState(false);
+  const [phoneVerified, setPhoneVerified] = React.useState(false);
+  const [phoneOtpCode, setPhoneOtpCode] = React.useState("");
+  const [phoneOtpBusy, setPhoneOtpBusy] = React.useState(false);
+
+  React.useEffect(() => {
+    setPhoneOtpSent(false);
+    setPhoneVerified(false);
+    setPhoneOtpCode("");
+  }, [formValues.phoneE164]);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -316,6 +328,11 @@ const JoinAffiliateFormPage = () => {
     const validationError = validateVendorJoinForm(formValues, t, tValidation);
     if (validationError) {
       toast.error(validationError);
+      return;
+    }
+
+    if (!phoneVerified) {
+      toast.error("Please verify your phone number with the SMS code before submitting.");
       return;
     }
 
@@ -693,6 +710,75 @@ const JoinAffiliateFormPage = () => {
                       setFormValues((prev) => ({ ...prev, phoneE164: next }))
                     }
                   />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={
+                        phoneOtpBusy ||
+                        phoneVerified ||
+                        !formValues.phoneE164
+                      }
+                      onClick={async () => {
+                        if (!formValues.phoneE164) return;
+                        setPhoneOtpBusy(true);
+                        try {
+                          await sendVendorPhoneOtp(formValues.phoneE164);
+                          setPhoneOtpSent(true);
+                          toast.success("Verification code sent by SMS.");
+                        } catch (error) {
+                          toastApiError(error);
+                        } finally {
+                          setPhoneOtpBusy(false);
+                        }
+                      }}
+                    >
+                      {phoneVerified
+                        ? "Phone verified"
+                        : phoneOtpSent
+                          ? "Resend code"
+                          : "Send SMS code"}
+                    </Button>
+                    {phoneVerified ? (
+                      <Badge variant="default">Verified</Badge>
+                    ) : null}
+                  </div>
+                  {phoneOtpSent && !phoneVerified ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Input
+                        placeholder="Enter SMS code"
+                        value={phoneOtpCode}
+                        onChange={(e) => setPhoneOtpCode(e.target.value)}
+                        className="max-w-[160px]"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={phoneOtpBusy || phoneOtpCode.trim().length < 4}
+                        onClick={async () => {
+                          if (!formValues.phoneE164) return;
+                          setPhoneOtpBusy(true);
+                          try {
+                            await verifyVendorPhoneOtp(
+                              formValues.phoneE164,
+                              phoneOtpCode.trim(),
+                            );
+                            setPhoneVerified(true);
+                            toast.success("Phone verified.");
+                          } catch (error) {
+                            toastApiError(error);
+                          } finally {
+                            setPhoneOtpBusy(false);
+                          }
+                        }}
+                      >
+                        Verify
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
                 <Input
                   placeholder={t("address")}

@@ -321,7 +321,7 @@ export async function searchNominatim(
   const res = await fetch(url.toString(), {
     headers: {
       Accept: "application/json",
-      "User-Agent": "MyVenueBooking/1.0 (venue location picker; contact: support@local)",
+      "User-Agent": "Venuearo/1.0 (venue location picker; contact: support@local)",
     },
     cache: "no-store",
   })
@@ -401,7 +401,7 @@ export async function reverseNominatim(
   const res = await fetch(url.toString(), {
     headers: {
       Accept: "application/json",
-      "User-Agent": "MyVenueBooking/1.0 (venue location picker; contact: support@local)",
+      "User-Agent": "Venuearo/1.0 (venue location picker; contact: support@local)",
     },
     cache: "no-store",
   })

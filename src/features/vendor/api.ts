@@ -102,6 +102,44 @@ export async function uploadSingleVendorDocumentWithProgress(
   });
 }
 
+export async function sendVendorPhoneOtp(phone: string) {
+  const res = await authFetch("/api/vendors/phone/send-otp", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ phone }),
+    networkErrorMessage: "Network error while sending phone verification code.",
+  });
+
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, data);
+  }
+
+  return data as { success: boolean; message: string; phone: string };
+}
+
+export async function verifyVendorPhoneOtp(phone: string, code: string) {
+  const res = await authFetch("/api/vendors/phone/verify-otp", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ phone, code }),
+    networkErrorMessage: "Network error while verifying phone code.",
+  });
+
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, data);
+  }
+
+  return data as { success: boolean; message: string; phone: string };
+}
+
 export async function createVendorProfile(body: CreateVendorProfileBody) {
   const res = await authFetch("/api/vendors", {
     method: "POST",

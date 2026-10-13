@@ -34,7 +34,7 @@ const Footer = () => {
         <div className="inner flex flex-col items-center gap-8 sm:gap-10">
           <div className="footer-logo">
             <Link href="/" aria-label={tNav('home')}>
-              <Image src="/svg/logo.svg" alt={tCommon('logoAlt')} width={165} height={43} className="h-auto w-[140px] sm:w-[165px]" />
+              <Image src="/svg/logo.svg" alt={tCommon('logoAlt')} width={118} height={32} className="h-auto w-[140px] sm:w-[165px]" />
             </Link>
           </div>
           <nav aria-label="Footer">

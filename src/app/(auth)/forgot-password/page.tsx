@@ -80,10 +80,10 @@ const ForgetPassword = () => {
       <div className="flex flex-col items-center justify-center text-white px-4">
         <div className="flex flex-col items-center mb-8">
           <Image
-            src="/images/logo2.png"
+            src="/svg/logo.svg"
             alt={tCommon("logoAlt")}
-            width={48}
-            height={48}
+            width={118}
+            height={32}
             priority
           />
 

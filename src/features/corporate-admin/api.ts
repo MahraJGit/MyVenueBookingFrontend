@@ -7,6 +7,24 @@ export type OrganizationStatus =
   | "REJECTED"
   | "SUSPENDED";
 
+export type CorporateEventStatus =
+  | "DRAFT"
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED";
+
+export type CorporateEventBookingStatus =
+  | "NOT_STARTED"
+  | "PARTIAL"
+  | "CONFIRMED"
+  | "FAILED";
+
+export type CorporateEventPaymentStatus =
+  | "NOT_DUE"
+  | "AWAITING_PAYMENT"
+  | "PAID";
+
 export type OrganizationDocumentType =
   | "TRADE_LICENSE"
   | "MEMORANDUM"
@@ -85,6 +103,131 @@ type DetailResponse = {
     maxSubmissions: number;
     remainingSubmissions: number;
   };
+};
+
+export type AdminCorporateEventOrg = {
+  id: string;
+  name: string;
+  slug: string;
+  status: OrganizationStatus;
+  city: string | null;
+  country: string | null;
+};
+
+export type CorporateLineBookingStatus =
+  | "NOT_BOOKED"
+  | "HELD"
+  | "CONFIRMED"
+  | "REQUESTED"
+  | "FAILED"
+  | "CANCELLED";
+
+type AdminEventResourceLine = {
+  id: string;
+  estimatedCost: string | number | null;
+  notes: string | null;
+  preferredStartAt?: string | null;
+  preferredEndAt?: string | null;
+  availabilityStatus?: string | null;
+  availabilityMessage?: string | null;
+  bookingStatus?: CorporateLineBookingStatus;
+  bookingError?: string | null;
+  bookingConfirmedAt?: string | null;
+};
+
+export type AdminCorporateEventVenueLine = AdminEventResourceLine & {
+  bookingId?: string | null;
+  venue: {
+    id: string;
+    name: string;
+    city: string | null;
+    countryCode: string | null;
+    coverImage: string | null;
+  };
+};
+
+export type AdminCorporateEventServiceLine = AdminEventResourceLine & {
+  serviceBookingId?: string | null;
+  serviceInquiryId?: string | null;
+  service: {
+    id: string;
+    title: string;
+    slug: string;
+    baseCity: string | null;
+    countryCode: string | null;
+    coverImage: string | null;
+    basePrice: string | number | null;
+    currency: string;
+  };
+};
+
+export type AdminCorporateEvent = {
+  id: string;
+  organizationId: string;
+  fiscalBudgetId: string;
+  budgetCategoryId: string | null;
+  title: string;
+  requirements: string | null;
+  objectives: string | null;
+  proposedStartAt: string | null;
+  proposedEndAt: string | null;
+  locationPreference: string | null;
+  estimatedAttendees: number | null;
+  allocatedAmount: string | number;
+  currency: string;
+  status: CorporateEventStatus;
+  financeApprovedAt: string | null;
+  managementApprovedAt: string | null;
+  rejectedReason: string | null;
+  rejectedAt: string | null;
+  submittedAt: string | null;
+  bookingStatus?: CorporateEventBookingStatus;
+  bookingsConfirmedAt?: string | null;
+  paymentStatus?: CorporateEventPaymentStatus;
+  paidAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  organization?: AdminCorporateEventOrg;
+  fiscalBudget?: {
+    id: string;
+    fiscalYear: number;
+    totalAmount: string | number;
+    currency: string;
+    status: string;
+  } | null;
+  budgetCategory?: {
+    id: string;
+    name: string;
+    allocatedAmount: string | number;
+  } | null;
+  createdBy?: CorporateOrgOwner | null;
+  financeApprovedBy?: CorporateOrgOwner | null;
+  managementApprovedBy?: CorporateOrgOwner | null;
+  rejectedBy?: CorporateOrgOwner | null;
+  paidBy?: CorporateOrgOwner | null;
+  eventVenues?: AdminCorporateEventVenueLine[];
+  eventServices?: AdminCorporateEventServiceLine[];
+  teamMembers?: Array<{
+    id: string;
+    role: string;
+    corporateUser: CorporateOrgOwner;
+  }>;
+};
+
+type EventListResponse = {
+  success: boolean;
+  data: AdminCorporateEvent[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};
+
+type EventDetailResponse = {
+  success: boolean;
+  data: AdminCorporateEvent;
 };
 
 async function parseJson<T>(res: Response): Promise<T> {
@@ -182,4 +325,49 @@ export async function rejectAdminCorporateOrganization(
     data: AdminCorporateOrganization;
     meta?: { suspended?: boolean };
   };
+}
+
+export async function listAdminCorporateEvents(params: {
+  page: number;
+  limit: number;
+  status?: CorporateEventStatus;
+  organizationId?: string;
+}) {
+  const search = new URLSearchParams();
+  search.set("page", String(params.page));
+  search.set("limit", String(params.limit));
+  if (params.status) search.set("status", params.status);
+  if (params.organizationId) search.set("organizationId", params.organizationId);
+
+  const res = await authFetch(
+    `/api/corporate/events/admin/list?${search.toString()}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while loading corporate events.",
+    },
+  );
+
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) throw ApiError.fromUnknown(res.status, data);
+
+  const envelope = data as EventListResponse;
+  return { data: envelope.data, meta: envelope.meta };
+}
+
+export async function getAdminCorporateEvent(id: string) {
+  const res = await authFetch(
+    `/api/corporate/events/admin/${encodeURIComponent(id)}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while loading corporate event details.",
+    },
+  );
+
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) throw ApiError.fromUnknown(res.status, data);
+
+  const envelope = data as EventDetailResponse;
+  return envelope.data;
 }

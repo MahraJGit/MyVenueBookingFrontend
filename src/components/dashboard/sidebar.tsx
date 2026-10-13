@@ -70,8 +70,8 @@ export default function Sidebar({
           <Image
             src="/svg/logo.svg"
             alt={tCommon('logoAlt')}
-            width={170}
-            height={70}
+            width={118}
+            height={32}
             className="h-auto w-[140px] sm:w-[170px]"
           />
         </Link>
@@ -80,13 +80,12 @@ export default function Sidebar({
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Accordion
           type="multiple"
-          defaultValue={['sales', 'users', 'events', 'attractions', 'venues', 'marketplace', 'settings', 'account']}
+          defaultValue={['sales', 'users', 'events', 'attractions', 'venues', 'marketplace', 'corporate', 'settings', 'account']}
           className="space-y-2"
         >
           <SidebarSection title={t('users')} value="users">
             <SidebarLink icon="/svg/AddUserMale.svg" label={t('manageUsers')} href="/adminDashbaord/users" onClose={onClose} />
             <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorsDirectory')} href="/adminDashbaord/vendorRequests" onClose={onClose} />
-            <SidebarLink icon="/svg/EventAccepted.svg" label={t('corporateOrganizations')} href="/adminDashbaord/corporateOrganizations" onClose={onClose} />
           </SidebarSection>
 
           <SidebarSection title={t('venues')} value="venues">
@@ -107,6 +106,11 @@ export default function Sidebar({
           <SidebarSection title={t('marketplaceSection')} value="marketplace">
             <SidebarLink icon="/svg/EventAccepted.svg" label={t('marketplaceReviews')} href="/adminDashbaord/marketplaceReviews" onClose={onClose} />
             <SidebarLink icon="/svg/OpenedFolder.svg" label={t('serviceCategories')} href="/adminDashbaord/serviceCategories" onClose={onClose} />
+          </SidebarSection>
+
+          <SidebarSection title={t('corporateSection')} value="corporate">
+            <SidebarLink icon="/svg/EventAccepted.svg" label={t('corporateOrganizations')} href="/adminDashbaord/corporateOrganizations" onClose={onClose} />
+            <SidebarLink icon="/svg/Calendar.svg" label={t('corporateEvents')} href="/adminDashbaord/corporateEvents" onClose={onClose} />
           </SidebarSection>
 
           <SidebarSection title={t('salesSection')} value="sales">
