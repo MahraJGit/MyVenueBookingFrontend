@@ -13,6 +13,8 @@ import {
   BedDouble,
   Building2,
   CalendarDays,
+  Download,
+  FileText,
   Loader2,
   MapPin,
   Maximize2,
@@ -28,7 +30,17 @@ import { SlotPicker } from "@/components/venues/SlotPicker";
 import { VenueBookingDialog } from "@/components/bookings/VenueBookingDialog";
 import { DisplayPrice, DisplayPriceWithSuffix } from "@/components/currency/DisplayPrice";
 import { CurrencyBrowseNotice } from "@/components/currency/CheckoutPrice";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import {
+  parseVenueFaqs,
+  parseVenueHouseRules,
+} from "@/features/venues/venue-rules";
 import {
   getDayAvailability,
   getMonthAvailability,
@@ -39,6 +51,7 @@ import { venueKeys } from "@/features/venues/query-keys";
 import { formatDateKey } from "@/features/venues/timezone";
 import {
   decimalToNumber,
+  formatVenueTypeLabel,
   getFallbackVenueImage,
   getVenueAmenityPriceInfo,
   getVenueDisplayPrice,
@@ -219,6 +232,8 @@ export default function VenueDetailPage({
   const hasPropertyDetails =
     isProperty &&
     (propertyAttrs.floorArea || propertyAttrs.bedrooms || propertyAttrs.bathrooms);
+  const houseRules = parseVenueHouseRules(venue.rules);
+  const faqs = parseVenueFaqs(venue.rules);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0e0e0e] text-white">
@@ -262,7 +277,7 @@ export default function VenueDetailPage({
         <div className="absolute inset-0 flex flex-col items-center justify-end px-4 pb-8 text-center sm:pb-10 md:pb-14">
           {venue.venueType?.name && (
             <span className="mb-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-primary sm:mb-3 sm:px-4 sm:text-xs">
-              {venue.venueType.name}
+              {formatVenueTypeLabel(venue.venueType)}
             </span>
           )}
           <h1 className="mb-3 line-clamp-2 max-w-4xl px-1 text-2xl font-bold tracking-tight sm:mb-4 sm:text-3xl md:text-4xl lg:text-5xl">
@@ -335,6 +350,35 @@ export default function VenueDetailPage({
                 </p>
               </div>
             </div>
+
+            {venue.layoutPdf?.trim() ? (
+              <div className="rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                      <FileText size={18} className="text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-white sm:text-lg">
+                        {t("layoutPdf")}
+                      </h2>
+                      <p className="mt-1 text-sm text-zinc-400">{t("layoutPdfDesc")}</p>
+                    </div>
+                  </div>
+                  <Button asChild className="shrink-0 bg-primary">
+                    <a
+                      href={getMediaProxyUrl(venue.layoutPdf.trim())}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={`${venue.name.replace(/[^\w\-]+/g, "-").toLowerCase() || "venue"}-layout.pdf`}
+                    >
+                      <Download className="me-2 h-4 w-4" />
+                      {t("downloadLayoutPdf")}
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            ) : null}
 
             {/* Quick info cards */}
             <div className="grid gap-4 sm:grid-cols-2">
@@ -463,6 +507,48 @@ export default function VenueDetailPage({
                 </ul>
               </div>
             )}
+
+            {houseRules.length > 0 ? (
+              <div>
+                <h2 className="mb-3 text-lg font-bold text-primary sm:mb-4 sm:text-xl">
+                  {t("houseRules")}
+                </h2>
+                <div className="rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 sm:p-6">
+                  <p className="mb-3 text-sm text-zinc-400">{t("houseRulesDesc")}</p>
+                  <ul className="list-disc space-y-2 ps-5 text-zinc-300">
+                    {houseRules.map((rule) => (
+                      <li key={rule.id}>{rule.text}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
+
+            {faqs.length > 0 ? (
+              <div>
+                <h2 className="mb-3 text-lg font-bold text-primary sm:mb-4 sm:text-xl">
+                  {t("faqs")}
+                </h2>
+                <div className="rounded-2xl border border-[#303030] bg-[#1B1B1B] px-4 sm:px-6">
+                  <Accordion type="single" collapsible className="w-full">
+                    {faqs.map((faq) => (
+                      <AccordionItem
+                        key={faq.id}
+                        value={faq.id}
+                        className="border-[#303030]"
+                      >
+                        <AccordionTrigger className="text-left text-sm text-white hover:no-underline sm:text-base">
+                          {faq.question}
+                        </AccordionTrigger>
+                        <AccordionContent className="text-sm leading-relaxed text-zinc-300 whitespace-pre-line">
+                          {faq.answer}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
+              </div>
+            ) : null}
 
             {/* Map */}
             <div>

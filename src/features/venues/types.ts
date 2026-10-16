@@ -49,6 +49,10 @@ export type VenueType = {
   slug: string;
   description?: string | null;
   isActive?: boolean;
+  parentId?: string | null;
+  parent?: VenueType | null;
+  children?: VenueType[];
+  _count?: { venues?: number; children?: number };
 };
 
 export type AmenityCatalogItem = {
@@ -118,6 +122,8 @@ export type PublicVenue = {
   coverImage?: string | null;
   thumbnail?: string | null;
   gallery?: string[];
+  /** Optional venue layout / floor-plan PDF URL. */
+  layoutPdf?: string | null;
   status?: EntityStatus;
   venueType?: VenueType | null;
   pricing?: VenuePricing | null;
@@ -240,6 +246,7 @@ export type CreateVenuePayload = {
   coverImage: string;
   thumbnail?: string | null;
   gallery: string[];
+  layoutPdf?: string | null;
   customAttributes?: Record<string, unknown>;
   rules?: Record<string, unknown>;
   vendorId?: string;
@@ -249,6 +256,7 @@ export type UpdateVenuePayload = Partial<CreateVenuePayload> & {
   coverImage?: string;
   thumbnail?: string | null;
   gallery?: string[];
+  layoutPdf?: string | null;
 };
 
 export type VenuePricingPayload = {

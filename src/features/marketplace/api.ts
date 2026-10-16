@@ -159,6 +159,10 @@ export async function listPublicMarketplaceServices(params?: {
   countryCode?: string;
   city?: string;
   pricingModel?: ServicePricingModel;
+  minPrice?: number;
+  maxPrice?: number;
+  priceCurrency?: string;
+  priceBounds?: { currency: string; min?: number; max?: number }[];
   sortBy?: "createdAt" | "title" | "basePrice";
   sortOrder?: "asc" | "desc";
 }): Promise<ListPublicMarketplaceServicesResult> {
@@ -170,6 +174,12 @@ export async function listPublicMarketplaceServices(params?: {
   if (params?.countryCode) sp.set("countryCode", params.countryCode);
   if (params?.city) sp.set("city", params.city);
   if (params?.pricingModel) sp.set("pricingModel", params.pricingModel);
+  if (params?.minPrice != null) sp.set("minPrice", String(params.minPrice));
+  if (params?.maxPrice != null) sp.set("maxPrice", String(params.maxPrice));
+  if (params?.priceCurrency) sp.set("priceCurrency", params.priceCurrency);
+  if (params?.priceBounds?.length) {
+    sp.set("priceBounds", JSON.stringify(params.priceBounds));
+  }
   if (params?.sortBy) sp.set("sortBy", params.sortBy);
   if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
 

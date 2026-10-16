@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PublicVenue } from "@/features/venues/types";
-import { getFallbackVenueImage } from "@/features/venues/utils";
+import { formatVenueTypeLabel, getFallbackVenueImage } from "@/features/venues/utils";
 
 type VenueMarqueeChipProps = {
   venue: PublicVenue;
@@ -18,8 +18,12 @@ export function VenueMarqueeChip({ venue }: VenueMarqueeChipProps) {
   const [src, setSrc] = useState(initial);
 
   const subtitle =
-    [venue.city, venue.venueType?.name].filter(Boolean).join(" · ") ||
-    t("venueLabel");
+    [
+      venue.city,
+      venue.venueType ? formatVenueTypeLabel(venue.venueType) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || t("venueLabel");
 
   return (
     <Link

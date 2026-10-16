@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import type { PublicVenue } from "@/features/venues/types";
 import { VenueCoverImage } from "@/components/venues/VenueCoverImage";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
-import { getVenueDisplayPrice } from "@/features/venues/utils";
+import { formatVenueTypeLabel, getVenueDisplayPrice } from "@/features/venues/utils";
 import { useVenuePriceLabels } from "@/features/i18n/use-venue-price-labels";
 import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 
@@ -43,7 +43,9 @@ export function VenueCard({ venue }: VenueCardProps) {
           </h4>
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs" dir="auto">
-              {venue.venueType?.name || "—"}
+              {venue.venueType
+                ? formatVenueTypeLabel(venue.venueType)
+                : "—"}
             </span>
             <span className="line-clamp-1 text-end text-xs" dir="auto">
               {location}

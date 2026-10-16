@@ -50,20 +50,23 @@ export function RecommendedEventsSlider() {
   );
 }
 
-export function useRecommendedEventsVisible() {
+export function useRecommendedEventsVisible(enabled = true) {
   const { isAuthenticated, isReady } = useAuth();
   const { locale } = useLocaleContext();
 
   const { data, isLoading } = useQuery({
     queryKey: recommendationKeys.events(RECOMMENDATION_SLIDER_LIMIT, locale),
     queryFn: () => getRecommendedEvents(RECOMMENDATION_SLIDER_LIMIT),
-    enabled: isAuthenticated && isReady,
+    enabled: enabled && isAuthenticated && isReady,
     staleTime: 5 * 60 * 1000,
   });
 
   return {
     showGridDivider: Boolean(
-      isAuthenticated && isReady && (isLoading || (data?.length ?? 0) > 0),
+      enabled &&
+        isAuthenticated &&
+        isReady &&
+        (isLoading || (data?.length ?? 0) > 0),
     ),
   };
 }

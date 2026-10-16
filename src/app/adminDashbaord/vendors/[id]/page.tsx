@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useState } from "react";
+import { use, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -10,6 +10,7 @@ import {
   getAdminVendorDetail,
   getPublicOrganizerProfile,
   type PublicOrganizerProfile,
+  type VendorServiceType,
 } from "@/features/vendor/api";
 import {
   DashboardPageShell,
@@ -21,7 +22,45 @@ import { Button } from "@/components/ui/button";
 import { getPresignedViewUrl } from "@/features/uploads/api";
 import { toastApiError } from "@/lib/toasts";
 
-function formatDate(dateString: string) {
+const ALL_SERVICE_METRICS: {
+  type: VendorServiceType;
+  countKey: "events" | "attractions" | "venues" | "marketplaceServices";
+  labelKey: "events" | "attractions" | "venues" | "services";
+  href: (vendorId: string) => string;
+  hintKey: "viewSales" | "viewBookings";
+}[] = [
+  {
+    type: "EVENTS",
+    countKey: "events",
+    labelKey: "events",
+    href: (id) => `/adminDashbaord/manageTickets?vendorId=${id}`,
+    hintKey: "viewSales",
+  },
+  {
+    type: "ATTRACTIONS",
+    countKey: "attractions",
+    labelKey: "attractions",
+    href: (id) => `/adminDashbaord/manageAttractionTickets?vendorId=${id}`,
+    hintKey: "viewSales",
+  },
+  {
+    type: "VENUES",
+    countKey: "venues",
+    labelKey: "venues",
+    href: (id) => `/adminDashbaord/venueBookings?vendorId=${id}`,
+    hintKey: "viewBookings",
+  },
+  {
+    type: "MARKETPLACE",
+    countKey: "marketplaceServices",
+    labelKey: "services",
+    href: (id) => `/adminDashbaord/marketplaceBookings?vendorId=${id}`,
+    hintKey: "viewBookings",
+  },
+];
+
+function formatDate(dateString?: string | null) {
+  if (!dateString) return "—";
   const parsed = new Date(dateString);
   if (Number.isNaN(parsed.getTime())) return dateString;
   return parsed.toLocaleDateString();
@@ -48,6 +87,11 @@ export default function AdminVendorDetailPage({
     enabled:
       Boolean(vendor?.slug) && vendor?.verificationStatus === "APPROVED",
   });
+
+  const enrolledTypes = useMemo(
+    () => new Set((vendor?.services ?? []).map((s) => s.serviceType)),
+    [vendor?.services],
+  );
 
   if (vendorQuery.isLoading) {
     return (
@@ -133,45 +177,100 @@ export default function AdminVendorDetailPage({
               <DashboardPanel className="space-y-3">
                 <h2 className="text-lg font-semibold">{t("listings")}</h2>
                 <div className="grid grid-cols-2 gap-3">
-                  <MetricLink
-                    href={`/adminDashbaord/manageTickets?vendorId=${vendor.id}`}
-                    label={t("events")}
-                    value={vendor.counts.events}
-                    hint={t("viewSales")}
-                  />
-                  <MetricLink
-                    href={`/adminDashbaord/manageAttractionTickets?vendorId=${vendor.id}`}
-                    label={t("attractions")}
-                    value={vendor.counts.attractions}
-                    hint={t("viewSales")}
-                  />
-                  <MetricLink
-                    href={`/adminDashbaord/venueBookings?vendorId=${vendor.id}`}
-                    label={t("venues")}
-                    value={vendor.counts.venues}
-                    hint={t("viewBookings")}
-                  />
-                  <MetricLink
-                    href={`/adminDashbaord/marketplaceBookings?vendorId=${vendor.id}`}
-                    label={t("services")}
-                    value={vendor.counts.marketplaceServices}
-                    hint={t("viewBookings")}
-                  />
+                  {ALL_SERVICE_METRICS.map((metric) => {
+                    const enrolled = enrolledTypes.has(metric.type);
+                    if (enrolled) {
+                      return (
+                        <MetricLink
+                          key={metric.type}
+                          href={metric.href(vendor.id)}
+                          label={t(metric.labelKey)}
+                          value={vendor.counts[metric.countKey]}
+                          hint={t(metric.hintKey)}
+                        />
+                      );
+                    }
+                    return (
+                      <UnusedServiceCard
+                        key={metric.type}
+                        label={t(metric.labelKey)}
+                        message={t("serviceNotUsed")}
+                      />
+                    );
+                  })}
                 </div>
               </DashboardPanel>
 
               <DashboardPanel className="space-y-3">
                 <h2 className="text-lg font-semibold">{t("compliance")}</h2>
-                <Detail
-                  label={t("legalEntity")}
-                  value={vendor.legalEntityName}
-                />
                 <Detail label={t("taxId")} value={vendor.taxId} />
                 <Detail label={t("address")} value={vendor.address} />
                 <Detail label={tCommon("email")} value={vendor.email} />
                 <Detail label={tCommon("phone")} value={vendor.phone} />
+                <Detail
+                  label="Location"
+                  value={
+                    [vendor.city, vendor.countryCode].filter(Boolean).join(", ") ||
+                    "—"
+                  }
+                />
               </DashboardPanel>
             </div>
+
+            <DashboardPanel className="space-y-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold">{t("servicesTitle")}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {t("servicesDesc")}
+                  </p>
+                </div>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className={dashboardOutlineButtonClass}
+                >
+                  <Link href="/adminDashbaord/vendorServiceRequests">
+                    {t("manageServiceRequests")}
+                  </Link>
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {(vendor.services ?? []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("noServices")}
+                  </p>
+                ) : (
+                  (vendor.services ?? []).map((svc) => (
+                    <div
+                      key={svc.id}
+                      className="flex items-center justify-between rounded-md border border-[#303030] p-3"
+                    >
+                      <div>
+                        <p className="font-medium">{svc.serviceType}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {t("commissionLabel", {
+                            percent: svc.commissionPercent,
+                          })}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          svc.status === "APPROVED"
+                            ? "default"
+                            : svc.status === "REJECTED"
+                              ? "destructive"
+                              : "secondary"
+                        }
+                      >
+                        {svc.status}
+                      </Badge>
+                    </div>
+                  ))
+                )}
+              </div>
+            </DashboardPanel>
 
             <DashboardPanel className="space-y-4">
               <div>
@@ -192,37 +291,15 @@ export default function AdminVendorDetailPage({
                   label={tRequests("ownerName")}
                   value={vendor.ownerName}
                 />
-                <DetailRow
-                  label={tRequests("eidNumber")}
-                  value={vendor.eidNumber}
-                />
-                <DetailRow
-                  label={tRequests("eidExpiry")}
-                  value={formatDate(vendor.eidExpiry)}
-                />
-                <DetailRow
-                  label={tRequests("passportNumber")}
-                  value={vendor.passportNumber}
-                />
-                <DetailRow
-                  label={tRequests("passportExpiry")}
-                  value={formatDate(vendor.passportExpiry)}
-                />
-                <DetailRow
-                  label={tRequests("incorporationDate")}
-                  value={formatDate(vendor.incorporationDate)}
-                />
+                <DetailRow label="ID type" value={vendor.idType ?? "—"} />
+                <DetailRow label="ID number" value={vendor.idNumber ?? "—"} />
                 <DetailRow
                   label={tRequests("tradeLicenseNo")}
                   value={vendor.tradeLicenseNumber}
                 />
                 <DetailRow
-                  label={tRequests("tradeLicenseExpiry")}
-                  value={formatDate(vendor.tradeLicenseExpiry)}
-                />
-                <DetailRow
-                  label={tRequests("paymentTerms")}
-                  value={vendor.paymentTerms}
+                  label="Revenue range"
+                  value={vendor.annualRevenueRange ?? "—"}
                 />
                 <DetailRow
                   label={tRequests("submittedAt")}
@@ -242,14 +319,8 @@ export default function AdminVendorDetailPage({
               <div className="space-y-2 rounded-md border border-[#303030] p-3">
                 <p className="font-semibold">{tRequests("uploadedFiles")}</p>
                 <FileLink
-                  label={tRequests("eidCopy")}
-                  url={vendor.eidCopyUrl}
-                  notProvided={tCommon("notProvided")}
-                  openError={tRequests("couldNotOpenDoc")}
-                />
-                <FileLink
-                  label={tRequests("passportCopy")}
-                  url={vendor.passportCopyUrl}
+                  label="ID document"
+                  url={vendor.idDocumentUrl}
                   notProvided={tCommon("notProvided")}
                   openError={tRequests("couldNotOpenDoc")}
                 />
@@ -259,15 +330,12 @@ export default function AdminVendorDetailPage({
                   notProvided={tCommon("notProvided")}
                   openError={tRequests("couldNotOpenDoc")}
                 />
-                {vendor.verificationDocuments.map((fileUrl, index) => (
-                  <FileLink
-                    key={`${fileUrl}-${index}`}
-                    label={tRequests("verificationDocument", { n: index + 1 })}
-                    url={fileUrl}
-                    notProvided={tCommon("notProvided")}
-                    openError={tRequests("couldNotOpenDoc")}
-                  />
-                ))}
+                <FileLink
+                  label="Financial statement"
+                  url={vendor.financialStatementUrl}
+                  notProvided={tCommon("notProvided")}
+                  openError={tRequests("couldNotOpenDoc")}
+                />
               </div>
             </DashboardPanel>
           </div>
@@ -300,6 +368,21 @@ function MetricLink({
   );
 }
 
+function UnusedServiceCard({
+  label,
+  message,
+}: {
+  label: string;
+  message: string;
+}) {
+  return (
+    <div className="rounded-xl border border-dashed border-[#303030] bg-[#121212] p-4">
+      <p className="text-sm font-medium text-muted-foreground">{label}</p>
+      <p className="mt-2 text-xs text-zinc-500">{message}</p>
+    </div>
+  );
+}
+
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <p>
@@ -326,7 +409,7 @@ function FileLink({
   openError,
 }: {
   label: string;
-  url: string;
+  url?: string | null;
   notProvided: string;
   openError: string;
 }) {
@@ -335,6 +418,7 @@ function FileLink({
   const openSecure = useCallback(async () => {
     try {
       setLoading(true);
+      if (!url) return;
       const viewUrl = await getPresignedViewUrl(url);
       window.open(viewUrl, "_blank", "noopener,noreferrer");
     } catch (err) {

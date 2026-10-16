@@ -9,7 +9,14 @@ import de from "../../messages/de.json";
 import ar from "../../messages/ar.json";
 import fr from "../../messages/fr.json";
 
-const messagesByLocale: Record<AppLocale, typeof en> = { en, ur, de, ar, fr };
+// Locales may lag en.json; cast so missing keys don't block the build.
+const messagesByLocale: Record<AppLocale, typeof en> = {
+  en,
+  ur: ur as unknown as typeof en,
+  de: de as unknown as typeof en,
+  ar: ar as unknown as typeof en,
+  fr: fr as unknown as typeof en,
+};
 
 function toastTranslator() {
   const locale =

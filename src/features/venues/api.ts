@@ -79,8 +79,13 @@ export async function listPublicVenues(params?: {
   city?: string;
   countryCode?: string;
   venueTypeId?: string;
+  venueCategoryId?: string;
   capacityMin?: number;
   capacityMax?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  priceCurrency?: string;
+  priceBounds?: { currency: string; min?: number; max?: number }[];
   sortBy?: "createdAt" | "name";
   sortOrder?: "asc" | "desc";
 }): Promise<ListPublicVenuesResult> {
@@ -91,8 +96,15 @@ export async function listPublicVenues(params?: {
   if (params?.city) sp.set("city", params.city);
   if (params?.countryCode) sp.set("countryCode", params.countryCode);
   if (params?.venueTypeId) sp.set("venueTypeId", params.venueTypeId);
+  if (params?.venueCategoryId) sp.set("venueCategoryId", params.venueCategoryId);
   if (params?.capacityMin !== undefined) sp.set("capacityMin", String(params.capacityMin));
   if (params?.capacityMax !== undefined) sp.set("capacityMax", String(params.capacityMax));
+  if (params?.minPrice != null) sp.set("minPrice", String(params.minPrice));
+  if (params?.maxPrice != null) sp.set("maxPrice", String(params.maxPrice));
+  if (params?.priceCurrency) sp.set("priceCurrency", params.priceCurrency);
+  if (params?.priceBounds?.length) {
+    sp.set("priceBounds", JSON.stringify(params.priceBounds));
+  }
   if (params?.sortBy) sp.set("sortBy", params.sortBy);
   if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
 
@@ -123,8 +135,19 @@ export async function getPreviewVenue(id: string): Promise<PublicVenue> {
   return unwrapEnvelope(json);
 }
 
-export async function listVenueTypes(): Promise<VenueType[]> {
-  const json = await apiGet<SuccessEnvelope<VenueType[]>>("/api/venues/types");
+export async function listVenueTypes(params?: {
+  parentId?: string;
+  rootsOnly?: boolean;
+  leavesOnly?: boolean;
+}): Promise<VenueType[]> {
+  const sp = new URLSearchParams();
+  if (params?.parentId) sp.set("parentId", params.parentId);
+  if (params?.rootsOnly !== undefined) sp.set("rootsOnly", String(params.rootsOnly));
+  if (params?.leavesOnly !== undefined) sp.set("leavesOnly", String(params.leavesOnly));
+  const qs = sp.toString();
+  const json = await apiGet<SuccessEnvelope<VenueType[]>>(
+    qs ? `/api/venues/types?${qs}` : "/api/venues/types",
+  );
   return unwrapEnvelope(json);
 }
 
@@ -390,6 +413,7 @@ export async function removeVenueAmenity(venueId: string, amenityId: string): Pr
 export async function createVenueType(body: {
   name: string;
   description?: string;
+  parentId?: string | null;
 }): Promise<VenueType> {
   return authJson<VenueType>("/api/venues/types", {
     method: "POST",

@@ -28,6 +28,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -71,14 +78,17 @@ import { DashboardPageHeader } from "@/components/dashboard/dashboard-shared";
 import { cn } from "@/lib/utils";
 
 const inputClass = dashboardInputClass;
+type CreateKind = "category" | "subcategory";
 
 export default function VenueTaxonomyPage() {
   const t = useTranslations("adminDashboard");
   const tCommon = useTranslations("common");
   const tValidation = useTranslations("validation");
   const queryClient = useQueryClient();
+  const [createKind, setCreateKind] = useState<CreateKind>("category");
   const [typeName, setTypeName] = useState("");
   const [typeDesc, setTypeDesc] = useState("");
+  const [typeParentId, setTypeParentId] = useState("");
   const [amenityName, setAmenityName] = useState("");
   const [amenityDesc, setAmenityDesc] = useState("");
   const [typeAttempted, setTypeAttempted] = useState(false);
@@ -87,13 +97,23 @@ export default function VenueTaxonomyPage() {
   const [deleteAmenityTarget, setDeleteAmenityTarget] = useState<AmenityCatalogItem | null>(null);
 
   const typeNameError = typeAttempted && isBlank(typeName) ? tValidation("required") : null;
+  const typeParentError =
+    typeAttempted && createKind === "subcategory" && isBlank(typeParentId)
+      ? tValidation("required")
+      : null;
   const amenityNameError =
     amenityAttempted && isBlank(amenityName) ? tValidation("required") : null;
 
   const { data: types = [], isLoading: typesLoading } = useQuery({
     queryKey: venueKeys.types(),
-    queryFn: listVenueTypes,
+    queryFn: () => listVenueTypes(),
   });
+
+  // Any root (no parent) can receive subcategories — including empty new categories.
+  const categories = useMemo(
+    () => types.filter((type) => !type.parentId),
+    [types],
+  );
 
   const { data: catalog = [], isLoading: catalogLoading } = useQuery({
     queryKey: venueKeys.amenityCatalog(),
@@ -101,11 +121,19 @@ export default function VenueTaxonomyPage() {
   });
 
   const createTypeMut = useMutation({
-    mutationFn: () => createVenueType({ name: typeName.trim(), description: typeDesc || undefined }),
+    mutationFn: () =>
+      createVenueType({
+        name: typeName.trim(),
+        description: typeDesc || undefined,
+        parentId: createKind === "category" ? null : typeParentId,
+      }),
     onSuccess: () => {
-      toast.success(t("venueTypeCreated"));
+      toast.success(
+        createKind === "category" ? t("venueCategoryCreated") : t("venueTypeCreated"),
+      );
       setTypeName("");
       setTypeDesc("");
+      setTypeParentId("");
       setTypeAttempted(false);
       queryClient.invalidateQueries({ queryKey: venueKeys.types() });
     },
@@ -148,9 +176,16 @@ export default function VenueTaxonomyPage() {
     onError: (e) => toastApiError(e, t("couldNotDeleteAmenity")),
   });
 
+  function switchCreateKind(kind: CreateKind) {
+    setCreateKind(kind);
+    setTypeAttempted(false);
+    if (kind === "category") setTypeParentId("");
+  }
+
   function submitType() {
     setTypeAttempted(true);
     if (isBlank(typeName)) return;
+    if (createKind === "subcategory" && isBlank(typeParentId)) return;
     createTypeMut.mutate();
   }
 
@@ -184,12 +219,83 @@ export default function VenueTaxonomyPage() {
           <TabsContent value="types" className="space-y-4">
             <Card className={dashboardCardClass}>
               <CardHeader>
-                <CardTitle>{t("addVenueType")}</CardTitle>
-                <CardDescription>
-                  {t("venueTypeHint")}
-                </CardDescription>
+                <CardTitle>{t("addVenueTaxonomyTitle")}</CardTitle>
+                <CardDescription>{t("venueTypeHint")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div
+                  className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-muted/30 p-1"
+                  role="tablist"
+                  aria-label={t("addVenueTaxonomyTitle")}
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={createKind === "category"}
+                    onClick={() => switchCreateKind("category")}
+                    className={cn(
+                      "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      createKind === "category"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {t("addVenueCategory")}
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={createKind === "subcategory"}
+                    onClick={() => switchCreateKind("subcategory")}
+                    className={cn(
+                      "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      createKind === "subcategory"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {t("addVenueType")}
+                  </button>
+                </div>
+
+                {createKind === "subcategory" ? (
+                  categories.length === 0 ? (
+                    <p className="rounded-md border border-dashed border-border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
+                      {t("venueSubcategoryNeedsCategory")}
+                    </p>
+                  ) : (
+                    <FormField
+                      label={t("venueCategoryParent")}
+                      htmlFor="type-parent"
+                      required
+                      error={typeParentError}
+                    >
+                      <Select
+                        value={typeParentId || undefined}
+                        onValueChange={setTypeParentId}
+                      >
+                        <SelectTrigger
+                          id="type-parent"
+                          aria-invalid={!!typeParentError}
+                          className={fieldClassName(
+                            cn(inputClass, "w-full"),
+                            !!typeParentError,
+                          )}
+                        >
+                          <SelectValue placeholder={t("selectVenueCategory")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormField>
+                  )
+                ) : null}
+
                 <FormField
                   label={tCommon("name")}
                   htmlFor="type-name"
@@ -199,7 +305,11 @@ export default function VenueTaxonomyPage() {
                 >
                   <Input
                     id="type-name"
-                    placeholder={t("venueTypeNamePlaceholder")}
+                    placeholder={
+                      createKind === "category"
+                        ? t("venueCategoryNamePlaceholder")
+                        : t("venueTypeNamePlaceholder")
+                    }
                     value={typeName}
                     onChange={(e) => setTypeName(e.target.value)}
                     aria-invalid={!!typeNameError}
@@ -220,14 +330,19 @@ export default function VenueTaxonomyPage() {
                 <Button
                   type="button"
                   onClick={submitType}
-                  disabled={createTypeMut.isPending}
+                  disabled={
+                    createTypeMut.isPending ||
+                    (createKind === "subcategory" && categories.length === 0)
+                  }
                 >
                   {createTypeMut.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <Plus className="mr-2 h-4 w-4" />
                   )}
-                  {t("addVenueType")}
+                  {createKind === "category"
+                    ? t("addVenueCategory")
+                    : t("addVenueType")}
                 </Button>
               </CardFooter>
             </Card>
@@ -243,6 +358,7 @@ export default function VenueTaxonomyPage() {
                   isLoading={typesLoading}
                   emptyLabel={t("noVenueTypesYet")}
                   onDelete={setDeleteTypeTarget}
+                  showCategory
                 />
               </CardContent>
             </Card>
@@ -439,12 +555,15 @@ function TaxonomyTable<T extends TaxonomyItem>({
   isLoading,
   emptyLabel,
   onDelete,
+  showCategory = false,
 }: {
   items: T[];
   isLoading: boolean;
   emptyLabel: string;
   onDelete: (item: T) => void;
+  showCategory?: boolean;
 }) {
+  const t = useTranslations("adminDashboard");
   const tCommon = useTranslations("common");
   const tTables = useTranslations("tables");
   const table = useTableQueryState({
@@ -454,12 +573,18 @@ function TaxonomyTable<T extends TaxonomyItem>({
   const filteredItems = useMemo(() => {
     const search = table.debouncedSearch.toLocaleLowerCase();
     return items
-      .filter(
-        (item) =>
-          !search ||
+      .filter((item) => {
+        if (!search) return true;
+        const parentName =
+          "parent" in item && item.parent && typeof item.parent === "object"
+            ? (item.parent as { name?: string }).name ?? ""
+            : "";
+        return (
           item.name.toLocaleLowerCase().includes(search) ||
-          item.description?.toLocaleLowerCase().includes(search),
-      )
+          item.description?.toLocaleLowerCase().includes(search) ||
+          parentName.toLocaleLowerCase().includes(search)
+        );
+      })
       .sort((a, b) => {
         const direction = table.sortOrder === "asc" ? 1 : -1;
         return direction * a.name.localeCompare(b.name);
@@ -470,6 +595,7 @@ function TaxonomyTable<T extends TaxonomyItem>({
     table.pageSize,
     { page: table.page, setPage: table.setPage },
   );
+  const colCount = showCategory ? 4 : 3;
 
   return (
     <DashboardDataTable
@@ -513,6 +639,11 @@ function TaxonomyTable<T extends TaxonomyItem>({
               sortOrder={table.sortOrder}
               onSort={table.toggleSort}
             />
+            {showCategory ? (
+              <TableHead className="min-w-[140px] whitespace-nowrap text-muted-foreground">
+                {t("venueCategoryCol")}
+              </TableHead>
+            ) : null}
             <TableHead className="min-w-[280px] whitespace-nowrap text-muted-foreground">
               {tCommon("description")}
             </TableHead>
@@ -523,33 +654,55 @@ function TaxonomyTable<T extends TaxonomyItem>({
         </TableHeader>
         <TableBody>
           {isLoading ? (
-            <TableSkeleton cols={3} />
+            <TableSkeleton cols={colCount} />
           ) : (
             <>
-              {paginatedItems.map((item) => (
-                <TableRow key={item.id} className={dashboardTableRowClass}>
-                  <TableCell className="whitespace-normal break-words font-medium text-foreground align-top">
-                    {item.name}
-                  </TableCell>
-                  <TableCell className="whitespace-normal break-words text-muted-foreground align-top">
-                    {item.description ?? tCommon("notAvailable")}
-                  </TableCell>
-                  <TableCell className="w-14 shrink-0 whitespace-nowrap text-right align-top">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      aria-label={`${tCommon("delete")} ${item.name}`}
-                      onClick={() => onDelete(item)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {paginatedItems.map((item) => {
+                const parentName =
+                  showCategory &&
+                  "parent" in item &&
+                  item.parent &&
+                  typeof item.parent === "object"
+                    ? (item.parent as { name?: string }).name
+                    : undefined;
+                const isCategory =
+                  showCategory &&
+                  "parentId" in item &&
+                  !(item as VenueType).parentId;
+
+                return (
+                  <TableRow key={item.id} className={dashboardTableRowClass}>
+                    <TableCell className="whitespace-normal break-words font-medium text-foreground align-top">
+                      {item.name}
+                    </TableCell>
+                    {showCategory ? (
+                      <TableCell className="whitespace-normal break-words text-muted-foreground align-top">
+                        {parentName ??
+                          (isCategory
+                            ? t("venueCategoryTopLevel")
+                            : tCommon("notAvailable"))}
+                      </TableCell>
+                    ) : null}
+                    <TableCell className="whitespace-normal break-words text-muted-foreground align-top">
+                      {item.description ?? tCommon("notAvailable")}
+                    </TableCell>
+                    <TableCell className="w-14 shrink-0 whitespace-nowrap text-right align-top">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        aria-label={`${tCommon("delete")} ${item.name}`}
+                        onClick={() => onDelete(item)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {!paginatedItems.length ? (
-                <TableEmptyRow colSpan={3}>
+                <TableEmptyRow colSpan={colCount}>
                   {table.debouncedSearch ? tTables("noMatch") : emptyLabel}
                 </TableEmptyRow>
               ) : null}

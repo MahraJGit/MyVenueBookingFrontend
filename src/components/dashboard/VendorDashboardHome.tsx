@@ -20,6 +20,8 @@ import { listManagedEvents } from "@/features/events/api";
 import { listManagedVenues } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
 import { getDashboardPaths } from "@/features/dashboard/paths";
+import { getMyVendorProfile } from "@/features/vendor/api";
+import { hasApprovedVendorService } from "@/features/vendor/vendor-services";
 import {
   DashboardLoadingState,
   DashboardPageHeader,
@@ -66,10 +68,23 @@ export default function VendorDashboardHome() {
   const tCommon = useTranslations("common");
   const paths = getDashboardPaths("vendor");
 
+  const { data: vendorProfile } = useQuery({
+    queryKey: ["vendor-profile-me"],
+    queryFn: getMyVendorProfile,
+    staleTime: 30_000,
+  });
+  const enabled = vendorProfile?.enabledServices;
+  const isPlatform = Boolean(vendorProfile?.isPlatformProfile);
+  const showEvents = isPlatform || hasApprovedVendorService(enabled, "EVENTS");
+  const showAttractions =
+    isPlatform || hasApprovedVendorService(enabled, "ATTRACTIONS");
+  const showVenues = isPlatform || hasApprovedVendorService(enabled, "VENUES");
+
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
     queryKey: ["managed-events", "vendor-overview"],
     queryFn: () =>
       listManagedEvents({ page: 1, limit: 100, sortBy: "createdAt", sortOrder: "desc" }),
+    enabled: showEvents,
   });
 
   const { data: attractionsData, isLoading: attractionsLoading } = useQuery({
@@ -81,11 +96,13 @@ export default function VendorDashboardHome() {
         sortBy: "createdAt",
         sortOrder: "desc",
       }),
+    enabled: showAttractions,
   });
 
   const { data: venuesData, isLoading: venuesLoading } = useQuery({
     queryKey: venueKeys.managedList({ overview: true }),
     queryFn: () => listManagedVenues({ limit: 100 }),
+    enabled: showVenues,
   });
 
   const events = (eventsData?.data ?? []).filter((e) => !e.isDeleted);
@@ -94,7 +111,10 @@ export default function VendorDashboardHome() {
   const pendingEvents = events.filter((e) => e.status === "PENDING").length;
   const pendingAttractions = attractions.filter((a) => a.status === "PENDING").length;
   const pendingVenues = venues.filter((v) => v.status === "PENDING").length;
-  const loading = eventsLoading || attractionsLoading || venuesLoading;
+  const loading =
+    (showEvents && eventsLoading) ||
+    (showAttractions && attractionsLoading) ||
+    (showVenues && venuesLoading);
 
   return (
     <RoleGuard allowedRoles={["VENDOR", "ADMIN"]}>
@@ -105,24 +125,30 @@ export default function VendorDashboardHome() {
             description={t("vendorWelcomeDesc")}
           />
           <div className="flex flex-wrap gap-2">
-            <Button asChild className="bg-primary">
-              <Link href={paths.addEvent}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t("createEvent")}
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="border-[#303030]">
-              <Link href={paths.addAttraction}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t("addAttraction")}
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="border-[#303030]">
-              <Link href={paths.addVenue}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t("addVenue")}
-              </Link>
-            </Button>
+            {showEvents ? (
+              <Button asChild className="bg-primary">
+                <Link href={paths.addEvent}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("createEvent")}
+                </Link>
+              </Button>
+            ) : null}
+            {showAttractions ? (
+              <Button asChild variant="outline" className="border-[#303030]">
+                <Link href={paths.addAttraction}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("addAttraction")}
+                </Link>
+              </Button>
+            ) : null}
+            {showVenues ? (
+              <Button asChild variant="outline" className="border-[#303030]">
+                <Link href={paths.addVenue}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("addVenue")}
+                </Link>
+              </Button>
+            ) : null}
           </div>
         </div>
 
@@ -130,34 +156,42 @@ export default function VendorDashboardHome() {
           <DashboardLoadingState />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <StatCard
-              title={t("myEvents")}
-              value={events.length}
-              hint={t("pendingApproval", { count: pendingEvents })}
-              href={paths.events}
-              viewAllLabel={tCommon("viewAll")}
-            />
-            <StatCard
-              title={t("myAttractions")}
-              value={attractions.length}
-              hint={t("pendingApproval", { count: pendingAttractions })}
-              href={paths.attractions}
-              viewAllLabel={tCommon("viewAll")}
-            />
-            <StatCard
-              title={t("myVenues")}
-              value={venues.length}
-              hint={t("pendingApproval", { count: pendingVenues })}
-              href={paths.venues}
-              viewAllLabel={tCommon("viewAll")}
-            />
-            <StatCard
-              title={t("venueBookings")}
-              value="—"
-              hint={t("bookingsForVenues")}
-              href={paths.venueBookings}
-              viewAllLabel={tCommon("viewAll")}
-            />
+            {showEvents ? (
+              <StatCard
+                title={t("myEvents")}
+                value={events.length}
+                hint={t("pendingApproval", { count: pendingEvents })}
+                href={paths.events}
+                viewAllLabel={tCommon("viewAll")}
+              />
+            ) : null}
+            {showAttractions ? (
+              <StatCard
+                title={t("myAttractions")}
+                value={attractions.length}
+                hint={t("pendingApproval", { count: pendingAttractions })}
+                href={paths.attractions}
+                viewAllLabel={tCommon("viewAll")}
+              />
+            ) : null}
+            {showVenues ? (
+              <StatCard
+                title={t("myVenues")}
+                value={venues.length}
+                hint={t("pendingApproval", { count: pendingVenues })}
+                href={paths.venues}
+                viewAllLabel={tCommon("viewAll")}
+              />
+            ) : null}
+            {showVenues ? (
+              <StatCard
+                title={t("venueBookings")}
+                value="—"
+                hint={t("bookingsForVenues")}
+                href={paths.venueBookings}
+                viewAllLabel={tCommon("viewAll")}
+              />
+            ) : null}
             <StatCard
               title={t("analytics")}
               value="—"
@@ -169,83 +203,89 @@ export default function VendorDashboardHome() {
         )}
 
         <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-2">
-          <Card className="border-[#303030] bg-[#1B1B1B]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Clapperboard className="h-5 w-5 text-primary" />
-                {t("eventsSection")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>{t("eventsSectionDesc")}</p>
-              <div className="flex flex-wrap gap-2 pt-2">
-                <Button asChild size="sm" className="bg-primary">
-                  <Link href={paths.addEvent}>{t("createEvent")}</Link>
-                </Button>
-                <Button asChild size="sm" variant="outline" className="border-[#303030]">
-                  <Link href={paths.events}>{t("myEventsLink")}</Link>
-                </Button>
-                <Button asChild size="sm" variant="outline" className="border-[#303030]">
-                  <Link href={paths.tickets}>
-                    <Ticket className="mr-1 h-3 w-3" />
-                    {t("ticketSales")}
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {showEvents ? (
+            <Card className="border-[#303030] bg-[#1B1B1B]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Clapperboard className="h-5 w-5 text-primary" />
+                  {t("eventsSection")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>{t("eventsSectionDesc")}</p>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button asChild size="sm" className="bg-primary">
+                    <Link href={paths.addEvent}>{t("createEvent")}</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline" className="border-[#303030]">
+                    <Link href={paths.events}>{t("myEventsLink")}</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline" className="border-[#303030]">
+                    <Link href={paths.tickets}>
+                      <Ticket className="mr-1 h-3 w-3" />
+                      {t("ticketSales")}
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
 
-          <Card className="border-[#303030] bg-[#1B1B1B]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <FerrisWheel className="h-5 w-5 text-primary" />
-                {t("attractionsSection")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>{t("attractionsSectionDesc")}</p>
-              <div className="flex flex-wrap gap-2 pt-2">
-                <Button asChild size="sm" className="bg-primary">
-                  <Link href={paths.addAttraction}>{t("addAttraction")}</Link>
-                </Button>
-                <Button asChild size="sm" variant="outline" className="border-[#303030]">
-                  <Link href={paths.attractions}>{t("myAttractionsLink")}</Link>
-                </Button>
-                <Button asChild size="sm" variant="outline" className="border-[#303030]">
-                  <Link href={paths.attractionTickets}>
-                    <Ticket className="mr-1 h-3 w-3" />
-                    {t("attractionTickets")}
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {showAttractions ? (
+            <Card className="border-[#303030] bg-[#1B1B1B]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <FerrisWheel className="h-5 w-5 text-primary" />
+                  {t("attractionsSection")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>{t("attractionsSectionDesc")}</p>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button asChild size="sm" className="bg-primary">
+                    <Link href={paths.addAttraction}>{t("addAttraction")}</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline" className="border-[#303030]">
+                    <Link href={paths.attractions}>{t("myAttractionsLink")}</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline" className="border-[#303030]">
+                    <Link href={paths.attractionTickets}>
+                      <Ticket className="mr-1 h-3 w-3" />
+                      {t("attractionTickets")}
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
 
-          <Card className="border-[#303030] bg-[#1B1B1B]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Building2 className="h-5 w-5 text-primary" />
-                {t("venuesSection")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>{t("venuesSectionDesc")}</p>
-              <div className="flex flex-wrap gap-2 pt-2">
-                <Button asChild size="sm" className="bg-primary">
-                  <Link href={paths.addVenue}>{t("addVenue")}</Link>
-                </Button>
-                <Button asChild size="sm" variant="outline" className="border-[#303030]">
-                  <Link href={paths.venues}>{t("myVenuesLink")}</Link>
-                </Button>
-                <Button asChild size="sm" variant="outline" className="border-[#303030]">
-                  <Link href={paths.venueBookings}>
-                    <CalendarDays className="mr-1 h-3 w-3" />
-                    {t("venueBookings")}
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {showVenues ? (
+            <Card className="border-[#303030] bg-[#1B1B1B]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  {t("venuesSection")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>{t("venuesSectionDesc")}</p>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button asChild size="sm" className="bg-primary">
+                    <Link href={paths.addVenue}>{t("addVenue")}</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline" className="border-[#303030]">
+                    <Link href={paths.venues}>{t("myVenuesLink")}</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline" className="border-[#303030]">
+                    <Link href={paths.venueBookings}>
+                      <CalendarDays className="mr-1 h-3 w-3" />
+                      {t("venueBookings")}
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
 
         <Card className="border-[#303030] bg-[#1B1B1B]">

@@ -21,6 +21,8 @@ import {
   getMyVendorProfile,
   updateMyVendorPublicProfile,
 } from "@/features/vendor/api";
+import { RequestAdditionalServicesPanel } from "@/components/vendors/RequestAdditionalServicesPanel";
+import { Badge } from "@/components/ui/badge";
 import { uploadSingleFile } from "@/features/uploads/upload-single";
 import { toastApiError } from "@/lib/toasts";
 
@@ -300,6 +302,46 @@ export default function VendorProfilePage() {
             <p><span className="text-muted-foreground">{t("taxId")}:</span> {profile.taxId ?? "—"}</p>
           </div>
         </DashboardPanel>
+
+        {isApproved ? (
+          <DashboardPanel className="space-y-4 lg:col-span-2">
+            <div>
+              <h2 className="text-lg font-semibold">{t("servicesSection")}</h2>
+              <p className="text-sm text-muted-foreground">
+                {t("servicesSectionDesc")}
+              </p>
+            </div>
+            <div className="space-y-2">
+              {(profile.services ?? []).map((svc) => (
+                <div
+                  key={svc.id}
+                  className="flex items-center justify-between rounded-md border border-[#303030] px-3 py-2 text-sm"
+                >
+                  <span>{svc.serviceType}</span>
+                  <Badge
+                    variant={
+                      svc.status === "APPROVED"
+                        ? "default"
+                        : svc.status === "REJECTED"
+                          ? "destructive"
+                          : "secondary"
+                    }
+                  >
+                    {svc.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+            <RequestAdditionalServicesPanel
+              enrollments={profile.services}
+              onSubmitted={async () => {
+                await queryClient.invalidateQueries({
+                  queryKey: ["vendor-profile-me"],
+                });
+              }}
+            />
+          </DashboardPanel>
+        ) : null}
       </div>
     </DashboardPageShell>
   );

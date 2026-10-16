@@ -86,6 +86,16 @@ export function useListingLabels() {
       searchEvents: t("searchEvents"),
       searchVenues: t("searchVenues"),
       clearFilters: t("clearFilters"),
+      eventDate: t("eventDate"),
+      selectDate: t("selectDate"),
+      priceRange: t("priceRange"),
+      priceRangeInCurrency: (currency: string) =>
+        t("priceRangeInCurrency", { currency }),
+      minPrice: t("minPrice"),
+      maxPrice: t("maxPrice"),
+      allCategories: t("allCategories"),
+      category: t("category"),
+      searchLabel: t("searchLabel"),
       matching: (term: string) => t("matching", { term }),
       inCity: (city: string) => t("inCity", { city }),
       pageOf: (page: number, totalPages: number) =>

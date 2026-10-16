@@ -10,6 +10,7 @@ type EventCategoryFiltersProps = {
   activeCategory: string;
   onCategoryChange: (category: string) => void;
   isLoading?: boolean;
+  maxVisible?: number;
 };
 
 export function EventCategoryFilters({
@@ -17,6 +18,7 @@ export function EventCategoryFilters({
   activeCategory,
   onCategoryChange,
   isLoading,
+  maxVisible,
 }: EventCategoryFiltersProps) {
   const tEvents = useTranslations("events");
 
@@ -27,6 +29,7 @@ export function EventCategoryFilters({
 
   return (
     <CollapsibleChipRow
+      maxVisible={maxVisible}
       items={buttons.map((button) => {
         const isActive = activeCategory === button.value;
         return (

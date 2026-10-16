@@ -10,27 +10,33 @@ type UploadOptions = {
   maxRetries?: number;
 };
 
-type CreateVendorProfileBody = {
+export type VendorServiceType =
+  | "EVENTS"
+  | "ATTRACTIONS"
+  | "MARKETPLACE"
+  | "VENUES";
+
+export type CreateVendorProfileBody = {
   vendorName: string;
-  businessType: "INDIVIDUAL" | "COMPANY" | "PARTNERSHIP";
+  businessType: "INDIVIDUAL" | "COMPANY";
   ownerName: string;
-  eidNumber: string;
-  eidExpiry: string;
-  eidCopyUrl: string;
-  passportNumber: string;
-  passportExpiry: string;
-  passportCopyUrl: string;
-  legalEntityName: string;
-  incorporationDate: string;
+  countryCode: string;
+  city: string;
+  idType: string;
+  idNumber: string;
+  idDocumentUrl: string;
   tradeLicenseNumber: string;
-  tradeLicenseExpiry: string;
   tradeLicenseCopyUrl: string;
-  verificationDocuments: string[];
   email: string;
   phone: string;
   address: string;
   taxId: string;
-  paymentTerms: "NET_15" | "NET_30" | "NET_60";
+  annualRevenueRange: string;
+  financialStatementUrl: string;
+  serviceTypes: VendorServiceType[];
+  acceptedCommission: true;
+  acceptedTerms: true;
+  acceptedPrivacy: true;
   logoUrl?: string;
   coverImageUrl?: string;
 };
@@ -41,6 +47,23 @@ type CreateVendorProfileResponse = {
 };
 
 export type VendorVerificationStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export type VendorIdVerificationStatus =
+  | "PENDING_MANUAL"
+  | "FORMAT_CHECKED"
+  | "MANUAL_APPROVED"
+  | "API_VERIFIED"
+  | "REJECTED";
+
+export type VendorServiceEnrollment = {
+  id: string;
+  serviceType: VendorServiceType;
+  status: VendorVerificationStatus;
+  commissionPercent: number;
+  rejectedReason?: string | null;
+  requestedAt: string;
+  reviewedAt?: string | null;
+};
 
 export type VendorProfile = {
   id?: string;
@@ -57,6 +80,15 @@ export type VendorProfile = {
   email?: string;
   phone?: string;
   address?: string;
+  countryCode?: string | null;
+  city?: string | null;
+  idType?: string | null;
+  idNumber?: string | null;
+  idDocumentUrl?: string | null;
+  tradeLicenseNumber?: string | null;
+  tradeLicenseCopyUrl?: string | null;
+  annualRevenueRange?: string | null;
+  financialStatementUrl?: string | null;
   verificationStatus: VendorVerificationStatus;
   isPlatformProfile?: boolean;
   eidNumber?: string;
@@ -65,6 +97,8 @@ export type VendorProfile = {
   taxId?: string;
   paymentTerms?: "NET_15" | "NET_30" | "NET_60";
   rejectedReason?: string | null;
+  services?: VendorServiceEnrollment[];
+  enabledServices?: VendorServiceType[];
   createdAt?: string;
   updatedAt?: string;
 };
@@ -159,6 +193,133 @@ export async function createVendorProfile(body: CreateVendorProfileBody) {
   return data as CreateVendorProfileResponse;
 }
 
+export async function resubmitVendorProfile(body: CreateVendorProfileBody) {
+  const res = await authFetch("/api/vendors/me/resubmit", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+    networkErrorMessage: "Network error while resubmitting vendor profile.",
+  });
+
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, data);
+  }
+
+  return data as CreateVendorProfileResponse;
+}
+
+export async function getVendorCommissionRates() {
+  const data = await apiGet<{
+    success: boolean;
+    data: Record<VendorServiceType, number>;
+  }>("/api/vendors/commission-rates");
+  return data.data;
+}
+
+export async function requestVendorServices(serviceTypes: VendorServiceType[]) {
+  const res = await authFetch("/api/vendors/me/services", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ serviceTypes }),
+    networkErrorMessage: "Network error while requesting vendor services.",
+  });
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, data);
+  }
+  return data;
+}
+
+export async function updateVendorServiceEnrollment(
+  vendorId: string,
+  serviceType: VendorServiceType,
+  body: {
+    status: VendorVerificationStatus;
+    rejectedReason?: string;
+    commissionPercent?: number;
+  },
+) {
+  const res = await authFetch(
+    `/api/vendors/${encodeURIComponent(vendorId)}/services/${encodeURIComponent(serviceType)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      networkErrorMessage: "Network error while updating service enrollment.",
+    },
+  );
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, data);
+  }
+  return data;
+}
+
+export type AdminVendorServiceRequest = {
+  id: string;
+  serviceType: VendorServiceType;
+  status: VendorVerificationStatus;
+  commissionPercent: number;
+  rejectedReason?: string | null;
+  requestedAt: string;
+  reviewedAt?: string | null;
+  vendorProfileId: string;
+  vendor: {
+    id: string;
+    vendorName: string;
+    ownerName: string;
+    email: string;
+    phone: string;
+    verificationStatus: VendorVerificationStatus;
+  };
+};
+
+export async function listAdminVendorServiceRequests(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: VendorVerificationStatus;
+  sortOrder?: "asc" | "desc";
+}) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.limit) search.set("limit", String(params.limit));
+  if (params?.search) search.set("search", params.search);
+  if (params?.status) search.set("status", params.status);
+  if (params?.sortOrder) search.set("sortOrder", params.sortOrder);
+  const qs = search.toString();
+
+  const res = await authFetch(
+    `/api/vendors/service-requests${qs ? `?${qs}` : ""}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      networkErrorMessage: "Network error while loading service requests.",
+    },
+  );
+
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, data);
+  }
+
+  return data as {
+    success: boolean;
+    data: AdminVendorServiceRequest[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+  };
+}
+
 export async function getMyVendorProfile() {
   const res = await authFetch("/api/vendors/me", {
     method: "GET",
@@ -189,17 +350,27 @@ export type AdminVendorProfile = {
   websiteUrl?: string | null;
   publicPhone?: string | null;
   publicEmail?: string | null;
-  eidNumber: string;
-  eidExpiry: string;
-  eidCopyUrl: string;
-  passportNumber: string;
-  passportExpiry: string;
-  passportCopyUrl: string;
-  legalEntityName: string;
-  incorporationDate: string;
+  countryCode?: string | null;
+  city?: string | null;
+  idType?: string | null;
+  idNumber?: string | null;
+  idDocumentUrl?: string | null;
+  idVerificationStatus?: VendorIdVerificationStatus | null;
+  idVerificationProvider?: string | null;
+  idVerifiedAt?: string | null;
+  eidNumber?: string | null;
+  eidExpiry?: string | null;
+  eidCopyUrl?: string | null;
+  passportNumber?: string | null;
+  passportExpiry?: string | null;
+  passportCopyUrl?: string | null;
+  legalEntityName?: string | null;
+  incorporationDate?: string | null;
   tradeLicenseNumber: string;
-  tradeLicenseExpiry: string;
+  tradeLicenseExpiry?: string | null;
   tradeLicenseCopyUrl: string;
+  annualRevenueRange?: string | null;
+  financialStatementUrl?: string | null;
   verificationDocuments: string[];
   email: string;
   phone: string;
@@ -208,6 +379,8 @@ export type AdminVendorProfile = {
   paymentTerms: "NET_15" | "NET_30" | "NET_60";
   verificationStatus: VendorVerificationStatus;
   rejectedReason: string | null;
+  services?: VendorServiceEnrollment[];
+  enabledServices?: VendorServiceType[];
   createdAt: string;
   updatedAt: string;
 };
@@ -281,6 +454,36 @@ export async function updateVendorVerification(
       },
       body: JSON.stringify(body),
       networkErrorMessage: "Network error while updating vendor status.",
+    },
+  );
+
+  const data = await parseJson<unknown>(res);
+  if (!res.ok) {
+    throw ApiError.fromUnknown(res.status, data);
+  }
+
+  return (data as { success: boolean; data: AdminVendorProfile }).data;
+}
+
+type UpdateVendorIdVerificationBody = {
+  status: VendorIdVerificationStatus;
+  rejectedReason?: string;
+};
+
+export async function updateVendorIdVerification(
+  id: string,
+  body: UpdateVendorIdVerificationBody,
+) {
+  const res = await authFetch(
+    `/api/vendors/${encodeURIComponent(id)}/id-verification`,
+    {
+      method: "PATCH",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      networkErrorMessage: "Network error while updating ID verification.",
     },
   );
 

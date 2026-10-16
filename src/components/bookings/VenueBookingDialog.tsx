@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +24,7 @@ import {
 } from "@/components/venues/AmenityPicker";
 import { createHold } from "@/features/bookings/api";
 import type { PublicVenue } from "@/features/venues/types";
+import { parseVenueHouseRules } from "@/features/venues/venue-rules";
 import { slotRangeToUtc } from "@/features/venues/timezone";
 import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
@@ -83,6 +85,20 @@ export function VenueBookingDialog({
   const [guestError, setGuestError] = useState<string | null>(null);
   const [specialRequests, setSpecialRequests] = useState("");
   const [amenitySelections, setAmenitySelections] = useState<AmenitySelection[]>([]);
+  const [rulesAccepted, setRulesAccepted] = useState(false);
+  const [rulesError, setRulesError] = useState<string | null>(null);
+
+  const houseRules = useMemo(
+    () => parseVenueHouseRules(venue.rules),
+    [venue.rules],
+  );
+  const requiresRulesAcceptance = houseRules.length > 0;
+
+  useEffect(() => {
+    if (!open) return;
+    setRulesAccepted(false);
+    setRulesError(null);
+  }, [open, venue.id]);
 
   const guestMessages = {
     required: t("guestsRequired"),
@@ -110,6 +126,7 @@ export function VenueBookingDialog({
         numGuests: numGuests ? Number(numGuests) : undefined,
         specialRequests: specialRequests || undefined,
         bookingAmenities: selectionsToPayload(amenitySelections),
+        rulesAccepted: requiresRulesAcceptance ? true : undefined,
       });
     },
     onSuccess: (booking) => {
@@ -135,6 +152,12 @@ export function VenueBookingDialog({
     );
     setGuestError(err);
     if (err) return;
+
+    if (requiresRulesAcceptance && !rulesAccepted) {
+      setRulesError(t("mustAcceptVenueRules"));
+      return;
+    }
+    setRulesError(null);
 
     holdMut.mutate();
   };
@@ -208,6 +231,42 @@ export function VenueBookingDialog({
               />
             </div>
           )}
+
+          {requiresRulesAcceptance ? (
+            <div className="space-y-3 rounded-lg border border-[#303030] bg-black/40 p-3">
+              <div>
+                <Label>{t("venueHouseRules")}</Label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("venueHouseRulesHint")}
+                </p>
+              </div>
+              <ul className="list-disc space-y-1 ps-5 text-sm text-zinc-300">
+                {houseRules.map((rule) => (
+                  <li key={rule.id}>{rule.text}</li>
+                ))}
+              </ul>
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="accept-venue-rules"
+                  checked={rulesAccepted}
+                  onCheckedChange={(checked) => {
+                    setRulesAccepted(checked === true);
+                    if (checked === true) setRulesError(null);
+                  }}
+                  className="mt-0.5 border-[#505050]"
+                />
+                <Label
+                  htmlFor="accept-venue-rules"
+                  className="cursor-pointer text-sm font-normal leading-snug text-zinc-200"
+                >
+                  {t("acceptVenueRules")}
+                </Label>
+              </div>
+              {rulesError ? (
+                <p className="text-xs text-destructive">{rulesError}</p>
+              ) : null}
+            </div>
+          ) : null}
 
           <Button
             className="w-full bg-primary"

@@ -198,6 +198,10 @@ export type ListPublicAttractionsParams = {
   city?: string;
   category?: string;
   countryCode?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  priceCurrency?: string;
+  priceBounds?: { currency: string; min?: number; max?: number }[];
   sortBy?: "createdAt" | "name" | "scheduleStartDate";
   sortOrder?: "asc" | "desc";
 };
@@ -287,6 +291,12 @@ export async function listPublicAttractions(
   if (params?.city) sp.set("city", params.city);
   if (params?.category) sp.set("category", params.category);
   if (params?.countryCode) sp.set("countryCode", params.countryCode);
+  if (params?.minPrice != null) sp.set("minPrice", String(params.minPrice));
+  if (params?.maxPrice != null) sp.set("maxPrice", String(params.maxPrice));
+  if (params?.priceCurrency) sp.set("priceCurrency", params.priceCurrency);
+  if (params?.priceBounds?.length) {
+    sp.set("priceBounds", JSON.stringify(params.priceBounds));
+  }
   if (params?.sortBy) sp.set("sortBy", params.sortBy);
   if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
 

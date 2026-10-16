@@ -100,6 +100,71 @@ function isValidDatetimeLocalInTimezone(value: string, timezone: string): boolea
   }
 }
 
+function AcceptedVenueRulesBlock({
+  booking,
+  className,
+  variant = "dashboard",
+}: {
+  booking: Booking;
+  className?: string;
+  variant?: "dashboard" | "default";
+}) {
+  const t = useTranslations("booking");
+  const { locale } = useLocaleContext();
+  const snapshot = Array.isArray(booking.acceptedRulesSnapshot)
+    ? booking.acceptedRulesSnapshot.filter(
+        (r): r is { id: string; text: string } =>
+          !!r &&
+          typeof r === "object" &&
+          typeof (r as { text?: unknown }).text === "string" &&
+          String((r as { text: string }).text).trim().length > 0,
+      )
+    : [];
+  if (snapshot.length === 0) return null;
+
+  const acceptedLabel = booking.rulesAcceptedAt
+    ? t("acceptedVenueRulesAt", {
+        date: format(new Date(booking.rulesAcceptedAt), "PPp", {
+          locale: getDateFnsLocale(locale),
+        }),
+      })
+    : null;
+
+  if (variant === "default") {
+    return (
+      <div className={cn("sm:col-span-2", className)}>
+        <dt className="text-muted-foreground">{t("acceptedVenueRules")}</dt>
+        <dd className="text-foreground">
+          {acceptedLabel ? (
+            <p className="mb-2 text-xs text-muted-foreground">{acceptedLabel}</p>
+          ) : null}
+          <ul className="list-disc space-y-1 ps-5 text-sm">
+            {snapshot.map((rule, index) => (
+              <li key={rule.id || `rule-${index}`}>{rule.text}</li>
+            ))}
+          </ul>
+        </dd>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {t("acceptedVenueRules")}
+      </p>
+      {acceptedLabel ? (
+        <p className="mt-1 text-xs text-muted-foreground">{acceptedLabel}</p>
+      ) : null}
+      <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-foreground">
+        {snapshot.map((rule, index) => (
+          <li key={rule.id || `rule-${index}`}>{rule.text}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function DetailSkeleton({ variant }: { variant: "default" | "user" | "vendor" }) {
   if (variant === "user" || variant === "vendor") {
     return (
@@ -450,6 +515,11 @@ function UserBookingDetail({
           </div>
         ) : null}
 
+        <AcceptedVenueRulesBlock
+          booking={booking}
+          className={`rounded-xl border p-3 text-sm ${dashboardSurfaceBorderClass} bg-[#1a1a1a]`}
+        />
+
         <BookingLineItems
           booking={booking}
           className={`rounded-xl border p-4 ${dashboardSurfaceBorderClass} bg-[#1a1a1a]`}
@@ -634,6 +704,7 @@ function DefaultBookingDetail({
               <dd className="text-foreground">{booking.specialRequests}</dd>
             </div>
           ) : null}
+          <AcceptedVenueRulesBlock booking={booking} variant="default" />
         </dl>
 
         <BookingLineItems booking={booking} className="rounded-lg border border-border bg-muted/20 p-4" />
@@ -827,6 +898,11 @@ function VendorBookingDetail({
             <p className="mt-1 text-foreground">{booking.specialRequests}</p>
           </div>
         ) : null}
+
+        <AcceptedVenueRulesBlock
+          booking={booking}
+          className={`rounded-xl border p-3 text-sm ${dashboardSurfaceBorderClass} bg-[#1a1a1a]`}
+        />
 
         <BookingLineItems
           booking={booking}

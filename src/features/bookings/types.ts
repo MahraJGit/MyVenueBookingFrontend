@@ -60,6 +60,8 @@ export type Booking = {
   specialRequests?: string | null;
   guestName?: string | null;
   guestPhone?: string | null;
+  rulesAcceptedAt?: string | null;
+  acceptedRulesSnapshot?: Array<{ id: string; text: string }> | null;
   createdAt: string;
   updatedAt: string;
   venue: BookingVenueSummary;
@@ -99,6 +101,7 @@ export type CreateHoldPayload = {
   numGuests?: number;
   specialRequests?: string;
   bookingAmenities?: BookingAmenitySelection[];
+  rulesAccepted?: boolean;
 };
 
 export type CheckoutPayload = {

@@ -11,3 +11,84 @@
         font-size: clamp(1.5rem, 4vw, 2.5rem);
     }
 }
+
+.listing-hero-wrap,
+.events-listing-hero-wrap {
+    padding-bottom: 0.25rem;
+}
+
+.listing-hero,
+.events-listing-hero {
+    min-height: clamp(22rem, 42vw, 30rem);
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    background-size: cover;
+}
+
+.listing-hero__inner,
+.events-listing-hero__inner {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: inherit;
+}
+
+.listing-hero__inner::before,
+.events-listing-hero__inner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 35%, rgba(0, 0, 0, 0.15), transparent 70%);
+    pointer-events: none;
+}
+
+.listing-hero--events,
+.events-listing-hero {
+    background-image:
+        linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.35) 0%,
+            rgba(0, 0, 0, 0.5) 40%,
+            rgba(10, 10, 10, 0.78) 100%
+        ),
+        url("/images/events-hero-bg.jpg");
+}
+
+.listing-hero--venues {
+    background-image:
+        linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.35) 0%,
+            rgba(0, 0, 0, 0.5) 40%,
+            rgba(10, 10, 10, 0.78) 100%
+        ),
+        url("/images/venues-hero-bg.jpg");
+}
+
+.listing-hero--attractions {
+    background-image:
+        linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.35) 0%,
+            rgba(0, 0, 0, 0.5) 40%,
+            rgba(10, 10, 10, 0.78) 100%
+        ),
+        url("/images/attractions-hero-bg.jpg");
+}
+
+.listing-hero--marketplace {
+    background-image:
+        linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.35) 0%,
+            rgba(0, 0, 0, 0.5) 40%,
+            rgba(10, 10, 10, 0.78) 100%
+        ),
+        url("/images/marketplace-hero-bg.jpg");
+}
+
+.listing-hero-filter-bar,
+.events-listing-filter-bar {
+    /* half on hero, half below — position via utility classes in JSX */
+}

@@ -6,4 +6,6 @@ export const recommendationKeys = {
     [...recommendationKeys.all, "venues", limit ?? 8, locale ?? "en"] as const,
   attractions: (limit?: number, locale?: string) =>
     [...recommendationKeys.all, "attractions", limit ?? 8, locale ?? "en"] as const,
+  marketplace: (limit?: number, locale?: string) =>
+    [...recommendationKeys.all, "marketplace", limit ?? 8, locale ?? "en"] as const,
 };

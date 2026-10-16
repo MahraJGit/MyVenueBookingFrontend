@@ -142,7 +142,7 @@ export function SegmentHubPage({ variant: _variant }: SegmentHubPageProps) {
 
   const { data: venueTypes = [], isLoading: loadingTypes } = useQuery({
     queryKey: [...venueKeys.types(), locale],
-    queryFn: listVenueTypes,
+    queryFn: () => listVenueTypes(),
   });
 
   const corporateTypeIds = venueTypes

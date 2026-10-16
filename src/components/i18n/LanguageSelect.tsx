@@ -5,11 +5,12 @@ import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { CountryFlag } from "@/components/i18n/CountryFlag";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { LOCALE_OPTIONS, type AppLocale } from "@/i18n/locales";
 import { useLocaleContext } from "@/features/i18n/locale-context";
 import { cn } from "@/lib/utils";
@@ -38,59 +39,59 @@ export function LanguageSelect({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={cn(
-          "inline-flex shrink-0 items-center justify-center rounded-full border border-[#303030]/80 bg-black/30 backdrop-blur-sm transition-colors hover:bg-white/10",
-          fullWidth ? "h-11 w-full" : "size-9",
-          triggerClassName,
-          className,
-        )}
-        aria-label={`${tCommon("selectLanguage")}: ${current.nativeLabel}`}
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex shrink-0 items-center justify-center rounded-full border border-[#303030]/80 bg-black/30 backdrop-blur-sm transition-colors hover:bg-white/10",
+            fullWidth ? "h-11 w-full" : "size-9",
+            triggerClassName,
+            className,
+          )}
+          aria-label={`${tCommon("selectLanguage")}: ${current.nativeLabel}`}
+        >
+          <CountryFlag code={current.countryCode} className="h-3.5 w-5" />
+        </button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent
+        align="end"
+        side="bottom"
+        sideOffset={8}
+        className="w-64 border-[#303030] bg-[#1B1B1B] p-1.5 text-foreground shadow-xl"
       >
-        <CountryFlag code={current.countryCode} className="h-3.5 w-5" />
-      </button>
+        <DropdownMenuLabel className="px-3 py-2 text-xs font-medium text-muted-foreground">
+          {tCommon("selectLanguage")}
+        </DropdownMenuLabel>
 
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
-        <DialogHeader className="border-b border-border py-4 ps-6 pe-10 text-start">
-          <DialogTitle dir="auto">{tCommon("selectLanguage")}</DialogTitle>
-        </DialogHeader>
-
-        <ul className="max-h-[min(60vh,24rem)] overflow-y-auto p-2">
-          {LOCALE_OPTIONS.map((option) => {
-            const isSelected = locale === option.code;
-            return (
-              <li key={option.code}>
-                <button
-                  type="button"
-                  onClick={() => handleSelect(option.code)}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-start transition-colors",
-                    isSelected
-                      ? "bg-primary/15 text-primary"
-                      : "text-foreground hover:bg-white/5",
-                  )}
-                >
-                  <CountryFlag code={option.countryCode} className="h-5 w-7 shrink-0" />
-                  <span className="min-w-0 flex-1 text-start">
-                    <span className="block text-sm font-medium" dir="auto">
-                      {option.nativeLabel}
-                    </span>
-                    <span className="block text-xs text-muted-foreground" dir="auto">
-                      {option.label}
-                    </span>
-                  </span>
-                  {isSelected ? (
-                    <Check className="size-4 shrink-0 text-primary" aria-hidden />
-                  ) : null}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </DialogContent>
-    </Dialog>
+        {LOCALE_OPTIONS.map((option) => {
+          const isSelected = locale === option.code;
+          return (
+            <DropdownMenuItem
+              key={option.code}
+              onSelect={() => handleSelect(option.code)}
+              className={cn(
+                "cursor-pointer gap-3 rounded-lg px-3 py-2.5 focus:bg-white/5",
+                isSelected && "bg-primary/15 text-primary focus:bg-primary/15 focus:text-primary",
+              )}
+            >
+              <CountryFlag code={option.countryCode} className="h-5 w-7 shrink-0" />
+              <span className="min-w-0 flex-1 text-start">
+                <span className="block text-sm font-medium" dir="auto">
+                  {option.nativeLabel}
+                </span>
+                <span className="block text-xs text-muted-foreground" dir="auto">
+                  {option.label}
+                </span>
+              </span>
+              {isSelected ? (
+                <Check className="size-4 shrink-0 text-primary" aria-hidden />
+              ) : null}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

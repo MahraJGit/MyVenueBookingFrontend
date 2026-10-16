@@ -152,6 +152,12 @@ export type ListPublicEventsResult = {
   };
 };
 
+export type EventPriceBound = {
+  currency: string;
+  min?: number;
+  max?: number;
+};
+
 export type ListPublicEventsParams = {
   page?: number;
   limit?: number;
@@ -161,6 +167,11 @@ export type ListPublicEventsParams = {
   countryCode?: string;
   startDate?: string;
   endDate?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  priceCurrency?: string;
+  /** Per-currency bounds so filters respect the selected display currency. */
+  priceBounds?: EventPriceBound[];
   sortBy?: "createdAt" | "startDateTime" | "eventName";
   sortOrder?: "asc" | "desc";
 };
@@ -213,6 +224,12 @@ export async function listPublicEvents(
   if (params?.countryCode) sp.set("countryCode", params.countryCode);
   if (params?.startDate) sp.set("startDate", params.startDate);
   if (params?.endDate) sp.set("endDate", params.endDate);
+  if (params?.minPrice != null) sp.set("minPrice", String(params.minPrice));
+  if (params?.maxPrice != null) sp.set("maxPrice", String(params.maxPrice));
+  if (params?.priceCurrency) sp.set("priceCurrency", params.priceCurrency);
+  if (params?.priceBounds?.length) {
+    sp.set("priceBounds", JSON.stringify(params.priceBounds));
+  }
   if (params?.sortBy) sp.set("sortBy", params.sortBy);
   if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
 

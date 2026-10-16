@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ import {
   DashboardLogoutButton,
 } from '@/components/dashboard/dashboard-shared'
 import { ChatUnreadBadge } from '@/components/chat/ChatUnreadBadge'
+import { listAdminVendorServiceRequests } from '@/features/vendor/api'
 import { cn } from '@/lib/utils'
 
 function isSidebarLinkActive(pathname: string, search: string, href: string) {
@@ -51,6 +53,14 @@ export default function Sidebar({
 }) {
   const t = useTranslations('adminDashboard')
   const tCommon = useTranslations('common')
+  const pendingServiceRequestsQuery = useQuery({
+    queryKey: ['admin-vendor-service-requests', 'pending-count'],
+    queryFn: () =>
+      listAdminVendorServiceRequests({ page: 1, limit: 1, status: 'PENDING' }),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  })
+  const pendingServiceCount = pendingServiceRequestsQuery.data?.meta.total ?? 0
 
   return (
     <aside
@@ -86,6 +96,13 @@ export default function Sidebar({
           <SidebarSection title={t('users')} value="users">
             <SidebarLink icon="/svg/AddUserMale.svg" label={t('manageUsers')} href="/adminDashbaord/users" onClose={onClose} />
             <SidebarLink icon="/svg/Collaborating.svg" label={t('vendorsDirectory')} href="/adminDashbaord/vendorRequests" onClose={onClose} />
+            <SidebarLink
+              icon="/svg/EventAccepted.svg"
+              label={t('vendorServiceRequests')}
+              href="/adminDashbaord/vendorServiceRequests"
+              onClose={onClose}
+              badgeCount={pendingServiceCount}
+            />
           </SidebarSection>
 
           <SidebarSection title={t('venues')} value="venues">
@@ -165,6 +182,7 @@ function SidebarLink({
   onClose,
   showUnreadBadge = false,
   unreadContext = "admin",
+  badgeCount,
 }: {
   icon: string
   label: string
@@ -172,6 +190,7 @@ function SidebarLink({
   onClose: () => void
   showUnreadBadge?: boolean
   unreadContext?: "buyer" | "vendor" | "admin"
+  badgeCount?: number
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -196,6 +215,11 @@ function SidebarLink({
       <span className="flex min-w-0 flex-1 items-center gap-2">
         <span className="truncate">{label}</span>
         {showUnreadBadge ? <ChatUnreadBadge context={unreadContext} /> : null}
+        {badgeCount && badgeCount > 0 ? (
+          <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+            {badgeCount > 99 ? '99+' : badgeCount}
+          </span>
+        ) : null}
       </span>
     </Link>
   )

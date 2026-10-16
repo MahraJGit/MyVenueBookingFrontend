@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import {
   X,
@@ -35,6 +36,8 @@ import {
   DashboardLogoutButton,
 } from '@/components/dashboard/dashboard-shared'
 import { ChatUnreadBadge } from '@/components/chat/ChatUnreadBadge'
+import { getMyVendorProfile } from '@/features/vendor/api'
+import { hasApprovedVendorService } from '@/features/vendor/vendor-services'
 import { cn } from '@/lib/utils'
 
 const paths = getDashboardPaths('vendor')
@@ -49,6 +52,29 @@ export default function VendorSidebar({
   const t = useTranslations('vendorDashboard')
   const tNav = useTranslations('nav')
   const tCommon = useTranslations('common')
+  const profileQuery = useQuery({
+    queryKey: ['vendor-profile-me'],
+    queryFn: getMyVendorProfile,
+    staleTime: 30_000,
+  })
+
+  const enabled = profileQuery.data?.enabledServices
+  const isPlatform = Boolean(profileQuery.data?.isPlatformProfile)
+  const showEvents = isPlatform || hasApprovedVendorService(enabled, 'EVENTS')
+  const showAttractions =
+    isPlatform || hasApprovedVendorService(enabled, 'ATTRACTIONS')
+  const showVenues = isPlatform || hasApprovedVendorService(enabled, 'VENUES')
+  const showMarketplace =
+    isPlatform || hasApprovedVendorService(enabled, 'MARKETPLACE')
+
+  const defaultOpen = [
+    'overview',
+    showEvents ? 'events' : null,
+    showAttractions ? 'attractions' : null,
+    showVenues ? 'venues' : null,
+    showMarketplace ? 'marketplace' : null,
+    'account',
+  ].filter(Boolean) as string[]
 
   return (
     <aside
@@ -76,39 +102,47 @@ export default function VendorSidebar({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <Accordion type="multiple" defaultValue={['overview', 'events', 'attractions', 'venues', 'marketplace', 'account']} className="space-y-2">
+        <Accordion type="multiple" defaultValue={defaultOpen} className="space-y-2">
           <SidebarSection title={t('overview')} value="overview">
             <SidebarLink icon={LayoutDashboard} label={t('dashboard')} href={paths.root} onClose={onClose} />
             <SidebarLink icon={TrendingUp} label={t('analytics')} href={paths.analytics} onClose={onClose} />
           </SidebarSection>
 
-          <SidebarSection title={t('eventsSection')} value="events">
-            <SidebarLink icon={Clapperboard} label={t('myEvents')} href={paths.events} onClose={onClose} />
-            <SidebarLink icon={Ticket} label={t('ticketSales')} href={paths.tickets} onClose={onClose} />
-          </SidebarSection>
+          {showEvents ? (
+            <SidebarSection title={t('eventsSection')} value="events">
+              <SidebarLink icon={Clapperboard} label={t('myEvents')} href={paths.events} onClose={onClose} />
+              <SidebarLink icon={Ticket} label={t('ticketSales')} href={paths.tickets} onClose={onClose} />
+            </SidebarSection>
+          ) : null}
 
-          <SidebarSection title={t('attractionsSection')} value="attractions">
-            <SidebarLink icon={Clapperboard} label={t('myAttractions')} href={paths.attractions} onClose={onClose} />
-            <SidebarLink icon={Ticket} label={t('attractionTickets')} href={paths.attractionTickets} onClose={onClose} />
-          </SidebarSection>
+          {showAttractions ? (
+            <SidebarSection title={t('attractionsSection')} value="attractions">
+              <SidebarLink icon={Clapperboard} label={t('myAttractions')} href={paths.attractions} onClose={onClose} />
+              <SidebarLink icon={Ticket} label={t('attractionTickets')} href={paths.attractionTickets} onClose={onClose} />
+            </SidebarSection>
+          ) : null}
 
-          <SidebarSection title={t('venuesSection')} value="venues">
-            <SidebarLink icon={Building2} label={t('myVenues')} href={paths.venues} onClose={onClose} />
-            <SidebarLink icon={CalendarDays} label={t('venueBookings')} href={paths.venueBookings} onClose={onClose} />
-          </SidebarSection>
+          {showVenues ? (
+            <SidebarSection title={t('venuesSection')} value="venues">
+              <SidebarLink icon={Building2} label={t('myVenues')} href={paths.venues} onClose={onClose} />
+              <SidebarLink icon={CalendarDays} label={t('venueBookings')} href={paths.venueBookings} onClose={onClose} />
+            </SidebarSection>
+          ) : null}
 
-          <SidebarSection title={t('marketplaceSection')} value="marketplace">
-            <SidebarLink
-              icon={Store}
-              label={t('myServices')}
-              href={paths.marketplace}
-              onClose={onClose}
-              exact
-            />
-            <SidebarLink icon={Inbox} label={t('serviceInquiries')} href={paths.marketplaceInquiries} onClose={onClose} />
-            <SidebarLink icon={FileText} label={t('serviceProposals')} href={paths.marketplaceProposals} onClose={onClose} />
-            <SidebarLink icon={CalendarCheck} label={t('serviceBookings')} href={paths.marketplaceBookings} onClose={onClose} />
-          </SidebarSection>
+          {showMarketplace ? (
+            <SidebarSection title={t('marketplaceSection')} value="marketplace">
+              <SidebarLink
+                icon={Store}
+                label={t('myServices')}
+                href={paths.marketplace}
+                onClose={onClose}
+                exact
+              />
+              <SidebarLink icon={Inbox} label={t('serviceInquiries')} href={paths.marketplaceInquiries} onClose={onClose} />
+              <SidebarLink icon={FileText} label={t('serviceProposals')} href={paths.marketplaceProposals} onClose={onClose} />
+              <SidebarLink icon={CalendarCheck} label={t('serviceBookings')} href={paths.marketplaceBookings} onClose={onClose} />
+            </SidebarSection>
+          ) : null}
 
           <SidebarSection title={t('account')} value="account">
             <SidebarLink icon={User} label={t('profile')} href={`${paths.root}/profile`} onClose={onClose} />

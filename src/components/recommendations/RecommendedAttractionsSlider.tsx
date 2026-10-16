@@ -53,20 +53,23 @@ export function RecommendedAttractionsSlider() {
   );
 }
 
-export function useRecommendedAttractionsVisible() {
+export function useRecommendedAttractionsVisible(enabled = true) {
   const { isAuthenticated, isReady } = useAuth();
   const { locale } = useLocaleContext();
 
   const { data, isLoading } = useQuery({
     queryKey: recommendationKeys.attractions(RECOMMENDATION_SLIDER_LIMIT, locale),
     queryFn: () => getRecommendedAttractions(RECOMMENDATION_SLIDER_LIMIT),
-    enabled: isAuthenticated && isReady,
+    enabled: enabled && isAuthenticated && isReady,
     staleTime: 5 * 60 * 1000,
   });
 
   return {
     showGridDivider: Boolean(
-      isAuthenticated && isReady && (isLoading || (data?.length ?? 0) > 0),
+      enabled &&
+        isAuthenticated &&
+        isReady &&
+        (isLoading || (data?.length ?? 0) > 0),
     ),
   };
 }

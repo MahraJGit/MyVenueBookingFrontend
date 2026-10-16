@@ -1,20 +1,27 @@
 "use client";
 
-import { Bath, BedDouble, Clock, DollarSign, MapPin, Maximize2 } from "lucide-react";
+import { Bath, BedDouble, Clock, DollarSign, Download, MapPin, Maximize2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SecureStoredImage } from "@/components/uploads/SecureStoredImage";
+import { getMediaProxyUrl } from "@/features/uploads/media-url";
 import type { PublicVenue, VenuePricing } from "@/features/venues/types";
 import {
   DAY_NAMES,
   decimalToNumber,
   formatVenuePrice,
+  formatVenueTypeLabel,
   getVenueAmenityPriceInfo,
   isPropertyStyleVenueType,
   parseVenuePropertyAttributes,
   pricingModelLabel,
 } from "@/features/venues/utils";
+import {
+  parseVenueFaqs,
+  parseVenueHouseRules,
+} from "@/features/venues/venue-rules";
 import { useVenuePriceLabels } from "@/features/i18n/use-venue-price-labels";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -166,6 +173,8 @@ export function VenueReviewDetails({ venue }: VenueReviewDetailsProps) {
     Number.isFinite(maxAdvanceDays) ||
     Number.isFinite(freeCancelHours) ||
     Number.isFinite(lateRefundPercent);
+  const houseRules = parseVenueHouseRules(venue.rules);
+  const faqs = parseVenueFaqs(venue.rules);
 
   const lat = Number(venue.latitude);
   const lng = Number(venue.longitude);
@@ -181,7 +190,9 @@ export function VenueReviewDetails({ venue }: VenueReviewDetailsProps) {
     <div className="space-y-4 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         {venue.venueType?.name ? (
-          <Badge variant="outline">{venue.venueType.name}</Badge>
+          <Badge variant="outline">
+            {formatVenueTypeLabel(venue.venueType)}
+          </Badge>
         ) : null}
       </div>
 
@@ -192,6 +203,22 @@ export function VenueReviewDetails({ venue }: VenueReviewDetailsProps) {
             alt={venue.name}
             className="h-48 w-full object-cover"
           />
+        </div>
+      ) : null}
+
+      {venue.layoutPdf?.trim() ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2">
+          <p className="text-sm font-medium text-foreground">{tVenues("layoutPdf")}</p>
+          <Button asChild type="button" variant="outline" size="sm">
+            <a
+              href={getMediaProxyUrl(venue.layoutPdf.trim())}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              {tVenues("downloadLayoutPdf")}
+            </a>
+          </Button>
         </div>
       ) : null}
 
@@ -316,6 +343,37 @@ export function VenueReviewDetails({ venue }: VenueReviewDetailsProps) {
                 value={`${lateRefundPercent}%`}
               />
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {houseRules.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            {tSetup("houseRulesTitle")}
+          </p>
+          <ul className="list-disc space-y-1 ps-5 text-foreground">
+            {houseRules.map((rule) => (
+              <li key={rule.id}>{rule.text}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {faqs.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            {tSetup("faqsTitle")}
+          </p>
+          <div className="space-y-3">
+            {faqs.map((faq) => (
+              <div key={faq.id} className="rounded-md border border-border bg-muted/20 px-3 py-2">
+                <p className="font-medium text-foreground">{faq.question}</p>
+                <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                  {faq.answer}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       ) : null}

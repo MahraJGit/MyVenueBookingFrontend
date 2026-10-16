@@ -249,6 +249,57 @@ export function isPropertyStyleVenueType(name?: string | null, slug?: string | n
   return PROPERTY_VENUE_PATTERN.test(name ?? "") || PROPERTY_VENUE_PATTERN.test(slug ?? "");
 }
 
+function venueTypeChildCount(type: {
+  children?: unknown[];
+  _count?: { children?: number };
+}): number {
+  return (
+    type._count?.children ??
+    (Array.isArray(type.children) ? type.children.length : 0)
+  );
+}
+
+/**
+ * Top-level venue categories (Indoor / Outdoor / admin-created).
+ * Roots with no children are treated as legacy leaf types, not categories.
+ */
+export function getVenueTypeCategories<
+  T extends {
+    parentId?: string | null;
+    children?: unknown[];
+    _count?: { children?: number };
+  },
+>(types: T[]): T[] {
+  return types.filter(
+    (type) => !type.parentId && venueTypeChildCount(type) > 0,
+  );
+}
+
+/**
+ * Assignable venue subcategories. Legacy orphan types (no parent, no children)
+ * remain selectable so existing data keeps working.
+ */
+export function getVenueTypeSubcategories<
+  T extends {
+    id: string;
+    parentId?: string | null;
+    children?: unknown[];
+    _count?: { children?: number };
+  },
+>(types: T[]): T[] {
+  return types.filter((type) => {
+    if (type.parentId) return true;
+    return venueTypeChildCount(type) === 0;
+  });
+}
+
+export function formatVenueTypeLabel(type: {
+  name: string;
+  parent?: { name?: string | null } | null;
+}): string {
+  return type.parent?.name ? `${type.parent.name} · ${type.name}` : type.name;
+}
+
 export type VenuePropertyAttributes = {
   floorArea?: number;
   bedrooms?: number;

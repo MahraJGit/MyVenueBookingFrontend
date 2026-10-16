@@ -10,13 +10,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -53,9 +46,7 @@ import {
   dashboardTableContainerClass,
   dashboardTableActionsClass,
   dashboardDialogContentClass,
-  dashboardSelectTriggerClass,
   dashboardOutlineButtonClass,
-  dashboardDropdownContentClass,
   dashboardTextareaClass,
 } from "@/components/dashboard/dashboard-ui"
 import {
@@ -245,6 +236,9 @@ export default function VendorRequests() {
               <TableHead className="min-w-[110px] whitespace-nowrap text-muted-foreground">
                 {tCommon("status")}
               </TableHead>
+              <TableHead className="min-w-[160px] whitespace-nowrap text-muted-foreground">
+                {t("services")}
+              </TableHead>
               <DashboardSortableHeader className="min-w-[110px]" label={tCommon("submitted")} column="createdAt" sortBy={table.sortBy} sortOrder={table.sortOrder} onSort={table.toggleSort} />
               <TableHead className="min-w-[240px] whitespace-nowrap text-right text-muted-foreground">
                 {tCommon("actions")}
@@ -253,10 +247,15 @@ export default function VendorRequests() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableSkeleton cols={8} />
+              <TableSkeleton cols={9} />
             ) : (
               <>
-                {requests.map((request) => (
+                {requests.map((request) => {
+                  const busy = pendingRowId === request.id
+                  const serviceLabels =
+                    (request.services ?? []).map((s) => s.serviceType).join(", ") ||
+                    "—"
+                  return (
                   <TableRow
                     key={request.id}
                     className={dashboardTableRowClass}
@@ -279,6 +278,9 @@ export default function VendorRequests() {
                         {statusLabel(request.verificationStatus)}
                       </Badge>
                     </TableCell>
+                    <TableCell className="max-w-[180px] whitespace-normal break-words text-muted-foreground">
+                      {serviceLabels}
+                    </TableCell>
                     <TableCell className="whitespace-nowrap text-muted-foreground">
                       {formatDate(request.createdAt)}
                     </TableCell>
@@ -296,47 +298,45 @@ export default function VendorRequests() {
                           </Link>
                         </Button>
 
-                        <Select
-                          value={request.verificationStatus}
-                          disabled={pendingRowId === request.id}
-                          onValueChange={(value: VendorVerificationStatus) => {
-                            if (value === "REJECTED") {
-                              setRejectTarget(request)
-                              return
-                            }
-                            if (value === request.verificationStatus) return
-                            updateMutation.mutate({
-                              id: request.id,
-                              verificationStatus: value,
-                            })
-                          }}
-                        >
-                          <SelectTrigger
-                            size="sm"
-                            className={cn("h-8 w-[130px] shrink-0", dashboardSelectTriggerClass)}
-                          >
-                            <span className="flex w-full items-center gap-2">
-                              {pendingRowId === request.id ? (
-                                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                        {request.verificationStatus === "PENDING" ? (
+                          <>
+                            <Button
+                              size="sm"
+                              disabled={busy}
+                              onClick={() =>
+                                updateMutation.mutate({
+                                  id: request.id,
+                                  verificationStatus: "APPROVED",
+                                })
+                              }
+                            >
+                              {busy &&
+                              updateMutation.variables?.verificationStatus ===
+                                "APPROVED" ? (
+                                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                               ) : null}
-                              <SelectValue placeholder={t("setStatus")} />
-                            </span>
-                          </SelectTrigger>
-                          <SelectContent className={dashboardDropdownContentClass}>
-                            <SelectItem value="PENDING">{tStatus("pending")}</SelectItem>
-                            <SelectItem value="APPROVED">{tAdmin("approve")}</SelectItem>
-                            <SelectItem value="REJECTED">{tAdmin("reject")}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                              {tAdmin("approve")}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              disabled={busy}
+                              onClick={() => setRejectTarget(request)}
+                            >
+                              {tAdmin("reject")}
+                            </Button>
+                          </>
+                        ) : null}
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  )
+                })}
 
                 {!isLoading && requests.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={9}
                       className="py-12 text-center text-gray-400"
                     >
                       {table.hasActiveFilters ? tTables("noMatch") : t("noRequests")}

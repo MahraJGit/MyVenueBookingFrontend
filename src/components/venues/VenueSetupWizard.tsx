@@ -10,8 +10,10 @@ import {
   CalendarOff,
   Clock,
   DollarSign,
+  FileText,
   ImagePlus,
   Loader2,
+  Plus,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -85,7 +87,15 @@ import {
 } from "@/features/venues/api";
 import { venueKeys } from "@/features/venues/query-keys";
 import type { VenueAmenityPayload } from "@/features/venues/types";
-import { defaultWeeklySchedules, buildVenueCustomAttributes, evaluateVenueReadiness, isPropertyStyleVenueType, parseVenuePropertyAttributes, DAY_NAMES, VENUE_GALLERY_MIN_IMAGES } from "@/features/venues/utils";
+import { defaultWeeklySchedules, buildVenueCustomAttributes, evaluateVenueReadiness, formatVenueTypeLabel, getVenueTypeSubcategories, isPropertyStyleVenueType, parseVenuePropertyAttributes, DAY_NAMES, VENUE_GALLERY_MIN_IMAGES } from "@/features/venues/utils";
+import {
+  newVenueFaqId,
+  newVenueHouseRuleId,
+  parseVenueFaqs,
+  parseVenueHouseRules,
+  type VenueFaqItem,
+  type VenueHouseRuleItem,
+} from "@/features/venues/venue-rules";
 import { useDashboardPaths } from "@/features/dashboard/paths";
 import { listCitiesByCountryCode, listCountries } from "@/features/locations/api";
 import {
@@ -104,7 +114,11 @@ import {
   dateInputToUtcDateIso,
   utcDateIsoToDateInput,
 } from "@/features/venues/timezone";
-import { validateUploadFile } from "@/features/uploads/validation";
+import { getMediaProxyUrl } from "@/features/uploads/media-url";
+import {
+  validateUploadFile,
+  validateVendorDocumentFile,
+} from "@/features/uploads/validation";
 import { SecureStoredImage } from "@/components/uploads/SecureStoredImage";
 import {
   validateNamedSlotsAgainstSchedules,
@@ -147,10 +161,14 @@ export function VenueSetupWizard({
     enabled: hasPersistedVenue,
   });
 
-  const { data: venueTypes = [] } = useQuery({
+  const { data: allVenueTypes = [] } = useQuery({
     queryKey: venueKeys.types(),
-    queryFn: listVenueTypes,
+    queryFn: () => listVenueTypes(),
   });
+  const venueTypes = useMemo(
+    () => getVenueTypeSubcategories(allVenueTypes),
+    [allVenueTypes],
+  );
 
   const { data: catalog = [] } = useQuery({
     queryKey: venueKeys.amenityCatalog(),
@@ -179,8 +197,11 @@ export function VenueSetupWizard({
     timezone: "Asia/Dubai",
     coverImage: "",
     thumbnail: "",
+    layoutPdf: "",
   });
   const [pendingMapCity, setPendingMapCity] = useState<PendingMapCity | null>(null);
+  const layoutPdfInputRef = useRef<HTMLInputElement>(null);
+  const [layoutPdfUploading, setLayoutPdfUploading] = useState(false);
 
   const {
     data: cities = [],
@@ -274,6 +295,8 @@ export function VenueSetupWizard({
     freeCancelHoursBeforeStart: 48,
     lateRefundPercent: 0,
   });
+  const [faqs, setFaqs] = useState<VenueFaqItem[]>([]);
+  const [houseRules, setHouseRules] = useState<VenueHouseRuleItem[]>([]);
 
   const [fieldAttempted, setFieldAttempted] = useState({
     name: false,
@@ -335,6 +358,7 @@ export function VenueSetupWizard({
       timezone: existing.timezone,
       coverImage: existing.coverImage ?? "",
       thumbnail: existing.thumbnail ?? "",
+      layoutPdf: existing.layoutPdf ?? "",
     });
     setGalleryUrls((current) => {
       const serverGallery = existing.gallery ?? [];
@@ -386,6 +410,8 @@ export function VenueSetupWizard({
         Number(cancellationPolicy.freeCancelHoursBeforeStart) || 48,
       lateRefundPercent: Number(cancellationPolicy.lateRefundPercent) || 0,
     });
+    setFaqs(parseVenueFaqs(existing.rules));
+    setHouseRules(parseVenueHouseRules(existing.rules));
   }, [existing]);
 
   const saveDetails = useMutation({
@@ -402,10 +428,16 @@ export function VenueSetupWizard({
           coverImage: details.coverImage || undefined,
           thumbnail: details.thumbnail.trim() || undefined,
           gallery: galleryUrls.filter((url) => !url.startsWith("blob:")),
+          layoutPdf: details.layoutPdf.trim() || null,
           customAttributes: buildVenueCustomAttributes(
             propertyPayload,
             existing?.customAttributes,
           ),
+          rules: {
+            ...((existing?.rules as Record<string, unknown>) ?? {}),
+            faqs: faqs.filter((f) => f.question.trim() && f.answer.trim()),
+            houseRules: houseRules.filter((r) => r.text.trim()),
+          },
         });
       }
 
@@ -429,6 +461,7 @@ export function VenueSetupWizard({
         coverImage: details.coverImage,
         thumbnail: details.thumbnail.trim() || undefined,
         gallery: galleryUrls.filter((url) => !url.startsWith("blob:")),
+        layoutPdf: details.layoutPdf.trim() || null,
         customAttributes: buildVenueCustomAttributes(
           propertyPayload,
           existing?.customAttributes,
@@ -440,6 +473,8 @@ export function VenueSetupWizard({
             freeCancelHoursBeforeStart: policies.freeCancelHoursBeforeStart,
             lateRefundPercent: policies.lateRefundPercent,
           },
+          faqs: faqs.filter((f) => f.question.trim() && f.answer.trim()),
+          houseRules: houseRules.filter((r) => r.text.trim()),
         },
       };
       if (hasPersistedVenue && effectiveVenueId) {
@@ -597,6 +632,20 @@ export function VenueSetupWizard({
       toastApiError(e, t("thumbnailUploadFailed"));
     } finally {
       setThumbnailUploading(false);
+    }
+  };
+
+  const uploadLayoutPdf = async (file: File) => {
+    try {
+      validateVendorDocumentFile(file);
+      setLayoutPdfUploading(true);
+      const url = await uploadVenueMedia(file);
+      setDetails((d) => ({ ...d, layoutPdf: url }));
+      toast.success(t("layoutPdfUploaded"));
+    } catch (e) {
+      toastApiError(e, t("layoutPdfUploadFailed"));
+    } finally {
+      setLayoutPdfUploading(false);
     }
   };
 
@@ -796,7 +845,7 @@ export function VenueSetupWizard({
           onValueChange={(v) => setDetails({ ...details, venueTypeId: v })}
           options={venueTypes.map((type) => ({
             value: type.id,
-            label: type.name,
+            label: formatVenueTypeLabel(type),
           }))}
           placeholder={tForms("selectVenueType")}
           triggerClassName={fieldClassName(cn(inputClass, "w-full"), !!venueTypeError)}
@@ -997,6 +1046,74 @@ export function VenueSetupWizard({
         inputId={hasPersistedVenue ? "venue-gallery-upload-edit" : "venue-gallery-upload-create"}
         hint={t("galleryRequired", { min: VENUE_GALLERY_MIN_IMAGES })}
       />
+      <div className="space-y-2 sm:col-span-2">
+        <Label>{t("layoutPdf")}</Label>
+        <p className="text-xs text-muted-foreground">{t("layoutPdfHint")}</p>
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-background">
+              <FileText className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                {details.layoutPdf ? t("layoutPdfReady") : t("layoutPdfEmpty")}
+              </p>
+              {details.layoutPdf ? (
+                <a
+                  href={getMediaProxyUrl(details.layoutPdf)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-flex text-sm text-primary hover:underline"
+                >
+                  {t("layoutPdfView")}
+                </a>
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("layoutPdfAccept")}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={layoutPdfInputRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void uploadLayoutPdf(file);
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={layoutPdfUploading}
+              onClick={() => layoutPdfInputRef.current?.click()}
+            >
+              {layoutPdfUploading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="mr-2 h-4 w-4" />
+              )}
+              {details.layoutPdf ? t("layoutPdfReplace") : t("layoutPdfUpload")}
+            </Button>
+            {details.layoutPdf ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive"
+                disabled={layoutPdfUploading}
+                onClick={() => setDetails((d) => ({ ...d, layoutPdf: "" }))}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t("layoutPdfRemove")}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </div>
     </>
   );
 
@@ -1321,6 +1438,143 @@ export function VenueSetupWizard({
                   className={inputClass}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle>{t("houseRulesTitle")}</CardTitle>
+              <CardDescription>{t("houseRulesDesc")}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {houseRules.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("houseRulesEmpty")}</p>
+              ) : null}
+              {houseRules.map((rule, index) => (
+                <div key={rule.id} className="flex gap-2">
+                  <Input
+                    value={rule.text}
+                    onChange={(e) =>
+                      setHouseRules((rows) =>
+                        rows.map((row) =>
+                          row.id === rule.id
+                            ? { ...row, text: e.target.value }
+                            : row,
+                        ),
+                      )
+                    }
+                    placeholder={t("houseRulePlaceholder", { index: index + 1 })}
+                    className={inputClass}
+                    maxLength={500}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 text-destructive"
+                    aria-label={t("removeHouseRule")}
+                    onClick={() =>
+                      setHouseRules((rows) => rows.filter((row) => row.id !== rule.id))
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={houseRules.length >= 30}
+                onClick={() =>
+                  setHouseRules((rows) => [
+                    ...rows,
+                    { id: newVenueHouseRuleId(), text: "" },
+                  ])
+                }
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {t("addHouseRule")}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle>{t("faqsTitle")}</CardTitle>
+              <CardDescription>{t("faqsDesc")}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {faqs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("faqsEmpty")}</p>
+              ) : null}
+              {faqs.map((faq, index) => (
+                <div
+                  key={faq.id}
+                  className="space-y-2 rounded-lg border border-border p-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {t("faqItemLabel", { index: index + 1 })}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive"
+                      aria-label={t("removeFaq")}
+                      onClick={() =>
+                        setFaqs((rows) => rows.filter((row) => row.id !== faq.id))
+                      }
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Input
+                    value={faq.question}
+                    onChange={(e) =>
+                      setFaqs((rows) =>
+                        rows.map((row) =>
+                          row.id === faq.id
+                            ? { ...row, question: e.target.value }
+                            : row,
+                        ),
+                      )
+                    }
+                    placeholder={t("faqQuestionPlaceholder")}
+                    className={inputClass}
+                    maxLength={200}
+                  />
+                  <Textarea
+                    value={faq.answer}
+                    onChange={(e) =>
+                      setFaqs((rows) =>
+                        rows.map((row) =>
+                          row.id === faq.id
+                            ? { ...row, answer: e.target.value }
+                            : row,
+                        ),
+                      )
+                    }
+                    placeholder={t("faqAnswerPlaceholder")}
+                    className={`${inputClass} min-h-20`}
+                    maxLength={2000}
+                  />
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={faqs.length >= 20}
+                onClick={() =>
+                  setFaqs((rows) => [
+                    ...rows,
+                    { id: newVenueFaqId(), question: "", answer: "" },
+                  ])
+                }
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {t("addFaq")}
+              </Button>
             </CardContent>
           </Card>
 

@@ -321,6 +321,9 @@
     "gallery": "Galerie",
     "galleryImageAlt": "Galerie {index}",
     "aboutVenue": "Über diesen Veranstaltungsort",
+    "houseRules": "Hausregeln",
+    "houseRulesDesc": "Bitte prüfen Sie diese Regeln vor der Buchung. Sie müssen sie bei der Reservierung akzeptieren.",
+    "faqs": "FAQ",
     "location": "Standort",
     "perHour": "pro Stunde",
     "perDay": "pro Tag",
@@ -469,6 +472,12 @@
     "slotReserved": "Zeitslot für 15 Minuten reserviert",
     "loginToBook": "Bitte melden Sie sich an, um einen Veranstaltungsort zu buchen",
     "reserveAndCheckout": "Reservieren & zur Kasse",
+    "venueHouseRules": "Hausregeln des Veranstaltungsorts",
+    "venueHouseRulesHint": "Sie müssen diese Regeln akzeptieren, um fortzufahren.",
+    "acceptVenueRules": "Ich akzeptiere diese Hausregeln",
+    "mustAcceptVenueRules": "Bitte akzeptieren Sie die Hausregeln, um fortzufahren",
+    "acceptedVenueRules": "Akzeptierte Hausregeln",
+    "acceptedVenueRulesAt": "Akzeptiert am {date}",
     "guestsRequired": "Please enter the number of guests",
     "guestsMin": "At least {min} guests are required for this venue",
     "guestsMax": "Maximum {max} guests allowed",
@@ -1963,7 +1972,16 @@
     "allCountries": "All countries",
     "selectCountryFirst": "Select a country first",
     "searchCountry": "Search countries...",
-    "searchCity": "Search cities..."
+    "searchCity": "Search cities...",
+    "eventDate": "Veranstaltungsdatum",
+    "selectDate": "Datum wählen",
+    "priceRange": "Preisrahmen",
+    "priceRangeInCurrency": "Preisrahmen ({currency})",
+    "minPrice": "Min",
+    "maxPrice": "Max",
+    "allCategories": "Alle Kategorien",
+    "category": "Kategorie",
+    "searchLabel": "Suche"
   },
   "marketSegments": {
     "attractionsTitle": "Attraktionen &",
@@ -1991,7 +2009,10 @@
     "allVenues": "Alle Venues",
     "attractionsTitle": "Recommended for you",
     "attractionsSubtitle": "Based on your favourites and bookings",
-    "allAttractions": "All attractions"
+    "allAttractions": "All attractions",
+    "marketplaceTitle": "Für Sie empfohlen",
+    "marketplaceSubtitle": "Basierend auf Ihren Favoriten und Buchungen",
+    "allMarketplace": "Alle Services"
   },
   "venuesListing": {
     "title": "Venue",
@@ -2204,6 +2225,23 @@
     "reviewAttractions": "Attraction reviews",
     "reviewVenues": "Venue reviews",
     "reviewServices": "Service reviews"
+  },
+  "adminVendorServiceRequests": {
+    "title": "Anbieter-Serviceanfragen",
+    "description": "Genehmigen oder lehnen Sie zusätzliche Services von bereits genehmigten Anbietern ab.",
+    "service": "Service",
+    "requested": "Angefragt",
+    "noRequests": "Keine Serviceanfragen für diesen Filter.",
+    "rejectTitle": "Serviceanfrage ablehnen",
+    "rejectDesc": "Geben Sie den Ablehnungsgrund ein. Dieser wird mit der Anfrage gespeichert.",
+    "requestLabel": "Anfrage:",
+    "rejectPlaceholder": "Ablehnungsgrund eingeben...",
+    "confirmReject": "Ablehnung bestätigen",
+    "serviceApproved": "Service genehmigt",
+    "serviceRejected": "Service abgelehnt",
+    "statusUpdated": "Status aktualisiert",
+    "couldNotUpdate": "Serviceanfrage konnte nicht aktualisiert werden.",
+    "failedLoad": "Serviceanfragen konnten nicht geladen werden."
   },
   "toasts": {
     "somethingWentWrong": "Something went wrong",

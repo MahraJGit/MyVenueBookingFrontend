@@ -40,7 +40,7 @@ export function HomeHeroSection() {
 
   const { data: venueTypes = [] } = useQuery({
     queryKey: venueKeys.types(),
-    queryFn: listVenueTypes,
+    queryFn: () => listVenueTypes(),
     staleTime: 5 * 60 * 1000,
   });
 
