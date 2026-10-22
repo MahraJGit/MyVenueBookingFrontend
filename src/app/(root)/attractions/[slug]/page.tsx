@@ -27,6 +27,7 @@ import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { CurrencyBrowseNotice } from "@/components/currency/CheckoutPrice";
 import { AttractionTicketPurchaseDialog } from "@/components/attractions/AttractionTicketPurchaseDialog";
 import { EventOrganizerSection } from "@/components/events/EventOrganizerSection";
+import { TicketPerksComparison } from "@/components/tickets/TicketPerksComparison";
 import { ListingReviewsSection } from "@/components/reviews/ListingReviewsSection";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLocaleContext } from "@/features/i18n/locale-context";
@@ -65,6 +66,7 @@ export default function AttractionDetailPage() {
   const t = useTranslations("attractions");
   const tCommon = useTranslations("common");
   const tTickets = useTranslations("tickets");
+  const tTicketPurchase = useTranslations("ticketPurchase");
   const { locale } = useLocaleContext();
   const intlLocale = getIntlLocale(locale);
   const { slug } = useParams<{ slug: string }>();
@@ -272,6 +274,17 @@ export default function AttractionDetailPage() {
                             />
                           </span>
                         </div>
+                        {ticketType.kind === "PACKAGE" &&
+                        Array.isArray(ticketType.entries) &&
+                        ticketType.entries.length > 0 ? (
+                          <p className="text-xs text-zinc-400">
+                            {tTicketPurchase("packageAdmits", {
+                              summary: ticketType.entries
+                                .map((entry) => `${entry.label} × ${entry.count}`)
+                                .join(", "),
+                            })}
+                          </p>
+                        ) : null}
                         <p className="text-xs text-zinc-500">
                           {t("perShowCapacity", {
                             count: ticketType.quantityPerOccurrence,
@@ -280,6 +293,16 @@ export default function AttractionDetailPage() {
                       </div>
                     ))}
                 </div>
+                <TicketPerksComparison
+                  className="mt-6"
+                  tickets={attraction.ticketTypes
+                    .filter((tt) => tt.isActive !== false)
+                    .map((ticketType) => ({
+                      id: ticketType.id,
+                      name: ticketType.name,
+                      includes: ticketType.includes,
+                    }))}
+                />
               </section>
             ) : null}
 

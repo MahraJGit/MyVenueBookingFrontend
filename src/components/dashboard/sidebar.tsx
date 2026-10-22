@@ -133,6 +133,8 @@ export default function Sidebar({
           <SidebarSection title={t('salesSection')} value="sales">
             <SidebarLink icon="/svg/tickets.svg" label={t('eventTicketSales')} href="/adminDashbaord/manageTickets" onClose={onClose} />
             <SidebarLink icon="/svg/NewTicket.svg" label={t('attractionTicketSales')} href="/adminDashbaord/manageAttractionTickets" onClose={onClose} />
+            <SidebarLink icon="/svg/EventAccepted.svg" label={t('eventAttendance')} href="/adminDashbaord/attendance/events" onClose={onClose} />
+            <SidebarLink icon="/svg/EventAccepted.svg" label={t('attractionAttendance')} href="/adminDashbaord/attendance/attractions" onClose={onClose} />
             <SidebarLink icon="/svg/booking.svg" label={t('venueBookingsSales')} href="/adminDashbaord/venueBookings" onClose={onClose} />
             <SidebarLink icon="/svg/Calendar.svg" label={t('marketplaceBookingsSales')} href="/adminDashbaord/marketplaceBookings" onClose={onClose} />
           </SidebarSection>

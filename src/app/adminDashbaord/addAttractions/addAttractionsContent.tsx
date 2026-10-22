@@ -70,6 +70,13 @@ import {
   SeatingLayoutEditor,
   type SeatingEditorSection,
 } from "@/components/seating/SeatingLayoutEditor"
+import { TicketPerksEditor } from "@/components/tickets/TicketPerksEditor"
+import { TicketPackageEntriesEditor } from "@/components/tickets/TicketPackageEntriesEditor"
+import {
+  type TicketKind,
+  type TicketPackageEntry,
+  normalizeTicketEntries,
+} from "@/features/tickets/ticket-package"
 import {
   getManagedAttractionSeating,
   putManagedAttractionSeating,
@@ -113,10 +120,20 @@ type TicketForm = {
   name: string
   price: string
   quantityPerOccurrence: string
+  kind: TicketKind
+  entries: TicketPackageEntry[]
+  includes: string[]
 }
 
 function defaultTicket(ticketName: string): TicketForm {
-  return { name: ticketName, price: "", quantityPerOccurrence: "" }
+  return {
+    name: ticketName,
+    price: "",
+    quantityPerOccurrence: "",
+    kind: "STANDARD",
+    entries: [],
+    includes: [],
+  }
 }
 
 export default function AddAttractionsContentPage() {
@@ -348,6 +365,9 @@ export default function AddAttractionsContentPage() {
             name: ticket.name,
             price: String(ticket.price),
             quantityPerOccurrence: String(ticket.quantityPerOccurrence),
+            kind: (ticket.kind === "PACKAGE" ? "PACKAGE" : "STANDARD") as TicketKind,
+            entries: normalizeTicketEntries(ticket.entries),
+            includes: ticket.includes ?? [],
           }))
         : [defaultTicket(t("generalTicket"))],
     )
@@ -589,6 +609,12 @@ export default function AddAttractionsContentPage() {
       })),
       ticketTypes: tickets.map((ticket, index) => {
         const seatedQty = seatCountByIndex.get(index)
+        const kind = ticket.kind === "PACKAGE" ? "PACKAGE" : "STANDARD"
+        const entries =
+          kind === "PACKAGE" ? normalizeTicketEntries(ticket.entries) : []
+        if (kind === "PACKAGE" && entries.length < 1) {
+          throw new Error(t("ticketPackageEntriesRequired"))
+        }
         return {
           name: ticket.name.trim(),
           price: Number(ticket.price) || 0,
@@ -597,6 +623,9 @@ export default function AddAttractionsContentPage() {
             seatingEnabled && seatedQty != null && seatedQty > 0
               ? seatedQty
               : Math.max(1, Number(ticket.quantityPerOccurrence) || 1),
+          kind,
+          entries,
+          includes: ticket.includes ?? [],
         }
       }),
     }
@@ -1662,8 +1691,94 @@ export default function AddAttractionsContentPage() {
                       />
                     </div>
                   ) : null}
+                  {!seatingEnabled ? (
+                    <TicketPackageEntriesEditor
+                      kind={ticket.kind}
+                      entries={ticket.entries}
+                      disabled={
+                        saveMutation.isPending ||
+                        Boolean(editId && existing?.contentOnlyEdit)
+                      }
+                      onKindChange={(kind) =>
+                        setTickets((rows) =>
+                          rows.map((r, j) =>
+                            j === i
+                              ? {
+                                  ...r,
+                                  kind,
+                                  entries:
+                                    kind === "PACKAGE"
+                                      ? r.entries.length > 0
+                                        ? r.entries
+                                        : [
+                                            { label: "Adult", count: 2 },
+                                            { label: "Child", count: 2 },
+                                          ]
+                                      : [],
+                                }
+                              : r,
+                          ),
+                        )
+                      }
+                      onEntriesChange={(entries) =>
+                        setTickets((rows) =>
+                          rows.map((r, j) =>
+                            j === i ? { ...r, entries } : r,
+                          ),
+                        )
+                      }
+                      labels={{
+                        kindLabel: t("ticketKindLabel"),
+                        standard: t("ticketKindStandard"),
+                        package: t("ticketKindPackage"),
+                        entriesHint: t("ticketPackageEntriesHint"),
+                        entryLabel: t("ticketPackageEntryLabel"),
+                        entryCount: t("ticketPackageEntryCount"),
+                        addEntry: t("ticketPackageAddEntry"),
+                        admitsPreview: t("ticketPackageAdmits", {
+                          n: Math.max(
+                            1,
+                            ticket.entries.reduce(
+                              (sum, row) =>
+                                sum + Math.max(0, Number(row.count) || 0),
+                              0,
+                            ),
+                          ),
+                        }),
+                      }}
+                    />
+                  ) : null}
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle>{t("ticketPerksTitle")}</CardTitle>
+              <CardDescription>{t("ticketPerksHint")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TicketPerksEditor
+                tickets={tickets.map((ticket, index) => ({
+                  key: String(index),
+                  name: ticket.name.trim() || t("ticketN", { n: index + 1 }),
+                  price: Number(ticket.price) || 0,
+                  includes: ticket.includes ?? [],
+                }))}
+                disabled={
+                  saveMutation.isPending ||
+                  Boolean(editId && existing?.contentOnlyEdit)
+                }
+                onChange={(includesByKey) =>
+                  setTickets((rows) =>
+                    rows.map((row, index) => ({
+                      ...row,
+                      includes: includesByKey[String(index)] ?? [],
+                    })),
+                  )
+                }
+              />
             </CardContent>
           </Card>
 

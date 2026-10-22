@@ -51,7 +51,14 @@ import {
   formatTableRangeLabel,
 } from "@/components/dashboard/dashboard-data-table";
 import { DashboardFilterBar } from "@/components/userDashboard/DashboardScrollableTabs";
-import { SalesVendorFilter } from "@/components/sales/sales-filters";
+import {
+  SalesPeriodFilter,
+  SalesVendorFilter,
+} from "@/components/sales/sales-filters";
+import {
+  resolveSalesPeriodRange,
+  type SalesPeriodPreset,
+} from "@/features/sales/sales-period";
 import { toastApiError } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
 import { useTableQueryState } from "@/hooks/use-table-query-state";
@@ -101,24 +108,40 @@ export function ManageAttractionTicketSales({
     status: TicketSaleStatusFilter;
     attractionId: string;
     vendorId: string;
+    period: SalesPeriodPreset;
+    dateFrom: string;
+    dateTo: string;
   }>({
-    initialFilters: { status: "CONFIRMED", attractionId: "ALL", vendorId: "" },
+    initialFilters: {
+      status: "CONFIRMED",
+      attractionId: "ALL",
+      vendorId: "",
+      period: "ALL",
+      dateFrom: "",
+      dateTo: "",
+    },
     syncWithUrl,
   });
 
-  const queryParams = useMemo(
-    () => ({
+  const queryParams = useMemo(() => {
+    const range = resolveSalesPeriodRange(
+      table.filters.period,
+      table.filters.dateFrom,
+      table.filters.dateTo,
+    );
+    return {
       scope,
       status: table.filters.status,
       attractionId:
         table.filters.attractionId === "ALL" ? undefined : table.filters.attractionId,
       vendorId: table.filters.vendorId || undefined,
       search: table.debouncedSearch || undefined,
+      dateFrom: range.dateFrom,
+      dateTo: range.dateTo,
       page: table.page,
       limit: table.pageSize,
-    }),
-    [scope, table.debouncedSearch, table.filters, table.page, table.pageSize],
-  );
+    };
+  }, [scope, table.debouncedSearch, table.filters, table.page, table.pageSize]);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["attraction-ticket-sales", queryParams],
@@ -203,48 +226,72 @@ export function ManageAttractionTicketSales({
               placeholder: t("searchPlaceholder"),
             },
             filters: (
-              <div className="flex w-full flex-col gap-2 sm:flex-row">
-            {isAdmin ? (
-              <SalesVendorFilter
-                value={table.filters.vendorId}
-                onChange={(vendorId) => {
-                  table.setFilter("vendorId", vendorId);
-                  table.setFilter("attractionId", "ALL");
-                }}
-              />
-            ) : null}
-            <Select
-              value={table.filters.status}
-              onValueChange={(v) => table.setFilter("status", v as TicketSaleStatusFilter)}
-            >
-              <SelectTrigger className={cn("w-full sm:w-[160px]", selectTriggerClass)}>
-                <SelectValue placeholder={tCommon("status")} />
-              </SelectTrigger>
-              <SelectContent className={selectContentClass}>
-                <SelectItem value="CONFIRMED">{tStatus("confirmed")}</SelectItem>
-                <SelectItem value="PENDING">{tStatus("pending")}</SelectItem>
-                <SelectItem value="CANCELLED">{tStatus("cancelled")}</SelectItem>
-                <SelectItem value="REFUNDED">{tStatus("refunded")}</SelectItem>
-                <SelectItem value="ALL">{t("allStatuses")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={table.filters.attractionId}
-              onValueChange={(v) => table.setFilter("attractionId", v)}
-            >
-              <SelectTrigger className={cn("w-full sm:w-[200px]", selectTriggerClass)}>
-                <SelectValue placeholder={tAdmin("tableAttraction")} />
-              </SelectTrigger>
-              <SelectContent className={selectContentClass}>
-                <SelectItem value="ALL">{t("allAttractions")}</SelectItem>
-                {summary.map((ev) => (
-                  <SelectItem key={ev.attractionId} value={ev.attractionId}>
-                    {ev.attractionName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-              </div>
+              <>
+                {isAdmin ? (
+                  <SalesVendorFilter
+                    value={table.filters.vendorId}
+                    onChange={(vendorId) => {
+                      table.setFilter("vendorId", vendorId);
+                      table.setFilter("attractionId", "ALL");
+                    }}
+                  />
+                ) : null}
+                <SalesPeriodFilter
+                  period={table.filters.period}
+                  dateFrom={table.filters.dateFrom}
+                  dateTo={table.filters.dateTo}
+                  onPeriodChange={(period) => {
+                    table.setFilters({
+                      ...table.filters,
+                      period,
+                      dateFrom: period === "CUSTOM" ? table.filters.dateFrom : "",
+                      dateTo: period === "CUSTOM" ? table.filters.dateTo : "",
+                    });
+                  }}
+                  onCustomRangeChange={(next) => {
+                    table.setFilters({
+                      ...table.filters,
+                      ...(next.dateFrom !== undefined
+                        ? { dateFrom: next.dateFrom }
+                        : {}),
+                      ...(next.dateTo !== undefined ? { dateTo: next.dateTo } : {}),
+                    });
+                  }}
+                />
+                <Select
+                  value={table.filters.status}
+                  onValueChange={(v) =>
+                    table.setFilter("status", v as TicketSaleStatusFilter)
+                  }
+                >
+                  <SelectTrigger className={cn("w-full min-w-0", selectTriggerClass)}>
+                    <SelectValue placeholder={tCommon("status")} />
+                  </SelectTrigger>
+                  <SelectContent className={selectContentClass}>
+                    <SelectItem value="CONFIRMED">{tStatus("confirmed")}</SelectItem>
+                    <SelectItem value="PENDING">{tStatus("pending")}</SelectItem>
+                    <SelectItem value="CANCELLED">{tStatus("cancelled")}</SelectItem>
+                    <SelectItem value="REFUNDED">{tStatus("refunded")}</SelectItem>
+                    <SelectItem value="ALL">{t("allStatuses")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={table.filters.attractionId}
+                  onValueChange={(v) => table.setFilter("attractionId", v)}
+                >
+                  <SelectTrigger className={cn("w-full min-w-0", selectTriggerClass)}>
+                    <SelectValue placeholder={tAdmin("tableAttraction")} />
+                  </SelectTrigger>
+                  <SelectContent className={selectContentClass}>
+                    <SelectItem value="ALL">{t("allAttractions")}</SelectItem>
+                    {summary.map((ev) => (
+                      <SelectItem key={ev.attractionId} value={ev.attractionId}>
+                        {ev.attractionName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
             ),
             pageSize: { value: table.pageSize, onChange: table.setPageSize },
             onReset: table.reset,
@@ -254,7 +301,7 @@ export function ManageAttractionTicketSales({
                 type="button"
                 variant="outline"
                 size="sm"
-                className={cn("w-full sm:w-auto", dashboardSurfaceBorderClass)}
+                className={cn("h-9 shrink-0", dashboardSurfaceBorderClass)}
                 onClick={() => void refetch()}
                 disabled={isFetching}
               >

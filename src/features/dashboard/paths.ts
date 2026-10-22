@@ -28,6 +28,8 @@ export type DashboardPaths = {
   ) => string;
   tickets: string;
   attractionTickets: string;
+  eventAttendance: string;
+  attractionAttendance: string;
   verifiers: string;
   analytics: string;
   venues: string;
@@ -76,6 +78,8 @@ export function getDashboardPaths(scope: DashboardScope): DashboardPaths {
         `${VENDOR_DASHBOARD_PREFIX}/attractions/${encodeURIComponent(attractionId)}/occurrences/${encodeURIComponent(occurrenceId)}/seating`,
       tickets: `${VENDOR_DASHBOARD_PREFIX}/tickets`,
       attractionTickets: `${VENDOR_DASHBOARD_PREFIX}/attraction-tickets`,
+      eventAttendance: `${VENDOR_DASHBOARD_PREFIX}/attendance/events`,
+      attractionAttendance: `${VENDOR_DASHBOARD_PREFIX}/attendance/attractions`,
       verifiers: `${VENDOR_DASHBOARD_PREFIX}/verifiers`,
       analytics: `${VENDOR_DASHBOARD_PREFIX}/analytics`,
       venues: `${VENDOR_DASHBOARD_PREFIX}/venues`,
@@ -132,6 +136,8 @@ export function getDashboardPaths(scope: DashboardScope): DashboardPaths {
       `${ADMIN_DASHBOARD_PREFIX}/manageAttractions/${encodeURIComponent(attractionId)}/occurrences/${encodeURIComponent(occurrenceId)}/seating`,
     tickets: `${ADMIN_DASHBOARD_PREFIX}/manageTickets`,
     attractionTickets: `${ADMIN_DASHBOARD_PREFIX}/manageAttractionTickets`,
+    eventAttendance: `${ADMIN_DASHBOARD_PREFIX}/attendance/events`,
+    attractionAttendance: `${ADMIN_DASHBOARD_PREFIX}/attendance/attractions`,
     verifiers: `${ADMIN_DASHBOARD_PREFIX}/verifiers`,
     analytics: `${ADMIN_DASHBOARD_PREFIX}/analytics`,
     venues: `${ADMIN_DASHBOARD_PREFIX}/manageVenues`,

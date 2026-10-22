@@ -112,6 +112,7 @@ export default function VendorSidebar({
             <SidebarSection title={t('eventsSection')} value="events">
               <SidebarLink icon={Clapperboard} label={t('myEvents')} href={paths.events} onClose={onClose} />
               <SidebarLink icon={Ticket} label={t('ticketSales')} href={paths.tickets} onClose={onClose} />
+              <SidebarLink icon={ShieldCheck} label={t('eventAttendance')} href={paths.eventAttendance} onClose={onClose} />
             </SidebarSection>
           ) : null}
 
@@ -119,6 +120,7 @@ export default function VendorSidebar({
             <SidebarSection title={t('attractionsSection')} value="attractions">
               <SidebarLink icon={Clapperboard} label={t('myAttractions')} href={paths.attractions} onClose={onClose} />
               <SidebarLink icon={Ticket} label={t('attractionTickets')} href={paths.attractionTickets} onClose={onClose} />
+              <SidebarLink icon={ShieldCheck} label={t('attractionAttendance')} href={paths.attractionAttendance} onClose={onClose} />
             </SidebarSection>
           ) : null}
 

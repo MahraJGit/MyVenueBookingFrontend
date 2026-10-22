@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { Eye, FileText, Loader2, Plus, Trash2, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ import {
 } from "@/components/venues/VenueScheduleEditor";
 import { SecureStoredImage } from "@/components/uploads/SecureStoredImage";
 import { ServicePublicPreviewDialog } from "@/components/marketplace/ServicePublicPreviewDialog";
+import { PackageImageHighlightsFields } from "@/components/marketplace/PackageImageHighlightsFields";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -75,7 +76,11 @@ import { listCitiesByCountryCode, listCountries } from "@/features/locations/api
 import { findActiveCountry } from "@/features/locations/match";
 import { locationKeys } from "@/features/locations/query-keys";
 import { formatTimezoneLabel } from "@/lib/timezones";
-import { validateUploadFile } from "@/features/uploads/validation";
+import {
+  validateUploadFile,
+  validateVendorDocumentFile,
+} from "@/features/uploads/validation";
+import { getMediaProxyUrl } from "@/features/uploads/media-url";
 import { toastApiError } from "@/lib/toasts";
 import { ApiError } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
@@ -157,6 +162,9 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
   const [portfolioPreviews, setPortfolioPreviews] = useState<Record<string, string>>({});
   const portfolioPreviewsRef = useRef<Record<string, string>>({});
   const [portfolioUploading, setPortfolioUploading] = useState(false);
+  const [portfolioPdf, setPortfolioPdf] = useState("");
+  const portfolioPdfInputRef = useRef<HTMLInputElement>(null);
+  const [portfolioPdfUploading, setPortfolioPdfUploading] = useState(false);
   const [packages, setPackages] = useState<PackageDraft[]>([]);
   const [addOns, setAddOns] = useState<AddOnDraft[]>([]);
   const [menuCourses, setMenuCourses] = useState<CourseDraft[]>([]);
@@ -236,6 +244,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
     );
     setCoverImage(existing.coverImage ?? "");
     setPortfolio(existing.portfolio ?? []);
+    setPortfolioPdf(existing.portfolioPdf ?? "");
     setInstantBookingEnabled(Boolean(existing.instantBookingEnabled));
     setBookingMode(existing.bookingMode === "SLOT" ? "SLOT" : "DATE");
     setBookingCapacity(
@@ -264,6 +273,8 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
       (existing.packages ?? []).map((p) => ({
         name: p.name,
         description: p.description ?? "",
+        image: p.image ?? null,
+        highlights: [...(p.highlights ?? [])],
         price: decimalToNumber(p.price),
         isActive: p.isActive !== false,
         sortOrder: p.sortOrder ?? 0,
@@ -414,6 +425,7 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
       ),
       coverImage: coverImage || null,
       portfolio,
+      portfolioPdf: portfolioPdf.trim() || null,
       instantBookingEnabled,
       bookingMode,
       bookingCapacity: bookingMode === "DATE" ? bookingCapacity : undefined,
@@ -443,6 +455,10 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
     ) {
       payload.packages = packages.map((pkg) => ({
         ...pkg,
+        image: pkg.image?.trim() || null,
+        highlights: (pkg.highlights ?? [])
+          .map((h) => h.trim())
+          .filter(Boolean),
         menuRules:
           customizationMode === "MENU_BUILDER"
             ? (pkg.menuRules ?? []).map((rule) => ({
@@ -666,6 +682,20 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
       toastApiError(e);
     } finally {
       setPortfolioUploading(false);
+    }
+  };
+
+  const onPortfolioPdfUpload = async (file: File) => {
+    try {
+      validateVendorDocumentFile(file);
+      setPortfolioPdfUploading(true);
+      const url = await uploadMarketplaceMedia(file);
+      setPortfolioPdf(url);
+      toast.success(t("portfolioPdfUploaded"));
+    } catch (e) {
+      toastApiError(e, t("portfolioPdfUploadFailed"));
+    } finally {
+      setPortfolioPdfUploading(false);
     }
   };
 
@@ -1080,6 +1110,81 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                 inputId="marketplace-portfolio-upload"
                 hint={t("portfolioHint")}
               />
+
+              <div className="space-y-3 border-t border-border/60 pt-6">
+                <Label>{t("portfolioPdf")}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("portfolioPdfHint")}
+                </p>
+                <div className="flex flex-col gap-3 rounded-lg border border-dashed border-border/80 bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <FileText className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">
+                        {portfolioPdf
+                          ? t("portfolioPdfReady")
+                          : t("portfolioPdfEmpty")}
+                      </p>
+                      {portfolioPdf ? (
+                        <a
+                          href={getMediaProxyUrl(portfolioPdf)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 inline-block text-sm text-primary hover:underline"
+                        >
+                          {t("portfolioPdfView")}
+                        </a>
+                      ) : (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t("portfolioPdfAccept")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      ref={portfolioPdfInputRef}
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (file) void onPortfolioPdfUpload(file);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={portfolioPdfUploading}
+                      onClick={() => portfolioPdfInputRef.current?.click()}
+                    >
+                      {portfolioPdfUploading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="mr-2 h-4 w-4" />
+                      )}
+                      {portfolioPdf
+                        ? t("portfolioPdfReplace")
+                        : t("portfolioPdfUpload")}
+                    </Button>
+                    {portfolioPdf ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={portfolioPdfUploading}
+                        onClick={() => setPortfolioPdf("")}
+                      >
+                        {t("portfolioPdfRemove")}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -1235,6 +1340,8 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                       {
                         name: "",
                         description: "",
+                        image: null,
+                        highlights: [],
                         price: 0,
                         isActive: true,
                         sortOrder: prev.length,
@@ -1301,6 +1408,25 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                           }
                         />
                       </div>
+                      <PackageImageHighlightsFields
+                        image={pkg.image}
+                        highlights={pkg.highlights}
+                        inputId={`marketplace-package-image-${idx}`}
+                        onImageChange={(image) =>
+                          setPackages((prev) =>
+                            prev.map((p, i) =>
+                              i === idx ? { ...p, image } : p,
+                            ),
+                          )
+                        }
+                        onHighlightsChange={(highlights) =>
+                          setPackages((prev) =>
+                            prev.map((p, i) =>
+                              i === idx ? { ...p, highlights } : p,
+                            ),
+                          )
+                        }
+                      />
                       <div className="sm:col-span-2">
                         <Button
                           type="button"
@@ -1513,6 +1639,8 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                           {
                             name: "",
                             description: "",
+                            image: null,
+                            highlights: [],
                             price: 0,
                             isActive: true,
                             sortOrder: prev.length,
@@ -1587,6 +1715,25 @@ export function MarketplaceServiceForm({ serviceId }: Props) {
                               }
                             />
                           </div>
+                          <PackageImageHighlightsFields
+                            image={pkg.image}
+                            highlights={pkg.highlights}
+                            inputId={`marketplace-menu-package-image-${idx}`}
+                            onImageChange={(image) =>
+                              setPackages((prev) =>
+                                prev.map((p, i) =>
+                                  i === idx ? { ...p, image } : p,
+                                ),
+                              )
+                            }
+                            onHighlightsChange={(highlights) =>
+                              setPackages((prev) =>
+                                prev.map((p, i) =>
+                                  i === idx ? { ...p, highlights } : p,
+                                ),
+                              )
+                            }
+                          />
                           <div className="space-y-3 border-t border-border pt-3 sm:col-span-2">
                             <div className="flex flex-wrap items-start justify-between gap-2">
                               <div>

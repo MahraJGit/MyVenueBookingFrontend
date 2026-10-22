@@ -106,6 +106,7 @@ export type MyTicketOrder = {
       id: string;
       qrToken: string;
       fullName: string;
+      entryLabel?: string | null;
       checkedIn: boolean;
       checkInTime: string | null;
       seatId?: string | null;
@@ -265,10 +266,17 @@ export async function getMyTicketOrders() {
   return (data as ApiEnvelope<MyTicketOrder[]>).data;
 }
 
+export type CheckoutAttendee = {
+  fullName: string;
+  ticketTypeId?: string;
+  seatId?: string;
+};
+
 export async function checkoutTickets(
   eventId: string,
   items: CheckoutLineItem[],
   seatIds?: string[],
+  attendees?: CheckoutAttendee[],
 ) {
   const res = await authFetch("/api/ticket-purchases/checkout", {
     method: "POST",
@@ -278,8 +286,8 @@ export async function checkoutTickets(
     },
     body: JSON.stringify(
       seatIds?.length
-        ? { eventId, seatIds }
-        : { eventId, items },
+        ? { eventId, seatIds, attendees }
+        : { eventId, items, attendees },
     ),
     networkErrorMessage: "Network error while processing checkout.",
   });

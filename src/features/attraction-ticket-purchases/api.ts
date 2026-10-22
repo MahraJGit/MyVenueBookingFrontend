@@ -136,11 +136,18 @@ export async function getAttractionTicketSales(
   return (data as ApiEnvelope<AttractionTicketSalesResponse>).data;
 }
 
+export type AttractionCheckoutAttendee = {
+  fullName: string;
+  inventoryId?: string;
+  seatId?: string;
+};
+
 export async function checkoutAttractionTickets(
   occurrenceId: string,
   items?: AttractionCheckoutLineItem[],
   seatIds?: string[],
   paymentMethodId?: string,
+  attendees?: AttractionCheckoutAttendee[],
 ) {
   const body: Record<string, unknown> = { occurrenceId };
   if (seatIds?.length) {
@@ -150,6 +157,9 @@ export async function checkoutAttractionTickets(
   }
   if (paymentMethodId) {
     body.paymentMethodId = paymentMethodId;
+  }
+  if (attendees?.length) {
+    body.attendees = attendees;
   }
 
   const res = await authFetch("/api/attraction-ticket-purchases/checkout", {

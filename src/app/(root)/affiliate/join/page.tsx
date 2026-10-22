@@ -7,7 +7,6 @@ import {
   CalendarDays,
   Check,
   Compass,
-  ExternalLink,
   Store,
   Upload,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -111,8 +111,6 @@ const VENDOR_SERVICES = [
 ];
 
 type VendorServiceId = (typeof VENDOR_SERVICES)[number]["id"];
-
-const SERVICES_GUIDE_HREF = "/guides/vendor-services";
 
 const STEPS = [
   { id: "business", titleKey: "stepBusiness" as const, shortKey: "stepBusinessShort" as const },
@@ -243,6 +241,8 @@ type FormState = {
   countryCode: string;
   city: string;
   businessAddress: string;
+  bio: string;
+  websiteUrl: string;
   email: string;
   phoneE164: Value | undefined;
   ownerName: string;
@@ -269,6 +269,8 @@ const initialFormState: FormState = {
   countryCode: "",
   city: "",
   businessAddress: "",
+  bio: "",
+  websiteUrl: "",
   email: "",
   phoneE164: undefined,
   ownerName: "",
@@ -528,6 +530,8 @@ const JoinAffiliateFormPage = () => {
         return match!.apiType;
       });
 
+      const websiteUrl = form.websiteUrl.trim();
+      const bio = form.bio.trim();
       const payload = {
         vendorName: form.businessName.trim(),
         businessType: form.businessType,
@@ -542,6 +546,8 @@ const JoinAffiliateFormPage = () => {
         email: form.email.trim(),
         phone: form.phoneE164!.trim(),
         address: form.businessAddress.trim(),
+        bio: bio || null,
+        websiteUrl: websiteUrl || null,
         taxId: form.vatTaxNumber.trim(),
         annualRevenueRange: form.annualRevenueRange,
         financialStatementUrl,
@@ -588,6 +594,8 @@ const JoinAffiliateFormPage = () => {
       countryCode: vendorProfile.countryCode ?? "",
       city: vendorProfile.city ?? "",
       businessAddress: vendorProfile.address ?? "",
+      bio: vendorProfile.bio ?? "",
+      websiteUrl: vendorProfile.websiteUrl ?? "",
       email: vendorProfile.email ?? "",
       phoneE164: (vendorProfile.phone as Value | undefined) ?? undefined,
       ownerName: vendorProfile.ownerName ?? "",
@@ -832,13 +840,9 @@ const JoinAffiliateFormPage = () => {
                       );
                     })}
                   </div>
-                  <Link
-                    href={SERVICES_GUIDE_HREF}
-                    className="inline-flex items-center gap-1.5 pt-1 text-xs font-medium text-pink-500 hover:text-pink-400 hover:underline"
-                  >
+                  <span className="inline-flex items-center gap-1.5 pt-1 text-xs font-medium text-pink-500/70">
                     {t("serviceGuideLink")}
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
+                  </span>
                 </div>
               ) : null}
 
@@ -940,6 +944,33 @@ const JoinAffiliateFormPage = () => {
                       value={form.businessAddress}
                       onChange={(e) => setField("businessAddress", e.target.value)}
                       placeholder={t("businessAddressPlaceholder")}
+                      className={fieldControlClass}
+                    />
+                  </Field>
+
+                  <Field
+                    label={t("bio")}
+                    htmlFor="bio"
+                    hint={t("bioHint")}
+                  >
+                    <Textarea
+                      id="bio"
+                      value={form.bio}
+                      onChange={(e) => setField("bio", e.target.value)}
+                      placeholder={t("bioPlaceholder")}
+                      rows={4}
+                      maxLength={2000}
+                      className={cn(fieldControlClass, "min-h-[96px] resize-y")}
+                    />
+                  </Field>
+
+                  <Field label={t("website")} htmlFor="websiteUrl">
+                    <Input
+                      id="websiteUrl"
+                      type="url"
+                      value={form.websiteUrl}
+                      onChange={(e) => setField("websiteUrl", e.target.value)}
+                      placeholder={t("websitePlaceholder")}
                       className={fieldControlClass}
                     />
                   </Field>

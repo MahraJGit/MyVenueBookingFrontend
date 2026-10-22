@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Clock, MapPin } from "lucide-react";
+import { Clock, FileText, MapPin } from "lucide-react";
 import type { ManagedMarketplaceService } from "@/features/marketplace/types";
 import {
   decimalToNumber,
@@ -103,6 +103,23 @@ export function ServiceReviewDetails({
         </div>
       ) : null}
 
+      {service.portfolioPdf?.trim() ? (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            {t("portfolioPdf")}
+          </p>
+          <a
+            href={getMediaProxyUrl(service.portfolioPdf.trim())}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+          >
+            <FileText className="h-4 w-4" />
+            {t("downloadPortfolioPdf")}
+          </a>
+        </div>
+      ) : null}
+
       {(service.packages?.length ?? 0) > 0 ? (
         <div className="space-y-2">
           <p className="text-xs font-medium text-muted-foreground">{t("packages")}</p>
@@ -110,9 +127,26 @@ export function ServiceReviewDetails({
             {(service.packages ?? []).map((pkg) => (
               <li
                 key={pkg.id ?? pkg.name}
-                className="flex items-center justify-between gap-2 text-sm"
+                className="flex items-start justify-between gap-2 text-sm"
               >
-                <span>{pkg.name}</span>
+                <div className="flex min-w-0 items-start gap-2">
+                  {pkg.image?.trim() ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={getMediaProxyUrl(pkg.image.trim())}
+                      alt=""
+                      className="h-10 w-10 shrink-0 rounded object-cover"
+                    />
+                  ) : null}
+                  <div className="min-w-0">
+                    <span>{pkg.name}</span>
+                    {(pkg.highlights?.length ?? 0) > 0 ? (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {pkg.highlights!.slice(0, 3).join(" · ")}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
                 <DisplayPrice
                   amount={decimalToNumber(pkg.price)}
                   currency={service.currency}

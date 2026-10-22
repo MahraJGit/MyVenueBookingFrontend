@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DatePicker, parseDateValue } from "@/components/ui/date-time-picker";
 import {
   dashboardDropdownContentClass,
   dashboardSelectTriggerClass,
@@ -17,6 +18,10 @@ import {
 import { listVendorDirectory } from "@/features/vendor/api";
 import { listManagedVenues } from "@/features/venues/api";
 import { listManagedMarketplaceServices } from "@/features/marketplace/api";
+import {
+  isSalesPeriodPreset,
+  type SalesPeriodPreset,
+} from "@/features/sales/sales-period";
 import { cn } from "@/lib/utils";
 
 export const SALES_FILTER_ALL = "ALL";
@@ -40,7 +45,7 @@ function SalesSelectFilter({
   options,
   allLabel,
   placeholder,
-  width = "sm:w-[200px]",
+  width = "w-full",
   disabled,
 }: {
   value: string;
@@ -57,7 +62,9 @@ function SalesSelectFilter({
       onValueChange={(next) => onChange(fromSalesFilterValue(next))}
       disabled={disabled}
     >
-      <SelectTrigger className={cn("w-full", width, dashboardSelectTriggerClass)}>
+      <SelectTrigger
+        className={cn("h-9 w-full min-w-0", dashboardSelectTriggerClass, width)}
+      >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent className={dashboardDropdownContentClass}>
@@ -109,7 +116,7 @@ export function SalesVendorFilter({
       options={options}
       allLabel={t("allVendors")}
       placeholder={t("vendor")}
-      width="sm:w-[200px]"
+      width="w-full"
     />
   );
 }
@@ -189,6 +196,91 @@ export function SalesServiceFilter({
       allLabel={t("allServices")}
       placeholder={t("service")}
     />
+  );
+}
+
+export function SalesPeriodFilter({
+  period,
+  dateFrom,
+  dateTo,
+  onPeriodChange,
+  onCustomRangeChange,
+}: {
+  period: string;
+  dateFrom: string;
+  dateTo: string;
+  onPeriodChange: (period: SalesPeriodPreset) => void;
+  onCustomRangeChange: (next: { dateFrom?: string; dateTo?: string }) => void;
+}) {
+  const t = useTranslations("salesFilters");
+  const selected = isSalesPeriodPreset(period) ? period : "ALL";
+  const fromDate = parseDateValue(dateFrom);
+  const toDate = parseDateValue(dateTo);
+
+  if (selected !== "CUSTOM") {
+    return (
+      <Select
+        value={selected}
+        onValueChange={(value) => {
+          if (!isSalesPeriodPreset(value)) return;
+          onPeriodChange(value);
+        }}
+      >
+        <SelectTrigger
+          className={cn("h-9 w-full min-w-0", dashboardSelectTriggerClass)}
+        >
+          <SelectValue placeholder={t("period")} />
+        </SelectTrigger>
+        <SelectContent className={dashboardDropdownContentClass}>
+          <SelectItem value="ALL">{t("periodAll")}</SelectItem>
+          <SelectItem value="WEEK">{t("periodWeek")}</SelectItem>
+          <SelectItem value="MONTH">{t("periodMonth")}</SelectItem>
+          <SelectItem value="LAST_30">{t("periodLast30")}</SelectItem>
+          <SelectItem value="CUSTOM">{t("periodCustom")}</SelectItem>
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  return (
+    <div className="col-span-full grid min-w-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2 lg:grid-cols-3">
+      <Select
+        value={selected}
+        onValueChange={(value) => {
+          if (!isSalesPeriodPreset(value)) return;
+          onPeriodChange(value);
+        }}
+      >
+        <SelectTrigger
+          className={cn("h-9 w-full min-w-0", dashboardSelectTriggerClass)}
+        >
+          <SelectValue placeholder={t("period")} />
+        </SelectTrigger>
+        <SelectContent className={dashboardDropdownContentClass}>
+          <SelectItem value="ALL">{t("periodAll")}</SelectItem>
+          <SelectItem value="WEEK">{t("periodWeek")}</SelectItem>
+          <SelectItem value="MONTH">{t("periodMonth")}</SelectItem>
+          <SelectItem value="LAST_30">{t("periodLast30")}</SelectItem>
+          <SelectItem value="CUSTOM">{t("periodCustom")}</SelectItem>
+        </SelectContent>
+      </Select>
+      <DatePicker
+        value={dateFrom}
+        onChange={(value) => onCustomRangeChange({ dateFrom: value })}
+        placeholder={t("dateFrom")}
+        disabledDates={toDate ? { after: toDate } : undefined}
+        className="min-w-0"
+        triggerClassName={cn("h-9", dashboardSelectTriggerClass)}
+      />
+      <DatePicker
+        value={dateTo}
+        onChange={(value) => onCustomRangeChange({ dateTo: value })}
+        placeholder={t("dateTo")}
+        disabledDates={fromDate ? { before: fromDate } : undefined}
+        className="min-w-0"
+        triggerClassName={cn("h-9", dashboardSelectTriggerClass)}
+      />
+    </div>
   );
 }
 

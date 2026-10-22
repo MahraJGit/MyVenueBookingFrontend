@@ -84,68 +84,76 @@ export function DashboardDataTable({
   return (
     <div className="w-full min-w-0 space-y-4">
       {toolbar ? (
-        <DashboardFilterBar
-          action={
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-              {toolbar.filters}
-              {toolbar.pageSize ? (
-                <div className="flex items-center gap-2">
-                  <span className="hidden whitespace-nowrap text-xs text-muted-foreground sm:inline">
-                    {t('rowsPerPage')}
-                  </span>
-                  <Select
-                    value={String(toolbar.pageSize.value)}
-                    onValueChange={(value) =>
-                      toolbar.pageSize?.onChange(Number(value) as TablePageSize)
-                    }
-                  >
-                    <SelectTrigger
-                      className={cn('h-9 w-[88px]', dashboardSelectTriggerClass)}
+        <div className="w-full min-w-0 space-y-3 border-b border-[#303030] pb-4">
+          <DashboardFilterBar
+            className="border-b-0 pb-0"
+            action={
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                {toolbar.pageSize ? (
+                  <div className="flex items-center gap-2">
+                    <span className="hidden whitespace-nowrap text-xs text-muted-foreground sm:inline">
+                      {t('rowsPerPage')}
+                    </span>
+                    <Select
+                      value={String(toolbar.pageSize.value)}
+                      onValueChange={(value) =>
+                        toolbar.pageSize?.onChange(Number(value) as TablePageSize)
+                      }
                     >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className={dashboardDropdownContentClass}>
-                      {pageSizeOptions.map((size) => (
-                        <SelectItem key={size} value={String(size)}>
-                          {size}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : null}
-              {showReset ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className={cn('h-9', dashboardOutlineButtonClass)}
-                  onClick={toolbar.onReset}
-                >
-                  <X className="mr-1.5 h-3.5 w-3.5" />
-                  {tListing('clearFilters')}
-                </Button>
-              ) : null}
-              {toolbar.isRefreshing ? (
-                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {tCommon('refreshing')}
-                </span>
-              ) : null}
-              {toolbar.trailing}
-            </div>
-          }
-        >
-          {toolbar.search ? (
-            <div className="w-full max-w-sm">
-              <DashboardSearchInput
-                placeholder={toolbar.search.placeholder}
-                value={toolbar.search.value}
-                onChange={(e) => toolbar.search?.onChange(e.target.value)}
-              />
+                      <SelectTrigger
+                        className={cn('h-9 w-[88px]', dashboardSelectTriggerClass)}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className={dashboardDropdownContentClass}>
+                        {pageSizeOptions.map((size) => (
+                          <SelectItem key={size} value={String(size)}>
+                            {size}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
+                {showReset ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={cn('h-9', dashboardOutlineButtonClass)}
+                    onClick={toolbar.onReset}
+                  >
+                    <X className="mr-1.5 h-3.5 w-3.5" />
+                    {tListing('clearFilters')}
+                  </Button>
+                ) : null}
+                {toolbar.isRefreshing ? (
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {tCommon('refreshing')}
+                  </span>
+                ) : null}
+                {toolbar.trailing}
+              </div>
+            }
+          >
+            {toolbar.search ? (
+              <div className="w-full max-w-sm">
+                <DashboardSearchInput
+                  placeholder={toolbar.search.placeholder}
+                  value={toolbar.search.value}
+                  onChange={(e) => toolbar.search?.onChange(e.target.value)}
+                />
+              </div>
+            ) : null}
+          </DashboardFilterBar>
+
+          {toolbar.filters ? (
+            <div className="grid w-full min-w-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {toolbar.filters}
             </div>
           ) : null}
-        </DashboardFilterBar>
+        </div>
       ) : null}
 
       <DashboardTableWrapper className={className}>{children}</DashboardTableWrapper>

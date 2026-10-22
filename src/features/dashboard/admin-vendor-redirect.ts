@@ -58,6 +58,12 @@ export function getVendorRedirectForAdminPath(
   if (pathname === `${ADMIN_DASHBOARD_PREFIX}/verifiers`) {
     return `${VENDOR_DASHBOARD_PREFIX}/verifiers${search}`;
   }
+  if (pathname === `${ADMIN_DASHBOARD_PREFIX}/attendance/events`) {
+    return `${VENDOR_DASHBOARD_PREFIX}/attendance/events`;
+  }
+  if (pathname === `${ADMIN_DASHBOARD_PREFIX}/attendance/attractions`) {
+    return `${VENDOR_DASHBOARD_PREFIX}/attendance/attractions`;
+  }
   if (pathname === `${ADMIN_DASHBOARD_PREFIX}/analytics`) {
     return `${VENDOR_DASHBOARD_PREFIX}/analytics`;
   }

@@ -39,6 +39,8 @@ export type CreateVendorProfileBody = {
   acceptedPrivacy: true;
   logoUrl?: string;
   coverImageUrl?: string;
+  bio?: string | null;
+  websiteUrl?: string | null;
 };
 
 type CreateVendorProfileResponse = {

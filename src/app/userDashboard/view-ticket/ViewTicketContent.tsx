@@ -266,6 +266,47 @@ export default function ViewTicketContent() {
         </div>
       </div>
 
+      {seatCount > 0 ? (
+        <div className="mt-10">
+          <div className="mb-4 flex items-center gap-1">
+            <h4 className="font-semibold text-pink-500">{t('ticketHolders')}</h4>
+            <Separator className="flex-1 bg-zinc-800" />
+          </div>
+          <ul className="space-y-3">
+            {flattenOrderSeats(order.items).map((ticket, index) => (
+              <li
+                key={ticket.id}
+                className="flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-white">
+                    {ticket.fullName?.trim() || t('guestFallback')}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {ticket.seatLabel
+                      ? t('ticketHolderMetaWithSeat', {
+                          n: index + 1,
+                          ticket: ticket.ticketName,
+                          seat: ticket.seatLabel,
+                        })
+                      : ticket.entryLabel
+                        ? t('ticketHolderMetaWithEntry', {
+                            n: index + 1,
+                            ticket: ticket.ticketName,
+                            entry: ticket.entryLabel,
+                          })
+                        : t('ticketHolderMeta', {
+                            n: index + 1,
+                            ticket: ticket.ticketName,
+                          })}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <div className="mt-10">
         <div className="flex items-center gap-1 mb-4">
           <h4 className="text-pink-500 font-semibold">{t('payment')}</h4>

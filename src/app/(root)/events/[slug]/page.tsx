@@ -26,6 +26,7 @@ import {
   openTicketPurchaseFlow,
 } from "@/components/events/ticket-purchase-dialog";
 import { EventOrganizerSection } from "@/components/events/EventOrganizerSection";
+import { TicketPerksComparison } from "@/components/tickets/TicketPerksComparison";
 import { ListingReviewsSection } from "@/components/reviews/ListingReviewsSection";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLocaleContext } from "@/features/i18n/locale-context";
@@ -76,6 +77,7 @@ function EventDetailSkeleton() {
 export default function EventDetailPage() {
   const t = useTranslations("events");
   const tTickets = useTranslations("tickets");
+  const tTicketPurchase = useTranslations("ticketPurchase");
   const tCommon = useTranslations("common");
   const { locale } = useLocaleContext();
   const intlLocale = getIntlLocale(locale);
@@ -372,6 +374,20 @@ export default function EventDetailPage() {
                       </span>
                     </div>
                   </div>
+                  {ticketType.kind === "PACKAGE" &&
+                  Array.isArray(ticketType.entries) &&
+                  ticketType.entries.length > 0 ? (
+                    <p className="text-xs text-zinc-400">
+                      {tTicketPurchase("packageAdmits", {
+                        summary: ticketType.entries
+                          .map(
+                            (entry: { label: string; count: number }) =>
+                              `${entry.label} × ${entry.count}`,
+                          )
+                          .join(", "),
+                      })}
+                    </p>
+                  ) : null}
                   {(ticketType.salesStart || ticketType.salesEnd) && (
                     <div className="text-xs text-zinc-500 space-y-1">
                       {ticketType.salesStart ? (
@@ -387,6 +403,15 @@ export default function EventDetailPage() {
               );
             })}
           </div>
+
+          <TicketPerksComparison
+            className="mb-8"
+            tickets={event.ticketTypes.map((ticketType) => ({
+              id: ticketType.id,
+              name: ticketType.name,
+              includes: ticketType.includes,
+            }))}
+          />
 
           {!isEmbed && !isPreview ? (
           <div className="bg-[#1B1B1B] border border-[#303030] rounded-2xl p-6 flex flex-col items-center gap-3">

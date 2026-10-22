@@ -25,6 +25,11 @@ function unwrapEnvelope<T>(json: SuccessEnvelope<T>): T {
 
 export type SalePhase = "not_started" | "open" | "ended" | "sold_out";
 
+export type TicketPackageEntry = {
+  label: string;
+  count: number;
+};
+
 export type TicketTypeRow = {
   id?: string;
   name: string;
@@ -32,6 +37,10 @@ export type TicketTypeRow = {
   currency: string;
   quantityTotal: number;
   quantitySold?: number;
+  kind?: "STANDARD" | "PACKAGE";
+  entries?: TicketPackageEntry[];
+  /** Included perks (informational; already in ticket price). */
+  includes?: string[];
   salesStart?: string | null;
   salesEnd?: string | null;
   salePhase?: SalePhase;
@@ -207,6 +216,9 @@ export type CreateEventPayload = {
     price: number;
     currency: string;
     quantityTotal: number;
+    kind?: "STANDARD" | "PACKAGE";
+    entries?: TicketPackageEntry[];
+    includes?: string[];
     salesStart?: string;
     salesEnd?: string;
   }[];

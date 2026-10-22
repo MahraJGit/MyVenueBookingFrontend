@@ -6,12 +6,21 @@ import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { CalendarDays, Loader2, MapPin, Store } from "lucide-react";
+import {
+  CalendarDays,
+  Download,
+  FileText,
+  Loader2,
+  MapPin,
+  Store,
+} from "lucide-react";
 import { DetailGallerySlider } from "@/components/gallery/DetailGallerySlider";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
 import { Button } from "@/components/ui/button";
 import { AvailabilityCalendar } from "@/components/venues/AvailabilityCalendar";
 import { ServiceInquiryDialog } from "@/components/marketplace/ServiceInquiryDialog";
+import { MarketplaceCompareButton } from "@/components/marketplace/MarketplaceCompareButton";
+import { MarketplaceCompareTray } from "@/components/marketplace/MarketplaceCompareTray";
 import { EventOrganizerSection } from "@/components/events/EventOrganizerSection";
 import {
   checkServiceAvailability,
@@ -305,7 +314,12 @@ export default function MarketplaceServiceDetailPage({
   })();
 
   return (
-    <div className="min-h-screen bg-[#0e0e0e] text-white">
+    <div
+      className={cn(
+        "min-h-screen bg-[#0e0e0e] text-white",
+        !isPreview && !isEmbed && "pb-28",
+      )}
+    >
       {isPreview ? (
         <div className="border-b border-amber-500/40 bg-amber-500/15 px-4 py-2 text-center text-sm text-amber-100">
           {t("previewModeBanner")}
@@ -385,6 +399,37 @@ export default function MarketplaceServiceDetailPage({
               </div>
             </section>
 
+            {service.portfolioPdf?.trim() ? (
+              <div className="rounded-2xl border border-[#303030] bg-[#1B1B1B] p-4 sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                      <FileText size={18} className="text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-white sm:text-lg">
+                        {t("portfolioPdf")}
+                      </h2>
+                      <p className="mt-1 text-sm text-zinc-400">
+                        {t("portfolioPdfDesc")}
+                      </p>
+                    </div>
+                  </div>
+                  <Button asChild className="shrink-0 bg-primary">
+                    <a
+                      href={getMediaProxyUrl(service.portfolioPdf.trim())}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={`${service.title.replace(/[^\w\-]+/g, "-").toLowerCase() || "service"}-portfolio.pdf`}
+                    >
+                      <Download className="me-2 h-4 w-4" />
+                      {t("downloadPortfolioPdf")}
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
             {(service.packages?.length ?? 0) > 0 ? (
               <section>
                 <h2 className="mb-6 text-xl font-bold text-primary">
@@ -396,23 +441,47 @@ export default function MarketplaceServiceDetailPage({
                     .map((pkg) => (
                       <li
                         key={pkg.id ?? pkg.name}
-                        className="rounded-2xl border border-[#303030] bg-[#1B1B1B] p-6"
+                        className="overflow-hidden rounded-2xl border border-[#303030] bg-[#1B1B1B]"
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h4 className="font-semibold text-white">{pkg.name}</h4>
-                            {pkg.description ? (
-                              <p className="mt-2 text-sm text-zinc-400">
-                                {pkg.description}
-                              </p>
-                            ) : null}
-                          </div>
-                          <span className="shrink-0 rounded-full border border-primary px-3 py-0.5 text-sm font-bold text-primary">
-                            <DisplayPrice
-                              amount={decimalToNumber(pkg.price)}
-                              currency={service.currency}
+                        <div className="flex flex-col gap-0 sm:flex-row">
+                          {pkg.image?.trim() ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={getMediaProxyUrl(pkg.image.trim())}
+                              alt=""
+                              className="h-40 w-full shrink-0 object-cover sm:h-auto sm:w-44"
                             />
-                          </span>
+                          ) : null}
+                          <div className="flex flex-1 items-start justify-between gap-3 p-5 sm:p-6">
+                            <div className="min-w-0">
+                              <h4 className="font-semibold text-white">
+                                {pkg.name}
+                              </h4>
+                              {pkg.description ? (
+                                <p className="mt-2 text-sm text-zinc-400">
+                                  {pkg.description}
+                                </p>
+                              ) : null}
+                              {(pkg.highlights?.length ?? 0) > 0 ? (
+                                <ul className="mt-3 flex flex-wrap gap-1.5">
+                                  {pkg.highlights!.map((item) => (
+                                    <li
+                                      key={item}
+                                      className="rounded-full border border-[#303030] bg-[#151515] px-2.5 py-0.5 text-xs text-zinc-300"
+                                    >
+                                      {item}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                            </div>
+                            <span className="shrink-0 rounded-full border border-primary px-3 py-0.5 text-sm font-bold text-primary">
+                              <DisplayPrice
+                                amount={decimalToNumber(pkg.price)}
+                                currency={service.currency}
+                              />
+                            </span>
+                          </div>
                         </div>
                       </li>
                     ))}
@@ -614,6 +683,17 @@ export default function MarketplaceServiceDetailPage({
                           {t("inquireCta")}
                         </Button>
                       )}
+                      <MarketplaceCompareButton
+                        variant="outline"
+                        item={{
+                          id: service.id,
+                          slug: service.slug,
+                          title: service.title,
+                          categoryId: service.categoryId,
+                          categoryName: service.category?.name ?? null,
+                          coverImage: service.coverImage ?? null,
+                        }}
+                      />
                       {hintText ? (
                         <p className="mt-2 text-xs text-muted-foreground">
                           {hintText}
@@ -655,6 +735,8 @@ export default function MarketplaceServiceDetailPage({
           mode={dialogMode}
         />
       ) : null}
+
+      {!isPreview && !isEmbed ? <MarketplaceCompareTray /> : null}
     </div>
   );
 }

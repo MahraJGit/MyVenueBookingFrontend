@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { Minus, Plus, Loader2, CreditCard, Ticket, Clock3 } from "lucide-react";
+import { Check, Minus, Plus, Loader2, CreditCard, Ticket, Clock3 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import {
 import { ModalHeroBanner } from "@/components/ui/modal-hero-banner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/auth-context";
+import { buildDisplayName } from "@/features/auth/auth-display";
 import { listPaymentMethods } from "@/features/payments/api";
 import {
   checkoutTickets,
@@ -30,6 +31,16 @@ import {
   type PublicSeatSection,
 } from "@/features/seating/api";
 import { SeatMap } from "@/components/seating/SeatMap";
+import {
+  AttendeeNamesFields,
+  allAttendeeNamesFilled,
+  buildAttendeesFromSlots,
+  type AttendeeNameSlot,
+} from "@/components/tickets/AttendeeNamesFields";
+import {
+  expandTicketEntrySlots,
+  formatPackageEntriesSummary,
+} from "@/features/tickets/ticket-package";
 import { ApiError } from "@/lib/api/errors";
 import { toastApiError } from "@/lib/toasts";
 import { toast } from "sonner";
@@ -83,10 +94,16 @@ export function TicketPurchaseDialog({
   const tTicket = useTranslations("ticketPurchase");
   const tEvents = useTranslations("events");
   const tCommon = useTranslations("common");
-  const { isAuthenticated, isReady } = useAuth();
+  const { isAuthenticated, isReady, user } = useAuth();
   const { formatChargePrice } = useCurrency();
+  const buyerDisplayName = React.useMemo(
+    () => (user ? buildDisplayName(user) : ""),
+    [user],
+  );
   const [quantities, setQuantities] = React.useState<Quantities>({});
   const [selectedSeats, setSelectedSeats] = React.useState<SelectedSeat[]>([]);
+  const [attendeeNames, setAttendeeNames] = React.useState<Record<string, string>>({});
+  const [showAttendeeErrors, setShowAttendeeErrors] = React.useState(false);
   const [holdId, setHoldId] = React.useState<string | null>(null);
   const [holdExpiresAt, setHoldExpiresAt] = React.useState<string | null>(null);
   const [holding, setHolding] = React.useState(false);
@@ -115,6 +132,8 @@ export function TicketPurchaseDialog({
     if (!open) {
       setQuantities({});
       setSelectedSeats([]);
+      setAttendeeNames({});
+      setShowAttendeeErrors(false);
       setHoldId(null);
       setHoldExpiresAt(null);
       setPaymentBlocked(false);
@@ -218,6 +237,62 @@ export function TicketPurchaseDialog({
   const currency = lineItems[0]?.currency ?? ticketTypes[0]?.currency ?? "USD";
   const { formatted: chargeFormatted } = useDisplayPrice(orderTotal, currency);
 
+  const attendeeSlots = React.useMemo((): AttendeeNameSlot[] => {
+    if (seatingEnabled) {
+      return selectedSeats.map((selected) => ({
+        key: selected.seat.id,
+        label: `${selected.section.ticketType.name}${
+          selected.seat.label ? ` · ${selected.seat.label}` : ""
+        }`,
+        ticketTypeId: selected.section.ticketType.id,
+        seatId: selected.seat.id,
+      }));
+    }
+    const slots: AttendeeNameSlot[] = [];
+    for (const line of lineItems) {
+      const ticket = ticketTypes.find((tt) => tt.id === line.ticketTypeId);
+      const unitSlots = expandTicketEntrySlots({
+        kind: ticket?.kind,
+        entries: ticket?.entries,
+        ticketName: line.name,
+      });
+      for (let unit = 0; unit < line.quantity; unit += 1) {
+        unitSlots.forEach((entrySlot, personIdx) => {
+          slots.push({
+            key: `${line.ticketTypeId}:${unit}:${personIdx}`,
+            label:
+              ticket?.kind === "PACKAGE"
+                ? `${line.name} · ${entrySlot.slotLabel}`
+                : line.name,
+            ticketTypeId: line.ticketTypeId,
+          });
+        });
+      }
+    }
+    return slots;
+  }, [seatingEnabled, selectedSeats, lineItems, ticketTypes]);
+
+  React.useEffect(() => {
+    setAttendeeNames((prev) => {
+      const next: Record<string, string> = {};
+      for (const slot of attendeeSlots) {
+        next[slot.key] = prev[slot.key] ?? "";
+      }
+      // Prefill first empty slot with buyer name when slots appear.
+      if (buyerDisplayName) {
+        const firstEmpty = attendeeSlots.find((slot) => !next[slot.key]?.trim());
+        if (firstEmpty && !prev[firstEmpty.key]?.trim()) {
+          const hadAny = attendeeSlots.some((slot) => Boolean(prev[slot.key]?.trim()));
+          if (!hadAny) {
+            next[firstEmpty.key] = buyerDisplayName;
+          }
+        }
+      }
+      return next;
+    });
+    setShowAttendeeErrors(false);
+  }, [attendeeSlots, buyerDisplayName]);
+
   const setQty = (ticketTypeId: string, delta: number, max: number) => {
     setQuantities((prev) => {
       const current = prev[ticketTypeId] ?? 0;
@@ -295,8 +370,21 @@ export function TicketPurchaseDialog({
       return;
     }
 
+    if (!allAttendeeNamesFilled(attendeeSlots, attendeeNames)) {
+      setShowAttendeeErrors(true);
+      toast.error(tTicket("attendeeNamesIncomplete"));
+      return;
+    }
+
     setPurchasing(true);
     try {
+      const attendees = buildAttendeesFromSlots(attendeeSlots, attendeeNames).map(
+        (row) => ({
+          fullName: row.fullName,
+          ticketTypeId: row.ticketTypeId,
+          seatId: row.seatId,
+        }),
+      );
       const result = await checkoutTickets(
         event.id,
         lineItems.map((l) => ({
@@ -304,6 +392,7 @@ export function TicketPurchaseDialog({
           quantity: l.quantity,
         })),
         seatingEnabled ? selectedSeats.map((s) => s.seat.id) : undefined,
+        attendees,
       );
 
       if (result.status === "requires_action") {
@@ -429,6 +518,36 @@ export function TicketPurchaseDialog({
                             count: max,
                           })}
                         </p>
+                        {(() => {
+                          const packageSummary = formatPackageEntriesSummary(
+                            ticket.kind,
+                            ticket.entries,
+                          );
+                          return packageSummary ? (
+                            <p className="mt-2 text-xs text-zinc-400">
+                              {tTicket("packageAdmits", {
+                                summary: packageSummary,
+                              })}
+                            </p>
+                          ) : null;
+                        })()}
+                        {(ticket.includes?.length ?? 0) > 0 ? (
+                          <ul className="mt-2 space-y-1">
+                            {ticket.includes!.map((perk) => (
+                              <li
+                                key={perk}
+                                className="flex items-start gap-2 text-xs text-zinc-400"
+                              >
+                                <Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+                                <span>{perk}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mt-2 text-xs text-zinc-600">
+                            {tTicket("noPerksIncluded")}
+                          </p>
+                        )}
                       </div>
                       <span className="text-sm font-semibold text-primary">
                         <DisplayPrice amount={price * qty} currency={ticketCurrency} />
@@ -471,6 +590,21 @@ export function TicketPurchaseDialog({
 
           {(seatingEnabled || ticketTypes.length > 0) && (
             <div className="space-y-4 px-6 pb-6 pt-4">
+              {attendeeSlots.length > 0 ? (
+                <div className="border-t border-zinc-700 pt-4">
+                  <AttendeeNamesFields
+                    slots={attendeeSlots}
+                    values={attendeeNames}
+                    showErrors={showAttendeeErrors}
+                    disabled={purchasing || holding}
+                    onChange={(key, value) => {
+                      setAttendeeNames((prev) => ({ ...prev, [key]: value }));
+                      setShowAttendeeErrors(false);
+                    }}
+                  />
+                </div>
+              ) : null}
+
               <div className="border-t border-zinc-700 pt-4">
                 <div className="flex items-start justify-between gap-4">
                   <span className="text-lg font-semibold">{tCommon("total")}</span>

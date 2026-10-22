@@ -7,6 +7,7 @@ export type TicketPdfSeat = {
   qrToken: string;
   ticketName: string;
   fullName: string;
+  entryLabel?: string | null;
   seatLabel?: string | null;
 };
 
@@ -269,7 +270,16 @@ async function drawTicketPage(
 
   y = drawLabelValue(doc, "Guest", seat.fullName || "Guest", contentX, y, detailsMaxW);
   y += 14;
-  y = drawLabelValue(doc, "Ticket type", seat.ticketName, contentX, y, detailsMaxW);
+  y = drawLabelValue(
+    doc,
+    "Ticket type",
+    seat.entryLabel
+      ? `${seat.ticketName} · ${seat.entryLabel}`
+      : seat.ticketName,
+    contentX,
+    y,
+    detailsMaxW,
+  );
   y += 14;
   y = drawLabelValue(
     doc,
@@ -516,6 +526,7 @@ export function flattenOrderSeats(
       id: string;
       qrToken: string;
       fullName: string;
+      entryLabel?: string | null;
       checkedIn: boolean;
       checkInTime: string | null;
       seatId?: string | null;
@@ -529,6 +540,7 @@ export function flattenOrderSeats(
       qrToken: ticket.qrToken,
       ticketName: item.ticketName,
       fullName: ticket.fullName,
+      entryLabel: ticket.entryLabel ?? null,
       seatLabel: ticket.seatLabel ?? null,
     })),
   );

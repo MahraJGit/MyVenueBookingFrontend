@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { MarketplaceServiceCard } from "@/components/marketplace/MarketplaceServiceCard";
+import { MarketplaceCompareTray } from "@/components/marketplace/MarketplaceCompareTray";
 import { ALL_MARKETPLACE_CATEGORIES } from "@/components/marketplace/MarketplaceCategoryFilters";
 import { MarketplaceListingHero } from "@/components/marketplace/MarketplaceListingHero";
 import {
@@ -272,7 +273,7 @@ export function MarketplaceListingSection() {
   const tRecommendations = useTranslations("recommendations");
 
   return (
-    <section className="eventslist py-10 pt-24 sm:pt-28">
+    <section className="eventslist py-10 pt-24 sm:pt-28 pb-28">
       <div className="container mx-auto px-4">
         <MarketplaceListingHero
           categoryOptions={categoryOptions}
@@ -385,6 +386,7 @@ export function MarketplaceListingSection() {
           ) : null}
         </div>
       </div>
+      <MarketplaceCompareTray />
     </section>
   );
 }

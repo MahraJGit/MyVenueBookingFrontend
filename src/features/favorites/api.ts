@@ -31,11 +31,17 @@ export async function getFavoriteIds(): Promise<FavoriteIds> {
     throw ApiError.fromUnknown(res.status, data);
   }
 
-  return (data as SuccessEnvelope<FavoriteIds>).data;
+  const ids = (data as SuccessEnvelope<FavoriteIds>).data;
+  return {
+    eventIds: ids.eventIds ?? [],
+    venueIds: ids.venueIds ?? [],
+    attractionIds: ids.attractionIds ?? [],
+    serviceIds: ids.serviceIds ?? [],
+  };
 }
 
 export async function listFavorites(
-  type: "all" | "event" | "venue" | "attraction" = "all",
+  type: "all" | "event" | "venue" | "attraction" | "service" = "all",
 ): Promise<FavoritesList> {
   const res = await authFetch(
     `/api/favorites?type=${encodeURIComponent(type)}`,

@@ -68,6 +68,13 @@ import { useDashboardPaths } from "@/features/dashboard/paths"
 import { DashboardPageShell } from "@/components/dashboard/dashboard-ui"
 import { cn } from "@/lib/utils"
 import { SeatingLayoutEditor, type SeatingEditorSection } from "@/components/seating/SeatingLayoutEditor"
+import { TicketPerksEditor } from "@/components/tickets/TicketPerksEditor"
+import { TicketPackageEntriesEditor } from "@/components/tickets/TicketPackageEntriesEditor"
+import {
+    type TicketKind,
+    type TicketPackageEntry,
+    normalizeTicketEntries,
+} from "@/features/tickets/ticket-package"
 import {
     getManagedSeating,
     putManagedSeating,
@@ -116,6 +123,9 @@ type TicketForm = {
     name: string
     price: string
     quantityTotal: string
+    kind: TicketKind
+    entries: TicketPackageEntry[]
+    includes: string[]
     salesStart: string
     salesEnd: string
 }
@@ -132,10 +142,13 @@ type TimingValidationResult = {
     isValid: boolean
 }
 
-const defaultTicket = (ticketName: string): TicketForm => ({
+const defaultTicket = (_ticketName: string): TicketForm => ({
     name: "",
     price: "",
     quantityTotal: "",
+    kind: "STANDARD",
+    entries: [],
+    includes: [],
     salesStart: "",
     salesEnd: "",
 })
@@ -489,6 +502,9 @@ export default function AddEventsContentPage() {
                     name: ticket.name,
                     price: String(ticket.price),
                     quantityTotal: String(ticket.quantityTotal),
+                    kind: (ticket.kind === "PACKAGE" ? "PACKAGE" : "STANDARD") as TicketKind,
+                    entries: normalizeTicketEntries(ticket.entries),
+                    includes: ticket.includes ?? [],
                     salesStart: ticket.salesStart
                         ? toLocal(typeof ticket.salesStart === "string" ? ticket.salesStart : String(ticket.salesStart))
                         : "",
@@ -691,6 +707,12 @@ export default function AddEventsContentPage() {
 
         const ticketPayload = tickets.map((ticket, index) => {
             const seatedQty = seatCountByIndex.get(index)
+            const kind = ticket.kind === "PACKAGE" ? "PACKAGE" : "STANDARD"
+            const entries =
+                kind === "PACKAGE" ? normalizeTicketEntries(ticket.entries) : []
+            if (kind === "PACKAGE" && entries.length < 1) {
+                throw new Error(t("ticketPackageEntriesRequired"))
+            }
             const row: CreateEventPayload["ticketTypes"][0] = {
                 name: ticket.name.trim(),
                 price: Number(ticket.price),
@@ -699,6 +721,9 @@ export default function AddEventsContentPage() {
                     seatingEnabled && seatedQty != null && seatedQty > 0
                         ? seatedQty
                         : Math.max(1, Number(ticket.quantityTotal) || 1),
+                kind,
+                entries,
+                includes: ticket.includes ?? [],
             }
             if (ticket.salesStart) {
                 row.salesStart = datetimeLocalValueToUtcIso(ticket.salesStart, eventTz)
@@ -1621,6 +1646,69 @@ export default function AddEventsContentPage() {
                                         />
                                     </div>
                                 ) : null}
+                                {!seatingEnabled ? (
+                                    <TicketPackageEntriesEditor
+                                        kind={ticket.kind}
+                                        entries={ticket.entries}
+                                        disabled={
+                                            saveMutation.isPending ||
+                                            Boolean(editId && existing?.contentOnlyEdit)
+                                        }
+                                        onKindChange={(kind) =>
+                                            setTickets((rows) =>
+                                                rows.map((r, j) =>
+                                                    j === i
+                                                        ? {
+                                                              ...r,
+                                                              kind,
+                                                              entries:
+                                                                  kind === "PACKAGE"
+                                                                      ? r.entries.length > 0
+                                                                          ? r.entries
+                                                                          : [
+                                                                                {
+                                                                                    label: "Adult",
+                                                                                    count: 2,
+                                                                                },
+                                                                                {
+                                                                                    label: "Child",
+                                                                                    count: 2,
+                                                                                },
+                                                                            ]
+                                                                      : [],
+                                                          }
+                                                        : r,
+                                                ),
+                                            )
+                                        }
+                                        onEntriesChange={(entries) =>
+                                            setTickets((rows) =>
+                                                rows.map((r, j) =>
+                                                    j === i ? { ...r, entries } : r,
+                                                ),
+                                            )
+                                        }
+                                        labels={{
+                                            kindLabel: t("ticketKindLabel"),
+                                            standard: t("ticketKindStandard"),
+                                            package: t("ticketKindPackage"),
+                                            entriesHint: t("ticketPackageEntriesHint"),
+                                            entryLabel: t("ticketPackageEntryLabel"),
+                                            entryCount: t("ticketPackageEntryCount"),
+                                            addEntry: t("ticketPackageAddEntry"),
+                                            admitsPreview: t("ticketPackageAdmits", {
+                                                n: Math.max(
+                                                    1,
+                                                    ticket.entries.reduce(
+                                                        (sum, row) =>
+                                                            sum + Math.max(0, Number(row.count) || 0),
+                                                        0,
+                                                    ),
+                                                ),
+                                            }),
+                                        }}
+                                    />
+                                ) : null}
                                 <div className="space-y-2 sm:col-span-2">
                                     <Label>{t("salesStart")}</Label>
                                     <DateTimePicker
@@ -1665,6 +1753,35 @@ export default function AddEventsContentPage() {
                                 </div>
                             </div>
                         ))}
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border bg-card">
+                    <CardHeader>
+                        <CardTitle>{t("ticketPerksTitle")}</CardTitle>
+                        <CardDescription>{t("ticketPerksHint")}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <TicketPerksEditor
+                            tickets={tickets.map((ticket, index) => ({
+                                key: String(index),
+                                name: ticket.name.trim() || t("ticketN", { n: index + 1 }),
+                                price: Number(ticket.price) || 0,
+                                includes: ticket.includes ?? [],
+                            }))}
+                            disabled={
+                                saveMutation.isPending ||
+                                Boolean(editId && existing?.contentOnlyEdit)
+                            }
+                            onChange={(includesByKey) =>
+                                setTickets((rows) =>
+                                    rows.map((row, index) => ({
+                                        ...row,
+                                        includes: includesByKey[String(index)] ?? [],
+                                    })),
+                                )
+                            }
+                        />
                     </CardContent>
                 </Card>
 

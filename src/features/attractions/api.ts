@@ -35,6 +35,11 @@ export type AttractionApprovalStatus =
 
 export type SalePhase = "not_started" | "open" | "ended" | "sold_out";
 
+export type AttractionTicketPackageEntry = {
+  label: string;
+  count: number;
+};
+
 export type AttractionTicketType = {
   id?: string;
   name: string;
@@ -42,6 +47,10 @@ export type AttractionTicketType = {
   currency: string;
   quantityPerOccurrence: number;
   isActive?: boolean;
+  kind?: "STANDARD" | "PACKAGE";
+  entries?: AttractionTicketPackageEntry[];
+  /** Included perks (informational; already in ticket price). */
+  includes?: string[];
   salesOpenMinutesBefore?: number | null;
   salesCloseMinutesBefore?: number | null;
 };
@@ -55,6 +64,10 @@ export type AttractionInventory = {
   quantitySold: number;
   quantityOfflineSold?: number;
   remaining: number;
+  kind?: "STANDARD" | "PACKAGE";
+  entries?: AttractionTicketPackageEntry[];
+  /** Copied from ticket type includes at occurrence materialization. */
+  includes?: string[];
   salesStart?: string | null;
   salesEnd?: string | null;
   isActive?: boolean;
@@ -238,6 +251,9 @@ export type CreateAttractionPayload = {
     price: number;
     currency?: string;
     quantityPerOccurrence: number;
+    kind?: "STANDARD" | "PACKAGE";
+    entries?: AttractionTicketPackageEntry[];
+    includes?: string[];
     salesOpenMinutesBefore?: number | null;
     salesCloseMinutesBefore?: number | null;
   }>;

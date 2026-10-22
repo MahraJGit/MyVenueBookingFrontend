@@ -9,6 +9,7 @@ import { EventCard } from "@/components/events/EventCard";
 import { ResponsiveEventCardsGrid } from "@/components/events/ResponsiveEventCardsGrid";
 import { VenueCard } from "@/components/venues/VenueCard";
 import { AttractionCard } from "@/components/attractions/AttractionCard";
+import { MarketplaceServiceCard } from "@/components/marketplace/MarketplaceServiceCard";
 import { Button } from "@/components/ui/button";
 import {
   DashboardContentPanel,
@@ -23,14 +24,20 @@ import { favoriteKeys } from "@/features/favorites/query-keys";
 import { useAuth } from "@/features/auth/auth-context";
 import { toastApiError } from "@/lib/toasts";
 
-type FavouritesTab = "events" | "venues" | "attractions";
+type FavouritesTab = "events" | "venues" | "attractions" | "services";
 
-const TAB_VALUES: FavouritesTab[] = ["events", "venues", "attractions"];
+const TAB_VALUES: FavouritesTab[] = [
+  "events",
+  "venues",
+  "attractions",
+  "services",
+];
 
 const BROWSE_HREF: Record<FavouritesTab, string> = {
   events: "/events",
   venues: "/venues",
   attractions: "/attractions",
+  services: "/marketplace",
 };
 
 export default function FavouritesPage() {
@@ -49,23 +56,28 @@ export default function FavouritesPage() {
   const events = data?.events ?? [];
   const venues = data?.venues ?? [];
   const attractions = data?.attractions ?? [];
+  const services = data?.services ?? [];
   const isEmpty =
     activeTab === "events"
       ? events.length === 0
       : activeTab === "venues"
         ? venues.length === 0
-        : attractions.length === 0;
+        : activeTab === "attractions"
+          ? attractions.length === 0
+          : services.length === 0;
 
   const tabLabels = {
     events: `${tFav("events")} (${events.length})`,
     venues: `${tFav("venues")} (${venues.length})`,
     attractions: `${tFav("attractions")} (${attractions.length})`,
+    services: `${tFav("services")} (${services.length})`,
   } as const;
 
   const browseLabels: Record<FavouritesTab, string> = {
     events: t("browseEvents"),
     venues: t("browseVenues"),
     attractions: tFav("browseAttractions"),
+    services: tFav("browseMarketplace"),
   };
 
   return (
@@ -117,9 +129,13 @@ export default function FavouritesPage() {
             ? events.map((event) => <EventCard key={event.id} event={event} />)
             : activeTab === "venues"
               ? venues.map((venue) => <VenueCard key={venue.id} venue={venue} />)
-              : attractions.map((attraction) => (
-                  <AttractionCard key={attraction.id} attraction={attraction} />
-                ))}
+              : activeTab === "attractions"
+                ? attractions.map((attraction) => (
+                    <AttractionCard key={attraction.id} attraction={attraction} />
+                  ))
+                : services.map((service) => (
+                    <MarketplaceServiceCard key={service.id} service={service} />
+                  ))}
         </ResponsiveEventCardsGrid>
       )}
     </DashboardContentPanel>

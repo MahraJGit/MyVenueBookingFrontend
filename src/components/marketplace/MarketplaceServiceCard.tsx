@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { DisplayPrice } from "@/components/currency/DisplayPrice";
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
+import { MarketplaceCompareButton } from "@/components/marketplace/MarketplaceCompareButton";
 import { MarketplaceCoverImage } from "@/components/marketplace/MarketplaceCoverImage";
 import type { PublicMarketplaceService } from "@/features/marketplace/types";
 import {
@@ -24,6 +26,22 @@ export function MarketplaceServiceCard({ service }: Props) {
 
   return (
     <div className="card group relative flex h-full flex-col items-center">
+      <MarketplaceCompareButton
+        className="absolute top-3 start-3 z-20"
+        item={{
+          id: service.id,
+          slug: service.slug,
+          title: service.title,
+          categoryId: service.categoryId,
+          categoryName: service.category?.name ?? null,
+          coverImage: service.coverImage ?? null,
+        }}
+      />
+      <FavoriteButton
+        type="service"
+        id={service.id}
+        className="absolute top-3 end-3 z-20"
+      />
       <Link
         href={`/marketplace/${encodeURIComponent(service.slug)}`}
         className="relative flex h-full w-full cursor-pointer flex-col items-center"

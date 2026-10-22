@@ -33,6 +33,10 @@ export type ServicePackage = {
   id?: string;
   name: string;
   description?: string | null;
+  /** Optional package/tier cover image. */
+  image?: string | null;
+  /** Short generic bullets (hours, inclusions, etc.). */
+  highlights?: string[];
   price: number | string;
   isActive?: boolean;
   sortOrder?: number;
@@ -132,6 +136,8 @@ export type MarketplaceService = {
   description?: string | null;
   coverImage?: string | null;
   portfolio?: string[];
+  /** Optional PDF portfolio for download on the public listing. */
+  portfolioPdf?: string | null;
   pricingModel: ServicePricingModel;
   customizationMode: ServiceCustomizationMode;
   currency: Currency;
@@ -187,6 +193,8 @@ export type ListManagedMarketplaceServicesResult = {
 export type ServicePackagePayload = {
   name: string;
   description?: string | null;
+  image?: string | null;
+  highlights?: string[];
   price: number;
   isActive?: boolean;
   sortOrder?: number;
@@ -222,6 +230,7 @@ export type CreateMarketplaceServicePayload = {
   description?: string | null;
   coverImage?: string | null;
   portfolio?: string[];
+  portfolioPdf?: string | null;
   pricingModel: ServicePricingModel;
   customizationMode?: ServiceCustomizationMode;
   currency?: Currency;
